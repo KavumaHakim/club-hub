@@ -14,10 +14,7 @@
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
     "@google/genai": "https://aistudiocdn.com/@google/genai@^1.26.0",
     "recharts": "https://aistudiocdn.com/recharts@^3.3.0",
-    "firebase/app": "https://aistudiocdn.com/firebase@^10.12.8/app",
-    "firebase/auth": "https://aistudiocdn.com/firebase@^10.12.8/auth",
-    "firebase/firestore": "https://aistudiocdn.com/firebase@^10.12.8/firestore",
-    "firebase/": "https://aistudiocdn.com/firebase@^12.4.0/"
+    "@supabase/supabase-js": "https://aistudiocdn.com/@supabase/supabase-js@^2.44.4"
   }
 }
 </script>
@@ -31,6 +28,31 @@
       }
     }
   </script>
+  <style>
+    /* Custom scrollbar styles for Webkit browsers */
+    ::-webkit-scrollbar {
+      width: 8px; /* width of the entire scrollbar */
+      height: 8px; /* height of the horizontal scrollbar */
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9; /* A light gray for the track */
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(to right, #EC4899, #8B5CF6); /* Themed gradient */
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(to right, #db2777, #7c3aed); /* Slightly darker on hover */
+    }
+
+    /* Dark mode scrollbar styles */
+    .dark ::-webkit-scrollbar-track {
+      background: #1f2937; /* Darker track for dark mode */
+    }
+  </style>
 </head>
   <body class="bg-gray-100 dark:bg-gray-900">
     <div id="root"></div>

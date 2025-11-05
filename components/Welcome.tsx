@@ -2,9 +2,10 @@ import React from 'react';
 
 interface WelcomeProps {
   onNavigateToLogin: () => void;
+  onNavigateToPatronLogin: () => void;
 }
 
-const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin }) => {
+const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToPatronLogin }) => {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 relative overflow-hidden">
       {/* Animated background shapes */}
@@ -76,6 +77,14 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin }) => {
         >
           Enter the Hub
         </button>
+        <div className="mt-6 animate-fade-in-up" style={{ animationDelay: '1.2s' }}>
+            <button
+              onClick={onNavigateToPatronLogin}
+              className="font-medium text-gray-600 dark:text-gray-400 hover:text-pink-500 dark:hover:text-pink-400 transition-colors"
+            >
+              Are you a Patron? Login here
+            </button>
+        </div>
       </div>
     </div>
   );

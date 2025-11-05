@@ -13,7 +13,7 @@
     "react-dom": "^19.2.0",
     "@google/genai": "^1.26.0",
     "recharts": "^3.3.0",
-    "firebase": "^12.4.0"
+    "@supabase/supabase-js": "^2.44.4"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

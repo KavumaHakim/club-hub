@@ -13,6 +13,7 @@ const ProjectsBoard: React.FC<ProjectsBoardProps> = ({ currentUser }) => {
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
+  const [dragOverColumnId, setDragOverColumnId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -42,8 +43,19 @@ const ProjectsBoard: React.FC<ProjectsBoardProps> = ({ currentUser }) => {
     e.preventDefault(); 
   };
   
+  const handleDragEnter = (columnId: string) => {
+    if (draggedItemId) {
+      setDragOverColumnId(columnId);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDragOverColumnId(null);
+  };
+  
   const handleDrop = async (e: React.DragEvent<HTMLDivElement>, destinationColumnId: string) => {
     e.preventDefault();
+    setDragOverColumnId(null);
     if (currentUser.role !== 'PATRON' || !data) return;
 
     const taskId = e.dataTransfer.getData('taskId');
@@ -59,6 +71,7 @@ const ProjectsBoard: React.FC<ProjectsBoardProps> = ({ currentUser }) => {
     
     // Optimistic UI update
     const sourceTaskIds = sourceColumn.taskIds.filter(id => id !== taskId);
+    // To place the task at the end of the new column
     const destTaskIds = [...destColumn.taskIds, taskId];
     
     const newData = {
@@ -72,7 +85,7 @@ const ProjectsBoard: React.FC<ProjectsBoardProps> = ({ currentUser }) => {
     setData(newData);
     
     try {
-        await api.updateProjectData(newData);
+        await api.moveProjectTask(taskId, destinationColumnId);
     } catch (error) {
         console.error("Failed to move task", error);
         setData(data); // Revert on failure
@@ -106,7 +119,7 @@ const ProjectsBoard: React.FC<ProjectsBoardProps> = ({ currentUser }) => {
     setData(newData);
 
     try {
-        await api.updateProjectData(newData);
+        await api.deleteProjectTask(taskId);
     } catch (error) {
         console.error("Failed to delete task", error);
         setData(originalData); // Revert on fail
@@ -123,7 +136,7 @@ const ProjectsBoard: React.FC<ProjectsBoardProps> = ({ currentUser }) => {
     setData(newData);
     
     try {
-        await api.updateProjectData(newData);
+        await api.assignProjectTask(taskId, assigneeId);
     } catch (error) {
         console.error("Failed to assign task", error);
         setData(originalData); // Revert on fail
@@ -150,8 +163,11 @@ const ProjectsBoard: React.FC<ProjectsBoardProps> = ({ currentUser }) => {
                 allUsers={allUsers}
                 isPatron={currentUser.role === 'PATRON'}
                 draggedItemId={draggedItemId}
+                dragOverColumnId={dragOverColumnId}
                 onDragStart={handleDragStart}
                 onDragOver={handleDragOver}
+                onDragEnter={handleDragEnter}
+                onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
                 onDeleteTask={handleDeleteTask}
                 onAssignTask={handleAssignTask}

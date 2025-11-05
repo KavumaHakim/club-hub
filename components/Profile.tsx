@@ -5,7 +5,28 @@ import { CheckCircleIcon } from './icons/CheckCircleIcon';
 import { XCircleIcon } from './icons/XCircleIcon';
 import { ExclamationCircleIcon } from './icons/ExclamationCircleIcon';
 import { LockClosedIcon } from './icons/LockClosedIcon';
+import { EyeIcon } from './icons/EyeIcon';
+import { EyeOffIcon } from './icons/EyeOffIcon';
 
+const avatars = Array.from({ length: 12 }, (_, i) => `https://i.pravatar.cc/96?u=avatar${i + 1}`);
+
+const AvatarSelector: React.FC<{ onSelect: (url: string) => void, onClose: () => void }> = ({ onSelect, onClose }) => (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200">Choose an Avatar</h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 text-2xl font-bold">&times;</button>
+        </div>
+        <div className="grid grid-cols-4 gap-4">
+          {avatars.map(url => (
+            <button key={url} onClick={() => onSelect(url)} className="rounded-full overflow-hidden ring-2 ring-transparent hover:ring-pink-500 focus:outline-none focus:ring-pink-500 transition-all aspect-square">
+              <img src={url} alt="Avatar option" className="w-full h-full object-cover" />
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+);
 
 const StatCard: React.FC<{icon: React.ReactElement<{className?: string}>, label: string, value: number, percentage: string, color: string}> = ({ icon, label, value, percentage, color }) => (
     <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
@@ -24,6 +45,8 @@ const ChangePasswordForm: React.FC<{ currentUser: User }> = ({ currentUser }) =>
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isNewPasswordVisible, setIsNewPasswordVisible] = useState(false);
+    const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -59,11 +82,31 @@ const ChangePasswordForm: React.FC<{ currentUser: User }> = ({ currentUser }) =>
             <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
                  <div>
                     <label htmlFor="new-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">New Password</label>
-                    <input type="password" id="new-password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500" required />
+                    <div className="relative mt-1">
+                        <input type={isNewPasswordVisible ? 'text' : 'password'} id="new-password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="block w-full p-2 pr-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500" required />
+                        <button
+                            type="button"
+                            className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                            onClick={() => setIsNewPasswordVisible(!isNewPasswordVisible)}
+                            aria-label={isNewPasswordVisible ? 'Hide password' : 'Show password'}
+                        >
+                            {isNewPasswordVisible ? <EyeOffIcon /> : <EyeIcon />}
+                        </button>
+                    </div>
                 </div>
                  <div>
                     <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Confirm New Password</label>
-                    <input type="password" id="confirm-password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="mt-1 block w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500" required />
+                    <div className="relative mt-1">
+                        <input type={isConfirmPasswordVisible ? 'text' : 'password'} id="confirm-password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="block w-full p-2 pr-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500" required />
+                        <button
+                            type="button"
+                            className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                            onClick={() => setIsConfirmPasswordVisible(!isConfirmPasswordVisible)}
+                            aria-label={isConfirmPasswordVisible ? 'Hide password' : 'Show password'}
+                        >
+                            {isConfirmPasswordVisible ? <EyeOffIcon /> : <EyeIcon />}
+                        </button>
+                    </div>
                 </div>
                 
                 {error && <p className="text-sm text-red-500 text-center md:text-left">{error}</p>}
@@ -81,9 +124,11 @@ const ChangePasswordForm: React.FC<{ currentUser: User }> = ({ currentUser }) =>
 };
 
 
-const Profile: React.FC<{ currentUser: User }> = ({ currentUser }) => {
+const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) => void }> = ({ currentUser, onUpdateUserProfile }) => {
     const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isAvatarSelectorOpen, setIsAvatarSelectorOpen] = useState(false);
+    const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
 
     useEffect(() => {
         const fetchAttendance = async () => {
@@ -115,18 +160,46 @@ const Profile: React.FC<{ currentUser: User }> = ({ currentUser }) => {
         if (totalActivities === 0) return '0.0';
         return ((count / totalActivities) * 100).toFixed(1);
     };
+
+    const handleAvatarChange = async (newAvatarUrl: string) => {
+        setIsUpdatingAvatar(true);
+        try {
+            await api.updateUser(currentUser.uid, { avatarUrl: newAvatarUrl });
+            const updatedUser = await api.getUserProfile(currentUser.uid);
+            if (updatedUser) {
+                onUpdateUserProfile(updatedUser);
+            }
+        } catch (error) {
+            console.error("Failed to update avatar", error);
+        } finally {
+            setIsUpdatingAvatar(false);
+            setIsAvatarSelectorOpen(false);
+        }
+    };
     
     return (
         <div className="max-w-4xl mx-auto">
+             {isAvatarSelectorOpen && <AvatarSelector onSelect={handleAvatarChange} onClose={() => setIsAvatarSelectorOpen(false)} />}
             <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-6">My Profile</h2>
             <div className="bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
                 <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-8">
-                    <div className="flex-shrink-0">
+                    <div className="relative flex-shrink-0 group">
                         <img
-                            src={`https://i.pravatar.cc/128?u=${currentUser.username}`}
+                            src={currentUser.avatarUrl || `https://i.pravatar.cc/128?u=${currentUser.username}`}
                             alt={currentUser.name}
                             className="w-24 h-24 sm:w-32 sm:h-32 rounded-full ring-4 ring-pink-500/50"
                         />
+                         <button 
+                            onClick={() => setIsAvatarSelectorOpen(true)}
+                            className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                            aria-label="Change avatar"
+                         >
+                            {isUpdatingAvatar ? (
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                            ) : (
+                                'Edit'
+                            )}
+                        </button>
                     </div>
                     <div className="text-center sm:text-left">
                         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{currentUser.name}</h1>

@@ -5,6 +5,7 @@ export interface User {
   username: string;
   role: 'MEMBER' | 'PATRON';
   status: 'APPROVED' | 'PENDING';
+  avatarUrl?: string;
 }
 
 export interface Activity {
@@ -23,6 +24,7 @@ export interface AttendanceRecord {
   activityTitle: string;
   date: string;
   status: AttendanceStatus;
+  userId: string;
 }
 
 export type FeedItemType = 'EVENT_ANNOUNCEMENT' | 'MEMBER_POST' | 'NEWS_UPDATE';
@@ -33,11 +35,8 @@ export interface FeedItem {
   author: string;
   authorAvatarUrl: string;
   timestamp: string; // This will be handled by Firestore server timestamps
-  content: {
-    title?: string;
-    message: string;
-    activityId?: number;
-  };
+  title?: string;
+  message: string;
   likes?: number;
 }
 

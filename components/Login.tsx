@@ -1,17 +1,22 @@
+
 import React, { useState } from 'react';
 import { User } from '../types';
 import * as api from '../services/apiService';
+import { EyeIcon } from './icons/EyeIcon';
+import { EyeOffIcon } from './icons/EyeOffIcon';
 
 interface LoginProps {
   onLogin: (email: string, password?: string) => Promise<void>;
   onNavigateToSignUp: () => void;
+  onNavigateToPatronLogin: () => void;
 }
 
-const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToSignUp }) => {
+const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToSignUp, onNavigateToPatronLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,19 +30,17 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToSignUp }) => {
       setIsLoading(false);
     }
   };
-
-  const handlePatronLogin = async () => {
+  
+  const handleQuickLogin = async (demoEmail: string) => {
     setError(null);
     setIsLoading(true);
     try {
-      // In a real app, this would be a separate auth flow.
-      // For this demo, we hardcode patron credentials.
-      // In your firebase console, make sure a user with this email/password exists and is an approved patron.
-      await onLogin('patron@club.com', 'password');
-    } catch(err: any) {
-         setError(err.message || 'Failed to quick login. Ensure patron@club.com with password "password" exists and is approved.');
+      // The backend service now requires a password for all logins.
+      await onLogin(demoEmail, 'password'); 
+    } catch (err: any) {
+      setError(err.message || `Quick login failed.`);
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -66,17 +69,27 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToSignUp }) => {
           </div>
           <div>
             <label htmlFor="password"className="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-pink-500 focus:border-pink-500"
-              disabled={isLoading}
-            />
+            <div className="relative mt-1">
+              <input
+                id="password"
+                name="password"
+                type={isPasswordVisible ? 'text' : 'password'}
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="block w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-pink-500 focus:border-pink-500"
+                disabled={isLoading}
+              />
+              <button
+                type="button"
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+                aria-label={isPasswordVisible ? 'Hide password' : 'Show password'}
+              >
+                {isPasswordVisible ? <EyeOffIcon /> : <EyeIcon />}
+              </button>
+            </div>
           </div>
 
           {error && <p className="text-sm text-red-600 dark:text-red-500 text-center">{error}</p>}
@@ -97,27 +110,34 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToSignUp }) => {
             <div className="w-full border-t border-gray-300 dark:border-gray-600" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">Or</span>
+            <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">Or use a demo account</span>
           </div>
         </div>
 
-        <div>
+        <div className="space-y-3">
             <button
-                onClick={handlePatronLogin}
+                onClick={() => handleQuickLogin('member@clubhub.local')}
                 type="button"
                 disabled={isLoading}
-                className="w-full flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed dark:focus:ring-offset-gray-800"
+                className="w-full flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 disabled:opacity-50 disabled:cursor-not-allowed dark:focus:ring-offset-gray-800"
             >
-                {isLoading ? 'Please wait...' : 'Quick Login as Patron'}
+                Quick Login as Member
             </button>
-        </div>
+            
+            <p className="text-sm text-center text-gray-600 dark:text-gray-400">
+                Don't have an account?{' '}
+                <button onClick={onNavigateToSignUp} className="font-medium text-pink-600 hover:text-pink-500">
+                    Sign up
+                </button>
+            </p>
 
-        <p className="text-sm text-center text-gray-600 dark:text-gray-400">
-          Don't have an account?{' '}
-          <button onClick={onNavigateToSignUp} className="font-medium text-pink-600 hover:text-pink-500">
-            Sign up
-          </button>
-        </p>
+            <p className="text-sm text-center text-gray-600 dark:text-gray-400">
+                Are you a Patron?{' '}
+                <button onClick={onNavigateToPatronLogin} className="font-medium text-pink-600 hover:text-pink-500">
+                    Login here
+                </button>
+            </p>
+        </div>
       </div>
     </div>
   );

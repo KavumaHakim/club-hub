@@ -5,9 +5,10 @@ import { HeartIcon } from './icons/HeartIcon';
 
 interface AddAnnouncementProps {
     currentUser: User;
-    onAddAnnouncement: (announcement: Omit<FeedItem, 'id' | 'timestamp'>) => Promise<void>;
+    onAddAnnouncement: (data: { title: string, message: string }) => Promise<void>;
 }
 
+// FIX: Added currentUser to the destructured props to make it available in the component.
 const AddAnnouncement: React.FC<AddAnnouncementProps> = ({ currentUser, onAddAnnouncement }) => {
     const [title, setTitle] = useState('');
     const [message, setMessage] = useState('');
@@ -21,12 +22,7 @@ const AddAnnouncement: React.FC<AddAnnouncementProps> = ({ currentUser, onAddAnn
         }
         setIsSubmitting(true);
         try {
-            await onAddAnnouncement({
-                type: 'NEWS_UPDATE',
-                author: currentUser.name,
-                authorAvatarUrl: `https://i.pravatar.cc/40?u=${currentUser.username}`,
-                content: { title, message },
-            });
+            await onAddAnnouncement({ title, message });
             setTitle('');
             setMessage('');
         } catch (error) {
@@ -39,7 +35,7 @@ const AddAnnouncement: React.FC<AddAnnouncementProps> = ({ currentUser, onAddAnn
     return (
         <div className="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 mb-8">
             <div className="flex items-start space-x-4">
-                 <img src={`https://i.pravatar.cc/40?u=${currentUser.username}`} alt={currentUser.name} className="w-10 h-10 rounded-full flex-shrink-0" />
+                 <img src={currentUser.avatarUrl || `https://i.pravatar.cc/40?u=${currentUser.username}`} alt={currentUser.name} className="w-10 h-10 rounded-full flex-shrink-0" />
                 <form onSubmit={handleSubmit} className="space-y-3 flex-grow">
                     <input
                         id="announcement-title"
@@ -135,8 +131,8 @@ const FeedItemCard: React.FC<FeedItemCardProps> = ({ item, onLike }) => {
           
           {/* Card Body */}
           <div className="prose prose-sm dark:prose-invert max-w-none">
-            {item.content.title && <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">{item.content.title}</h3>}
-            <p className="text-gray-600 dark:text-gray-300 whitespace-pre-line">{item.content.message}</p>
+            {item.title && <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">{item.title}</h3>}
+            <p className="text-gray-600 dark:text-gray-300 whitespace-pre-line">{item.message}</p>
           </div>
          
           {/* Card Footer */}
@@ -189,10 +185,10 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
     }
   }, [isLoading]);
 
-  const handleAddAnnouncement = useCallback(async (announcement: Omit<FeedItem, 'id' | 'timestamp'>) => {
-    await api.addFeedItem(announcement);
+  const handleAddAnnouncement = useCallback(async (data: { title: string, message: string }) => {
+    await api.addFeedItem({ type: 'NEWS_UPDATE', ...data }, currentUser.uid);
     await fetchFeed();
-  }, [fetchFeed]);
+  }, [fetchFeed, currentUser.uid]);
 
   const handleLike = (id: string) => {
     // Liking is client-side only for this demo.

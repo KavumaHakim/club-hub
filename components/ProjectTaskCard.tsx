@@ -34,7 +34,7 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = (props) => {
             {assignee ? (
                 <>
                     <img
-                        src={`https://i.pravatar.cc/24?u=${assignee.username}`}
+                        src={assignee.avatarUrl || `https://i.pravatar.cc/24?u=${assignee.username}`}
                         alt={assignee.name}
                         className="w-6 h-6 rounded-full mr-2 flex-shrink-0"
                         title={`Assigned to ${assignee.name}`}

@@ -5,21 +5,24 @@ import Feed from './Feed';
 import Members from './Members';
 import ProjectsBoard from './ProjectsBoard';
 import Profile from './Profile';
+import Chat from './Chat';
 import { CalendarIcon } from './icons/CalendarIcon';
 import { CheckCircleIcon } from './icons/CheckCircleIcon';
 import { HomeIcon } from './icons/HomeIcon';
 import { UsersIcon } from './icons/UsersIcon';
 import { ClipboardListIcon } from './icons/ClipboardListIcon';
 import { IdentificationIcon } from './icons/IdentificationIcon';
+import { ChatBubbleIcon } from './icons/ChatBubbleIcon';
 import { User } from '../types';
 
-type Tab = 'feed' | 'activities' | 'attendance' | 'projects' | 'profile' | 'members';
+type Tab = 'feed' | 'activities' | 'attendance' | 'projects' | 'chat' | 'profile' | 'members';
 
 interface DashboardProps {
   currentUser: User;
+  onUpdateUserProfile: (user: User) => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
+const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile }) => {
   const [activeTab, setActiveTab] = useState<Tab>('feed');
 
   const renderContent = () => {
@@ -32,8 +35,10 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
         return <Attendance currentUser={currentUser} />;
       case 'projects':
         return <ProjectsBoard currentUser={currentUser} />;
+      case 'chat':
+        return <Chat currentUser={currentUser} />;
       case 'profile':
-        return <Profile currentUser={currentUser} />;
+        return <Profile currentUser={currentUser} onUpdateUserProfile={onUpdateUserProfile} />;
       case 'members':
         if (currentUser.role === 'PATRON') {
           return <Members currentUser={currentUser} />;
@@ -69,6 +74,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
         <TabButton tabName="activities" label="Activities" icon={<CalendarIcon />} />
         <TabButton tabName="attendance" label="Attendance" icon={<CheckCircleIcon />} />
         <TabButton tabName="projects" label="Projects" icon={<ClipboardListIcon />} />
+        <TabButton tabName="chat" label="Chat" icon={<ChatBubbleIcon />} />
         <TabButton tabName="profile" label="Profile" icon={<IdentificationIcon />} />
         {currentUser.role === 'PATRON' && (
           <TabButton tabName="members" label="Members" icon={<UsersIcon />} />

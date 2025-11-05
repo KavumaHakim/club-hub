@@ -102,7 +102,7 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser }) => {
       return null;
   };
 
-  const handleRecordAttendance = async (newRecordData: Omit<AttendanceRecord, 'id'>) => {
+  const handleRecordAttendance = async (newRecordData: Omit<AttendanceRecord, 'id' | 'userId'>) => {
     await api.addAttendance(currentUser.uid, newRecordData);
     await fetchData(); // Refetch
   };
@@ -116,7 +116,7 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser }) => {
     const activity = activities.find(a => a.id === selectedActivityId);
     if (!activity) return;
 
-    const newRecordData: Omit<AttendanceRecord, 'id'> = {
+    const newRecordData: Omit<AttendanceRecord, 'id' | 'userId'> = {
       activityId: activity.id,
       activityTitle: activity.title,
       date: activity.date,

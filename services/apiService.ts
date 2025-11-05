@@ -1,193 +1,234 @@
-import { auth, db } from './firebase';
-import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  signOut,
-  updatePassword
-} from 'firebase/auth';
-import { 
-  collection, 
-  doc, 
-  getDoc, 
-  getDocs, 
-  setDoc, 
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  query,
-  orderBy,
-  serverTimestamp,
-  writeBatch
-} from 'firebase/firestore';
-import { User, Activity, AttendanceRecord, FeedItem, ProjectData, ProjectTask } from '../types';
+import { supabase } from './supabaseClient';
+import { User, Activity, AttendanceRecord, FeedItem, ProjectData, ProjectTask, FeedItemType, ProjectColumn } from '../types';
 
 // --- AUTH API ---
 
-export const login = async (email: string, password?: string): Promise<void> => {
-  if (!password) throw new Error("Password is required.");
-  try {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
-    if (!userDoc.exists() || userDoc.data().status !== 'APPROVED') {
-        await signOut(auth); // Sign out if profile doesn't exist or not approved
-        throw new Error('Account not found or pending approval.');
+export const login = async (email: string, password?: string): Promise<User> => {
+    if (!password) throw new Error("Password is required.");
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    if (!data.user) throw new Error("Login failed: no user returned");
+
+    const userProfile = await getUserProfile(data.user.id);
+    if (!userProfile) {
+        // If profile doesn't exist, sign out the user to prevent a broken state
+        await supabase.auth.signOut();
+        throw new Error("User profile not found.");
     }
-  } catch (error: any) {
-    throw new Error(error.message || 'Failed to login.');
-  }
+    
+    return userProfile;
 };
 
 export const logout = async (): Promise<void> => {
-    await signOut(auth);
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
 };
 
-export const signUp = async (newUser: Omit<User, 'uid' | 'role' | 'status'> & { password: string }): Promise<void> => {
-    try {
-        const userCredential = await createUserWithEmailAndPassword(auth, newUser.email, newUser.password);
-        const { uid } = userCredential.user;
-        
-        // Create a user profile document in Firestore
-        await setDoc(doc(db, 'users', uid), {
-            uid,
-            email: newUser.email,
-            name: newUser.name,
-            username: newUser.username,
-            role: 'MEMBER',
-            status: 'PENDING',
-        });
-    } catch (error: any) {
-        throw new Error(error.message || 'Failed to sign up.');
-    }
+export const signUp = async (newUser: Omit<User, 'uid' | 'role' | 'status' | 'avatarUrl'> & { password: string }): Promise<void> => {
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: newUser.email,
+        password: newUser.password,
+    });
+    if (authError) throw authError;
+    if (!authData.user) throw new Error("Sign up failed, no user created.");
+
+    const { error: profileError } = await supabase.from('users').insert({
+        uid: authData.user.id,
+        email: newUser.email,
+        name: newUser.name,
+        username: newUser.username,
+        role: 'MEMBER',
+        status: 'PENDING',
+    });
+    if (profileError) throw profileError;
+};
+
+export const signUpAsPatron = async (newUser: Omit<User, 'uid' | 'role' | 'status' | 'avatarUrl'> & { password: string }): Promise<void> => {
+     const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: newUser.email,
+        password: newUser.password,
+    });
+    if (authError) throw authError;
+    if (!authData.user) throw new Error("Sign up failed, no user created.");
+
+    const { error: profileError } = await supabase.from('users').insert({
+        uid: authData.user.id,
+        email: newUser.email,
+        name: newUser.name,
+        username: newUser.username,
+        role: 'PATRON',
+        status: 'PENDING',
+    });
+    if (profileError) throw profileError;
 };
 
 export const getUserProfile = async (uid: string): Promise<User | null> => {
-    const userDoc = await getDoc(doc(db, 'users', uid));
-    if (userDoc.exists()) {
-        return userDoc.data() as User;
+    const { data, error } = await supabase.from('users').select('*').eq('uid', uid).single();
+    if (error && error.code !== 'PGRST116') { // Ignore 'PGRST116' (single row not found)
+        console.error("Error fetching user profile:", error);
+        return null;
     }
-    return null;
+    return data;
 };
 
 
 // --- USERS API ---
 
 export const getUsers = async (): Promise<User[]> => {
-    const usersSnapshot = await getDocs(collection(db, 'users'));
-    return usersSnapshot.docs.map(doc => doc.data() as User);
+    const { data, error } = await supabase.from('users').select('*');
+    if (error) throw error;
+    return data || [];
 };
 
-export const updateUser = async (uid: string, updates: Partial<Pick<User, 'role' | 'status'>>): Promise<void> => {
-    const userRef = doc(db, 'users', uid);
-    await updateDoc(userRef, updates);
+export const updateUser = async (uid: string, updates: Partial<Pick<User, 'role' | 'status' | 'avatarUrl'>>): Promise<void> => {
+    const { error } = await supabase.from('users').update(updates).eq('uid', uid);
+    if (error) throw error;
 };
 
 export const deleteUser = async (uid: string): Promise<void> => {
-    // This is a complex operation. For a client-side app, we'll just delete the Firestore record.
-    // In a real app, you'd use a Cloud Function to delete the user from Firebase Auth and handle cleanup.
-    const userRef = doc(db, 'users', uid);
-    await deleteDoc(userRef);
-
-    // TODO: Also unassign from tasks. For now, we'll handle this on the client if needed.
+    // Note: In a real app, this should be a secure admin function.
+    const { error } = await supabase.from('users').delete().eq('uid', uid);
+    if (error) throw error;
 };
 
 export const changePassword = async (newPassword: string): Promise<void> => {
-    if (!auth.currentUser) throw new Error("You must be logged in to change your password.");
-    try {
-        await updatePassword(auth.currentUser, newPassword);
-    } catch(error: any) {
-        // This often fails if the user hasn't logged in recently.
-        // A real app would need a re-authentication flow.
-        console.error("Password change error:", error);
-        throw new Error("Failed to change password. You may need to log out and log back in.");
-    }
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw error;
 };
 
 
 // --- ACTIVITIES API ---
 
 export const getActivities = async (): Promise<Activity[]> => {
-    const q = query(collection(db, 'activities'), orderBy('date', 'desc'));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Activity));
+    const { data, error } = await supabase.from('activities').select('*').order('date', { ascending: false });
+    if (error) throw error;
+    return data || [];
 };
 
 export const addActivity = async (activityData: Omit<Activity, 'id'>): Promise<void> => {
-    await addDoc(collection(db, 'activities'), {
-        ...activityData,
-        createdAt: serverTimestamp()
-    });
+    const { error } = await supabase.from('activities').insert(activityData);
+    if (error) throw error;
 };
 
 // --- ATTENDANCE API ---
 
-export const getAttendance = async (uid: string): Promise<AttendanceRecord[]> => {
-    if (!uid) return [];
-    const attendanceRef = collection(db, 'users', uid, 'attendance');
-    const q = query(attendanceRef, orderBy('date', 'desc'));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AttendanceRecord));
+export const getAttendance = async (userId: string): Promise<AttendanceRecord[]> => {
+    const { data, error } = await supabase.from('attendance').select('*').eq('userId', userId);
+    if (error) throw error;
+    return data || [];
 };
 
-export const addAttendance = async (uid: string, recordData: Omit<AttendanceRecord, 'id'>): Promise<void> => {
-    if (!uid) throw new Error("User ID is required to add attendance.");
-    const attendanceRef = collection(db, 'users', uid, 'attendance');
-    await addDoc(attendanceRef, recordData);
+export const addAttendance = async (userId: string, recordData: Omit<AttendanceRecord, 'id' | 'userId'>): Promise<void> => {
+    const newRecord = { ...recordData, userId };
+    const { error } = await supabase.from('attendance').insert(newRecord);
+    if (error) throw error;
 };
+
 
 // --- FEED API ---
 
 export const getFeedItems = async (): Promise<FeedItem[]> => {
-    const q = query(collection(db, 'feed'), orderBy('createdAt', 'desc'));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, timestamp: doc.data().createdAt?.toDate().toLocaleDateString() || 'Just now', ...doc.data() } as FeedItem));
+    const { data, error } = await supabase.from('feed_items').select('*').order('timestamp', { ascending: false });
+    if (error) throw error;
+    return data || [];
 };
 
-export const addFeedItem = async (itemData: Omit<FeedItem, 'id' | 'timestamp'>): Promise<void> => {
-    await addDoc(collection(db, 'feed'), {
-        ...itemData,
-        createdAt: serverTimestamp()
-    });
+export const addFeedItem = async (itemData: { type: FeedItemType, title?: string, message: string }, author_uid: string): Promise<void> => {
+    const author = await getUserProfile(author_uid);
+    if (!author) throw new Error("Author not found.");
+    
+    const newFeedItemData = {
+        type: itemData.type,
+        author: author.name,
+        authorAvatarUrl: author.avatarUrl || `https://i.pravatar.cc/40?u=${author.username}`,
+        title: itemData.title,
+        message: itemData.message,
+    };
+
+    const { error } = await supabase.from('feed_items').insert(newFeedItemData);
+    if (error) throw error;
 };
 
 
 // --- PROJECTS API ---
 
 export const getProjectData = async (): Promise<ProjectData> => {
-    const docRef = doc(db, 'projects', 'board');
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-        return docSnap.data() as ProjectData;
-    } else {
-        // If it doesn't exist, create an initial structure
-        const initialData: ProjectData = {
-            tasks: {},
-            columns: {
-                'column-1': { id: 'column-1', title: 'Backlog', taskIds: [] },
-                'column-2': { id: 'column-2', title: 'In Progress', taskIds: [] },
-                'column-3': { id: 'column-3', title: 'Done', taskIds: [] },
-            },
-            columnOrder: ['column-1', 'column-2', 'column-3'],
-        };
-        await setDoc(docRef, initialData);
-        return initialData;
-    }
-};
+    const { data: columnsData, error: columnsError } = await supabase.from('project_columns').select('*').order('position', { ascending: true });
+    if (columnsError) throw columnsError;
+    
+    const { data: tasksData, error: tasksError } = await supabase.from('project_tasks').select('*');
+    if (tasksError) throw tasksError;
 
-export const updateProjectData = async (projectData: ProjectData): Promise<void> => {
-    const docRef = doc(db, 'projects', 'board');
-    await setDoc(docRef, projectData);
+    const tasks: { [key: string]: ProjectTask } = (tasksData || []).reduce((acc, task) => {
+        acc[task.id] = task;
+        return acc;
+    }, {} as {[key: string]: ProjectTask});
+    
+    const columns: { [key: string]: ProjectColumn } = (columnsData || []).reduce((acc, col) => {
+        acc[col.id] = col;
+        return acc;
+    }, {} as {[key: string]: ProjectColumn});
+
+    const columnOrder = (columnsData || []).map(col => col.id);
+
+    return { tasks, columns, columnOrder };
 };
 
 export const addProjectTask = async (content: string): Promise<void> => {
-    const data = await getProjectData();
-    const taskId = `task-${Date.now()}`;
-    const newTask: ProjectTask = { id: taskId, content };
+    const { data: newTaskData, error: insertError } = await supabase.from('project_tasks').insert({ content }).select().single();
+    if (insertError || !newTaskData) throw insertError || new Error("Failed to create task");
 
-    data.tasks[taskId] = newTask;
-    const backlogColumnId = data.columnOrder[0];
-    if (backlogColumnId) {
-        data.columns[backlogColumnId].taskIds.push(taskId);
-    }
+    const { data: backlogColumn, error: columnError } = await supabase.from('project_columns').select('*').order('position').limit(1).single();
+    if (columnError || !backlogColumn) throw columnError || new Error("Backlog column not found");
+
+    const updatedTaskIds = [...backlogColumn.taskIds, newTaskData.id];
+    const { error: updateError } = await supabase.from('project_columns').update({ taskIds: updatedTaskIds }).eq('id', backlogColumn.id);
+    if (updateError) throw updateError;
+};
+
+export const deleteProjectTask = async (taskId: string): Promise<void> => {
+    // Note: A database transaction would be safer here.
+    const { data: columns, error: colError } = await supabase.from('project_columns').select('id, taskIds');
+    if (colError) throw colError;
     
-    await updateProjectData(data);
+    const sourceColumn = columns?.find(c => c.taskIds.includes(taskId));
+    
+    const { error: deleteError } = await supabase.from('project_tasks').delete().eq('id', taskId);
+    if (deleteError) throw deleteError;
+    
+    if (sourceColumn) {
+        const updatedTaskIds = sourceColumn.taskIds.filter(id => id !== taskId);
+        const { error: updateError } = await supabase.from('project_columns').update({ taskIds: updatedTaskIds }).eq('id', sourceColumn.id);
+        if (updateError) console.error("Failed to update column after task deletion:", updateError);
+    }
+};
+
+export const assignProjectTask = async (taskId: string, assigneeId: string | undefined): Promise<void> => {
+    const { error } = await supabase.from('project_tasks').update({ assigneeId: assigneeId || null }).eq('id', taskId);
+    if (error) throw error;
+};
+
+export const moveProjectTask = async (taskId: string, newColumnId: string): Promise<void> => {
+    // Note: A database transaction would be safer here.
+    const { data: columns, error: colError } = await supabase.from('project_columns').select('id, taskIds');
+    if (colError) throw colError;
+    
+    const sourceColumn = columns?.find(c => c.taskIds.includes(taskId));
+    const destColumn = columns?.find(c => c.id === newColumnId);
+
+    if (!sourceColumn || !destColumn) throw new Error("Source or destination column not found");
+
+    // Remove from source
+    const sourceTaskIds = sourceColumn.taskIds.filter(id => id !== taskId);
+    const { error: sourceUpdateError } = await supabase.from('project_columns').update({ taskIds: sourceTaskIds }).eq('id', sourceColumn.id);
+    if (sourceUpdateError) throw sourceUpdateError;
+
+    // Add to destination
+    const destTaskIds = [...destColumn.taskIds, taskId];
+    const { error: destUpdateError } = await supabase.from('project_columns').update({ taskIds: destTaskIds }).eq('id', newColumnId);
+    if (destUpdateError) {
+        // Attempt to revert the source column change on failure
+        await supabase.from('project_columns').update({ taskIds: sourceColumn.taskIds }).eq('id', sourceColumn.id);
+        throw destUpdateError;
+    }
 };
