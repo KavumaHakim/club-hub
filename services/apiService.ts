@@ -72,19 +72,18 @@ export const getUserProfile = async (uid: string): Promise<User | null> => {
 
     let avatarUrl: string | undefined = undefined;
 
-    // Check if the user's avatar exists in storage to avoid broken image links.
-    const { data: fileList, error: fileError } = await supabase.storage
-        .from('profiles')
-        .list(uid, { limit: 1, search: 'avatar' });
+    // Efficiently check for the avatar record in the new user_uploads table.
+    const { data: uploadRecord } = await supabase
+        .from('user_uploads')
+        .select('object_name')
+        .match({ owner_id: uid, bucket_id: 'profiles', object_name: `${uid}/avatar` })
+        .limit(1)
+        .single();
 
-    if (fileError) {
-        console.error(`Storage error checking for avatar for user ${uid}:`, fileError);
-    }
-
-    if (fileList && fileList.length > 0) {
+    if (uploadRecord) {
         const { data: urlData } = supabase.storage
             .from('profiles')
-            .getPublicUrl(`${uid}/avatar`);
+            .getPublicUrl(uploadRecord.object_name);
         // Append a timestamp to break the browser cache after an upload.
         avatarUrl = `${urlData.publicUrl}?t=${new Date().getTime()}`;
     }
@@ -97,25 +96,31 @@ export const getUserProfile = async (uid: string): Promise<User | null> => {
 // --- USERS API ---
 
 export const getUsers = async (): Promise<User[]> => {
-    const { data, error } = await supabase.from('users').select('*');
+    const { data: usersData, error } = await supabase.from('users').select('*');
     if (error) throw error;
+    if (!usersData || usersData.length === 0) return [];
     
-    // Asynchronously check for each user's avatar to prevent broken images.
-    // NOTE: This can be slow for large user lists (N+1 problem). A `has_avatar`
-    // flag in the `users` table would be a more performant long-term solution.
-    const usersWithAvatars = await Promise.all((data || []).map(async user => {
-        let avatarUrl: string | undefined = undefined;
-        const { data: fileList } = await supabase.storage
-            .from('profiles')
-            .list(user.uid, { limit: 1, search: 'avatar' });
-        
-        if (fileList && fileList.length > 0) {
-            const { data: urlData } = supabase.storage
-                .from('profiles')
-                .getPublicUrl(`${user.uid}/avatar`);
-            avatarUrl = urlData.publicUrl;
+    // SOLVE N+1 PROBLEM: Fetch all avatar records for all users in one query.
+    const userIds = usersData.map(u => u.uid);
+    const { data: uploads } = await supabase
+        .from('user_uploads')
+        .select('owner_id, object_name')
+        .in('owner_id', userIds)
+        .eq('bucket_id', 'profiles');
+
+    // Create a map for quick lookups
+    const avatarMap = new Map<string, string>();
+    if (uploads) {
+        for (const upload of uploads) {
+            const { data: urlData } = supabase.storage.from('profiles').getPublicUrl(upload.object_name);
+            avatarMap.set(upload.owner_id, urlData.publicUrl);
         }
-        return { ...user, avatarUrl };
+    }
+
+    // Map avatar URLs back to users
+    const usersWithAvatars = usersData.map(user => ({
+        ...user,
+        avatarUrl: avatarMap.get(user.uid),
     }));
     
     return usersWithAvatars;
@@ -134,30 +139,40 @@ export const uploadProfilePicture = async (userId: string, file: File): Promise<
 
     const filePath = `${userId}/avatar`;
 
-    // First, attempt to remove an existing avatar to avoid conflicts with restrictive
-    // RLS policies that may not allow 'UPDATE' but do allow 'INSERT' and 'DELETE'.
-    // We ignore the error if the file doesn't exist.
-    const { error: removeError } = await supabase.storage
-        .from('profiles')
-        .remove([filePath]);
-
-    if (removeError && removeError.message !== 'The resource was not found') {
-        console.error("Supabase Storage Error (Remove):", removeError);
-        throw new Error("Failed to remove old avatar.");
-    }
-
-    // Now, upload the new file. `upsert` is false as we've already handled deletion.
+    // 1. Upload the new file to storage, overwriting if it exists.
     const { error: uploadError } = await supabase.storage
         .from('profiles')
-        .upload(filePath, file, { upsert: false });
+        .upload(filePath, file, { upsert: true });
 
     if (uploadError) {
         console.error("Supabase Storage Error (Upload):", uploadError);
         throw new Error("Failed to upload avatar.");
     }
+    
+    // 2. Create or update the record in our new `user_uploads` table.
+    // `upsert` is used here to either create a new record or update the `updated_at`
+    // timestamp of an existing one, which is handled by a database trigger.
+    // The `onConflict` option assumes a unique constraint exists on `(owner_id, object_name)`.
+    const { error: dbError } = await supabase
+        .from('user_uploads')
+        .upsert({
+            owner_id: userId,
+            bucket_id: 'profiles',
+            object_name: filePath,
+        }, {
+            onConflict: 'owner_id,object_name' 
+        });
 
-    // After upload, re-fetch the user profile. The updated `getUserProfile` will find
-    // the new file in storage and return the correct URL.
+    if (dbError) {
+        console.error("Supabase DB Error (user_uploads):", dbError);
+        // If this fails, we should ideally try to roll back the storage upload.
+        // For now, we'll log the error and throw.
+        throw new Error("Failed to record avatar upload in the database.");
+    }
+
+
+    // 3. After upload, re-fetch the user profile. The updated `getUserProfile` will
+    // find the new record and return the correct URL.
     const updatedUser = await getUserProfile(userId);
     if (!updatedUser) {
         throw new Error("Failed to fetch updated user profile after avatar upload.");
@@ -258,31 +273,35 @@ export const markAttendanceOnLogin = async (userId: string): Promise<void> => {
 export const getFeedItems = async (): Promise<FeedItem[]> => {
     const { data, error } = await supabase
         .from('feed_items')
-        .select('*, users(uid, name, username)') // Fetch author's uid to construct avatar URL
+        .select('*, users(uid, name, username)') // Fetch author's profile
         .order('created_at', { ascending: false });
     
     if (error) {
         console.error("Error fetching feed items with user join:", error);
         throw error;
     }
+    if (!data || data.length === 0) return [];
 
-    // Asynchronously resolve avatar for each feed item author.
-    const feedItemsWithAvatars = await Promise.all((data || []).map(async item => {
-        const authorProfile = item.users;
-        let authorAvatarUrl: string | undefined = undefined;
+    // SOLVE N+1 PROBLEM: Fetch all needed avatars in one query.
+    const authorIds = [...new Set(data.map(item => item.users?.uid).filter(Boolean))];
+    const { data: uploads } = await supabase
+        .from('user_uploads')
+        .select('owner_id, object_name')
+        .in('owner_id', authorIds)
+        .eq('bucket_id', 'profiles');
 
-        if (authorProfile?.uid) {
-            const { data: fileList } = await supabase.storage
-                .from('profiles')
-                .list(authorProfile.uid, { limit: 1, search: 'avatar' });
-            
-            if (fileList && fileList.length > 0) {
-                const { data: urlData } = supabase.storage
-                    .from('profiles')
-                    .getPublicUrl(`${authorProfile.uid}/avatar`);
-                authorAvatarUrl = urlData.publicUrl;
-            }
+    const avatarMap = new Map<string, string>();
+    if (uploads) {
+        for (const upload of uploads) {
+            const { data: urlData } = supabase.storage.from('profiles').getPublicUrl(upload.object_name);
+            avatarMap.set(upload.owner_id, urlData.publicUrl);
         }
+    }
+    
+    // Map results back to feed items
+    const feedItemsWithAvatars = data.map(item => {
+        const authorProfile = item.users;
+        const authorAvatarUrl = authorProfile?.uid ? avatarMap.get(authorProfile.uid) : undefined;
         
         return {
             id: item.id,
@@ -294,7 +313,7 @@ export const getFeedItems = async (): Promise<FeedItem[]> => {
             message: item.message,
             likes: item.likes,
         };
-    }));
+    });
     
     return feedItemsWithAvatars;
 };
