@@ -9,10 +9,11 @@ import PatronLogin from './components/PatronLogin';
 import PatronSignUp from './components/PatronSignUp';
 import * as api from './services/apiService';
 import { supabase } from './services/supabaseClient';
+import { MenuIcon } from './components/icons/MenuIcon';
 
 type View = 'welcome' | 'login' | 'signup' | 'dashboard' | 'patronLogin' | 'patronSignUp';
 type Theme = 'light' | 'dark';
-type Tab = 'feed' | 'activities' | 'attendance' | 'projects' | 'chat' | 'profile' | 'members';
+type Tab = 'feed' | 'activities' | 'attendance' | 'projects' | 'chat' | 'profile' | 'members' | 'playground';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -20,6 +21,7 @@ const App: React.FC = () => {
   const [theme, setTheme] = useState<Theme>('light');
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>('feed');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     setIsLoading(true);
@@ -100,6 +102,10 @@ const App: React.FC = () => {
   const toggleTheme = useCallback(() => {
     setTheme(prevTheme => (prevTheme === 'light' ? 'dark' : 'light'));
   }, []);
+  
+  const handleSidebarToggle = useCallback(() => {
+    setIsSidebarOpen(prevState => !prevState);
+  }, []);
 
   const appClasses = useMemo(() => {
     const classList = ['min-h-screen', 'font-sans', 'transition-colors', 'duration-300'];
@@ -122,7 +128,7 @@ const App: React.FC = () => {
   const renderContent = () => {
     if (view === 'dashboard' && user) {
       return (
-        <div className="flex">
+        <div className="flex min-h-screen">
           <Sidebar
             user={user}
             onLogout={handleLogout}
@@ -130,14 +136,30 @@ const App: React.FC = () => {
             onToggleTheme={toggleTheme}
             activeTab={activeTab}
             setActiveTab={setActiveTab}
+            isOpen={isSidebarOpen}
+            onClose={handleSidebarToggle}
           />
-          <main className="flex-1 p-4 sm:p-6 lg:p-8 h-screen overflow-y-auto">
-            <Dashboard
-              activeTab={activeTab}
-              currentUser={user}
-              onUpdateUserProfile={handleUpdateUserProfile}
-            />
-          </main>
+          <div className="flex-1 flex flex-col w-full">
+             {/* Mobile Header */}
+            <header className="md:hidden bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 flex items-center justify-between p-4 sticky top-0 z-10">
+              <button onClick={handleSidebarToggle} className="text-gray-600 dark:text-gray-300 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Open menu">
+                <MenuIcon />
+              </button>
+              <h1 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600">
+                Club Hub
+              </h1>
+              {/* A small placeholder to balance the flexbox */}
+              <div className="w-6 h-6"></div> 
+            </header>
+            <main className="flex-1 p-4 sm:p-6 lg:p-8 h-screen overflow-y-auto">
+              <Dashboard
+                activeTab={activeTab}
+                currentUser={user}
+                onUpdateUserProfile={handleUpdateUserProfile}
+                theme={theme}
+              />
+            </main>
+          </div>
         </div>
       );
     }

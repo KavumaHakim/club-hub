@@ -223,48 +223,65 @@ export const addAttendance = async (userId: string, recordData: Omit<AttendanceR
 };
 
 export const markAttendanceOnLogin = async (userId: string): Promise<void> => {
+    // 1. Get today's date in YYYY-MM-DD format
     const today = new Date().toISOString().split('T')[0];
 
+    // 2. Fetch all activities scheduled for today
     const { data: todaysActivities, error: activityError } = await supabase
         .from('activities')
         .select('id, title, date')
         .eq('date', today);
 
-    if (activityError) throw activityError;
-    if (!todaysActivities || todaysActivities.length === 0) {
-        return; 
+    if (activityError) {
+        console.error("Error fetching today's activities:", activityError);
+        throw activityError;
     }
 
-    const todaysActivityIds = todaysActivities.map(a => a.id);
+    if (!todaysActivities || todaysActivities.length === 0) {
+        // No activities today, nothing to do.
+        return;
+    }
 
-    const { data: existingRecords, error: existingRecordError } = await supabase
+    // 3. Get the user's existing attendance records for today's activities
+    const activityIds = todaysActivities.map(a => a.id);
+    const { data: existingRecords, error: attendanceError } = await supabase
         .from('attendance')
         .select('activityId')
         .eq('user_uid', userId)
-        .in('activityId', todaysActivityIds);
-
-    if (existingRecordError) throw existingRecordError;
+        .in('activityId', activityIds);
     
-    const recordedActivityIds = new Set((existingRecords || []).map(r => r.activityId));
+    if (attendanceError) {
+        console.error("Error fetching existing attendance:", attendanceError);
+        throw attendanceError;
+    }
 
-    const activitiesToRecord = todaysActivities.filter(a => !recordedActivityIds.has(a.id));
+    const recordedActivityIds = new Set(existingRecords?.map(r => r.activityId));
 
-    if (activitiesToRecord.length === 0) {
+    // 4. Filter to find activities the user hasn't been marked for yet
+    const unrecordedActivities = todaysActivities.filter(activity => !recordedActivityIds.has(activity.id));
+
+    if (unrecordedActivities.length === 0) {
+        // User is already marked for all of today's activities.
         return;
     }
-    
-    const newRecords = activitiesToRecord.map(activity => ({
-        user_uid: userId,
+
+    // 5. Prepare and insert the new 'Present' records
+    const newRecordsToInsert = unrecordedActivities.map(activity => ({
         activityId: activity.id,
         activityTitle: activity.title,
         date: activity.date,
         status: 'Present' as const,
+        user_uid: userId,
     }));
 
-    const { error: insertError } = await supabase.from('attendance').insert(newRecords);
-    if (insertError) throw insertError;
+    const { error: insertError } = await supabase.from('attendance').insert(newRecordsToInsert);
 
-    console.log(`Auto-recorded attendance for ${newRecords.length} activities for user ${userId}.`);
+    if (insertError) {
+        console.error("Error marking attendance on login:", insertError);
+        throw insertError;
+    }
+
+    console.log(`Successfully marked attendance for ${newRecordsToInsert.length} activities.`);
 };
 
 
@@ -273,147 +290,152 @@ export const markAttendanceOnLogin = async (userId: string): Promise<void> => {
 export const getFeedItems = async (): Promise<FeedItem[]> => {
     const { data, error } = await supabase
         .from('feed_items')
-        .select('*, users(uid, name, username)') // Fetch author's profile
+        .select(`
+            *,
+            author:users ( uid, name )
+        `)
         .order('created_at', { ascending: false });
     
-    if (error) {
-        console.error("Error fetching feed items with user join:", error);
-        throw error;
-    }
-    if (!data || data.length === 0) return [];
-
-    // SOLVE N+1 PROBLEM: Fetch all needed avatars in one query.
-    const authorIds = [...new Set(data.map(item => item.users?.uid).filter(Boolean))];
-    const { data: uploads } = await supabase
-        .from('user_uploads')
-        .select('owner_id, object_name')
-        .in('owner_id', authorIds)
-        .eq('bucket_id', 'profiles');
+    if (error) throw error;
+    if (!data) return [];
+    
+    // SOLVE N+1 PROBLEM: Fetch all avatar records for all authors in one query.
+    const authorIds = data
+        .map(item => {
+            const authorData = Array.isArray(item.author) ? item.author[0] : item.author;
+            return authorData?.uid;
+        })
+        .filter((uid): uid is string => !!uid);
 
     const avatarMap = new Map<string, string>();
-    if (uploads) {
-        for (const upload of uploads) {
-            const { data: urlData } = supabase.storage.from('profiles').getPublicUrl(upload.object_name);
-            avatarMap.set(upload.owner_id, urlData.publicUrl);
+    if(authorIds.length > 0) {
+        const { data: uploads } = await supabase
+            .from('user_uploads')
+            .select('owner_id, object_name')
+            .in('owner_id', authorIds)
+            .eq('bucket_id', 'profiles');
+
+        // Create a map for quick lookups
+        if (uploads) {
+            for (const upload of uploads) {
+                const { data: urlData } = supabase.storage.from('profiles').getPublicUrl(upload.object_name);
+                avatarMap.set(upload.owner_id, urlData.publicUrl);
+            }
         }
     }
     
-    // Map results back to feed items
-    const feedItemsWithAvatars = data.map(item => {
-        const authorProfile = item.users;
-        const authorAvatarUrl = authorProfile?.uid ? avatarMap.get(authorProfile.uid) : undefined;
+    // The query returns `author` as an object { uid, name }. We need to flatten this and add avatar.
+    return data.map(item => {
+        const authorProfile = Array.isArray(item.author) ? item.author[0] : item.author;
+        const authorName = authorProfile?.name || 'Unknown User';
+        const authorUid = authorProfile?.uid || 'unknown';
         
         return {
-            id: item.id,
-            type: item.type,
-            author: authorProfile?.name || 'Unknown User',
-            authorAvatarUrl: authorAvatarUrl || `https://i.pravatar.cc/40?u=${authorProfile?.username || 'unknown'}`,
-            timestamp: new Date(item.created_at).toLocaleString(),
-            title: item.title,
-            message: item.message,
-            likes: item.likes,
-        };
+            ...item,
+            author: authorName,
+            authorAvatarUrl: avatarMap.get(authorUid) || `https://i.pravatar.cc/40?u=${authorUid}`,
+            timestamp: new Date(item.created_at).toLocaleString(), // Format timestamp
+        }
     });
-    
-    return feedItemsWithAvatars;
 };
 
-export const addFeedItem = async (itemData: { type: FeedItemType, title?: string, message: string }, author_uid: string): Promise<void> => {
-    const newFeedItemData = {
+export const addFeedItem = async (itemData: Omit<FeedItem, 'id' | 'author' | 'authorAvatarUrl' | 'timestamp' | 'likes'>, authorId: string): Promise<void> => {
+    const newFeedItem = {
         type: itemData.type,
         title: itemData.title,
         message: itemData.message,
-        author_uid: author_uid,
+        author_uid: authorId,
     };
-
-    const { error } = await supabase.from('feed_items').insert(newFeedItemData);
-    if (error) {
-        console.error("Supabase error inserting feed item:", error);
-        throw error;
-    }
+    const { error } = await supabase.from('feed_items').insert(newFeedItem);
+    if (error) throw error;
 };
-
 
 // --- PROJECTS API ---
 
 export const getProjectData = async (): Promise<ProjectData> => {
-    const { data: columnsData, error: columnsError } = await supabase.from('project_columns').select('*').order('id', { ascending: true });
-    if (columnsError) throw columnsError;
-    
-    const { data: tasksData, error: tasksError } = await supabase.from('project_tasks').select('*');
-    if (tasksError) throw tasksError;
+    const [tasksRes, columnsRes] = await Promise.all([
+        supabase.from('project_tasks').select('*'),
+        supabase.from('project_columns').select('*').order('position', { ascending: true })
+    ]);
 
-    const tasks: { [key: string]: ProjectTask } = (tasksData || []).reduce((acc, task) => {
-        acc[task.id] = task;
+    if (tasksRes.error) throw tasksRes.error;
+    if (columnsRes.error) throw columnsRes.error;
+
+    const tasks: { [key: string]: ProjectTask } = (tasksRes.data || []).reduce((acc, task) => {
+        acc[task.id] = { ...task, assigneeId: task.assignee_uid };
         return acc;
-    }, {} as {[key: string]: ProjectTask});
+    }, {});
+
+    const columns: { [key: string]: ProjectColumn } = {};
+    const columnOrder: string[] = [];
+
+    for (const col of (columnsRes.data || [])) {
+        const { data: taskLinks, error } = await supabase
+            .from('project_columns_tasks')
+            .select('task_id')
+            .eq('column_id', col.id)
+            .order('position', { ascending: true });
+        
+        if (error) throw error;
+        
+        columns[col.id] = { ...col, taskIds: (taskLinks || []).map(link => link.task_id) };
+        columnOrder.push(col.id);
+    }
     
-    const columns: { [key: string]: ProjectColumn } = (columnsData || []).reduce((acc, col) => {
-        // Ensure taskIds is an array to prevent crashes if it's null from the DB.
-        acc[col.id] = { ...col, taskIds: col.taskIds || [] };
-        return acc;
-    }, {} as {[key: string]: ProjectColumn});
-
-    const columnOrder = (columnsData || []).map(col => col.id);
-
     return { tasks, columns, columnOrder };
 };
 
+export const moveProjectTask = async (taskId: string, destinationColumnId: string): Promise<void> => {
+    // 1. Remove from old column (if it exists)
+    const { error: deleteError } = await supabase
+        .from('project_columns_tasks')
+        .delete()
+        .eq('task_id', taskId);
+    if (deleteError) throw deleteError;
+
+    // 2. Add to new column
+    const { error: insertError } = await supabase
+        .from('project_columns_tasks')
+        .insert({ column_id: destinationColumnId, task_id: taskId });
+    if (insertError) throw insertError;
+};
+
 export const addProjectTask = async (content: string): Promise<void> => {
-    const { data: newTaskData, error: insertError } = await supabase.from('project_tasks').insert({ content }).select().single();
-    if (insertError || !newTaskData) throw insertError || new Error("Failed to create task");
+    // 1. Insert the new task
+    const { data: taskData, error: taskError } = await supabase
+        .from('project_tasks')
+        .insert({ content })
+        .select()
+        .single();
+    if (taskError) throw taskError;
 
-    const { data: backlogColumn, error: columnError } = await supabase.from('project_columns').select('*').order('id').limit(1).single();
-    if (columnError || !backlogColumn) throw columnError || new Error("Backlog column not found");
+    // 2. Find the 'Backlog' column (assuming it has position 0 or a specific name)
+    const { data: backlogColumn, error: columnError } = await supabase
+        .from('project_columns')
+        .select('id')
+        .order('position', { ascending: true })
+        .limit(1)
+        .single();
+    if (columnError) throw columnError;
 
-    const updatedTaskIds = [...(backlogColumn.taskIds || []), newTaskData.id];
-    const { error: updateError } = await supabase.from('project_columns').update({ taskIds: updatedTaskIds }).eq('id', backlogColumn.id);
-    if (updateError) throw updateError;
+    // 3. Link the new task to the 'Backlog' column
+    const { error: linkError } = await supabase
+        .from('project_columns_tasks')
+        .insert({ column_id: backlogColumn.id, task_id: taskData.id });
+    if (linkError) throw linkError;
 };
 
 export const deleteProjectTask = async (taskId: string): Promise<void> => {
-    // Note: A database transaction would be safer here.
-    const { data: columns, error: colError } = await supabase.from('project_columns').select('id, taskIds');
-    if (colError) throw colError;
-    
-    const sourceColumn = columns?.find(c => c.taskIds.includes(taskId));
-    
-    const { error: deleteError } = await supabase.from('project_tasks').delete().eq('id', taskId);
-    if (deleteError) throw deleteError;
-    
-    if (sourceColumn) {
-        const updatedTaskIds = sourceColumn.taskIds.filter(id => id !== taskId);
-        const { error: updateError } = await supabase.from('project_columns').update({ taskIds: updatedTaskIds }).eq('id', sourceColumn.id);
-        if (updateError) console.error("Failed to update column after task deletion:", updateError);
-    }
-};
-
-export const assignProjectTask = async (taskId: string, assigneeId: string | undefined): Promise<void> => {
-    const { error } = await supabase.from('project_tasks').update({ assigneeId: assigneeId || null }).eq('id', taskId);
+    // RLS policy in Supabase should handle cascade deletes for the link table.
+    // We only need to delete the task itself.
+    const { error } = await supabase.from('project_tasks').delete().eq('id', taskId);
     if (error) throw error;
 };
 
-export const moveProjectTask = async (taskId: string, newColumnId: string): Promise<void> => {
-    // Note: A database transaction would be safer here.
-    const { data: columns, error: colError } = await supabase.from('project_columns').select('id, taskIds');
-    if (colError) throw colError;
-    
-    const sourceColumn = columns?.find(c => c.taskIds.includes(taskId));
-    const destColumn = columns?.find(c => c.id === newColumnId);
-
-    if (!sourceColumn || !destColumn) throw new Error("Source or destination column not found");
-
-    // Remove from source
-    const sourceTaskIds = sourceColumn.taskIds.filter(id => id !== taskId);
-    const { error: sourceUpdateError } = await supabase.from('project_columns').update({ taskIds: sourceTaskIds }).eq('id', sourceColumn.id);
-    if (sourceUpdateError) throw sourceUpdateError;
-
-    // Add to destination
-    const destTaskIds = [...destColumn.taskIds, taskId];
-    const { error: destUpdateError } = await supabase.from('project_columns').update({ taskIds: destTaskIds }).eq('id', newColumnId);
-    if (destUpdateError) {
-        // Attempt to revert the source column change on failure
-        await supabase.from('project_columns').update({ taskIds: sourceColumn.taskIds }).eq('id', sourceColumn.id);
-        throw destUpdateError;
-    }
+export const assignProjectTask = async (taskId: string, assigneeId: string | undefined): Promise<void> => {
+    const { error } = await supabase
+        .from('project_tasks')
+        .update({ assignee_uid: assigneeId })
+        .eq('id', taskId);
+    if (error) throw error;
 };

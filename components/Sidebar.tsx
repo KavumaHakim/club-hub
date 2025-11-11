@@ -10,8 +10,10 @@ import { UsersIcon } from './icons/UsersIcon';
 import { ClipboardListIcon } from './icons/ClipboardListIcon';
 import { IdentificationIcon } from './icons/IdentificationIcon';
 import { ChatBubbleIcon } from './icons/ChatBubbleIcon';
+import { XIcon } from './icons/XIcon';
+import { CodeIcon } from './icons/CodeIcon';
 
-type Tab = 'feed' | 'activities' | 'attendance' | 'projects' | 'chat' | 'profile' | 'members';
+type Tab = 'feed' | 'activities' | 'attendance' | 'projects' | 'chat' | 'profile' | 'members' | 'playground';
 
 interface SidebarProps {
   user: User;
@@ -20,6 +22,8 @@ interface SidebarProps {
   onToggleTheme: () => void;
   activeTab: Tab;
   setActiveTab: (tab: Tab) => void;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 const NavLink: React.FC<{
@@ -44,63 +48,85 @@ const NavLink: React.FC<{
     </li>
 );
 
-const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, theme, onToggleTheme, activeTab, setActiveTab }) => {
-  return (
-    <aside className="w-64 flex-shrink-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col h-screen sticky top-0">
-      {/* Header */}
-      <div className="flex items-center justify-center h-16 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-        <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600">
-          Naggalama Club Hub
-        </h1>
-      </div>
-      
-      {/* Navigation */}
-      <nav className="flex-1 px-4 py-6">
-        <ul className="space-y-2">
-          <NavLink tabName="feed" label="Feed" icon={<HomeIcon />} activeTab={activeTab} onClick={setActiveTab} />
-          <NavLink tabName="activities" label="Activities" icon={<CalendarIcon />} activeTab={activeTab} onClick={setActiveTab} />
-          <NavLink tabName="attendance" label="Attendance" icon={<CheckCircleIcon />} activeTab={activeTab} onClick={setActiveTab} />
-          <NavLink tabName="projects" label="Projects" icon={<ClipboardListIcon />} activeTab={activeTab} onClick={setActiveTab} />
-          <NavLink tabName="chat" label="Chat" icon={<ChatBubbleIcon />} activeTab={activeTab} onClick={setActiveTab} />
-          <NavLink tabName="profile" label="Profile" icon={<IdentificationIcon />} activeTab={activeTab} onClick={setActiveTab} />
-          {user.role === 'PATRON' && (
-            <NavLink tabName="members" label="Members" icon={<UsersIcon />} activeTab={activeTab} onClick={setActiveTab} />
-          )}
-        </ul>
-      </nav>
+const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, theme, onToggleTheme, activeTab, setActiveTab, isOpen, onClose }) => {
 
-      {/* Footer */}
-      <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-        <div className="flex items-center space-x-3 mb-4">
-          <img 
-            src={user.avatarUrl || `https://i.pravatar.cc/40?u=${user.username}`} 
-            alt={user.name} 
-            className="w-10 h-10 rounded-full" 
-          />
-          <div>
-            <p className="font-semibold text-gray-800 dark:text-gray-200 text-sm">{user.name}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">@{user.username}</p>
+  const handleNavClick = (tab: Tab) => {
+    setActiveTab(tab);
+    // This will close the sidebar on mobile after navigation
+    if (isOpen) {
+      onClose();
+    }
+  };
+
+  return (
+    <>
+      {/* Overlay for mobile view */}
+      <div
+        className={`fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        onClick={onClose}
+        aria-hidden="true"
+      />
+
+      <aside className={`w-64 flex-shrink-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col h-screen transform transition-transform duration-300 ease-in-out md:sticky md:top-0 md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-30`}>
+        {/* Header */}
+        <div className="flex items-center justify-between h-16 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 px-4">
+          <h1 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600">
+            Naggalama Club Hub
+          </h1>
+          <button onClick={onClose} className="p-1 rounded-md md:hidden text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Close menu">
+            <XIcon />
+          </button>
+        </div>
+        
+        {/* Navigation */}
+        <nav className="flex-1 px-4 py-6 overflow-y-auto">
+          <ul className="space-y-2">
+            <NavLink tabName="feed" label="Feed" icon={<HomeIcon />} activeTab={activeTab} onClick={handleNavClick} />
+            <NavLink tabName="activities" label="Activities" icon={<CalendarIcon />} activeTab={activeTab} onClick={handleNavClick} />
+            <NavLink tabName="attendance" label="Attendance" icon={<CheckCircleIcon />} activeTab={activeTab} onClick={handleNavClick} />
+            <NavLink tabName="projects" label="Projects" icon={<ClipboardListIcon />} activeTab={activeTab} onClick={handleNavClick} />
+            <NavLink tabName="chat" label="Chat" icon={<ChatBubbleIcon />} activeTab={activeTab} onClick={handleNavClick} />
+            <NavLink tabName="playground" label="Playground" icon={<CodeIcon />} activeTab={activeTab} onClick={handleNavClick} />
+            <NavLink tabName="profile" label="Profile" icon={<IdentificationIcon />} activeTab={activeTab} onClick={handleNavClick} />
+            {user.role === 'PATRON' && (
+              <NavLink tabName="members" label="Members" icon={<UsersIcon />} activeTab={activeTab} onClick={handleNavClick} />
+            )}
+          </ul>
+        </nav>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center space-x-3 mb-4">
+            <img 
+              src={user.avatarUrl || `https://i.pravatar.cc/40?u=${user.username}`} 
+              alt={user.name} 
+              className="w-10 h-10 rounded-full" 
+            />
+            <div>
+              <p className="font-semibold text-gray-800 dark:text-gray-200 text-sm">{user.name}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">@{user.username}</p>
+            </div>
+          </div>
+          <div className="flex items-center justify-between">
+            <button
+              onClick={onToggleTheme}
+              className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              aria-label="Toggle theme"
+            >
+              {theme === 'light' ? <MoonIcon /> : <SunIcon />}
+            </button>
+            <button
+              onClick={onLogout}
+              className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-pink-600 dark:hover:text-pink-500 transition-colors focus:outline-none"
+              aria-label="Logout"
+            >
+              <LogoutIcon />
+              <span className="text-sm">Logout</span>
+            </button>
           </div>
         </div>
-        <div className="flex items-center justify-between">
-          <button
-            onClick={onToggleTheme}
-            className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
-            aria-label="Toggle theme"
-          >
-            {theme === 'light' ? <MoonIcon /> : <SunIcon />}
-          </button>
-          <button
-            onClick={onLogout}
-            className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-pink-600 dark:hover:text-pink-500 transition-colors focus:outline-none"
-            aria-label="Logout"
-          >
-            <LogoutIcon />
-            <span className="text-sm">Logout</span>
-          </button>
-        </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 };
 

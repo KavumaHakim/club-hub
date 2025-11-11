@@ -6,17 +6,20 @@ import Members from './Members';
 import ProjectsBoard from './ProjectsBoard';
 import Profile from './Profile';
 import Chat from './Chat';
+import CodePlayground from './CodePlayground';
 import { User } from '../types';
 
-type Tab = 'feed' | 'activities' | 'attendance' | 'projects' | 'chat' | 'profile' | 'members';
+type Tab = 'feed' | 'activities' | 'attendance' | 'projects' | 'chat' | 'profile' | 'members' | 'playground';
+type Theme = 'light' | 'dark';
 
 interface DashboardProps {
   currentUser: User;
   onUpdateUserProfile: (user: User) => void;
   activeTab: Tab;
+  theme: Theme;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile, activeTab }) => {
+const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile, activeTab, theme }) => {
 
   const renderContent = () => {
     switch (activeTab) {
@@ -30,6 +33,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile,
         return <ProjectsBoard currentUser={currentUser} />;
       case 'chat':
         return <Chat currentUser={currentUser} />;
+      case 'playground':
+        return <CodePlayground theme={theme} />;
       case 'profile':
         return <Profile currentUser={currentUser} onUpdateUserProfile={onUpdateUserProfile} />;
       case 'members':
