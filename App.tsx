@@ -23,6 +23,7 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>('feed');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
 
   useEffect(() => {
     setIsLoading(true);
@@ -108,6 +109,10 @@ const App: React.FC = () => {
     setIsSidebarOpen(prevState => !prevState);
   }, []);
 
+  const handleSidebarCollapseToggle = useCallback(() => {
+    setIsSidebarCollapsed(prevState => !prevState);
+  }, []);
+
   const appClasses = useMemo(() => {
     const classList = ['min-h-screen', 'font-sans', 'transition-colors', 'duration-300'];
     if (theme === 'light') {
@@ -191,6 +196,8 @@ const App: React.FC = () => {
               setActiveTab={setActiveTab}
               isOpen={isSidebarOpen}
               onClose={handleSidebarToggle}
+              isCollapsed={isSidebarCollapsed}
+              onToggleCollapse={handleSidebarCollapseToggle}
             />
             <div className="flex-1 flex flex-col w-full">
                {/* Mobile Header */}

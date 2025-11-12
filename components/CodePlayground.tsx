@@ -25,7 +25,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme }) => {
       try {
         // loadPyodide is globally available from the script tag in index.html
         const pyodideInstance = await (window as any).loadPyodide({
-          indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.1/full/"
+          indexURL: "https://cdn.jsdelivr.net/pyodide/v0.29.0/full/"
         });
         setPyodide(pyodideInstance);
         setIsPyodideReady(true);
@@ -62,21 +62,26 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme }) => {
         try {
             let stdoutContent = '';
             let stderrContent = '';
-            // Temporarily redirect stdout/stderr
-            pyodide.setStdout({ batched: (str: string) => stdoutContent = str });
-            pyodide.setStderr({ batched: (str: string) => stderrContent = str });
+            // Temporarily redirect stdout/stderr to ACCUMULATE the output
+            pyodide.setStdout({ batched: (str: string) => { stdoutContent += str; } });
+            pyodide.setStderr({ batched: (str: string) => { stderrContent += str; } });
             
             const result = await pyodide.runPythonAsync(code);
+
+            // Restore default handlers
+            pyodide.setStdout({});
+            pyodide.setStderr({});
 
             const outputParts: OutputLine[] = [];
 
             if (stdoutContent) {
+                // Pyodide's batched output includes a newline, which is what we want.
                 outputParts.push({ type: 'log', content: stdoutContent });
             }
             // If there's a result from the last expression, display it.
             if (result !== undefined && result !== null) {
-                // Pyodide might return a PyProxy object, .toString() is a safe way to get a string representation.
-                outputParts.push({ type: 'log', content: result.toString() + '\n' });
+                // The result from runPythonAsync doesn't have a trailing newline.
+                outputParts.push({ type: 'log', content: result.toString() });
             }
             if (stderrContent) {
                 outputParts.push({ type: 'error', content: stderrContent });
@@ -88,6 +93,11 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme }) => {
                 setOutput([{ type: 'log', content: 'Code executed successfully with no output.' }]);
             }
         } catch (error: any) {
+            // Ensure we restore handlers even on error
+            if (pyodide) {
+                pyodide.setStdout({});
+                pyodide.setStderr({});
+            }
             setOutput([{ type: 'error', content: `Local Execution Error:\n${error.message}` }]);
         } finally {
             setIsExecuting(false);
@@ -141,7 +151,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme }) => {
           <div className="p-3 border-b border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-600 dark:text-gray-400">
             main.py
           </div>
-          <div className="flex-1 w-full h-full">
+          <div className="flex-1 w-full h-full relative">
             <Editor
               height="100%"
               language="python"
