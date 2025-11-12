@@ -37,6 +37,7 @@ export const signUp = async (newUser: Omit<User, 'uid' | 'role' | 'status' | 'av
         email: newUser.email,
         name: newUser.name,
         username: newUser.username,
+        phone_number: newUser.phoneNumber,
         role: 'MEMBER',
         status: 'PENDING',
     });
@@ -56,6 +57,7 @@ export const signUpAsPatron = async (newUser: Omit<User, 'uid' | 'role' | 'statu
         email: newUser.email,
         name: newUser.name,
         username: newUser.username,
+        phone_number: newUser.phoneNumber,
         role: 'PATRON',
         status: 'PENDING',
     });
@@ -89,7 +91,7 @@ export const getUserProfile = async (uid: string): Promise<User | null> => {
     }
     
     // Return user data with avatarUrl if found, otherwise it's undefined and UI will use a fallback.
-    return { ...userData, avatarUrl };
+    return { ...userData, avatarUrl, phoneNumber: userData.phone_number };
 };
 
 
@@ -121,6 +123,7 @@ export const getUsers = async (): Promise<User[]> => {
     const usersWithAvatars = usersData.map(user => ({
         ...user,
         avatarUrl: avatarMap.get(user.uid),
+        phoneNumber: user.phone_number
     }));
     
     return usersWithAvatars;

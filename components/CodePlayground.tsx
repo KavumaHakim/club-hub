@@ -53,53 +53,56 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme }) => {
             setIsExecuting(false);
         }
     } else { // 'local' execution
-        setOutput([{ type: 'log', content: 'Executing locally in your browser...' }]);
+        setOutput([]); // Clear previous output
         if (!pyodide) {
             setOutput([{ type: 'error', content: 'Error: Local interpreter (Pyodide) is not ready.' }]);
             setIsExecuting(false);
             return;
         }
+
+        // Use a temporary array to collect all output chunks as they arrive.
+        const executionOutput: OutputLine[] = [];
+        
         try {
-            let stdoutContent = '';
-            let stderrContent = '';
-            // Temporarily redirect stdout/stderr to ACCUMULATE the output
-            pyodide.setStdout({ batched: (str: string) => { stdoutContent += str; } });
-            pyodide.setStderr({ batched: (str: string) => { stderrContent += str; } });
+            // Redirect stdout and stderr to push chunks into our temporary array.
+            // This preserves the order of stdout and stderr messages.
+            pyodide.setStdout({ batched: (str: string) => {
+                if (str) executionOutput.push({ type: 'log', content: str });
+            }});
+            pyodide.setStderr({ batched: (str: string) => {
+                if (str) executionOutput.push({ type: 'error', content: str });
+            }});
             
             const result = await pyodide.runPythonAsync(code);
 
-            // Restore default handlers
-            pyodide.setStdout({});
-            pyodide.setStderr({});
-
-            const outputParts: OutputLine[] = [];
-
-            if (stdoutContent) {
-                // Pyodide's batched output includes a newline, which is what we want.
-                outputParts.push({ type: 'log', content: stdoutContent });
-            }
-            // If there's a result from the last expression, display it.
+            // The return value of the last expression is not sent to stdout.
+            // We append it to our output manually.
             if (result !== undefined && result !== null) {
-                // The result from runPythonAsync doesn't have a trailing newline.
-                outputParts.push({ type: 'log', content: result.toString() });
-            }
-            if (stderrContent) {
-                outputParts.push({ type: 'error', content: stderrContent });
+                // Add a newline for consistent display with print() statements
+                executionOutput.push({ type: 'log', content: result.toString() + '\n' });
             }
             
-            if (outputParts.length > 0) {
-                setOutput(outputParts);
+            // After execution, update the state with the collected output.
+            if (executionOutput.length > 0) {
+                setOutput(executionOutput);
             } else {
                 setOutput([{ type: 'log', content: 'Code executed successfully with no output.' }]);
             }
         } catch (error: any) {
-            // Ensure we restore handlers even on error
+            // Errors from runPythonAsync are usually sent to stderr, which we already capture.
+            // So, we just need to set the output to whatever we have collected.
+            // If nothing was collected, it was a non-python error, so show its message.
+            if (executionOutput.length > 0) {
+                setOutput(executionOutput);
+            } else {
+                setOutput([{ type: 'error', content: `Local Execution Error:\n${error.message}` }]);
+            }
+        } finally {
+            // CRITICAL: Always restore the default stdout/stderr handlers.
             if (pyodide) {
                 pyodide.setStdout({});
                 pyodide.setStderr({});
             }
-            setOutput([{ type: 'error', content: `Local Execution Error:\n${error.message}` }]);
-        } finally {
             setIsExecuting(false);
         }
     }

@@ -19,7 +19,7 @@ type Tab = 'feed' | 'activities' | 'attendance' | 'projects' | 'chat' | 'profile
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [view, setView] = useState<View>('welcome');
-  const [theme, setTheme] = useState<Theme>('light');
+  const [theme, setTheme] = useState<Theme>('dark');
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>('feed');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);

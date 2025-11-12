@@ -12,6 +12,7 @@ const SignUp: React.FC<SignUpProps> = ({ onSignUp, onNavigateToLogin }) => {
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -31,13 +32,14 @@ const SignUp: React.FC<SignUpProps> = ({ onSignUp, onNavigateToLogin }) => {
     
     setIsLoading(true);
     try {
-        await onSignUp({ name, username, email, password });
+        await onSignUp({ name, username, email, password, phoneNumber });
         setMessage('Sign up successful! Your account is now pending approval from a club patron.');
         setIsSignedUp(true);
         setName('');
         setUsername('');
         setEmail('');
         setPassword('');
+        setPhoneNumber('');
     } catch (err: any) {
         setError(err.message || 'An unknown error occurred.');
     } finally {
@@ -88,6 +90,18 @@ const SignUp: React.FC<SignUpProps> = ({ onSignUp, onNavigateToLogin }) => {
               onChange={(e) => setEmail(e.target.value)}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-pink-500 focus:border-pink-500"
               disabled={isLoading || isSignedUp}
+            />
+          </div>
+          <div>
+            <label htmlFor="phone-number" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Phone Number (Optional)</label>
+            <input
+              id="phone-number"
+              type="tel"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-pink-500 focus:border-pink-500"
+              disabled={isLoading || isSignedUp}
+              autoComplete="tel"
             />
           </div>
           <div>

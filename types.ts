@@ -1,4 +1,5 @@
 
+
 export interface User {
   uid: string; // Changed from id: number
   email: string;
@@ -7,6 +8,7 @@ export interface User {
   role: 'MEMBER' | 'PATRON';
   status: 'APPROVED' | 'PENDING';
   avatarUrl?: string;
+  phoneNumber?: string;
 }
 
 export interface Activity {
