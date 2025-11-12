@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { ProjectTask, User } from '../types';
 import { TrashIcon } from './icons/TrashIcon';
 
@@ -78,4 +78,4 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = (props) => {
   );
 };
 
-export default ProjectTaskCard;
+export default memo(ProjectTaskCard);

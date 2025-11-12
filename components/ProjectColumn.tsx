@@ -33,7 +33,7 @@ const ProjectColumn: React.FC<ProjectColumnProps> = (props) => {
       onDrop={isPatron ? (e) => onDrop(e, column.id) : undefined}
       onDragEnter={isPatron ? () => onDragEnter(column.id) : undefined}
       onDragLeave={isPatron ? onDragLeave : undefined}
-      className={`bg-gray-100 dark:bg-gray-800/50 rounded-lg p-4 md:w-80 flex-shrink-0 border border-gray-200 dark:border-gray-700 transition-colors duration-200 ${isDropTarget ? 'bg-gray-200 dark:bg-gray-700/80' : ''}`}
+      className={`bg-gray-100 dark:bg-gray-800/50 rounded-lg p-4 w-80 flex-shrink-0 border border-gray-200 dark:border-gray-700 transition-colors duration-200 ${isDropTarget ? 'bg-gray-200 dark:bg-gray-700/80' : ''}`}
     >
       <h3 className="font-bold text-gray-700 dark:text-gray-300 mb-4">{column.title} ({tasks.length})</h3>
       <div className="space-y-3 min-h-[200px]">

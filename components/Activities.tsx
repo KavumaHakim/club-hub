@@ -1,103 +1,34 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Activity, User } from '../types';
 import { generateActivityIdeas } from '../services/geminiService';
 import * as api from '../services/apiService';
 import { SparklesIcon } from './icons/SparklesIcon';
-import { PlusCircleIcon } from './icons/PlusCircleIcon';
+import AddActivityForm from './AddActivityForm';
+import ActivityCard from './ActivityCard';
+import { useData } from '../DataContext';
 
 interface ActivitiesProps {
   currentUser: User;
 }
 
-const AddActivityForm: React.FC<{ onAddActivity: (activity: Omit<Activity, 'id'>) => Promise<void> }> = ({ onAddActivity }) => {
-    const [title, setTitle] = useState('');
-    const [date, setDate] = useState('');
-    const [location, setLocation] = useState('');
-    const [description, setDescription] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!title || !date || !location || !description) {
-            alert('Please fill out all fields.');
-            return;
-        }
-        setIsSubmitting(true);
-        try {
-            await onAddActivity({ title, date, location, description });
-            setTitle('');
-            setDate('');
-            setLocation('');
-            setDescription('');
-        } catch (error) {
-            console.error("Failed to add activity", error);
-            alert("Failed to add activity. Please try again.");
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-    
-    return (
-        <div className="mb-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">Add New Activity</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input type="text" placeholder="Activity Title" value={title} onChange={e => setTitle(e.target.value)} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500" />
-                    <input type="date" placeholder="Date" value={date} onChange={e => setDate(e.target.value)} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500" />
-                </div>
-                <input type="text" placeholder="Location" value={location} onChange={e => setLocation(e.target.value)} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500" />
-                <textarea placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} rows={3} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500" />
-                <div className="text-right">
-                    <button type="submit" disabled={isSubmitting} className="flex items-center justify-center space-x-2 px-5 py-2 font-semibold text-white bg-pink-600 rounded-lg shadow-md hover:bg-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                        <PlusCircleIcon />
-                        <span>{isSubmitting ? 'Adding...' : 'Add Activity'}</span>
-                    </button>
-                </div>
-            </form>
-        </div>
-    );
-};
-
-const ActivityCard: React.FC<{ activity: Activity }> = ({ activity }) => (
-  <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow">
-    <div className="flex justify-between items-start mb-2">
-      <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200">{activity.title}</h3>
-      <span className="text-sm font-medium text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/50 px-2 py-1 rounded-full">{activity.date}</span>
-    </div>
-    <p className="text-gray-500 dark:text-gray-400 mb-4">{activity.location}</p>
-    <p className="text-gray-600 dark:text-gray-300">{activity.description}</p>
-  </div>
-);
+interface ActivityIdea {
+  idea: string;
+  description: string;
+}
 
 const Activities: React.FC<ActivitiesProps> = ({ currentUser }) => {
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [isDataLoading, setIsDataLoading] = useState(true);
+  const { activities, isLoadingActivities, fetchActivities } = useData();
 
-  // State for AI idea generation
+  // State for AI idea generation remains local
   const [searchQuery, setSearchQuery] = useState('');
-  const [generatedContent, setGeneratedContent] = useState<{ text: string; sources: any[] } | null>(null);
+  const [generatedContent, setGeneratedContent] = useState<{ ideas: ActivityIdea[]; sources: any[] } | null>(null);
   const [isIdeasLoading, setIsIdeasLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchActivities = useCallback(async () => {
-    try {
-      setIsDataLoading(true);
-      const fetchedActivities = await api.getActivities();
-      setActivities(fetchedActivities);
-    } catch (err) {
-      setError("Failed to load activities.");
-    } finally {
-      setIsDataLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchActivities();
-  }, [fetchActivities]);
 
   const handleAddActivity = useCallback(async (newActivity: Omit<Activity, 'id'>) => {
     await api.addActivity(newActivity);
-    await fetchActivities(); // Refetch after adding
+    await fetchActivities(); // Refetch from context
   }, [fetchActivities]);
 
   const handleGenerateIdeas = useCallback(async (e: React.FormEvent) => {
@@ -145,8 +76,19 @@ const Activities: React.FC<ActivitiesProps> = ({ currentUser }) => {
             {error && <p className="mt-4 text-red-500 dark:text-red-400 text-center">{error}</p>}
             {generatedContent && (
                 <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-md border border-gray-200 dark:border-gray-600">
-                    <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-2">Here are some ideas:</h4>
-                    <pre className="whitespace-pre-wrap font-sans text-gray-600 dark:text-gray-300">{generatedContent.text}</pre>
+                    <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-3">Here are some ideas:</h4>
+                    {generatedContent.ideas && generatedContent.ideas.length > 0 ? (
+                        <div className="space-y-4">
+                            {generatedContent.ideas.map((item, index) => (
+                                <div key={index} className="p-3 bg-white dark:bg-gray-700/50 rounded-md border border-gray-200 dark:border-gray-600">
+                                    <p className="font-semibold text-pink-600 dark:text-pink-400">{item.idea}</p>
+                                    <p className="text-gray-600 dark:text-gray-300 mt-1">{item.description}</p>
+                                </div>
+                            ))}
+                        </div>
+                     ) : (
+                        <p className="text-gray-500 dark:text-gray-400">The AI couldn't come up with ideas for that topic. Try being more specific!</p>
+                     )}
                      {generatedContent.sources && generatedContent.sources.length > 0 && (
                         <div className="mt-4 pt-4 border-t border-gray-300 dark:border-gray-600">
                             <h5 className="font-semibold text-gray-600 dark:text-gray-400 mb-2">Sources from Google Search:</h5>
@@ -166,7 +108,7 @@ const Activities: React.FC<ActivitiesProps> = ({ currentUser }) => {
         </div>
 
         <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-6">Upcoming Activities</h2>
-        {isDataLoading ? (
+        {isLoadingActivities ? (
              <p className="text-center text-gray-500 dark:text-gray-400">Loading activities...</p>
         ) : activities.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

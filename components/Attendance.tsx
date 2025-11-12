@@ -1,9 +1,10 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { AttendanceRecord, AttendanceStatus, Activity, User } from '../types';
+import { AttendanceRecord, AttendanceStatus, User } from '../types';
 import * as api from '../services/apiService';
 import { PlusCircleIcon } from './icons/PlusCircleIcon';
 import { DownloadIcon } from './icons/DownloadIcon';
+import { useData } from '../DataContext';
 
 interface AttendanceProps {
   currentUser: User;
@@ -22,33 +23,18 @@ const chartColors = {
 };
 
 const Attendance: React.FC<AttendanceProps> = ({ currentUser }) => {
-  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { 
+    attendance: attendanceRecords, 
+    activities, 
+    isLoadingAttendance, 
+    isLoadingActivities, 
+    fetchAttendance 
+  } = useData();
   
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [selectedActivityId, setSelectedActivityId] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<AttendanceStatus>('Present');
-  
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const [records, acts] = await Promise.all([
-        api.getAttendance(currentUser.uid), 
-        api.getActivities()
-      ]);
-      setAttendanceRecords(records);
-      setActivities(acts);
-    } catch (error) {
-      console.error("Failed to fetch attendance data", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [currentUser.uid]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const unrecordedActivities = useMemo(() => 
     activities.filter(activity => 
@@ -104,7 +90,7 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser }) => {
 
   const handleRecordAttendance = async (newRecordData: Omit<AttendanceRecord, 'id' | 'userId'>) => {
     await api.addAttendance(currentUser.uid, newRecordData);
-    await fetchData(); // Refetch
+    await fetchAttendance(); // Refetch from context
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -123,10 +109,18 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser }) => {
       status: selectedStatus,
     };
 
-    await handleRecordAttendance(newRecordData);
-    setIsFormVisible(false);
-    setSelectedActivityId('');
-    setSelectedStatus('Present');
+    setIsSubmitting(true);
+    try {
+        await handleRecordAttendance(newRecordData);
+        setIsFormVisible(false);
+        setSelectedActivityId('');
+        setSelectedStatus('Present');
+    } catch (err) {
+        console.error("Failed to submit attendance:", err);
+        alert("An error occurred while submitting your attendance. Please try again.");
+    } finally {
+        setIsSubmitting(false);
+    }
   };
 
   const handleDownloadCSV = () => {
@@ -158,7 +152,7 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser }) => {
   };
 
 
-  if (isLoading) {
+  if (isLoadingAttendance || isLoadingActivities) {
       return <div className="text-center p-8 text-gray-500 dark:text-gray-400">Loading attendance data...</div>;
   }
 
@@ -230,8 +224,8 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser }) => {
                   </div>
                 </div>
                 <div className="mt-6 text-right">
-                  <button type="submit" className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 dark:focus:ring-offset-gray-800">
-                    Submit Record
+                  <button type="submit" disabled={isSubmitting} className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 dark:focus:ring-offset-gray-800 disabled:opacity-50">
+                    {isSubmitting ? 'Submitting...' : 'Submit Record'}
                   </button>
                 </div>
               </>

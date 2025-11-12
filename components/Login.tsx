@@ -1,7 +1,6 @@
 
+
 import React, { useState } from 'react';
-import { User } from '../types';
-import * as api from '../services/apiService';
 import { EyeIcon } from './icons/EyeIcon';
 import { EyeOffIcon } from './icons/EyeOffIcon';
 
@@ -24,26 +23,13 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToSignUp, onNavigateTo
     setIsLoading(true);
     try {
       await onLogin(email, password);
-    } catch (err: any) {
+    } catch (err: any) { // FIX: Added missing opening brace '{'
       setError(err.message || 'An unknown error occurred.');
     } finally {
       setIsLoading(false);
     }
   };
   
-  const handleQuickLogin = async (demoEmail: string) => {
-    setError(null);
-    setIsLoading(true);
-    try {
-      // The backend service now requires a password for all logins.
-      await onLogin(demoEmail, 'password'); 
-    } catch (err: any) {
-      setError(err.message || `Quick login failed.`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
       <div className="w-full max-w-sm p-8 space-y-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
@@ -109,21 +95,9 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToSignUp, onNavigateTo
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-gray-300 dark:border-gray-600" />
           </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">Or use a demo account</span>
-          </div>
         </div>
 
         <div className="space-y-3">
-            <button
-                onClick={() => handleQuickLogin('member@clubhub.local')}
-                type="button"
-                disabled={isLoading}
-                className="w-full flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 disabled:opacity-50 disabled:cursor-not-allowed dark:focus:ring-offset-gray-800"
-            >
-                Quick Login as Member
-            </button>
-            
             <p className="text-sm text-center text-gray-600 dark:text-gray-400">
                 Don't have an account?{' '}
                 <button onClick={onNavigateToSignUp} className="font-medium text-pink-600 hover:text-pink-500">

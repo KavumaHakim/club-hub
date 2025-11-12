@@ -209,15 +209,48 @@ export const addActivity = async (activityData: Omit<Activity, 'id'>): Promise<v
 // --- ATTENDANCE API ---
 
 export const getAttendance = async (userId: string): Promise<AttendanceRecord[]> => {
-    const { data, error } = await supabase.from('attendance').select('*').eq('user_uid', userId);
+    const { data, error } = await supabase
+        .from('attendance')
+        .select(`
+            id,
+            status,
+            user_uid,
+            activities (
+                id,
+                title,
+                date
+            )
+        `)
+        .eq('user_uid', userId)
+        .order('date', { referencedTable: 'activities', ascending: false });
+
     if (error) throw error;
-    // Map database column `user_uid` to application property `userId`
-    return (data || []).map(record => ({ ...record, userId: record.user_uid }));
+    
+    // Map the nested structure from Supabase to the flat AttendanceRecord structure
+    return (data || []).map(record => {
+        const activityData = record.activities as {id: string, title: string, date: string} | null;
+        
+        // Handle case where activity might be null (though FK should prevent this)
+        if (!activityData) return null;
+
+        return {
+            id: record.id.toString(),
+            activityId: activityData.id.toString(),
+            activityTitle: activityData.title,
+            date: activityData.date,
+            status: record.status,
+            userId: record.user_uid,
+        };
+    }).filter((rec): rec is AttendanceRecord => !!rec);
 };
 
 export const addAttendance = async (userId: string, recordData: Omit<AttendanceRecord, 'id' | 'userId'>): Promise<void> => {
-    // Map application property `userId` to database column `user_uid`
-    const newRecord = { ...recordData, user_uid: userId };
+    // Create a new record with only the columns that exist in the 'attendance' table
+    const newRecord = {
+        user_uid: userId,
+        activity_id: recordData.activityId,
+        status: recordData.status,
+    };
     const { error } = await supabase.from('attendance').insert(newRecord);
     if (error) throw error;
 };
@@ -246,16 +279,16 @@ export const markAttendanceOnLogin = async (userId: string): Promise<void> => {
     const activityIds = todaysActivities.map(a => a.id);
     const { data: existingRecords, error: attendanceError } = await supabase
         .from('attendance')
-        .select('activityId')
+        .select('activity_id') // Use correct column name
         .eq('user_uid', userId)
-        .in('activityId', activityIds);
+        .in('activity_id', activityIds); // Use correct column name
     
     if (attendanceError) {
         console.error("Error fetching existing attendance:", attendanceError);
         throw attendanceError;
     }
 
-    const recordedActivityIds = new Set(existingRecords?.map(r => r.activityId));
+    const recordedActivityIds = new Set(existingRecords?.map(r => r.activity_id)); // Use correct property name
 
     // 4. Filter to find activities the user hasn't been marked for yet
     const unrecordedActivities = todaysActivities.filter(activity => !recordedActivityIds.has(activity.id));
@@ -265,11 +298,9 @@ export const markAttendanceOnLogin = async (userId: string): Promise<void> => {
         return;
     }
 
-    // 5. Prepare and insert the new 'Present' records
+    // 5. Prepare and insert the new 'Present' records with correct column names
     const newRecordsToInsert = unrecordedActivities.map(activity => ({
-        activityId: activity.id,
-        activityTitle: activity.title,
-        date: activity.date,
+        activity_id: activity.id,
         status: 'Present' as const,
         user_uid: userId,
     }));
@@ -353,80 +384,86 @@ export const addFeedItem = async (itemData: Omit<FeedItem, 'id' | 'author' | 'au
 // --- PROJECTS API ---
 
 export const getProjectData = async (): Promise<ProjectData> => {
-    const [tasksRes, columnsRes] = await Promise.all([
-        supabase.from('project_tasks').select('*'),
-        supabase.from('project_columns').select('*').order('position', { ascending: true })
+    // Fetch columns and tasks in parallel, which is more efficient.
+    const [columnsRes, tasksRes] = await Promise.all([
+        supabase.from('project_columns').select('*').order('position', { ascending: true }),
+        supabase.from('project_tasks').select('*') // We can order tasks later if needed
     ]);
 
-    if (tasksRes.error) throw tasksRes.error;
     if (columnsRes.error) throw columnsRes.error;
+    if (tasksRes.error) throw tasksRes.error;
+    
+    const allTasks = tasksRes.data || [];
+    const columnsData = columnsRes.data || [];
 
-    const tasks: { [key: string]: ProjectTask } = (tasksRes.data || []).reduce((acc, task) => {
-        acc[task.id] = { ...task, assigneeId: task.assignee_uid };
+    // Process tasks into a dictionary for quick O(1) lookups.
+    const tasks: { [key: string]: ProjectTask } = allTasks.reduce((acc, task) => {
+        acc[task.id.toString()] = { 
+            id: task.id.toString(),
+            content: task.content,
+            assigneeId: task.assignee_uid 
+        };
         return acc;
     }, {});
 
+    // Process columns and initialize them with empty task lists.
     const columns: { [key: string]: ProjectColumn } = {};
     const columnOrder: string[] = [];
 
-    for (const col of (columnsRes.data || [])) {
-        const { data: taskLinks, error } = await supabase
-            .from('project_columns_tasks')
-            .select('task_id')
-            .eq('column_id', col.id)
-            .order('position', { ascending: true });
-        
-        if (error) throw error;
-        
-        columns[col.id] = { ...col, taskIds: (taskLinks || []).map(link => link.task_id) };
-        columnOrder.push(col.id);
+    for (const col of columnsData) {
+        const colId = col.id.toString();
+        columnOrder.push(colId);
+        columns[colId] = {
+            id: colId,
+            title: col.title,
+            taskIds: [], // Initialize empty, to be populated next.
+        };
     }
     
+    // Populate the task lists for each column by iterating through the tasks.
+    for (const task of allTasks) {
+        const columnId = task.column_id.toString();
+        if (columns[columnId]) {
+            columns[columnId].taskIds.push(task.id.toString());
+        }
+    }
+
     return { tasks, columns, columnOrder };
 };
 
-export const moveProjectTask = async (taskId: string, destinationColumnId: string): Promise<void> => {
-    // 1. Remove from old column (if it exists)
-    const { error: deleteError } = await supabase
-        .from('project_columns_tasks')
-        .delete()
-        .eq('task_id', taskId);
-    if (deleteError) throw deleteError;
 
-    // 2. Add to new column
-    const { error: insertError } = await supabase
-        .from('project_columns_tasks')
-        .insert({ column_id: destinationColumnId, task_id: taskId });
-    if (insertError) throw insertError;
+export const moveProjectTask = async (taskId: string, destinationColumnId: string): Promise<void> => {
+    // With the new schema, moving a task is a simple update operation.
+    const { error } = await supabase
+        .from('project_tasks')
+        .update({ column_id: destinationColumnId })
+        .eq('id', taskId);
+        
+    if (error) throw error;
 };
 
 export const addProjectTask = async (content: string): Promise<void> => {
-    // 1. Insert the new task
-    const { data: taskData, error: taskError } = await supabase
-        .from('project_tasks')
-        .insert({ content })
-        .select()
-        .single();
-    if (taskError) throw taskError;
-
-    // 2. Find the 'Backlog' column (assuming it has position 0 or a specific name)
+    // 1. Find the 'Backlog' column (assuming it's the first one by position).
     const { data: backlogColumn, error: columnError } = await supabase
         .from('project_columns')
         .select('id')
         .order('position', { ascending: true })
         .limit(1)
         .single();
-    if (columnError) throw columnError;
 
-    // 3. Link the new task to the 'Backlog' column
-    const { error: linkError } = await supabase
-        .from('project_columns_tasks')
-        .insert({ column_id: backlogColumn.id, task_id: taskData.id });
-    if (linkError) throw linkError;
+    if (columnError) throw columnError;
+    if (!backlogColumn) throw new Error("Could not find a 'Backlog' column to add the task to.");
+
+    // 2. Insert the new task directly into the correct column.
+    const { error: taskError } = await supabase
+        .from('project_tasks')
+        .insert({ content: content, column_id: backlogColumn.id });
+        
+    if (taskError) throw taskError;
 };
 
 export const deleteProjectTask = async (taskId: string): Promise<void> => {
-    // RLS policy in Supabase should handle cascade deletes for the link table.
+    // The CASCADE delete on the foreign key in the database schema handles this nicely.
     // We only need to delete the task itself.
     const { error } = await supabase.from('project_tasks').delete().eq('id', taskId);
     if (error) throw error;
