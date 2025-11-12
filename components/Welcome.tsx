@@ -127,17 +127,6 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToPatron
         </div>
       </section>
       
-      {/* Testimonial Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-6 max-w-3xl text-center">
-            <img src="https://i.pravatar.cc/80?u=patron" alt="Club Patron" className="w-20 h-20 rounded-full mx-auto mb-4 border-4 border-pink-500/50" />
-            <blockquote className="text-xl italic text-gray-700 dark:text-gray-300">
-                <p>"Club Hub has transformed how we manage our activities. It's an indispensable tool for keeping our members engaged and organized. The project board is a game-changer!"</p>
-            </blockquote>
-            <cite className="block mt-4 font-semibold not-italic">- Admin Patron, ICT Club</cite>
-        </div>
-      </section>
-
       {/* Final CTA Section */}
       <section className="py-20 bg-white dark:bg-gray-800">
         <div className="container mx-auto px-6 text-center">
