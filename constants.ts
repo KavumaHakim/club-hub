@@ -41,14 +41,13 @@ export const mockActivities: Activity[] = [
 ];
 
 export const mockAttendance: AttendanceRecord[] = [
-  // FIX: Added missing 'userId' property to all mock attendance records to match the AttendanceRecord type.
   { id: '1', userId: '2', activityId: '1', activityTitle: 'Weekly Coding Challenge', date: '2023-10-28', status: 'Present' },
-  { id: '2', userId: '2', activityId: '1', activityTitle: 'Intro to Git & GitHub', date: '2023-10-21', status: 'Present' },
-  { id: '3', userId: '2', activityId: '1', activityTitle: 'CSS Flexbox Workshop', date: '2023-10-14', status: 'Absent' },
-  { id: '4', userId: '2', activityId: '1', activityTitle: 'Club Kick-off Meeting', date: '2023-10-07', status: 'Present' },
-  { id: '5', userId: '2', activityId: '1', activityTitle: 'API Fundamentals', date: '2023-09-30', status: 'Excused' },
-  { id: '6', userId: '2', activityId: '1', activityTitle: 'Data Structures Review', date: '2023-09-23', status: 'Present' },
-  { id: '7', userId: '2', activityId: '1', activityTitle: 'JavaScript Async/Await', date: '2023-09-16', status: 'Present' },
+  { id: '2', userId: '2', activityId: '2', activityTitle: 'Intro to Git & GitHub', date: '2023-10-21', status: 'Present' },
+  { id: '3', userId: '2', activityId: '3', activityTitle: 'CSS Flexbox Workshop', date: '2023-10-14', status: 'Absent' },
+  { id: '4', userId: '2', activityId: '4', activityTitle: 'Club Kick-off Meeting', date: '2023-10-07', status: 'Present' },
+  { id: '5', userId: '3', activityId: '1', activityTitle: 'Weekly Coding Challenge', date: '2023-10-28', status: 'Excused' },
+  { id: '6', userId: '3', activityId: '2', activityTitle: 'Intro to Git & GitHub', date: '2023-10-21', status: 'Present' },
+  { id: '7', userId: '3', activityId: '3', activityTitle: 'CSS Flexbox Workshop', date: '2023-10-14', status: 'Present' },
 ];
 
 export const mockFeedItems: FeedItem[] = [
@@ -123,18 +122,20 @@ export const mockProjectData: ProjectData = {
 export const predefinedAvatars = [
     'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Casper',
     'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Leo',
-    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Bandit',
     'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Milo',
-    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Callie',
-    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Zoe',
-    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Max',
-    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Abby',
-    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Patches',
-    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Aneka',
-    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Misty',
-    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Midnight',
-    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Sophie',
-    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Snuggles',
-    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Jack',
+    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Missy',
+    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Molly',
+    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Felix',
+    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Pumpkin',
+    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Sheba',
+    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Lucky',
     'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Tigger',
+    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Cali',
+    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Bandit',
+    'https://api.dicebear.com/8.x/initials/svg?seed=John Doe',
+    'https://api.dicebear.com/8.x/initials/svg?seed=Jane Doe',
+    'https://api.dicebear.com/8.x/initials/svg?seed=ICT Club',
+    'https://api.dicebear.com/8.x/adventurer/svg?seed=Midnight',
+    'https://api.dicebear.com/8.x/adventurer/svg?seed=Abby',
+    'https://api.dicebear.com/8.x/adventurer/svg?seed=Bear',
 ];

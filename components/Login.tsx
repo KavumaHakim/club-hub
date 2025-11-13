@@ -23,7 +23,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToSignUp, onNavigateTo
     setIsLoading(true);
     try {
       await onLogin(email, password);
-    } catch (err: any) { // FIX: Added missing opening brace '{'
+    } catch (err: any) {
       setError(err.message || 'An unknown error occurred.');
     } finally {
       setIsLoading(false);
