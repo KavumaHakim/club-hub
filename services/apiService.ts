@@ -259,16 +259,17 @@ export const getFeedItems = async (): Promise<FeedItem[]> => {
         .from('feed_items')
         .select(`
             *,
-            author:users ( uid, name, avatar_url )
+            author:author_uid ( uid, name, avatar_url )
         `)
         .order('created_at', { ascending: false });
     
     if (error) throw error;
     if (!data) return [];
     
-    // The query now returns `author` as an object { uid, name, avatar_url }. We can use this directly.
+    // The query joins with the users table via the author_uid foreign key,
+    // and returns the author's profile in the 'author' property.
     return data.map(item => {
-        const authorProfile = Array.isArray(item.author) ? item.author[0] : item.author;
+        const authorProfile = item.author as { uid: string; name: string; avatar_url: string } | null;
         const authorName = authorProfile?.name || 'Unknown User';
         const authorUid = authorProfile?.uid || 'unknown';
         
@@ -277,7 +278,7 @@ export const getFeedItems = async (): Promise<FeedItem[]> => {
             author: authorName,
             authorAvatarUrl: authorProfile?.avatar_url || `https://i.pravatar.cc/40?u=${authorUid}`,
             timestamp: new Date(item.created_at).toLocaleString(), // Format timestamp
-        }
+        };
     });
 };
 
