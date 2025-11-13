@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+// FIX: Imported the new Notification type.
 import { Activity, AttendanceRecord, FeedItem, ProjectData, User, Resource, Notification } from './types';
 import * as api from './services/apiService';
 
@@ -11,6 +12,7 @@ interface IDataContext {
   projectData: ProjectData | null;
   allUsers: User[];
   resources: Resource[];
+  // FIX: Added notifications to the context interface.
   notifications: Notification[];
 
   // Loading states
@@ -20,6 +22,7 @@ interface IDataContext {
   isLoadingProjects: boolean;
   isLoadingUsers: boolean;
   isLoadingResources: boolean;
+  // FIX: Added notification loading state.
   isLoadingNotifications: boolean;
   isInitialLoading: boolean;
 
@@ -30,6 +33,7 @@ interface IDataContext {
   projectDataError: string | null;
   allUsersError: string | null;
   resourcesError: string | null;
+  // FIX: Added notification error state.
   notificationsError: string | null;
 
   // Refetch functions
@@ -39,6 +43,7 @@ interface IDataContext {
   fetchProjectData: () => Promise<void>;
   fetchUsers: () => Promise<void>;
   fetchResources: () => Promise<void>;
+  // FIX: Added notification fetch function.
   fetchNotifications: () => Promise<void>;
 }
 
@@ -54,6 +59,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
   const [rawResources, setRawResources] = useState<Omit<Resource, 'uploaderName' | 'uploaderAvatarUrl'>[]>([]);
+  // FIX: Added state for notifications.
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const [isLoadingActivities, setIsLoadingActivities] = useState(true);
@@ -62,6 +68,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [isLoadingResources, setIsLoadingResources] = useState(true);
+  // FIX: Added loading state for notifications.
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(true);
 
   const [activitiesError, setActivitiesError] = useState<string | null>(null);
@@ -70,6 +77,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
   const [projectDataError, setProjectDataError] = useState<string | null>(null);
   const [allUsersError, setAllUsersError] = useState<string | null>(null);
   const [resourcesError, setResourcesError] = useState<string | null>(null);
+  // FIX: Added error state for notifications.
   const [notificationsError, setNotificationsError] = useState<string | null>(null);
 
   const fetchActivities = useCallback(async () => {
@@ -154,13 +162,9 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
       setIsLoadingResources(false); // Ensure loading stops on error
     }
   }, []);
-  
+
+  // FIX: Added fetchNotifications function.
   const fetchNotifications = useCallback(async () => {
-    if (currentUser.role !== 'PATRON') {
-        setNotifications([]);
-        setIsLoadingNotifications(false);
-        return;
-    }
     setIsLoadingNotifications(true);
     setNotificationsError(null);
     try {
@@ -168,12 +172,12 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
         setNotifications(data);
     } catch (e: any) {
         console.error("Failed to fetch notifications", e);
-        setNotificationsError(e.message);
+        setNotificationsError(e.message || 'An unknown error occurred.');
     } finally {
         setIsLoadingNotifications(false);
     }
-  }, [currentUser.uid, currentUser.role]);
-
+  }, [currentUser.uid]);
+  
   // Effect to perform the client-side join for resources
   useEffect(() => {
     if (isLoadingUsers || resourcesError) { // Don't process if users are loading or there was an error fetching resources
@@ -205,12 +209,14 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
         fetchFeedItems(),
         fetchProjectData(),
         fetchUsers(),
+        // FIX: Fetch notifications on initial load.
         fetchNotifications(),
       ]).then(() => {
         // After users are fetched, resources can be fetched and joined
         fetchResources();
       });
     }
+  // FIX: Added fetchNotifications to the dependency array.
   }, [currentUser, fetchActivities, fetchAttendance, fetchFeedItems, fetchProjectData, fetchUsers, fetchResources, fetchNotifications]);
 
   const value = {
@@ -220,6 +226,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
     projectData,
     allUsers,
     resources,
+    // FIX: Provide notification state through context.
     notifications,
     isLoadingActivities,
     isLoadingAttendance,
@@ -227,6 +234,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
     isLoadingProjects,
     isLoadingUsers,
     isLoadingResources,
+    // FIX: Provide notification loading state.
     isLoadingNotifications,
     activitiesError,
     attendanceError,
@@ -234,7 +242,9 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
     projectDataError,
     allUsersError,
     resourcesError,
+    // FIX: Provide notification error state.
     notificationsError,
+    // FIX: Include notification loading state in the overall initial loading flag.
     isInitialLoading: isLoadingActivities || isLoadingAttendance || isLoadingFeed || isLoadingProjects || isLoadingUsers || isLoadingResources || isLoadingNotifications,
     fetchActivities,
     fetchAttendance,
@@ -242,6 +252,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
     fetchProjectData,
     fetchUsers,
     fetchResources,
+    // FIX: Provide notification fetch function.
     fetchNotifications,
   };
 

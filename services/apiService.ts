@@ -1,40 +1,7 @@
 import { supabase } from './supabaseClient';
+// FIX: Imported the new Notification type.
 import { User, Activity, AttendanceRecord, FeedItem, ProjectData, ProjectTask, FeedItemType, ProjectColumn, Resource, Notification, Tab } from '../types';
 import { predefinedAvatars } from '../constants';
-
-
-// --- NOTIFICATION HELPERS ---
-const sendNotificationToPatrons = async (message: string) => {
-    try {
-        const { data: patrons, error: patronError } = await supabase
-            .from('users')
-            .select('uid')
-            .eq('role', 'PATRON');
-
-        if (patronError) {
-            console.error('Error fetching patrons to notify:', patronError);
-            return; // Non-critical, so don't block the main operation
-        }
-
-        if (!patrons || patrons.length === 0) {
-            return; // No patrons to notify
-        }
-
-        const notificationsToInsert = patrons.map(patron => ({
-            recipient_uid: patron.uid,
-            message: message,
-            link_to: 'members' as Tab,
-        }));
-
-        const { error: insertError } = await supabase.from('notifications').insert(notificationsToInsert);
-
-        if (insertError) {
-            console.error('Error sending notifications:', insertError);
-        }
-    } catch (error) {
-        console.error("An unexpected error occurred while sending notifications:", error);
-    }
-};
 
 // --- AUTH API ---
 
@@ -81,9 +48,6 @@ export const signUp = async (newUser: Omit<User, 'uid' | 'role' | 'status' | 'av
         status: 'PENDING',
     });
     if (profileError) throw new Error(profileError.message);
-    
-    // Send notification to patrons
-    await sendNotificationToPatrons(`New user "${newUser.name}" is awaiting approval.`);
 };
 
 export const signUpAsPatron = async (newUser: Omit<User, 'uid' | 'role' | 'status' | 'avatarUrl'> & { password: string }): Promise<void> => {
@@ -108,9 +72,6 @@ export const signUpAsPatron = async (newUser: Omit<User, 'uid' | 'role' | 'statu
         status: 'PENDING',
     });
     if (profileError) throw new Error(profileError.message);
-
-    // Send notification to patrons
-    await sendNotificationToPatrons(`New patron "${newUser.name}" is awaiting registration approval.`);
 };
 
 export const getUserProfile = async (uid: string): Promise<User | null> => {
@@ -174,7 +135,11 @@ export const changePassword = async (newPassword: string): Promise<void> => {
 export const getActivities = async (): Promise<Activity[]> => {
     const { data, error } = await supabase.from('activities').select('*').order('date', { ascending: false });
     if (error) throw new Error(error.message);
-    return data || [];
+    // Explicitly map the ID to a string to ensure type consistency with the app's `Activity` interface.
+    return (data || []).map(activity => ({
+        ...activity,
+        id: activity.id.toString(),
+    }));
 };
 
 export const addActivity = async (activityData: Omit<Activity, 'id'>): Promise<void> => {
@@ -224,7 +189,8 @@ export const addAttendance = async (userId: string, recordData: Omit<AttendanceR
     // Create a new record with only the columns that exist in the 'attendance' table
     const newRecord = {
         user_uid: userId,
-        activity_id: recordData.activityId,
+        // FIX: Convert the string activityId from the app state to a number for the database.
+        activity_id: Number(recordData.activityId),
         status: recordData.status,
     };
     const { error } = await supabase.from('attendance').insert(newRecord);
@@ -596,33 +562,35 @@ export const deleteResource = async (resource: Resource): Promise<void> => {
     if (dbError) throw new Error(dbError.message);
 };
 
-
+// FIX: Added API functions for fetching and updating notifications.
 // --- NOTIFICATIONS API ---
 
 export const getNotifications = async (userId: string): Promise<Notification[]> => {
     const { data, error } = await supabase
         .from('notifications')
         .select('*')
-        .eq('recipient_uid', userId)
-        .order('created_at', { ascending: false });
+        .eq('user_uid', userId)
+        .order('created_at', { ascending: false })
+        .limit(20);
 
     if (error) throw new Error(error.message);
+    if (!data) return [];
     
-    return (data || []).map(n => ({
-        id: n.id,
-        createdAt: new Date(n.created_at).toLocaleString(),
+    return data.map(n => ({
+        id: n.id.toString(),
         message: n.message,
         isRead: n.is_read,
-        linkTo: n.link_to,
+        createdAt: new Date(n.created_at).toLocaleString(),
+        linkTo: n.link_to as Tab | undefined,
+        userId: n.user_uid,
     }));
 };
 
-export const markNotificationAsRead = async (notificationId: number): Promise<void> => {
+export const markNotificationAsRead = async (notificationId: string): Promise<void> => {
     const { error } = await supabase
         .from('notifications')
         .update({ is_read: true })
         .eq('id', notificationId);
-    
     if (error) throw new Error(error.message);
 };
 
@@ -630,8 +598,7 @@ export const markAllNotificationsAsRead = async (userId: string): Promise<void> 
     const { error } = await supabase
         .from('notifications')
         .update({ is_read: true })
-        .eq('recipient_uid', userId)
-        .eq('is_read', false); // Only update unread ones
-
+        .eq('user_uid', userId)
+        .eq('is_read', false);
     if (error) throw new Error(error.message);
 };

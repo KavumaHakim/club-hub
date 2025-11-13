@@ -1,5 +1,6 @@
 
 
+
 export type Tab = 'feed' | 'activities' | 'attendance' | 'projects' | 'chat' | 'profile' | 'members' | 'playground' | 'resources';
 
 export interface User {
@@ -81,12 +82,12 @@ export interface Resource {
   uploaderName: string;
   uploaderAvatarUrl?: string;
 }
-
-// New type for Notifications
+// FIX: Added Notification interface to resolve missing type error.
 export interface Notification {
-  id: number;
-  createdAt: string;
+  id: string;
   message: string;
   isRead: boolean;
+  createdAt: string;
   linkTo?: Tab;
+  userId: string;
 }

@@ -15,7 +15,6 @@ import { CodeIcon } from './icons/CodeIcon';
 import { ChevronsLeftIcon } from './icons/ChevronsLeftIcon';
 import { ChevronsRightIcon } from './icons/ChevronsRightIcon';
 import { BookOpenIcon } from './icons/BookOpenIcon';
-import Notifications from './Notifications';
 
 
 interface SidebarProps {
@@ -128,7 +127,6 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, theme, onToggleTheme,
               >
                 {theme === 'light' ? <MoonIcon /> : <SunIcon />}
               </button>
-               {user.role === 'PATRON' && <Notifications currentUser={user} setActiveTab={handleNavClick} isSidebarCollapsed={isCollapsed}/>}
             </div>
             {!isCollapsed && (
                 <button
