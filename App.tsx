@@ -24,6 +24,16 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('feed');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
+  
+  // State for enhanced loading screen
+  const loadingMessages = useMemo(() => [
+    "Assembling the digital clubhouse...",
+    "Brewing some fresh code...",
+    "Waking up the AI assistant...",
+    "Polishing the pixels...",
+    "Connecting to the hub..."
+  ], []);
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
 
   useEffect(() => {
     setIsLoading(true);
@@ -64,6 +74,16 @@ const App: React.FC = () => {
       authListener.subscription.unsubscribe();
     };
   }, []);
+  
+  // Effect for cycling loading messages
+  useEffect(() => {
+    if (isLoading) {
+        const interval = setInterval(() => {
+            setLoadingMessageIndex(prevIndex => (prevIndex + 1) % loadingMessages.length);
+        }, 2000); // Change message every 2 seconds
+        return () => clearInterval(interval);
+    }
+  }, [isLoading, loadingMessages]);
 
   const handleLogin = useCallback(async (email: string, password?: string) => {
     try {
@@ -131,17 +151,15 @@ const App: React.FC = () => {
             <style>
             {`
                 @keyframes float {
-                0% { transform: translateY(0) rotate(0deg); opacity: 1; border-radius: 20%; }
-                50% { opacity: 0.5; border-radius: 50%; }
-                100% { transform: translateY(-1000px) rotate(720deg); opacity: 0; border-radius: 20%; }
+                  0% { transform: translateY(0) rotate(0deg); opacity: 1; border-radius: 20%; }
+                  50% { opacity: 0.5; border-radius: 50%; }
+                  100% { transform: translateY(-1000px) rotate(720deg); opacity: 0; border-radius: 20%; }
                 }
                 .shape {
-                position: absolute;
-                display: block;
-                list-style: none;
-                background: linear-gradient(to right, #EC4899, #8B5CF6);
-                animation: float 25s linear infinite;
-                bottom: -150px;
+                  position: absolute; display: block; list-style: none;
+                  background: linear-gradient(to right, #EC4899, #8B5CF6);
+                  animation: float 25s linear infinite;
+                  bottom: -150px;
                 }
                 .shape:nth-child(1) { left: 25%; width: 80px; height: 80px; animation-delay: 0s; }
                 .shape:nth-child(2) { left: 10%; width: 20px; height: 20px; animation-delay: 2s; animation-duration: 12s; }
@@ -153,30 +171,41 @@ const App: React.FC = () => {
                 .shape:nth-child(8) { left: 50%; width: 25px; height: 25px; animation-delay: 15s; animation-duration: 45s; }
                 .shape:nth-child(9) { left: 20%; width: 15px; height: 15px; animation-delay: 2s; animation-duration: 35s; }
                 .shape:nth-child(10) { left: 85%; width: 150px; height: 150px; animation-delay: 0s; animation-duration: 11s; }
+
+                /* New Animations for Loader */
+                @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+                @keyframes spin-reverse { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
+                .animate-spin-fast { animation: spin 1.5s linear infinite; }
+                .animate-spin-slow { animation: spin-reverse 2.5s linear infinite; }
+                
+                @keyframes fade-in-up-loading {
+                  0% { opacity: 0; transform: translateY(15px); }
+                  100% { opacity: 1; transform: translateY(0); }
+                }
+                .animate-fade-in-up-loading { 
+                  animation: fade-in-up-loading 0.5s ease-out forwards; 
+                }
             `}
             </style>
-            <span className="shape"></span>
-            <span className="shape"></span>
-            <span className="shape"></span>
-            <span className="shape"></span>
-            <span className="shape"></span>
-            <span className="shape"></span>
-            <span className="shape"></span>
-            <span className="shape"></span>
-            <span className="shape"></span>
-            <span className="shape"></span>
+            <span className="shape"></span><span className="shape"></span><span className="shape"></span><span className="shape"></span><span className="shape"></span>
+            <span className="shape"></span><span className="shape"></span><span className="shape"></span><span className="shape"></span><span className="shape"></span>
         </div>
         
         <div className="z-10 text-center">
             <h1 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600">
                 Club Hub
             </h1>
-            <div className="mt-8 flex justify-center items-center space-x-2">
-                <div className="w-4 h-4 rounded-full bg-pink-500 animate-pulse"></div>
-                <div className="w-4 h-4 rounded-full bg-purple-500 animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                <div className="w-4 h-4 rounded-full bg-pink-500 animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+
+            {/* Enhanced Loader */}
+            <div className="relative w-24 h-24 mt-12 mb-8 mx-auto">
+                <div className="absolute w-full h-full border-4 border-dashed rounded-full animate-spin-fast border-pink-500"></div>
+                <div className="absolute w-full h-full border-4 border-dashed rounded-full animate-spin-slow border-purple-500 opacity-75"></div>
             </div>
-            <p className="mt-4 text-gray-600 dark:text-gray-400">Loading your dashboard...</p>
+
+            {/* Dynamic Text */}
+            <p key={loadingMessageIndex} className="text-lg mt-4 text-gray-600 dark:text-gray-400 animate-fade-in-up-loading">
+                {loadingMessages[loadingMessageIndex]}
+            </p>
         </div>
       </div>
     );

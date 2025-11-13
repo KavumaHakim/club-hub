@@ -67,10 +67,10 @@ const ProjectsBoard: React.FC<ProjectsBoardProps> = ({ currentUser }) => {
     }
   };
 
-  const handleDeleteTask = async (taskId: string) => {
+  const handleDeleteTask = async (taskId: string, columnId: string) => {
     if (!window.confirm("Are you sure you want to delete this task?")) return;
     try {
-        await api.deleteProjectTask(taskId);
+        await api.deleteProjectTask(taskId, columnId);
         await fetchProjectData();
     } catch (error) {
         console.error("Failed to delete task:", error);
