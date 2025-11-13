@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient';
 import { User, Activity, AttendanceRecord, FeedItem, ProjectData, ProjectTask, FeedItemType, ProjectColumn } from '../types';
+import { predefinedAvatars } from '../constants';
 
 // --- AUTH API ---
 
@@ -32,12 +33,16 @@ export const signUp = async (newUser: Omit<User, 'uid' | 'role' | 'status' | 'av
     if (authError) throw authError;
     if (!authData.user) throw new Error("Sign up failed, no user created.");
 
+    // Assign a random default avatar on sign up
+    const randomAvatar = predefinedAvatars[Math.floor(Math.random() * predefinedAvatars.length)];
+
     const { error: profileError } = await supabase.from('users').insert({
         uid: authData.user.id,
         email: newUser.email,
         name: newUser.name,
         username: newUser.username,
         phone_number: newUser.phoneNumber,
+        avatar_url: randomAvatar,
         role: 'MEMBER',
         status: 'PENDING',
     });
@@ -52,12 +57,16 @@ export const signUpAsPatron = async (newUser: Omit<User, 'uid' | 'role' | 'statu
     if (authError) throw authError;
     if (!authData.user) throw new Error("Sign up failed, no user created.");
 
+    // Assign a random default avatar on sign up
+    const randomAvatar = predefinedAvatars[Math.floor(Math.random() * predefinedAvatars.length)];
+
     const { error: profileError } = await supabase.from('users').insert({
         uid: authData.user.id,
         email: newUser.email,
         name: newUser.name,
         username: newUser.username,
         phone_number: newUser.phoneNumber,
+        avatar_url: randomAvatar,
         role: 'PATRON',
         status: 'PENDING',
     });
@@ -72,26 +81,12 @@ export const getUserProfile = async (uid: string): Promise<User | null> => {
     }
     if (!userData) return null;
 
-    let avatarUrl: string | undefined = undefined;
-
-    // Efficiently check for the avatar record in the new user_uploads table.
-    const { data: uploadRecord } = await supabase
-        .from('user_uploads')
-        .select('object_name')
-        .match({ owner_id: uid, bucket_id: 'profiles', object_name: `${uid}/avatar` })
-        .limit(1)
-        .single();
-
-    if (uploadRecord) {
-        const { data: urlData } = supabase.storage
-            .from('profiles')
-            .getPublicUrl(uploadRecord.object_name);
-        // Append a timestamp to break the browser cache after an upload.
-        avatarUrl = `${urlData.publicUrl}?t=${new Date().getTime()}`;
-    }
-    
-    // Return user data with avatarUrl if found, otherwise it's undefined and UI will use a fallback.
-    return { ...userData, avatarUrl, phoneNumber: userData.phone_number };
+    // Return user data, mapping snake_case from DB to camelCase for the app.
+    return { 
+        ...userData, 
+        avatarUrl: userData.avatar_url, 
+        phoneNumber: userData.phone_number 
+    };
 };
 
 
@@ -102,86 +97,24 @@ export const getUsers = async (): Promise<User[]> => {
     if (error) throw error;
     if (!usersData || usersData.length === 0) return [];
     
-    // SOLVE N+1 PROBLEM: Fetch all avatar records for all users in one query.
-    const userIds = usersData.map(u => u.uid);
-    const { data: uploads } = await supabase
-        .from('user_uploads')
-        .select('owner_id, object_name')
-        .in('owner_id', userIds)
-        .eq('bucket_id', 'profiles');
-
-    // Create a map for quick lookups
-    const avatarMap = new Map<string, string>();
-    if (uploads) {
-        for (const upload of uploads) {
-            const { data: urlData } = supabase.storage.from('profiles').getPublicUrl(upload.object_name);
-            avatarMap.set(upload.owner_id, urlData.publicUrl);
-        }
-    }
-
-    // Map avatar URLs back to users
-    const usersWithAvatars = usersData.map(user => ({
+    // The complex logic for fetching from `user_uploads` is removed.
+    // We just map the results directly.
+    return usersData.map(user => ({
         ...user,
-        avatarUrl: avatarMap.get(user.uid),
+        avatarUrl: user.avatar_url,
         phoneNumber: user.phone_number
     }));
-    
-    return usersWithAvatars;
 };
 
-export const updateUser = async (uid: string, updates: Partial<Pick<User, 'role' | 'status'>>): Promise<void> => {
-    // This function no longer handles avatarUrl, as it's derived from storage, not stored in the database.
-    const { error } = await supabase.from('users').update(updates).eq('uid', uid);
+export const updateUser = async (uid: string, updates: Partial<Pick<User, 'role' | 'status' | 'avatarUrl'>>): Promise<void> => {
+    // Map camelCase from app to snake_case for DB
+    const dbUpdates: { [key: string]: any } = {};
+    if (updates.role) dbUpdates.role = updates.role;
+    if (updates.status) dbUpdates.status = updates.status;
+    if (updates.avatarUrl) dbUpdates.avatar_url = updates.avatarUrl;
+
+    const { error } = await supabase.from('users').update(dbUpdates).eq('uid', uid);
     if (error) throw error;
-};
-
-export const uploadProfilePicture = async (userId: string, file: File): Promise<User> => {
-    if (!file.type.startsWith('image/')) {
-        throw new Error("Invalid file type. Please upload an image.");
-    }
-
-    const filePath = `${userId}/avatar`;
-
-    // 1. Upload the new file to storage, overwriting if it exists.
-    const { error: uploadError } = await supabase.storage
-        .from('profiles')
-        .upload(filePath, file, { upsert: true });
-
-    if (uploadError) {
-        console.error("Supabase Storage Error (Upload):", uploadError);
-        throw new Error("Failed to upload avatar.");
-    }
-    
-    // 2. Create or update the record in our new `user_uploads` table.
-    // `upsert` is used here to either create a new record or update the `updated_at`
-    // timestamp of an existing one, which is handled by a database trigger.
-    // The `onConflict` option assumes a unique constraint exists on `(owner_id, object_name)`.
-    const { error: dbError } = await supabase
-        .from('user_uploads')
-        .upsert({
-            owner_id: userId,
-            bucket_id: 'profiles',
-            object_name: filePath,
-        }, {
-            onConflict: 'owner_id,object_name' 
-        });
-
-    if (dbError) {
-        console.error("Supabase DB Error (user_uploads):", dbError);
-        // If this fails, we should ideally try to roll back the storage upload.
-        // For now, we'll log the error and throw.
-        throw new Error("Failed to record avatar upload in the database.");
-    }
-
-
-    // 3. After upload, re-fetch the user profile. The updated `getUserProfile` will
-    // find the new record and return the correct URL.
-    const updatedUser = await getUserProfile(userId);
-    if (!updatedUser) {
-        throw new Error("Failed to fetch updated user profile after avatar upload.");
-    }
-
-    return updatedUser;
 };
 
 export const deleteUser = async (uid: string): Promise<void> => {
@@ -326,39 +259,14 @@ export const getFeedItems = async (): Promise<FeedItem[]> => {
         .from('feed_items')
         .select(`
             *,
-            author:users ( uid, name )
+            author:users ( uid, name, avatar_url )
         `)
         .order('created_at', { ascending: false });
     
     if (error) throw error;
     if (!data) return [];
     
-    // SOLVE N+1 PROBLEM: Fetch all avatar records for all authors in one query.
-    const authorIds = data
-        .map(item => {
-            const authorData = Array.isArray(item.author) ? item.author[0] : item.author;
-            return authorData?.uid;
-        })
-        .filter((uid): uid is string => !!uid);
-
-    const avatarMap = new Map<string, string>();
-    if(authorIds.length > 0) {
-        const { data: uploads } = await supabase
-            .from('user_uploads')
-            .select('owner_id, object_name')
-            .in('owner_id', authorIds)
-            .eq('bucket_id', 'profiles');
-
-        // Create a map for quick lookups
-        if (uploads) {
-            for (const upload of uploads) {
-                const { data: urlData } = supabase.storage.from('profiles').getPublicUrl(upload.object_name);
-                avatarMap.set(upload.owner_id, urlData.publicUrl);
-            }
-        }
-    }
-    
-    // The query returns `author` as an object { uid, name }. We need to flatten this and add avatar.
+    // The query now returns `author` as an object { uid, name, avatar_url }. We can use this directly.
     return data.map(item => {
         const authorProfile = Array.isArray(item.author) ? item.author[0] : item.author;
         const authorName = authorProfile?.name || 'Unknown User';
@@ -367,7 +275,7 @@ export const getFeedItems = async (): Promise<FeedItem[]> => {
         return {
             ...item,
             author: authorName,
-            authorAvatarUrl: avatarMap.get(authorUid) || `https://i.pravatar.cc/40?u=${authorUid}`,
+            authorAvatarUrl: authorProfile?.avatar_url || `https://i.pravatar.cc/40?u=${authorUid}`,
             timestamp: new Date(item.created_at).toLocaleString(), // Format timestamp
         }
     });
@@ -548,6 +456,6 @@ export const assignProjectTask = async (taskId: string, assigneeId: string | und
     const { error } = await supabase
         .from('project_tasks')
         .update({ assignee_uid: assigneeId })
-        .eq('id', taskId);
+        .eq('id', Number(taskId)); // FIX: Convert string taskId to number for DB query.
     if (error) throw error;
 };

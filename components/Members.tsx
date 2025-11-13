@@ -56,6 +56,7 @@ const Members: React.FC<MembersProps> = ({ currentUser }) => {
                     <thead className="border-b-2 border-gray-200 dark:border-gray-700">
                         <tr>
                             <th className="py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Name</th>
+                            <th className="py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Phone Number</th>
                             <th className="py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Status</th>
                             <th className="py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Role</th>
                             <th className="py-3 px-4 font-semibold text-gray-600 dark:text-gray-400 text-right">Actions</th>
@@ -67,6 +68,9 @@ const Members: React.FC<MembersProps> = ({ currentUser }) => {
                                 <td className="py-4 px-4">
                                     <div className="font-medium text-gray-800 dark:text-gray-200">{user.name}</div>
                                     <div className="text-sm text-gray-500 dark:text-gray-400">@{user.username}</div>
+                                </td>
+                                <td className="py-4 px-4 text-sm text-gray-500 dark:text-gray-400">
+                                    {user.phoneNumber || 'N/A'}
                                 </td>
                                 <td className="py-4 px-4">
                                     <span className={`px-3 py-1 text-xs font-medium rounded-full ${user.status === 'APPROVED' ? 'bg-pink-100 text-pink-800 dark:bg-pink-900/50 dark:text-pink-300' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300'}`}>

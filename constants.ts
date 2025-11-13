@@ -119,3 +119,22 @@ export const mockProjectData: ProjectData = {
     },
     columnOrder: ['column-1', 'column-2', 'column-3'],
 };
+
+export const predefinedAvatars = [
+    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Casper',
+    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Leo',
+    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Bandit',
+    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Milo',
+    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Callie',
+    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Zoe',
+    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Max',
+    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Abby',
+    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Patches',
+    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Aneka',
+    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Misty',
+    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Midnight',
+    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Sophie',
+    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Snuggles',
+    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Jack',
+    'https://api.dicebear.com/8.x/bottts-neutral/svg?seed=Tigger',
+];

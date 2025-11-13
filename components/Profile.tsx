@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { User, AttendanceRecord, AttendanceStatus } from '../types';
 import * as api from '../services/apiService';
 import { CheckCircleIcon } from './icons/CheckCircleIcon';
@@ -8,6 +8,45 @@ import { LockClosedIcon } from './icons/LockClosedIcon';
 import { EyeIcon } from './icons/EyeIcon';
 import { EyeOffIcon } from './icons/EyeOffIcon';
 import { CameraIcon } from './icons/CameraIcon';
+import { predefinedAvatars } from '../constants';
+
+
+const AvatarSelectionModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  onSelect: (avatarUrl: string) => void;
+}> = ({ isOpen, onClose, onSelect }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4" onClick={onClose} role="dialog" aria-modal="true">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
+        <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4">Choose Your Avatar</h3>
+        <div className="grid grid-cols-4 sm:grid-cols-6 gap-4 max-h-[60vh] overflow-y-auto p-2">
+          {predefinedAvatars.map((url, index) => (
+            <button
+              key={index}
+              onClick={() => onSelect(url)}
+              className="rounded-full aspect-square p-1 ring-2 ring-transparent hover:ring-pink-500 focus:ring-pink-500 focus:outline-none transition-all"
+              aria-label={`Select avatar ${index + 1}`}
+            >
+              <img src={url} alt={`Avatar ${index + 1}`} className="w-full h-full rounded-full object-cover bg-gray-200 dark:bg-gray-700" />
+            </button>
+          ))}
+        </div>
+        <div className="mt-6 text-right">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 dark:bg-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 
 const StatCard: React.FC<{icon: React.ReactElement<{className?: string}>, label: string, value: number, percentage: string, color: string}> = ({ icon, label, value, percentage, color }) => (
     <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
@@ -109,7 +148,7 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
     const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
 
     useEffect(() => {
         const fetchAttendance = async () => {
@@ -142,25 +181,18 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
         return ((count / totalActivities) * 100).toFixed(1);
     };
 
-    const handleAvatarClick = () => {
-        fileInputRef.current?.click();
-    };
-
-    const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
+    const handleAvatarSelect = async (newAvatarUrl: string) => {
         setIsUpdatingAvatar(true);
         try {
-            const updatedUser = await api.uploadProfilePicture(currentUser.uid, file);
+            await api.updateUser(currentUser.uid, { avatarUrl: newAvatarUrl });
+            const updatedUser = { ...currentUser, avatarUrl: newAvatarUrl };
             onUpdateUserProfile(updatedUser);
+            setIsAvatarModalOpen(false);
         } catch (error: any) {
-            console.error("Failed to upload avatar:", error);
-            alert(`Error uploading image: ${error.message}`);
+            console.error("Failed to update avatar:", error);
+            alert(`Error updating avatar: ${error.message}`);
         } finally {
             setIsUpdatingAvatar(false);
-            // Reset file input value to allow re-uploading the same file
-            if(fileInputRef.current) fileInputRef.current.value = "";
         }
     };
     
@@ -170,16 +202,8 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
             <div className="bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
                 <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-8">
                     <div className="relative flex-shrink-0 group">
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            onChange={handleFileSelect}
-                            className="hidden"
-                            accept="image/png, image/jpeg, image/gif"
-                            disabled={isUpdatingAvatar}
-                        />
                         <button 
-                            onClick={handleAvatarClick}
+                            onClick={() => setIsAvatarModalOpen(true)}
                             className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-full ring-4 ring-pink-500/50 focus:outline-none focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-900 focus:ring-pink-500 disabled:cursor-not-allowed"
                             aria-label="Change profile picture"
                             disabled={isUpdatingAvatar}
@@ -243,6 +267,12 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
                 </div>
                 <ChangePasswordForm currentUser={currentUser} />
             </div>
+
+            <AvatarSelectionModal
+                isOpen={isAvatarModalOpen}
+                onClose={() => setIsAvatarModalOpen(false)}
+                onSelect={handleAvatarSelect}
+            />
         </div>
     );
 };
