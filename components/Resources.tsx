@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { User, Resource, ResourceType } from '../types';
+import { User, Resource, ResourceType, ResourceCategory } from '../types';
 import * as api from '../services/apiService';
 import { useData } from '../DataContext';
 import ResourceCard from './ResourceCard';
@@ -16,7 +16,7 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser }) => {
     // Form state
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
-    const [topic, setTopic] = useState('');
+    const [category, setCategory] = useState<ResourceCategory>('Tutorial');
     const [type, setType] = useState<ResourceType>('LINK');
     const [url, setUrl] = useState('');
     const [file, setFile] = useState<File | null>(null);
@@ -25,7 +25,7 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser }) => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!title || !description || !topic || (type !== 'DOCUMENT' && !url) || (type === 'DOCUMENT' && !file)) {
+        if (!title || !description || !category || (type !== 'DOCUMENT' && !url) || (type === 'DOCUMENT' && !file)) {
             setError("Please fill all required fields.");
             return;
         }
@@ -37,7 +37,7 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser }) => {
             await api.addResource({
                 title,
                 description,
-                topic,
+                category,
                 type,
                 url: type === 'DOCUMENT' ? undefined : url,
                 uploaderUid: currentUser.uid,
@@ -46,7 +46,7 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser }) => {
             // Reset form
             setTitle('');
             setDescription('');
-            setTopic('');
+            setCategory('Tutorial');
             setType('LINK');
             setUrl('');
             setFile(null);
@@ -71,11 +71,10 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser }) => {
         }
     };
     
-    // Group resources by topic
-    // FIX: Added an explicit type annotation to `groupedResources` to resolve the type inference issue.
+    // Group resources by category
     const groupedResources: Record<string, Resource[]> = useMemo(() => {
         return resources.reduce((acc, resource) => {
-            (acc[resource.topic] = acc[resource.topic] || []).push(resource);
+            (acc[resource.category] = acc[resource.category] || []).push(resource);
             return acc;
         }, {} as Record<string, Resource[]>);
     }, [resources]);
@@ -90,7 +89,16 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser }) => {
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <input type="text" placeholder="Title" value={title} onChange={e => setTitle(e.target.value)} required className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500" />
-                            <input type="text" placeholder="Topic (e.g., Web Dev, Python)" value={topic} onChange={e => setTopic(e.target.value)} required className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500" />
+                            <div>
+                                <label htmlFor="category-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+                                <select id="category-select" value={category} onChange={e => setCategory(e.target.value as ResourceCategory)} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500">
+                                    <option value="Documentation">Documentation</option>
+                                    <option value="Tutorial">Tutorial</option>
+                                    <option value="Tool">Tool</option>
+                                    <option value="Article">Article</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
                         </div>
                         <textarea placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} required rows={3} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500" />
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -131,9 +139,9 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser }) => {
                 <p className="text-center text-gray-500 dark:text-gray-400">Loading resources...</p>
             ) : Object.keys(groupedResources).length > 0 ? (
                 <div className="space-y-8">
-                    {Object.entries(groupedResources).map(([topic, items]) => (
-                        <div key={topic}>
-                            <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4 pb-2 border-b-2 border-pink-500/50">{topic}</h3>
+                    {Object.entries(groupedResources).map(([category, items]) => (
+                        <div key={category}>
+                            <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4 pb-2 border-b-2 border-pink-500/50">{category}</h3>
                             <div className="space-y-4">
                                 {items.map(resource => (
                                     <ResourceCard key={resource.id} resource={resource} currentUser={currentUser} onDelete={handleDelete} />

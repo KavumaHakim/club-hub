@@ -64,13 +64,15 @@ export interface ProjectData {
 
 export type ResourceType = 'DOCUMENT' | 'LINK' | 'VIDEO';
 
+export type ResourceCategory = 'Documentation' | 'Tutorial' | 'Tool' | 'Article' | 'Other';
+
 export interface Resource {
   id: string;
   createdAt: string;
   title: string;
   description: string;
   type: ResourceType;
-  topic: string;
+  category: ResourceCategory;
   url?: string; // For LINK and VIDEO types
   filePath?: string; // For DOCUMENT type
   uploaderUid: string;

@@ -468,7 +468,7 @@ export const getResources = async (): Promise<Omit<Resource, 'uploaderName' | 'u
     const { data, error } = await supabase
         .from('resources')
         .select(`*`)
-        .order('topic', { ascending: true })
+        .order('category', { ascending: true })
         .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -480,7 +480,7 @@ export const getResources = async (): Promise<Omit<Resource, 'uploaderName' | 'u
         title: item.title,
         description: item.description,
         type: item.type,
-        topic: item.topic,
+        category: item.category,
         url: item.url,
         filePath: item.file_path,
         uploaderUid: item.uploader_uid,
@@ -526,7 +526,7 @@ export const addResource = async (
         title: resourceData.title,
         description: resourceData.description,
         type: resourceData.type,
-        topic: resourceData.topic,
+        category: resourceData.category,
         url: finalUrl,
         file_path: filePath,
         uploader_uid: resourceData.uploaderUid,
