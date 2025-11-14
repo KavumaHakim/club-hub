@@ -118,26 +118,27 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, theme, onToggleTheme,
                 </div>
             )}
           </div>
-          <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
-            <div className={`flex items-center ${isCollapsed ? 'flex-col space-y-2' : 'space-x-2'}`}>
-              <button
-                onClick={onToggleTheme}
-                className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                aria-label="Toggle theme"
-              >
-                {theme === 'light' ? <MoonIcon /> : <SunIcon />}
-              </button>
-            </div>
-            {!isCollapsed && (
-                <button
-                onClick={onLogout}
-                className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-pink-600 dark:hover:text-pink-500 transition-colors focus:outline-none"
-                aria-label="Logout"
-                >
-                <LogoutIcon />
-                <span className="text-sm whitespace-nowrap">Logout</span>
-                </button>
-            )}
+          <div className={`flex items-center ${isCollapsed ? 'flex-col-reverse space-y-3 space-y-reverse' : 'justify-between'}`}>
+            <button
+              onClick={onToggleTheme}
+              className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              aria-label="Toggle theme"
+              title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+            >
+              {theme === 'light' ? <MoonIcon /> : <SunIcon />}
+            </button>
+            <button
+              onClick={onLogout}
+              className={isCollapsed 
+                  ? "p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500" 
+                  : "flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-pink-600 dark:hover:text-pink-500 transition-colors focus:outline-none"
+              }
+              aria-label="Logout"
+              title="Logout"
+            >
+              <LogoutIcon />
+              {!isCollapsed && <span className="text-sm whitespace-nowrap">Logout</span>}
+            </button>
           </div>
            {/* Collapse Toggle - only on desktop */}
            <div className="hidden md:block pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">

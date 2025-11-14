@@ -431,6 +431,28 @@ export const getResources = async (): Promise<Omit<Resource, 'uploaderName' | 'u
     }));
 };
 
+/*
+* NOTE ON ROW-LEVEL SECURITY (RLS) FOR RESOURCES:
+* The error "new row violates row-level security policy" almost always indicates a misconfiguration
+* in your Supabase database policies, not a client-side code error. This app's code is correctly
+* passing the authenticated user's ID.
+*
+* To fix this, please ensure you have RLS policies enabled on your 'resources' table that
+* allow authorized users to insert data.
+*
+* Example Policy for allowing only PATRONs to add resources:
+* 1. Go to your Supabase project: Authentication -> Policies.
+* 2. Select the 'resources' table and click "New Policy".
+* 3. Choose "Enable for INSERT operations".
+* 4. For "Target roles", select 'authenticated'.
+* 5. For the "WITH CHECK expression", use the following SQL:
+*    (auth.uid() = uploader_uid) AND ((SELECT role FROM public.users WHERE uid = auth.uid()) = 'PATRON'::text)
+*
+* You will also need a policy to allow users to VIEW resources:
+* 1. Create another policy for "SELECT operations".
+* 2. For "Target roles", select 'authenticated'.
+* 3. For the "USING expression", simply use: true
+*/
 export const addResource = async (
     resourceData: Omit<Resource, 'id' | 'createdAt' | 'uploaderName' | 'uploaderAvatarUrl' | 'filePath'>,
     file?: File

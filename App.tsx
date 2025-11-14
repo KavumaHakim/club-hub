@@ -93,8 +93,13 @@ const App: React.FC = () => {
   }, []);
 
   const handleLogout = useCallback(async () => {
-    // The onAuthStateChange listener will handle setting the state on logout.
-    await api.logout();
+    try {
+        await api.logout();
+        setUser(null);
+        setView('welcome');
+    } catch (error) {
+        console.error("Logout failed:", error);
+    }
   }, []);
 
   const handleSignUp = useCallback(async (newUser: Omit<User, 'uid' | 'role' | 'status' | 'avatarUrl'> & {password: string}) => {
