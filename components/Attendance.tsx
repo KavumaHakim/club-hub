@@ -277,7 +277,7 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser }) => {
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
           <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4 text-center">Summary</h2>
           <div style={{ width: '100%', height: 300 }}>
-            <ResponsiveContainer>
+            <ResponsiveContainer width="99%">
               <PieChart>
                 <Pie
                   data={pieChartData}
@@ -310,7 +310,7 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser }) => {
           <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">Attendance Trend</h2>
            {lineChartData.length > 1 ? (
             <div className="h-80 w-full">
-                <ResponsiveContainer>
+                <ResponsiveContainer width="99%">
                     <LineChart data={lineChartData} margin={{ top: 5, right: 20, left: -10, bottom: 50 }}>
                         <defs>
                             <linearGradient id="line-color-gradient" x1="0" y1="0" x2="1" y2="0">
