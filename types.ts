@@ -1,9 +1,3 @@
-
-
-
-
-
-
 export type Tab = 'feed' | 'activities' | 'attendance' | 'projects' | 'profile' | 'members' | 'playground' | 'resources';
 
 export interface User {
@@ -46,7 +40,6 @@ export interface FeedItem {
   timestamp: string; // This will be handled by Supabase server timestamps
   title?: string;
   message: string;
-  likes?: number;
 }
 
 // New types for Project Board

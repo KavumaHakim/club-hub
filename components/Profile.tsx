@@ -150,7 +150,7 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
     const [isLoading, setIsLoading] = useState(true);
     const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
     const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
-    const { fetchUsers, fetchFeedItems } = useData();
+    const { fetchUsers, fetchFeedItems, fetchProjectData } = useData();
 
     useEffect(() => {
         const fetchAttendance = async () => {
@@ -189,9 +189,14 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
             await api.updateUser(currentUser.uid, { avatarUrl: newAvatarUrl });
             const updatedUser = { ...currentUser, avatarUrl: newAvatarUrl };
             onUpdateUserProfile(updatedUser);
-            // FIX: To ensure the avatar updates everywhere, including on feed posts,
-            // we refetch both the user list and the feed items simultaneously.
-            await Promise.all([fetchUsers(), fetchFeedItems()]);
+            
+            // FIX: Refetch all data that uses user information to ensure consistency across Feed, Members, and Projects
+            await Promise.all([
+                fetchUsers(), 
+                fetchFeedItems(),
+                fetchProjectData()
+            ]);
+            
             setIsAvatarModalOpen(false);
         } catch (error: any) {
             console.error("Failed to update avatar:", error);

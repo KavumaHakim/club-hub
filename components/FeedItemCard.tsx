@@ -1,6 +1,5 @@
 import React from 'react';
 import { FeedItem, FeedItemType } from '../types';
-import { HeartIcon } from './icons/HeartIcon';
 
 const badgeMap: { [key in FeedItemType]: {
     text: string;
@@ -34,10 +33,9 @@ const badgeMap: { [key in FeedItemType]: {
 
 interface FeedItemCardProps {
   item: FeedItem;
-  onLike: (id: string) => void;
 }
 
-const FeedItemCard: React.FC<FeedItemCardProps> = ({ item, onLike }) => {
+const FeedItemCard: React.FC<FeedItemCardProps> = ({ item }) => {
   const badge = badgeMap[item.type];
   
   return (
@@ -72,16 +70,6 @@ const FeedItemCard: React.FC<FeedItemCardProps> = ({ item, onLike }) => {
              <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${badge.style}`}>
                 {badge.text}
              </span>
-            {item.type === 'MEMBER_POST' && (
-                <button
-                    onClick={() => onLike(item.id)}
-                    className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-red-500 transition-colors focus:outline-none group"
-                    aria-label="Like post"
-                >
-                    <HeartIcon className="group-hover:fill-red-200 dark:group-hover:fill-red-900/50" />
-                    <span className="text-sm font-medium">{item.likes || 0}</span>
-                </button>
-            )}
           </div>
         </div>
       </div>

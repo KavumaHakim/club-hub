@@ -26,14 +26,6 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
     await fetchFeedItems();
   }, [fetchFeedItems, currentUser.uid]);
 
-  const handleLike = (id: string) => {
-    // Liking is client-side only for this demo.
-    // A real implementation would update this in Firestore and then refetch.
-    // For now, we'll keep this behavior as it doesn't involve a backend call.
-    // In a real app, you would call `fetchFeedItems` after a successful like API call.
-    console.log(`Liked item ${id}. (Client-side only)`);
-  };
-  
   if (isLoadingFeed) {
     return <div className="text-center p-8 text-gray-500 dark:text-gray-400">Loading feed...</div>;
   }
@@ -58,7 +50,7 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
             className={`transform transition-all duration-700 ease-in-out ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`}
             style={{ transitionDelay: `${index * 100}ms` }}
           >
-            <FeedItemCard item={item} onLike={handleLike} />
+            <FeedItemCard item={item} />
           </div>
         ))}
       </div>

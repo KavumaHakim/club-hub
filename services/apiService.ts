@@ -288,10 +288,10 @@ export const getFeedItems = async (): Promise<FeedItem[]> => {
     });
 };
 
-export const addFeedItem = async (itemData: Omit<FeedItem, 'id' | 'author' | 'authorAvatarUrl' | 'timestamp' | 'likes'>, authorId: string): Promise<void> => {
+export const addFeedItem = async (itemData: Omit<FeedItem, 'id' | 'author' | 'authorAvatarUrl' | 'timestamp'>, authorId: string): Promise<void> => {
     const newFeedItem = {
         type: itemData.type,
-        title: itemData.title,
+        title: itemData.title || null, // Convert undefined/empty string to null if needed, or just ensure it's handled
         message: itemData.message,
         author_uid: authorId,
     };
