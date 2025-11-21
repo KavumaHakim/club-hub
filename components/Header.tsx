@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { User } from '../types';
 import { LogoutIcon } from './icons/LogoutIcon';
 import { SunIcon } from './icons/SunIcon';
@@ -18,7 +18,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout, theme, onToggleTheme })
         <div className="flex justify-between items-center h-16">
           <div className="flex-shrink-0">
             <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600">
-              Club Hub
+              ICT Club Hub
             </h1>
           </div>
           <div className="flex items-center space-x-4">

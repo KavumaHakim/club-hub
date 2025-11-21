@@ -77,7 +77,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, theme, onToggleTheme,
         <div className="flex items-center justify-between h-16 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 px-4">
           <div className={`transition-all duration-300 overflow-hidden ${isCollapsed ? 'md:w-0' : 'w-auto'}`}>
             <h1 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600 whitespace-nowrap">
-              Naggalama Club Hub
+              Naggalama ICT Club Hub
             </h1>
           </div>
           <button onClick={onClose} className="p-1 rounded-md md:hidden text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Close menu">

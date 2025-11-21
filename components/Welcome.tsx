@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { CalendarIcon } from './icons/CalendarIcon';
 import { ClipboardListIcon } from './icons/ClipboardListIcon';
 import { ChatBubbleIcon } from './icons/ChatBubbleIcon';
@@ -70,7 +70,7 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToPatron
             `}
           </style>
           <h1 className="text-5xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600 animate-fade-in-down">
-            Welcome to Club Hub
+            Welcome to ICT Club Hub
           </h1>
           <p className="mt-4 text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
             Your central place for activities, attendance, and collaboration.
@@ -95,7 +95,7 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToPatron
       {/* Features Section */}
       <section className="py-20 bg-white dark:bg-gray-800">
         <div className="container mx-auto px-6 text-center">
-            <h2 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600">Why Club Hub?</h2>
+            <h2 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600">Why ICT Club Hub?</h2>
             <p className="mb-12 text-lg text-gray-600 dark:text-gray-400">Everything your ICT club needs, all in one place.</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {/* Feature 1 */}

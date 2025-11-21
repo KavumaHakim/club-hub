@@ -12,7 +12,7 @@ interface OutputLine {
 }
 
 const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme }) => {
-  const [code, setCode] = useState<string>('print("Hello from the Club Hub Playground!")\n\n# The return value of the last expression is also displayed\nimport math\n\nmath.pi');
+  const [code, setCode] = useState<string>('print("Hello from the ICT Club Hub Playground!")\n\n# The return value of the last expression is also displayed\nimport math\n\nmath.pi');
   const [output, setOutput] = useState<OutputLine[]>([{ type: 'log', content: 'Click "Run Code" to see the output here.' }]);
   const [isExecuting, setIsExecuting] = useState<boolean>(false);
   const [pyodide, setPyodide] = useState<any | null>(null);
@@ -83,6 +83,9 @@ sys.stderr = Writer('error')
     `;
 
     try {
+        // Load packages based on imports
+        await pyodide.loadPackagesFromImports(code);
+
         await pyodide.runPythonAsync(setupCode);
         const result = await pyodide.runPythonAsync(code);
 

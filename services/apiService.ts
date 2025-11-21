@@ -281,6 +281,9 @@ export const getFeedItems = async (): Promise<FeedItem[]> => {
         
         return {
             ...item,
+            id: item.id.toString(),
+            // Ensure title handles nulls from DB correctly, treating them as undefined for TS
+            title: item.title || undefined,
             author: authorName,
             authorAvatarUrl: authorProfile?.avatar_url || `https://i.pravatar.cc/40?u=${authorUid}`,
             timestamp: new Date(item.created_at).toLocaleString(), // Format timestamp
@@ -291,7 +294,7 @@ export const getFeedItems = async (): Promise<FeedItem[]> => {
 export const addFeedItem = async (itemData: Omit<FeedItem, 'id' | 'author' | 'authorAvatarUrl' | 'timestamp'>, authorId: string): Promise<void> => {
     const newFeedItem = {
         type: itemData.type,
-        title: itemData.title || null, // Convert undefined/empty string to null if needed, or just ensure it's handled
+        title: itemData.title || null, // Explicitly null if undefined to match DB expectations if strict
         message: itemData.message,
         author_uid: authorId,
     };

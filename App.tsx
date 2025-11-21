@@ -169,7 +169,7 @@ const App: React.FC = () => {
                   <MenuIcon />
                 </button>
                 <h1 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600">
-                  Club Hub
+                  ICT Club Hub
                 </h1>
                 {/* A small placeholder to balance the flexbox */}
                 <div className="w-6 h-6"></div> 

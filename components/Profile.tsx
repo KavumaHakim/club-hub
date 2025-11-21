@@ -190,7 +190,7 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
             const updatedUser = { ...currentUser, avatarUrl: newAvatarUrl };
             onUpdateUserProfile(updatedUser);
             
-            // FIX: Refetch all data that uses user information to ensure consistency across Feed, Members, and Projects
+            // Refresh all data that depends on user info (Avatar)
             await Promise.all([
                 fetchUsers(), 
                 fetchFeedItems(),
