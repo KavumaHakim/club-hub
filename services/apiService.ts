@@ -38,15 +38,19 @@ const notifyPatronsOfNewUser = async (name: string, username: string, role: 'MEM
 
 export const login = async (email: string, password?: string): Promise<User> => {
     if (!password) throw new Error("Password is required.");
+    
+    // Explicitly check password strength or other pre-checks here if needed in future
+    
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw new Error(error.message);
     if (!data.user) throw new Error("Login failed: no user returned");
 
+    // We fetch the profile to ensure the user exists in our 'users' table.
     const userProfile = await getUserProfile(data.user.id);
     if (!userProfile) {
-        // If profile doesn't exist, sign out the user to prevent a broken state
+        // If profile doesn't exist (DB inconsistency), sign out the user
         await supabase.auth.signOut();
-        throw new Error("User profile not found.");
+        throw new Error("User profile not found. Please contact an admin.");
     }
     
     return userProfile;
@@ -135,8 +139,6 @@ export const getUsers = async (): Promise<User[]> => {
     if (error) throw new Error(error.message);
     if (!usersData || usersData.length === 0) return [];
     
-    // The complex logic for fetching from `user_uploads` is removed.
-    // We just map the results directly.
     return usersData.map(user => ({
         ...user,
         avatarUrl: user.avatar_url,
@@ -445,7 +447,6 @@ export const assignProjectTask = async (taskId: string, assigneeId: string | und
 };
 
 // --- RESOURCES API ---
-const RESOURCE_BUCKET = 'resource_uploads';
 
 export const getResources = async (): Promise<Omit<Resource, 'uploaderName' | 'uploaderAvatarUrl'>[]> => {
     const { data, error } = await supabase
@@ -470,28 +471,6 @@ export const getResources = async (): Promise<Omit<Resource, 'uploaderName' | 'u
     }));
 };
 
-/*
-* NOTE ON ROW-LEVEL SECURITY (RLS) FOR RESOURCES:
-* The error "new row violates row-level security policy" almost always indicates a misconfiguration
-* in your Supabase database policies, not a client-side code error. This app's code is correctly
-* passing the authenticated user's ID.
-*
-* To fix this, please ensure you have RLS policies enabled on your 'resources' table that
-* allow authorized users to insert data.
-*
-* Example Policy for allowing only PATRONs to add resources:
-* 1. Go to your Supabase project: Authentication -> Policies.
-* 2. Select the 'resources' table and click "New Policy".
-* 3. Choose "Enable for INSERT operations".
-* 4. For "Target roles", select 'authenticated'.
-* 5. For the "WITH CHECK expression", use the following SQL:
-*    (auth.uid() = uploader_uid) AND ((SELECT role FROM public.users WHERE uid = auth.uid()) = 'PATRON'::text)
-*
-* You will also need a policy to allow users to VIEW resources:
-* 1. Create another policy for "SELECT operations".
-* 2. For "Target roles", select 'authenticated'.
-* 3. For the "USING expression", simply use: true
-*/
 export const addResource = async (
     resourceData: Omit<Resource, 'id' | 'createdAt' | 'uploaderName' | 'uploaderAvatarUrl'>
 ): Promise<void> => {
@@ -516,7 +495,7 @@ export const deleteResource = async (resource: Resource): Promise<void> => {
     if (dbError) throw new Error(dbError.message);
 };
 
-// FIX: Added API functions for fetching and updating notifications.
+
 // --- NOTIFICATIONS API ---
 
 export const getNotifications = async (userId: string): Promise<Notification[]> => {

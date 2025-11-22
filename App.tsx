@@ -43,79 +43,93 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
 
-  // Robust authentication initialization
+  // Centralized session handler to avoid code duplication
+  const processUserSession = async (userId: string) => {
+      try {
+          const userProfile = await api.getUserProfile(userId);
+          
+          if (userProfile) {
+              if (userProfile.status === 'APPROVED') {
+                  setUser(userProfile);
+                  setView('dashboard');
+                  // Run attendance marking in background
+                  api.markAttendanceOnLogin(userProfile.uid)
+                     .catch(err => console.warn("Background attendance check failed:", err));
+              } else if (userProfile.status === 'PENDING') {
+                  setShowPendingModal(true);
+                  // Ensure we sign out so they don't get stuck in a "logged in but pending" state
+                  await api.logout();
+                  setUser(null);
+                  setView('welcome');
+              } else {
+                 // Unknown status or other issue
+                 await api.logout();
+                 setUser(null);
+                 setView('welcome');
+              }
+          } else {
+              // No profile found for this user
+              await api.logout();
+              setUser(null);
+              setView('welcome');
+          }
+      } catch (error) {
+          console.error("Error processing session:", error);
+          setUser(null);
+          setView('welcome');
+      }
+  };
+
   useEffect(() => {
     let mounted = true;
 
-    const handleSession = async (session: any) => {
+    const initAuth = async () => {
         try {
+            // 1. Get initial session
+            const { data: { session } } = await supabase.auth.getSession();
+            
             if (session?.user) {
-                const userProfile = await api.getUserProfile(session.user.id);
-                
-                if (mounted) {
-                    if (userProfile && userProfile.status === 'APPROVED') {
-                        setUser(userProfile);
-                        setView('dashboard');
-                        // Run attendance marking in background
-                        api.markAttendanceOnLogin(userProfile.uid)
-                           .catch(err => console.warn("Background attendance check failed:", err));
-                    } else {
-                        // Handle pending or missing profile
-                        if (userProfile?.status === 'PENDING') {
-                            setShowPendingModal(true);
-                        }
-                        // Clear session if profile invalid
-                        if (session) await api.logout();
-                        
-                        setUser(null);
-                        setView('welcome');
-                    }
-                }
+                await processUserSession(session.user.id);
             } else {
-                if (mounted) {
-                    setUser(null);
-                    setView('welcome');
-                }
-            }
-        } catch (error) {
-            console.error("Session handling error:", error);
-            if (mounted) {
                 setUser(null);
                 setView('welcome');
             }
-        }
-    };
-
-    const initAuth = async () => {
-        try {
-            // 1. Get initial session directly
-            const { data: { session } } = await supabase.auth.getSession();
-            await handleSession(session);
         } catch (error) {
             console.error("Auth init failed:", error);
+            setUser(null);
+            setView('welcome');
         } finally {
-            if (mounted) setIsLoading(false);
+            if (mounted) {
+                setIsLoading(false);
+            }
         }
     };
 
     initAuth();
 
-    // 2. Listen for auth changes (login, logout, token refresh)
+    // 2. Listen for auth changes
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-        // Skip INITIAL_SESSION as we handled it explicitly in initAuth
-        if (event === 'INITIAL_SESSION') return;
+        if (!mounted) return;
 
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-            await handleSession(session);
+        // Note: SIGNED_IN fires on login, signup (if auto-confirm), and token refresh
+        if (event === 'SIGNED_IN') {
+             if (session?.user) {
+                 // Only process if we aren't already logged in as this user to prevent flickering
+                 setUser(currentUser => {
+                     if (currentUser?.uid === session.user.id) {
+                         return currentUser; // No change needed
+                     }
+                     // If different user or no user, fetch profile
+                     processUserSession(session.user.id);
+                     return currentUser;
+                 });
+             }
         } else if (event === 'SIGNED_OUT') {
-            if (mounted) {
-                setUser(null);
-                setView('welcome');
-            }
+            setUser(null);
+            setView('welcome');
         }
     });
 
-    // Cleanup
     return () => {
       mounted = false;
       authListener.subscription.unsubscribe();
@@ -123,27 +137,18 @@ const App: React.FC = () => {
   }, []);
 
   const handleLogin = useCallback(async (email: string, password?: string) => {
-    try {
-        // Login logic handled by apiService, state update handled by onAuthStateChange
-        const loggedInUser = await api.login(email, password);
-        if (loggedInUser.status !== 'APPROVED') {
-            await api.logout(); // Ensure session is cleared if pending approval
-            throw new Error('Your account is pending approval.');
-        }
-    } catch (error: any) {
-        console.error("Login failed:", error);
-        throw error;
-    }
+    // We only trigger the API call here. 
+    // The state update is handled by the onAuthStateChange listener to ensure consistency.
+    await api.login(email, password);
   }, []);
 
   const handleLogout = useCallback(async () => {
     try {
         await api.logout();
-        localStorage.removeItem('active_tab'); // Clear tab preference on logout
+        localStorage.removeItem('active_tab'); 
     } catch (error) {
         console.error("Logout failed:", error);
     } finally {
-        // Force clear state to ensure UI updates even if API fails
         setUser(null);
         setView('welcome');
         setActiveTab('feed');
@@ -194,11 +199,13 @@ const App: React.FC = () => {
     return classList.join(' ');
   }, [theme]);
 
-  // Render a visible loading state instead of null to avoid "blank white screen" issues
   if (isLoading) {
     return (
       <div className={`flex items-center justify-center min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-100'}`}>
-        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-pink-500"></div>
+        <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-pink-500 mb-4"></div>
+            <p className="text-gray-500 dark:text-gray-400">Loading Club Hub...</p>
+        </div>
       </div>
     );
   }
@@ -220,9 +227,9 @@ const App: React.FC = () => {
               isCollapsed={isSidebarCollapsed}
               onToggleCollapse={handleSidebarCollapseToggle}
             />
-            <div className="flex-1 flex flex-col w-full">
+            <div className="flex-1 flex flex-col w-full h-screen overflow-hidden">
                {/* Mobile Header */}
-              <header className="md:hidden bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 flex items-center justify-between p-4 sticky top-0 z-10">
+              <header className="md:hidden bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 flex items-center justify-between p-4 sticky top-0 z-10 flex-shrink-0">
                 <button onClick={handleSidebarToggle} className="text-gray-600 dark:text-gray-300 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Open menu">
                   <MenuIcon />
                 </button>
@@ -231,7 +238,7 @@ const App: React.FC = () => {
                 </h1>
                 <div className="w-6 h-6"></div> 
               </header>
-              <main className="flex-1 p-4 sm:p-6 lg:p-8 h-screen overflow-y-auto">
+              <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto scroll-smooth">
                 <Dashboard
                   activeTab={activeTab}
                   currentUser={user}
