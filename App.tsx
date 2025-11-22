@@ -43,59 +43,88 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
 
+  // Robust authentication initialization
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+    let mounted = true;
+
+    const handleSession = async (session: any) => {
         try {
-          const currentUser = session?.user;
-          if (currentUser) {
-              const userProfile = await api.getUserProfile(currentUser.id);
-              
-              if (userProfile && userProfile.status === 'APPROVED') {
-                  setUser(userProfile);
-                  setView('dashboard');
-                  
-                  // Run attendance marking in background to prevent blocking the UI load
-                  api.markAttendanceOnLogin(userProfile.uid)
-                    .catch(err => console.warn("Background attendance check failed:", err));
-
-              } else {
-                  // If user has a session but no approved profile, log them out.
-                  // This handles pending users or users whose profiles were removed.
-                  if (session) {
-                    if (userProfile && userProfile.status === 'PENDING') {
-                        setShowPendingModal(true);
+            if (session?.user) {
+                const userProfile = await api.getUserProfile(session.user.id);
+                
+                if (mounted) {
+                    if (userProfile && userProfile.status === 'APPROVED') {
+                        setUser(userProfile);
+                        setView('dashboard');
+                        // Run attendance marking in background
+                        api.markAttendanceOnLogin(userProfile.uid)
+                           .catch(err => console.warn("Background attendance check failed:", err));
+                    } else {
+                        // Handle pending or missing profile
+                        if (userProfile?.status === 'PENDING') {
+                            setShowPendingModal(true);
+                        }
+                        // Clear session if profile invalid
+                        if (session) await api.logout();
+                        
+                        setUser(null);
+                        setView('welcome');
                     }
-                    // Ensure we clean up the session so they don't get stuck
-                    await api.logout();
-                  }
-                  setUser(null);
-                  setView('welcome');
-              }
-          } else {
-              setUser(null);
-              setView('welcome');
-          }
+                }
+            } else {
+                if (mounted) {
+                    setUser(null);
+                    setView('welcome');
+                }
+            }
         } catch (error) {
-            console.error("An error occurred during authentication state change:", error);
-            // In case of any error, reset to a safe, logged-out state.
-            setUser(null);
-            setView('welcome');
-        } finally {
-            setIsLoading(false);
+            console.error("Session handling error:", error);
+            if (mounted) {
+                setUser(null);
+                setView('welcome');
+            }
         }
-      }
-    );
+    };
 
-    // Cleanup the listener on component unmount
+    const initAuth = async () => {
+        try {
+            // 1. Get initial session directly
+            const { data: { session } } = await supabase.auth.getSession();
+            await handleSession(session);
+        } catch (error) {
+            console.error("Auth init failed:", error);
+        } finally {
+            if (mounted) setIsLoading(false);
+        }
+    };
+
+    initAuth();
+
+    // 2. Listen for auth changes (login, logout, token refresh)
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+        // Skip INITIAL_SESSION as we handled it explicitly in initAuth
+        if (event === 'INITIAL_SESSION') return;
+
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+            await handleSession(session);
+        } else if (event === 'SIGNED_OUT') {
+            if (mounted) {
+                setUser(null);
+                setView('welcome');
+            }
+        }
+    });
+
+    // Cleanup
     return () => {
+      mounted = false;
       authListener.subscription.unsubscribe();
     };
   }, []);
 
   const handleLogin = useCallback(async (email: string, password?: string) => {
     try {
-        // The onAuthStateChange listener will handle setting the user and view on success.
+        // Login logic handled by apiService, state update handled by onAuthStateChange
         const loggedInUser = await api.login(email, password);
         if (loggedInUser.status !== 'APPROVED') {
             await api.logout(); // Ensure session is cleared if pending approval
