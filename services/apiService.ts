@@ -1,3 +1,4 @@
+
 import { supabase } from './supabaseClient';
 // FIX: Imported the new Notification type.
 import { User, Activity, AttendanceRecord, FeedItem, ProjectData, ProjectTask, FeedItemType, ProjectColumn, Resource, Notification, Tab } from '../types';
@@ -405,9 +406,9 @@ export const moveProjectTask = async (taskId: string, destinationColumnId: strin
     const { error } = await supabase
         .from('project_tasks')
         .update({ 
-            column_id: Number(destinationColumnId),
+            column_id: destinationColumnId,
         })
-        .eq('id', Number(taskId));
+        .eq('id', taskId);
     
     if (error) throw new Error(error.message);
 };
@@ -439,7 +440,7 @@ export const deleteProjectTask = async (taskId: string, columnId: string): Promi
     const { error } = await supabase
         .from('project_tasks')
         .delete()
-        .eq('id', Number(taskId));
+        .eq('id', taskId);
     
     if (error) throw new Error(error.message);
 };
@@ -448,7 +449,7 @@ export const assignProjectTask = async (taskId: string, assigneeId: string | und
     const { error } = await supabase
         .from('project_tasks')
         .update({ assignee_uid: assigneeId })
-        .eq('id', Number(taskId));
+        .eq('id', taskId);
     if (error) throw new Error(error.message);
 };
 
