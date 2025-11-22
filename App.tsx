@@ -16,11 +16,28 @@ type View = 'welcome' | 'login' | 'signup' | 'dashboard' | 'patronLogin' | 'patr
 type Theme = 'light' | 'dark';
 
 const App: React.FC = () => {
+  // Initialize theme from localStorage or default to 'dark'
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window !== 'undefined') {
+        return (localStorage.getItem('app_theme') as Theme) || 'dark';
+    }
+    return 'dark';
+  });
+
   const [user, setUser] = useState<User | null>(null);
   const [view, setView] = useState<View>('welcome');
-  const [theme, setTheme] = useState<Theme>('dark');
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<Tab>('feed');
+  
+  // Initialize activeTab from localStorage or default to 'feed'
+  const [activeTab, setActiveTab] = useState<Tab>(() => {
+      if (typeof window !== 'undefined') {
+          const savedTab = localStorage.getItem('active_tab') as Tab;
+          const validTabs: Tab[] = ['feed', 'activities', 'attendance', 'projects', 'profile', 'members', 'playground', 'resources'];
+          return validTabs.includes(savedTab) ? savedTab : 'feed';
+      }
+      return 'feed';
+  });
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
 
@@ -35,7 +52,9 @@ const App: React.FC = () => {
               if (userProfile && userProfile.status === 'APPROVED') {
                   setUser(userProfile);
                   setView('dashboard');
-                  setActiveTab('feed'); // Reset tab on login
+                  
+                  // Note: We do NOT reset activeTab to 'feed' here.
+                  // This allows the app to resume the tab from localStorage on refresh.
 
                   // Automatically mark attendance for today's activities on login
                   try {
@@ -95,12 +114,14 @@ const App: React.FC = () => {
   const handleLogout = useCallback(async () => {
     try {
         await api.logout();
+        localStorage.removeItem('active_tab'); // Clear tab preference on logout
     } catch (error) {
         console.error("Logout failed:", error);
     } finally {
         // Force clear state to ensure UI updates even if API fails
         setUser(null);
         setView('welcome');
+        setActiveTab('feed');
     }
   }, []);
 
@@ -120,7 +141,16 @@ const App: React.FC = () => {
 
 
   const toggleTheme = useCallback(() => {
-    setTheme(prevTheme => (prevTheme === 'light' ? 'dark' : 'light'));
+    setTheme(prevTheme => {
+        const newTheme = prevTheme === 'light' ? 'dark' : 'light';
+        localStorage.setItem('app_theme', newTheme);
+        return newTheme;
+    });
+  }, []);
+  
+  const handleTabChange = useCallback((tab: Tab) => {
+      setActiveTab(tab);
+      localStorage.setItem('active_tab', tab);
   }, []);
   
   const handleSidebarToggle = useCallback(() => {
@@ -156,7 +186,7 @@ const App: React.FC = () => {
               theme={theme}
               onToggleTheme={toggleTheme}
               activeTab={activeTab}
-              setActiveTab={setActiveTab}
+              setActiveTab={handleTabChange}
               isOpen={isSidebarOpen}
               onClose={handleSidebarToggle}
               isCollapsed={isSidebarCollapsed}

@@ -74,6 +74,7 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToPatron
           </h1>
           <p className="mt-4 text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
             Your central place for activities, attendance, and collaboration.
+          </p>
           <button
             onClick={onNavigateToLogin}
             className="mt-10 px-8 py-4 text-lg font-semibold text-white bg-gradient-to-r from-pink-500 to-purple-600 rounded-lg shadow-lg hover:scale-105 transform transition-transform duration-300 focus:outline-none focus:ring-4 focus:ring-pink-500/50 dark:focus:ring-purple-500/50 animate-fade-in-up"

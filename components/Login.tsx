@@ -52,7 +52,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToSignUp, onNavigateTo
             />
           </div>
           <div>
-            <label htmlFor="password"className="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
             <div className="relative mt-1">
               <input
                 id="password"

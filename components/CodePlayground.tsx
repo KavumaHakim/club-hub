@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { PlayIcon } from './icons/PlayIcon';
 import { TrashIcon } from './icons/TrashIcon';
@@ -13,7 +14,7 @@ interface OutputLine {
 }
 
 const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme }) => {
-  const [code, setCode] = useState<string>('print("Hello from the ICT Club Hub Playground!")\n\n# The return value of the last expression is also displayed\nimport math\n\nmath.pi');
+  const [code, setCode] = useState<string>('print("Hello from the ICT Club Hub Playground!")\n\nname = input("What is your name? ")\nprint(f"Nice to meet you, {name}!")\n\n# The return value of the last expression is also displayed\nimport math\nmath.pi');
   const [output, setOutput] = useState<OutputLine[]>([{ type: 'log', content: 'Click "Run Code" to see the output here.' }]);
   const [isExecuting, setIsExecuting] = useState<boolean>(false);
   const [pyodide, setPyodide] = useState<any | null>(null);
@@ -68,19 +69,31 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme }) => {
         }
     };
 
-    // 2. Python code to redirect stdout/stderr
+    // 2. Python code to redirect stdout/stderr and override input()
     const setupCode = `
 import sys
-from js import sendOutputToReact
+import builtins
+from js import sendOutputToReact, prompt
 
 class Writer:
     def __init__(self, stream_type):
         self.stream_type = stream_type
     def write(self, text):
         sendOutputToReact(text, self.stream_type)
+    def flush(self):
+        pass
 
 sys.stdout = Writer('log')
 sys.stderr = Writer('error')
+
+def input_override(prompt_text=""):
+    val = prompt(prompt_text)
+    if val is None:
+        val = ""
+    print(f"{prompt_text}{val}")
+    return val
+
+builtins.input = input_override
     `;
 
     try {
