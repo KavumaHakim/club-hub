@@ -145,10 +145,11 @@ const Chat: React.FC<ChatProps> = ({ currentUser }) => {
 
     const activeRoom = useMemo(() => rooms.find(r => r.id === activeRoomId), [rooms, activeRoomId]);
 
-    const scrollToBottom = () => {
+    const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+        // Use setTimeout to allow DOM updates to complete before scrolling
         setTimeout(() => {
-            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-        }, 100);
+            messagesEndRef.current?.scrollIntoView({ behavior });
+        }, 50);
     };
 
     useEffect(() => {
@@ -196,7 +197,11 @@ const Chat: React.FC<ChatProps> = ({ currentUser }) => {
                 }
                 return msgs;
             });
-            if (showLoadingIndicator) scrollToBottom();
+            // If loading for the first time or refreshing, we want to jump to bottom immediately
+            if (showLoadingIndicator) {
+                 // Slight delay to ensure render
+                 setTimeout(() => scrollToBottom('auto'), 100);
+            }
         } catch (error) {
             console.error("Failed to load messages", error);
         } finally {
@@ -210,7 +215,7 @@ const Chat: React.FC<ChatProps> = ({ currentUser }) => {
         setIsRefreshing(true);
         await loadMessages(activeRoomId, false);
         setIsRefreshing(false);
-        scrollToBottom();
+        scrollToBottom('smooth');
     };
     
     const handleDeleteMessage = async (messageId: string) => {
@@ -294,7 +299,8 @@ const Chat: React.FC<ChatProps> = ({ currentUser }) => {
                                 if (prev.some(m => m.id === newMsg.id)) return prev;
                                 return [...prev, newMsg];
                             });
-                            scrollToBottom();
+                            // Scroll to bottom on new message
+                            scrollToBottom('smooth');
                         }
                     } else if (payload.eventType === 'DELETE') {
                         const deletedId = payload.old.id;
@@ -327,11 +333,6 @@ const Chat: React.FC<ChatProps> = ({ currentUser }) => {
         return () => clearInterval(intervalId);
     }, [activeRoomId, loadMessages]);
 
-
-    useEffect(() => {
-        scrollToBottom();
-    }, [messages.length, activeRoomId]); // Scroll when message count changes or room changes
-
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newMessage.trim()) return;
@@ -342,13 +343,16 @@ const Chat: React.FC<ChatProps> = ({ currentUser }) => {
 
         if (activeRoomId) {
             try {
+                // Optimistically add to UI first for instant feedback (optional but good UX)
+                // However, our realtime listener handles insertion, so we avoid duplicates by waiting
+                // or deduping. The api call returns the full object.
                 const sentMsg = await api.sendMessage(activeRoomId, currentUser.uid, content);
                 
                 setMessages(prev => {
                     if (prev.some(m => m.id === sentMsg.id)) return prev;
                     return [...prev, sentMsg];
                 });
-                scrollToBottom();
+                scrollToBottom('smooth');
                 
             } catch (error) {
                 console.error("Failed to send message", error);

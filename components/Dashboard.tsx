@@ -1,3 +1,4 @@
+
 import React, { Suspense, lazy } from 'react';
 import { User, Tab } from '../types';
 
@@ -38,7 +39,7 @@ const TabPanel: React.FC<{ active: boolean; children: React.ReactNode; className
 
 const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile, activeTab, setActiveTab, theme }) => {
   return (
-    <div className={activeTab === 'chat' ? 'h-full' : ''}>
+    <div className={(activeTab === 'chat' || activeTab === 'playground') ? 'h-full' : ''}>
       <Suspense fallback={<LoadingIndicator />}>
         <TabPanel active={activeTab === 'feed'}>
             <Feed currentUser={currentUser} />
@@ -52,7 +53,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile,
         <TabPanel active={activeTab === 'projects'}>
             <ProjectsBoard currentUser={currentUser} />
         </TabPanel>
-        <TabPanel active={activeTab === 'playground'}>
+        <TabPanel active={activeTab === 'playground'} className="h-full">
             <CodePlayground theme={theme} currentUser={currentUser} />
         </TabPanel>
         <TabPanel active={activeTab === 'profile'}>

@@ -302,7 +302,7 @@ builtins.input = input_override
   const hasContent = output.length > 0 && output[0].content !== 'Click "Run Code" to see the output here.';
 
   return (
-    <div className="flex flex-col h-[calc(100vh-10rem)] relative">
+    <div className="flex flex-col h-full relative p-4 sm:p-6">
       {/* Hidden file input */}
       <input
         type="file"
