@@ -7,6 +7,9 @@ import { ClipboardListIcon } from './icons/ClipboardListIcon';
 import { BookOpenIcon } from './icons/BookOpenIcon';
 import { CodeIcon } from './icons/CodeIcon';
 import { ChatBubbleIcon } from './icons/ChatBubbleIcon';
+import { CheckCircleIcon } from './icons/CheckCircleIcon';
+import { GlobeIcon } from './icons/GlobeIcon';
+import { IdentificationIcon } from './icons/IdentificationIcon';
 
 interface FeatureTourModalProps {
   isOpen: boolean;
@@ -21,48 +24,87 @@ const FeatureTourModal: React.FC<FeatureTourModalProps> = ({ isOpen, onClose }) 
   const steps = [
     {
       title: "Welcome to ICT Club Hub!",
-      description: "We're excited to have you! This is your central place to connect, learn, and build with fellow members. Let's take a quick look around.",
+      description: "We're excited to have you! This is your central place to connect, learn, and build with fellow members. Let's take a tour of what you can do here.",
       icon: <span className="text-6xl">👋</span>,
       gradient: "from-pink-500 to-purple-600"
     },
     {
-      title: "Stay in the Loop",
-      description: "The **Feed** keeps you updated with club announcements. Check **Activities** to see upcoming events, workshops, and deadlines.",
+      title: "Feed & Announcements",
+      description: "Start your day with the **Feed**. Catch up on the latest club news, event announcements, and posts from other members.",
       icon: (
-        <div className="flex space-x-6 text-white">
-           <div className="p-4 bg-white/20 rounded-full backdrop-blur-sm"><HomeIcon /></div>
-           <div className="p-4 bg-white/20 rounded-full backdrop-blur-sm"><CalendarIcon /></div>
+        <div className="p-6 bg-white/20 rounded-full backdrop-blur-sm text-white">
+           <HomeIcon />
         </div>
       ),
       gradient: "from-blue-400 to-indigo-600"
     },
     {
-      title: "Collaborate & Chat",
-      description: "Manage tasks on the **Projects** board and communicate in real-time with **Messages**. Teamwork makes the dream work!",
+      title: "Activities & Attendance",
+      description: "Check the **Activities** tab for upcoming workshops and events. Don't forget to RSVP! Your **Attendance** record tracks your participation stats automatically.",
       icon: (
-        <div className="flex space-x-6 text-white">
-           <div className="p-4 bg-white/20 rounded-full backdrop-blur-sm"><ClipboardListIcon /></div>
-           <div className="p-4 bg-white/20 rounded-full backdrop-blur-sm"><ChatBubbleIcon /></div>
+        <div className="flex space-x-4 text-white">
+           <div className="p-4 bg-white/20 rounded-full backdrop-blur-sm"><CalendarIcon /></div>
+           <div className="p-4 bg-white/20 rounded-full backdrop-blur-sm"><CheckCircleIcon /></div>
+        </div>
+      ),
+      gradient: "from-green-400 to-emerald-600"
+    },
+    {
+      title: "Project Management",
+      description: "Got a club project? Use the **Projects** Kanban board to create tasks, assign members, set deadlines, and track progress together.",
+      icon: (
+        <div className="p-6 bg-white/20 rounded-full backdrop-blur-sm text-white">
+           <ClipboardListIcon />
         </div>
       ),
       gradient: "from-purple-400 to-fuchsia-600"
     },
     {
       title: "Learn & Code",
-      description: "Access tutorials in **Resources** or write and execute Python code instantly in the **Playground**.",
+      description: "Access tutorials in **Resources** or practice coding in the **Playground**—a full Python environment in your browser with cloud saving.",
       icon: (
-         <div className="flex space-x-6 text-white">
+         <div className="flex space-x-4 text-white">
            <div className="p-4 bg-white/20 rounded-full backdrop-blur-sm"><BookOpenIcon /></div>
            <div className="p-4 bg-white/20 rounded-full backdrop-blur-sm"><CodeIcon /></div>
         </div>
       ),
-      gradient: "from-emerald-400 to-teal-600"
+      gradient: "from-yellow-400 to-orange-500"
+    },
+    {
+      title: "Showcase & Share",
+      description: "Proud of your code? Publish it to the **Showcase**! You can browse, like, and clone snippets shared by other members.",
+      icon: (
+        <div className="p-6 bg-white/20 rounded-full backdrop-blur-sm text-white">
+           <GlobeIcon />
+        </div>
+      ),
+      gradient: "from-indigo-500 to-purple-600"
+    },
+    {
+      title: "Chat & Collaborate",
+      description: "Stay connected with **Messages**. Create group chats for projects, send direct messages, and share code snippets instantly.",
+      icon: (
+        <div className="p-6 bg-white/20 rounded-full backdrop-blur-sm text-white">
+           <ChatBubbleIcon />
+        </div>
+      ),
+      gradient: "from-pink-500 to-rose-500"
+    },
+    {
+        title: "Your Profile",
+        description: "Customize your avatar, view your personal attendance statistics, and manage your account settings in the **Profile** section.",
+        icon: (
+          <div className="p-6 bg-white/20 rounded-full backdrop-blur-sm text-white">
+             <IdentificationIcon />
+          </div>
+        ),
+        gradient: "from-teal-400 to-cyan-600"
     },
      {
-      title: "You're All Set!",
-      description: "Explore the app, customize your profile, and start building. If you have questions, ask a Patron or use the club chat.",
+      title: "Ready to Explore?",
+      description: "That's the tour! Dive in, start building, and make the most of the ICT Club Hub.",
       icon: <span className="text-6xl">🚀</span>,
-      gradient: "from-orange-400 to-red-500"
+      gradient: "from-gray-700 to-black"
     }
   ];
 
@@ -93,7 +135,7 @@ const FeatureTourModal: React.FC<FeatureTourModalProps> = ({ isOpen, onClose }) 
             animation: fadeInUp 0.4s ease-out forwards;
         }
       `}</style>
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col min-h-[450px] animate-fade-in-up relative border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col min-h-[480px] animate-fade-in-up relative border border-gray-200 dark:border-gray-700">
         
         {/* Header / Graphic Area */}
         <div className={`h-48 bg-gradient-to-br ${step.gradient} flex items-center justify-center relative transition-colors duration-500`}>
@@ -104,7 +146,7 @@ const FeatureTourModal: React.FC<FeatureTourModalProps> = ({ isOpen, onClose }) 
             >
                 <XIcon />
             </button>
-            <div className="transform scale-110 transition-transform duration-500">
+            <div className="transform scale-125 transition-transform duration-500">
                 {step.icon}
             </div>
             
@@ -130,7 +172,7 @@ const FeatureTourModal: React.FC<FeatureTourModalProps> = ({ isOpen, onClose }) 
                 {steps.map((_, index) => (
                     <div 
                         key={index} 
-                        className={`h-2 rounded-full transition-all duration-300 ${index === currentStep ? `w-6 bg-gray-800 dark:bg-gray-200` : 'w-2 bg-gray-300 dark:bg-gray-600'}`}
+                        className={`h-1.5 rounded-full transition-all duration-300 ${index === currentStep ? `w-6 bg-gray-800 dark:bg-gray-200` : 'w-1.5 bg-gray-300 dark:bg-gray-600'}`}
                     />
                 ))}
             </div>

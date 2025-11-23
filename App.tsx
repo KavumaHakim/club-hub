@@ -10,6 +10,7 @@ import PatronLogin from './components/PatronLogin';
 import PatronSignUp from './components/PatronSignUp';
 import PendingApprovalModal from './components/PendingApprovalModal';
 import FeatureTourModal from './components/FeatureTourModal';
+import CustomCursor from './components/CustomCursor';
 import * as api from './services/apiService';
 import { supabase } from './services/supabaseClient';
 import { MenuIcon } from './components/icons/MenuIcon';
@@ -286,6 +287,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-full font-sans text-gray-800 dark:text-gray-200">
+      <CustomCursor />
       {renderContent()}
       <PendingApprovalModal 
         isOpen={showPendingModal} 
