@@ -9,6 +9,7 @@ import { XIcon } from './icons/XIcon';
 import Editor from '@monaco-editor/react';
 import { User } from '../types';
 import * as api from '../services/apiService';
+import { ExclamationCircleIcon } from './icons/ExclamationCircleIcon';
 
 interface CodePlaygroundProps {
     theme: 'light' | 'dark';
@@ -59,11 +60,19 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser }) =
   const [isSaving, setIsSaving] = useState(false);
   const [cloudMessage, setCloudMessage] = useState<{text: string, type: 'success'|'error'} | null>(null);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // Overwrite Confirmation State
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [pendingCode, setPendingCode] = useState<string | null>(null);
 
-  // Auto-save code to local storage
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Keep track of current code in ref for event listeners
+  const codeRef = useRef(code);
+
+  // Auto-save code to local storage and update ref
   useEffect(() => {
       localStorage.setItem('playground_code', code);
+      codeRef.current = code;
   }, [code]);
 
   useEffect(() => {
@@ -83,12 +92,20 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser }) =
     };
     setupPyodide();
 
-    // Listen for code opening events from Resources
+    // Listen for code opening events from Resources or Chat
     const handleOpenCode = (e: CustomEvent<string>) => {
         if (e.detail) {
-            setCode(e.detail);
-            setActiveTab('editor');
-            setOutput([{ type: 'log', content: 'Loaded code from resources.' }]);
+            const currentCode = codeRef.current;
+            // If the code is just the default or empty, replace immediately.
+            // Otherwise, ask for confirmation to prevent accidental loss.
+            if (!currentCode || currentCode.trim() === '' || currentCode.trim() === DEFAULT_CODE.trim()) {
+                setCode(e.detail);
+                setActiveTab('editor');
+                setOutput([{ type: 'log', content: 'Loaded code from external source.' }]);
+            } else {
+                setPendingCode(e.detail);
+                setIsConfirmOpen(true);
+            }
         }
     };
     
@@ -132,6 +149,23 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser }) =
 
   const triggerFileUpload = () => {
     fileInputRef.current?.click();
+  };
+
+  // --- Confirmation Handlers ---
+
+  const confirmReplace = () => {
+    if (pendingCode) {
+        setCode(pendingCode);
+        setActiveTab('editor');
+        setOutput([{ type: 'log', content: 'Loaded code from external source.' }]);
+    }
+    setPendingCode(null);
+    setIsConfirmOpen(false);
+  };
+
+  const cancelReplace = () => {
+    setPendingCode(null);
+    setIsConfirmOpen(false);
   };
 
   // --- Cloud Functions ---
@@ -516,6 +550,35 @@ builtins.input = input_override
                    </div>
               </div>
           </div>
+      )}
+
+      {/* Confirmation Modal for Replacing Code */}
+      {isConfirmOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-sm w-full p-6 relative border border-gray-200 dark:border-gray-700 text-center animate-fade-in-up">
+                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 mb-4">
+                    <ExclamationCircleIcon className="h-6 w-6" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Unsaved Changes</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                    Your current code in the playground will be overwritten. Do you want to continue?
+                </p>
+                <div className="flex gap-3">
+                    <button 
+                        onClick={cancelReplace}
+                        className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                    >
+                        Cancel
+                    </button>
+                    <button 
+                        onClick={confirmReplace}
+                        className="flex-1 px-4 py-2 bg-pink-600 text-white rounded-lg font-medium hover:bg-pink-700 transition-colors shadow-sm"
+                    >
+                        Replace
+                    </button>
+                </div>
+             </div>
+        </div>
       )}
     </div>
   );
