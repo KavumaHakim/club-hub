@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { User, Message, Room } from '../types';
 import { useData } from '../DataContext';
@@ -169,7 +168,16 @@ const Chat: React.FC<ChatProps> = ({ currentUser }) => {
                 'postgres_changes',
                 { event: 'INSERT', schema: 'public', table: 'messages', filter: `room_id=eq.${activeRoomId}` },
                 (payload) => {
-                    const newMsg = payload.new as Message;
+                    // Correctly map snake_case payload from DB to camelCase Message type
+                    const rawMsg = payload.new as any;
+                    const newMsg: Message = {
+                        id: rawMsg.id,
+                        roomId: rawMsg.room_id,
+                        senderId: rawMsg.sender_id,
+                        content: rawMsg.content,
+                        createdAt: rawMsg.created_at,
+                        metadata: rawMsg.metadata
+                    };
                     setMessages(prev => [...prev, newMsg]);
                     scrollToBottom();
                 }

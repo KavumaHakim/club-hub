@@ -109,16 +109,16 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, theme, onToggleTheme,
         <nav className="flex-1 px-4 py-6 overflow-y-auto">
           <ul className="space-y-2">
             <NavLink tabName="feed" label="Feed" icon={<HomeIcon />} activeTab={activeTab} onClick={handleNavClick} isCollapsed={isCollapsed}/>
-            <NavLink tabName="chat" label="Messages" icon={<ChatBubbleIcon />} activeTab={activeTab} onClick={handleNavClick} isCollapsed={isCollapsed}/>
             <NavLink tabName="activities" label="Activities" icon={<CalendarIcon />} activeTab={activeTab} onClick={handleNavClick} isCollapsed={isCollapsed}/>
             <NavLink tabName="attendance" label="Attendance" icon={<CheckCircleIcon />} activeTab={activeTab} onClick={handleNavClick} isCollapsed={isCollapsed}/>
             <NavLink tabName="projects" label="Projects" icon={<ClipboardListIcon />} activeTab={activeTab} onClick={handleNavClick} isCollapsed={isCollapsed}/>
-            <NavLink tabName="playground" label="Playground" icon={<CodeIcon />} activeTab={activeTab} onClick={handleNavClick} isCollapsed={isCollapsed}/>
-            <NavLink tabName="profile" label="Profile" icon={<IdentificationIcon />} activeTab={activeTab} onClick={handleNavClick} isCollapsed={isCollapsed}/>
+            <NavLink tabName="chat" label="Messages" icon={<ChatBubbleIcon />} activeTab={activeTab} onClick={handleNavClick} isCollapsed={isCollapsed}/>
             <NavLink tabName="resources" label="Resources" icon={<BookOpenIcon />} activeTab={activeTab} onClick={handleNavClick} isCollapsed={isCollapsed}/>
+            <NavLink tabName="playground" label="Playground" icon={<CodeIcon />} activeTab={activeTab} onClick={handleNavClick} isCollapsed={isCollapsed}/>
             {user.role === 'PATRON' && (
               <NavLink tabName="members" label="Members" icon={<UsersIcon />} activeTab={activeTab} onClick={handleNavClick} isCollapsed={isCollapsed}/>
             )}
+            <NavLink tabName="profile" label="Profile" icon={<IdentificationIcon />} activeTab={activeTab} onClick={handleNavClick} isCollapsed={isCollapsed}/>
           </ul>
         </nav>
 

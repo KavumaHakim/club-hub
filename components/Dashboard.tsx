@@ -1,4 +1,3 @@
-
 import React, { Suspense, lazy } from 'react';
 import { User, Tab } from '../types';
 
@@ -38,7 +37,7 @@ const TabPanel: React.FC<{ active: boolean; children: React.ReactNode; className
 
 const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile, activeTab, theme }) => {
   return (
-    <div>
+    <div className={activeTab === 'chat' ? 'h-full' : ''}>
       <Suspense fallback={<LoadingIndicator />}>
         <TabPanel active={activeTab === 'feed'}>
             <Feed currentUser={currentUser} />
@@ -61,8 +60,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile,
         <TabPanel active={activeTab === 'resources'}>
             <Resources currentUser={currentUser} />
         </TabPanel>
-        <TabPanel active={activeTab === 'chat'} className="h-[calc(100vh-6rem)] -m-4 sm:-m-6 lg:-m-8">
-            {/* Removed default margin for chat to make it full height/width relative to main container */}
+        <TabPanel active={activeTab === 'chat'} className="h-full">
             <Chat currentUser={currentUser} />
         </TabPanel>
         {currentUser.role === 'PATRON' && (
