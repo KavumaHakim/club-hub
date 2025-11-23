@@ -62,7 +62,7 @@ export interface ProjectData {
   columnOrder: string[];
 }
 
-export type ResourceType = 'LINK' | 'VIDEO';
+export type ResourceType = 'LINK' | 'VIDEO' | 'PYTHON';
 
 export type ResourceCategory = 'Documentation' | 'Tutorial' | 'Tool' | 'Article' | 'Other';
 

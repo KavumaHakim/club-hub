@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { User, Tab } from './types';
 import Login from './components/Login';
@@ -242,6 +243,7 @@ const App: React.FC = () => {
               <main className={`flex-1 ${activeTab === 'chat' ? 'h-full overflow-hidden' : 'p-4 sm:p-6 lg:p-8 overflow-y-auto scroll-smooth'}`}>
                 <Dashboard
                   activeTab={activeTab}
+                  setActiveTab={handleTabChange}
                   currentUser={user}
                   onUpdateUserProfile={handleUpdateUserProfile}
                   theme={theme}

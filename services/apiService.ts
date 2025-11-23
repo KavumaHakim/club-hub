@@ -132,6 +132,30 @@ export const getUserProfile = async (uid: string): Promise<User | null> => {
     };
 };
 
+export const sendPasswordResetEmail = async (email: string): Promise<void> => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    if (error) throw new Error(error.message);
+};
+
+export const resetPasswordWithOtp = async (email: string, token: string, newPassword: string): Promise<void> => {
+    // 1. Verify the OTP. This exchanges the OTP for a valid session (recovery mode).
+    const { data, error: verifyError } = await supabase.auth.verifyOtp({
+        email,
+        token,
+        type: 'recovery',
+    });
+
+    if (verifyError) throw new Error(verifyError.message);
+    if (!data.session) throw new Error("Verification failed. Please check the code and try again.");
+
+    // 2. Update the user's password using the active session from step 1.
+    const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword
+    });
+
+    if (updateError) throw new Error(updateError.message);
+};
+
 
 // --- USERS API ---
 
@@ -455,6 +479,8 @@ export const assignProjectTask = async (taskId: string, assigneeId: string | und
 
 // --- RESOURCES API ---
 
+const RESOURCES_BUCKET = 'resource_files';
+
 export const getResources = async (): Promise<Omit<Resource, 'uploaderName' | 'uploaderAvatarUrl'>[]> => {
     const { data, error } = await supabase
         .from('resources')
@@ -494,6 +520,24 @@ export const addResource = async (
 
     const { error: insertError } = await supabase.from('resources').insert(resourceToInsert);
     if (insertError) throw new Error(insertError.message);
+};
+
+export const uploadResourceFile = async (file: File): Promise<string> => {
+    const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+    const { data, error } = await supabase.storage
+        .from(RESOURCES_BUCKET)
+        .upload(fileName, file, {
+            upsert: false,
+            contentType: 'text/x-python'
+        });
+
+    if (error) throw new Error(`Failed to upload file: ${error.message}`);
+
+    const { data: { publicUrl } } = supabase.storage
+        .from(RESOURCES_BUCKET)
+        .getPublicUrl(fileName);
+
+    return publicUrl;
 };
 
 export const deleteResource = async (resource: Resource): Promise<void> => {

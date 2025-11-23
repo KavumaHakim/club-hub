@@ -1,15 +1,18 @@
+
 import React, { useState, useMemo, useCallback } from 'react';
-import { User, Resource, ResourceType, ResourceCategory } from '../types';
+import { User, Resource, ResourceType, ResourceCategory, Tab } from '../types';
 import * as api from '../services/apiService';
 import { useData } from '../DataContext';
 import ResourceCard from './ResourceCard';
 import { PlusCircleIcon } from './icons/PlusCircleIcon';
+import { UploadIcon } from './icons/UploadIcon';
 
 interface ResourcesProps {
     currentUser: User;
+    setActiveTab: (tab: Tab) => void;
 }
 
-const Resources: React.FC<ResourcesProps> = ({ currentUser }) => {
+const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
     const { resources, isLoadingResources, resourcesError, fetchResources } = useData();
     const isPatron = currentUser.role === 'PATRON';
 
@@ -19,26 +22,52 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser }) => {
     const [category, setCategory] = useState<ResourceCategory>('Tutorial');
     const [type, setType] = useState<ResourceType>('LINK');
     const [url, setUrl] = useState('');
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setSelectedFile(e.target.files[0]);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!title || !description || !category || !url) {
+        
+        // Basic validation
+        if (!title || !description || !category) {
             setError("Please fill all required fields.");
             return;
+        }
+
+        if (type === 'PYTHON' && !selectedFile) {
+             setError("Please select a Python file to upload.");
+             return;
+        }
+
+        if (type !== 'PYTHON' && !url) {
+             setError("Please enter a valid URL.");
+             return;
         }
         
         setIsSubmitting(true);
         setError(null);
 
         try {
+            let resourceUrl = url;
+
+            if (type === 'PYTHON' && selectedFile) {
+                // Upload file first
+                resourceUrl = await api.uploadResourceFile(selectedFile);
+            }
+
             await api.addResource({
                 title,
                 description,
                 category,
                 type,
-                url: url,
+                url: resourceUrl,
                 uploaderUid: currentUser.uid,
                 topic: null, // Add topic to satisfy schema
             });
@@ -49,6 +78,7 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser }) => {
             setCategory('Tutorial');
             setType('LINK');
             setUrl('');
+            setSelectedFile(null);
             
             await fetchResources(); // Refresh data
         } catch (err: any) {
@@ -95,7 +125,13 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser }) => {
                             <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4 pb-2 border-b-2 border-pink-500/50">{category}</h3>
                             <div className="space-y-4">
                                 {items.map(resource => (
-                                    <ResourceCard key={resource.id} resource={resource} currentUser={currentUser} onDelete={handleDelete} />
+                                    <ResourceCard 
+                                        key={resource.id} 
+                                        resource={resource} 
+                                        currentUser={currentUser} 
+                                        onDelete={handleDelete}
+                                        setActiveTab={setActiveTab}
+                                    />
                                 ))}
                             </div>
                         </div>
@@ -135,11 +171,32 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser }) => {
                                 <select id="type-select" value={type} onChange={e => setType(e.target.value as ResourceType)} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500">
                                     <option value="LINK">Link</option>
                                     <option value="VIDEO">Video</option>
+                                    <option value="PYTHON">Python File</option>
                                 </select>
                             </div>
                             <div>
-                                <label htmlFor="url-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">URL</label>
-                                <input id="url-input" type="url" placeholder="https://example.com" value={url} onChange={e => setUrl(e.target.value)} required className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500" />
+                                <label htmlFor="resource-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    {type === 'PYTHON' ? 'Upload File (.py)' : 'URL'}
+                                </label>
+                                {type === 'PYTHON' ? (
+                                    <div className="relative">
+                                         <input 
+                                            id="file-input" 
+                                            type="file" 
+                                            accept=".py"
+                                            onChange={handleFileChange}
+                                            className="hidden" 
+                                        />
+                                        <label htmlFor="file-input" className="cursor-pointer flex items-center justify-between w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
+                                            <span className="text-gray-500 dark:text-gray-400 truncate">
+                                                {selectedFile ? selectedFile.name : 'Choose a file...'}
+                                            </span>
+                                            <UploadIcon className="h-5 w-5 text-gray-400" />
+                                        </label>
+                                    </div>
+                                ) : (
+                                    <input id="url-input" type="url" placeholder="https://example.com" value={url} onChange={e => setUrl(e.target.value)} required className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500" />
+                                )}
                             </div>
                         </div>
                         {error && <p className="text-sm text-red-500">{error}</p>}

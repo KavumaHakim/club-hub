@@ -19,6 +19,7 @@ interface DashboardProps {
   currentUser: User;
   onUpdateUserProfile: (user: User) => void;
   activeTab: Tab;
+  setActiveTab: (tab: Tab) => void;
   theme: Theme;
 }
 
@@ -36,7 +37,7 @@ const TabPanel: React.FC<{ active: boolean; children: React.ReactNode; className
 );
 
 
-const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile, activeTab, theme }) => {
+const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile, activeTab, setActiveTab, theme }) => {
   return (
     <div className={activeTab === 'chat' ? 'h-full' : ''}>
       <Suspense fallback={<LoadingIndicator />}>
@@ -59,7 +60,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile,
             <Profile currentUser={currentUser} onUpdateUserProfile={onUpdateUserProfile} />
         </TabPanel>
         <TabPanel active={activeTab === 'resources'}>
-            <Resources currentUser={currentUser} />
+            <Resources currentUser={currentUser} setActiveTab={setActiveTab} />
         </TabPanel>
         <TabPanel active={activeTab === 'chat'} className="h-full">
             <Chat currentUser={currentUser} />

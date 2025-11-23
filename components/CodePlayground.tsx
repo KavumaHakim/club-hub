@@ -82,6 +82,21 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser }) =
       }
     };
     setupPyodide();
+
+    // Listen for code opening events from Resources
+    const handleOpenCode = (e: CustomEvent<string>) => {
+        if (e.detail) {
+            setCode(e.detail);
+            setActiveTab('editor');
+            setOutput([{ type: 'log', content: 'Loaded code from resources.' }]);
+        }
+    };
+    
+    window.addEventListener('open-in-playground' as any, handleOpenCode);
+    return () => {
+        window.removeEventListener('open-in-playground' as any, handleOpenCode);
+    };
+
   }, []);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {

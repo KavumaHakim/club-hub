@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { EyeIcon } from './icons/EyeIcon';
 import { EyeOffIcon } from './icons/EyeOffIcon';
+import ForgotPasswordModal from './ForgotPasswordModal';
 
 interface LoginProps {
   onLogin: (email: string, password?: string) => Promise<void>;
@@ -14,6 +15,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToSignUp, onNavigateTo
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,7 +54,16 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToSignUp, onNavigateTo
             />
           </div>
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
+            <div className="flex justify-between items-center">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
+                <button 
+                    type="button"
+                    onClick={() => setIsForgotModalOpen(true)}
+                    className="text-xs font-medium text-pink-600 hover:text-pink-500 dark:text-pink-400"
+                >
+                    Forgot Password?
+                </button>
+            </div>
             <div className="relative mt-1">
               <input
                 id="password"
@@ -111,6 +122,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToSignUp, onNavigateTo
             </p>
         </div>
       </div>
+      <ForgotPasswordModal isOpen={isForgotModalOpen} onClose={() => setIsForgotModalOpen(false)} />
     </div>
   );
 };
