@@ -456,34 +456,55 @@ export const addFeedItem = async (itemData: Omit<FeedItem, 'id' | 'author' | 'au
 };
 
 export const getFeedComments = async (feedItemId: string): Promise<FeedComment[]> => {
-    const { data, error } = await supabase
+    // 1. Fetch comments first without join to avoid foreign key ambiguity issues
+    const { data: comments, error } = await supabase
         .from('feed_comments')
-        .select(`
-            *,
-            user:user_uid ( uid, name, avatar_url )
-        `)
+        .select('*')
         .eq('feed_item_id', feedItemId)
         .order('created_at', { ascending: true });
 
     if (error) throw new Error(error.message);
-    if (!data) return [];
+    if (!comments || comments.length === 0) return [];
 
-    return data.map(item => ({
-        id: item.id.toString(),
-        feedItemId: item.feed_item_id.toString(),
-        userId: item.user_uid,
-        userName: item.user?.name || 'Unknown',
-        userAvatarUrl: item.user?.avatar_url || `https://i.pravatar.cc/40?u=${item.user_uid}`,
-        content: item.content,
-        createdAt: new Date(item.created_at).toLocaleString('en-US', { 
-            timeZone: 'Africa/Kampala',
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        }),
-    }));
+    // 2. Get unique user IDs from the fetched comments
+    const userIds = [...new Set(comments.map((c: any) => c.user_uid))];
+
+    let userMap = new Map<string, any>();
+
+    if (userIds.length > 0) {
+        // 3. Fetch user profiles manually
+        const { data: users, error: usersError } = await supabase
+            .from('users')
+            .select('uid, name, avatar_url')
+            .in('uid', userIds);
+        
+        if (usersError) throw new Error(usersError.message);
+        
+        if (users) {
+            userMap = new Map(users.map((u: any) => [u.uid, u]));
+        }
+    }
+
+    // 4. Combine comments with user data
+    return comments.map((item: any) => {
+        const user = userMap.get(item.user_uid);
+        return {
+            id: item.id.toString(),
+            feedItemId: item.feed_item_id.toString(),
+            userId: item.user_uid,
+            userName: user?.name || 'Unknown',
+            userAvatarUrl: user?.avatar_url || `https://i.pravatar.cc/40?u=${item.user_uid}`,
+            content: item.content,
+            createdAt: new Date(item.created_at).toLocaleString('en-US', { 
+                timeZone: 'Africa/Kampala',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }),
+        };
+    });
 };
 
 export const addFeedComment = async (feedItemId: string, userId: string, content: string): Promise<FeedComment> => {
@@ -494,20 +515,20 @@ export const addFeedComment = async (feedItemId: string, userId: string, content
             user_uid: userId,
             content: content
         })
-        .select(`
-            *,
-            user:user_uid ( uid, name, avatar_url )
-        `)
+        .select()
         .single();
 
     if (error) throw new Error(error.message);
+
+    // Manually fetch user profile for the return object
+    const user = await getUserProfile(userId);
 
     return {
         id: data.id.toString(),
         feedItemId: data.feed_item_id.toString(),
         userId: data.user_uid,
-        userName: data.user?.name || 'Unknown',
-        userAvatarUrl: data.user?.avatar_url || `https://i.pravatar.cc/40?u=${data.user_uid}`,
+        userName: user?.name || 'Unknown',
+        userAvatarUrl: user?.avatarUrl || `https://i.pravatar.cc/40?u=${data.user_uid}`,
         content: data.content,
         createdAt: new Date(data.created_at).toLocaleString('en-US', { 
             timeZone: 'Africa/Kampala',

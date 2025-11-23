@@ -6,6 +6,7 @@ import { UploadIcon } from './icons/UploadIcon';
 import { DownloadIcon } from './icons/DownloadIcon';
 import { CloudIcon } from './icons/CloudIcon';
 import { XIcon } from './icons/XIcon';
+import { CopyIcon } from './icons/CopyIcon';
 import Editor from '@monaco-editor/react';
 import { User } from '../types';
 import * as api from '../services/apiService';
@@ -37,6 +38,42 @@ print(f"Nice to meet you, {name}!")
 import math
 math.pi`;
 
+// Syntax highlighting regex for Python-like output
+const SYNTAX_REGEX = /("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|\b\d+(?:\.\d+)?\b|\b(?:True|False|None|and|or|not|def|class|return|import|from|if|else|elif|for|while|print)\b|[\[\]\{\}\(\),:])/g;
+
+const SyntaxHighlightedText: React.FC<{ text: string }> = ({ text }) => {
+    // Split text by regex capture groups to isolate tokens
+    const parts = text.split(SYNTAX_REGEX);
+    
+    return (
+        <>
+            {parts.map((part, i) => {
+                if (!part) return null;
+                
+                // Strings (Double or Single quoted)
+                if (/^".*"$/.test(part) || /^'.*'$/.test(part)) {
+                    return <span key={i} className="text-green-600 dark:text-green-400">{part}</span>;
+                }
+                // Numbers
+                if (/^\d+(\.\d+)?$/.test(part)) {
+                    return <span key={i} className="text-blue-600 dark:text-blue-400 font-semibold">{part}</span>;
+                }
+                // Keywords & Booleans
+                if (/^(True|False|None|and|or|not|def|class|return|import|from|if|else|elif|for|while|print)$/.test(part)) {
+                    return <span key={i} className="text-purple-600 dark:text-purple-400 font-bold">{part}</span>;
+                }
+                // Punctuation
+                if (/^[\[\]\{\}\(\),:]$/.test(part)) {
+                    return <span key={i} className="text-gray-500 dark:text-gray-500 font-bold">{part}</span>;
+                }
+                
+                // Default Text
+                return <span key={i}>{part}</span>;
+            })}
+        </>
+    );
+};
+
 const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser }) => {
   const [code, setCode] = useState<string>(() => {
       if (typeof window !== 'undefined') {
@@ -65,6 +102,9 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser }) =
   
   // Delete Confirmation State
   const [scriptToDelete, setScriptToDelete] = useState<string | null>(null);
+
+  // Copy Feedback
+  const [copyFeedback, setCopyFeedback] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const codeRef = useRef(code);
@@ -206,7 +246,6 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser }) =
       setCloudMessage(null);
       try {
           const content = await api.downloadUserScript(currentUser.uid, fileName);
-          // Use handleImportCode to prompt if current work is dirty
           handleImportCode(content);
           setIsCloudModalOpen(false);
       } catch (err: any) {
@@ -315,6 +354,14 @@ builtins.input = input_override
       setOutput([]);
   };
 
+  const handleCopyOutput = () => {
+      const text = output.map(line => line.content).join('\n');
+      navigator.clipboard.writeText(text).then(() => {
+          setCopyFeedback(true);
+          setTimeout(() => setCopyFeedback(false), 2000);
+      });
+  };
+
   const editorTheme = theme === 'dark' ? 'vs-dark' : 'light';
   const hasContent = output.length > 0 && output[0].content !== 'Click "Run Code" to see the output here.';
 
@@ -337,7 +384,7 @@ builtins.input = input_override
             <button
                 onClick={triggerFileUpload}
                 className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors shadow-sm"
-                title="Upload Python file from computer"
+                title="Upload Python file"
             >
                 <UploadIcon />
                 <span className="hidden sm:inline">Upload</span>
@@ -345,7 +392,7 @@ builtins.input = input_override
             <button
                 onClick={handleDownloadCode}
                 className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors shadow-sm"
-                title="Download as .py file"
+                title="Download as .py"
             >
                 <DownloadIcon />
                 <span className="hidden sm:inline">Download</span>
@@ -364,7 +411,7 @@ builtins.input = input_override
                 disabled={isExecuting || !isPyodideReady}
                 className="relative flex items-center space-x-2 px-5 py-3 font-semibold text-white bg-gradient-to-r from-pink-500 to-purple-600 rounded-lg shadow-md hover:from-pink-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 aria-label="Run Code"
-                title={!isPyodideReady ? 'Local interpreter is initializing...' : 'Run code in your browser'}
+                title={!isPyodideReady ? 'Local interpreter is initializing...' : 'Run code'}
             >
                 {!isPyodideReady && <div className="absolute -top-1 -right-1 h-3 w-3 flex items-center justify-center"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-pink-500"></span></div>}
                 <PlayIcon />
@@ -423,25 +470,39 @@ builtins.input = input_override
         <div className={`w-full h-full flex flex-col ${activeTab === 'output' ? '' : 'hidden'}`}>
             <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
                 <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">Console Output</span>
-                <button 
-                    onClick={handleClearOutput}
-                    className="p-1 text-gray-500 hover:text-red-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                    title="Clear Output"
-                    aria-label="Clear Output"
-                >
-                    <TrashIcon />
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        onClick={handleCopyOutput}
+                        className="p-1 text-gray-500 hover:text-blue-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors relative group"
+                        title="Copy Output"
+                    >
+                        {copyFeedback && <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded shadow-lg animate-fade-in-up">Copied!</span>}
+                        <CopyIcon />
+                    </button>
+                    <button 
+                        onClick={handleClearOutput}
+                        className="p-1 text-gray-500 hover:text-red-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        title="Clear Output"
+                    >
+                        <TrashIcon />
+                    </button>
+                </div>
             </div>
-            <pre className="flex-1 w-full p-4 bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-300 font-mono text-sm whitespace-pre-wrap break-words overflow-y-auto">
-                <code>
-                    {output.length === 0 && <span className="text-gray-400 italic">No output</span>}
-                    {output.map((line, index) => (
-                        <span key={index} className={line.type === 'error' ? 'text-red-500' : ''}>
-                            {line.content}
-                        </span>
-                    ))}
-                </code>
-            </pre>
+            <div className="flex-1 w-full p-4 bg-gray-900 dark:bg-black text-gray-300 font-mono text-sm whitespace-pre-wrap break-words overflow-y-auto custom-scrollbar shadow-inner">
+                {output.length === 0 ? (
+                    <span className="text-gray-500 italic select-none">No output</span>
+                ) : (
+                    output.map((line, index) => (
+                        <div key={index} className="leading-relaxed">
+                            {line.type === 'log' ? (
+                                <SyntaxHighlightedText text={line.content} />
+                            ) : (
+                                <span className="text-red-400 font-medium">{line.content}</span>
+                            )}
+                        </div>
+                    ))
+                )}
+            </div>
         </div>
       </div>
 
@@ -487,14 +548,14 @@ builtins.input = input_override
 
                    <div>
                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Your Scripts</h4>
-                       <div className="max-h-60 overflow-y-auto space-y-2">
+                       <div className="max-h-60 overflow-y-auto space-y-2 custom-scrollbar">
                            {isLoadingScripts ? (
                                <p className="text-center text-gray-500 text-sm py-4">Loading scripts...</p>
                            ) : cloudScripts.length === 0 ? (
                                <p className="text-center text-gray-500 text-sm py-4">No scripts saved yet.</p>
                            ) : (
                                cloudScripts.map(script => (
-                                   <div key={script.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/30 rounded border border-gray-100 dark:border-gray-700">
+                                   <div key={script.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/30 rounded border border-gray-100 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors">
                                        <div className="min-w-0 flex-1 mr-2">
                                            <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{script.name}</p>
                                            <p className="text-xs text-gray-500 dark:text-gray-400">{script.lastModified}</p>
