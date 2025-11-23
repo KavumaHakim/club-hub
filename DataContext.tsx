@@ -1,8 +1,9 @@
 
-import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode, useRef } from 'react';
 // FIX: Imported the new Notification type.
 import { Activity, AttendanceRecord, FeedItem, ProjectData, User, Resource, Notification, Room } from './types';
 import * as api from './services/apiService';
+import { supabase } from './services/supabaseClient';
 
 // Define the shape of the context state
 interface IDataContext {
@@ -17,6 +18,10 @@ interface IDataContext {
   // FIX: Added notifications to the context interface.
   notifications: Notification[];
   rooms: Room[];
+  
+  // Chat Unread State
+  unreadMessageCounts: Record<string, number>;
+  clearUnreadCount: (roomId: string) => void;
 
   // Loading states
   isLoadingActivities: boolean;
@@ -68,6 +73,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
   // FIX: Added state for notifications.
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
+  const [unreadMessageCounts, setUnreadMessageCounts] = useState<Record<string, number>>({});
 
   const [isLoadingActivities, setIsLoadingActivities] = useState(true);
   const [isLoadingAttendance, setIsLoadingAttendance] = useState(true);
@@ -201,6 +207,15 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
     }
   }, [currentUser.uid]);
   
+  const clearUnreadCount = useCallback((roomId: string) => {
+    setUnreadMessageCounts(prev => {
+        if (!prev[roomId]) return prev;
+        const next = { ...prev };
+        delete next[roomId];
+        return next;
+    });
+  }, []);
+
   // Effect to perform the client-side join for resources
   useEffect(() => {
     if (isLoadingUsers || resourcesError) { // Don't process if users are loading or there was an error fetching resources
@@ -222,7 +237,47 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
     setIsLoadingResources(false); // Mark final resources as loaded
   }, [rawResources, allUsers, isLoadingUsers, resourcesError]);
   
-  
+  // Realtime subscription for global messages (unread counts)
+  useEffect(() => {
+    if (!currentUser) return;
+    
+    // Subscribe to INSERT events on the messages table
+    const channel = supabase.channel('global_messages_listener')
+        .on(
+            'postgres_changes',
+            { 
+                event: 'INSERT', 
+                schema: 'public', 
+                table: 'messages' 
+            },
+            (payload) => {
+                const newMsg = payload.new as any;
+                
+                // Don't count own messages
+                if (newMsg.sender_id === currentUser.uid) return;
+
+                // Check if the user is a member of the room where the message was sent
+                // We depend on the 'rooms' state being somewhat up-to-date.
+                // Note: If 'rooms' state is stale (e.g. user added to new room but didn't refresh), 
+                // they won't get notified until 'rooms' updates.
+                const isRelevantRoom = rooms.some(r => r.id === newMsg.room_id);
+
+                if (isRelevantRoom) {
+                    setUnreadMessageCounts(prev => ({
+                        ...prev,
+                        [newMsg.room_id]: (prev[newMsg.room_id] || 0) + 1
+                    }));
+                }
+            }
+        )
+        .subscribe();
+
+    return () => {
+        supabase.removeChannel(channel);
+    };
+  }, [currentUser, rooms]); // Re-subscribe if rooms list changes (e.g. joined new room)
+
+
   // Fetch all data when the provider mounts (i.e., when the user logs in)
   useEffect(() => {
     if (currentUser) {
@@ -254,6 +309,8 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
     // FIX: Provide notification state through context.
     notifications,
     rooms,
+    unreadMessageCounts,
+    clearUnreadCount,
     isLoadingActivities,
     isLoadingAttendance,
     isLoadingFeed,

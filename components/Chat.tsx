@@ -125,7 +125,7 @@ const NewChatModal: React.FC<{
 };
 
 const Chat: React.FC<ChatProps> = ({ currentUser }) => {
-    const { rooms, allUsers, isLoadingRooms, fetchRooms } = useData();
+    const { rooms, allUsers, isLoadingRooms, fetchRooms, unreadMessageCounts, clearUnreadCount } = useData();
     const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
     
@@ -164,6 +164,13 @@ const Chat: React.FC<ChatProps> = ({ currentUser }) => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, []);
+    
+    // Clear unread count when room becomes active or if messages come while active
+    useEffect(() => {
+        if (activeRoomId && unreadMessageCounts[activeRoomId] > 0) {
+            clearUnreadCount(activeRoomId);
+        }
+    }, [activeRoomId, unreadMessageCounts, clearUnreadCount]);
 
     // Function to fetch messages (used for initial load and polling)
     const loadMessages = useCallback(async (roomId: string, showLoadingIndicator = false) => {
@@ -213,6 +220,9 @@ const Chat: React.FC<ChatProps> = ({ currentUser }) => {
 
         // 1. Initial Load
         loadMessages(activeRoomId, true);
+        
+        // Clear unread count immediately upon opening
+        clearUnreadCount(activeRoomId);
 
         // 2. Real-time subscription
         setRealtimeStatus('CONNECTING');
@@ -262,7 +272,7 @@ const Chat: React.FC<ChatProps> = ({ currentUser }) => {
             supabase.removeChannel(channel);
         };
 
-    }, [activeRoomId, loadMessages]);
+    }, [activeRoomId, loadMessages, clearUnreadCount]);
 
     // 3. Polling Fallback (Crucial for when Realtime fails due to RLS or Network)
     useEffect(() => {
@@ -393,6 +403,7 @@ const Chat: React.FC<ChatProps> = ({ currentUser }) => {
                             const isActive = room.id === activeRoomId;
                             const roomName = getRoomName(room, allUsers, currentUser.uid);
                             const avatar = getRoomAvatar(room, allUsers, currentUser.uid);
+                            const unreadCount = unreadMessageCounts[room.id] || 0;
                             
                             return (
                                 <div 
@@ -410,13 +421,20 @@ const Chat: React.FC<ChatProps> = ({ currentUser }) => {
                                         )}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{roomName}</h3>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                        <div className="flex justify-between items-center">
+                                            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{roomName}</h3>
+                                            {unreadCount > 0 && (
+                                                <span className="bg-pink-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-2">
+                                                    {unreadCount > 99 ? '99+' : unreadCount}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-1">
                                             Open to chat
                                         </p>
                                     </div>
-                                    <div className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap ml-2">
-                                        {new Date(room.updatedAt).toLocaleDateString()}
+                                    <div className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap ml-2 self-start mt-0.5">
+                                        {new Date(room.updatedAt).toLocaleDateString(undefined, {month: 'numeric', day: 'numeric'})}
                                     </div>
                                 </div>
                             );

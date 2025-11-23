@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { User, Tab } from '../types';
 import { LogoutIcon } from './icons/LogoutIcon';
 import { SunIcon } from './icons/SunIcon';
@@ -16,6 +16,7 @@ import { ChevronsLeftIcon } from './icons/ChevronsLeftIcon';
 import { ChevronsRightIcon } from './icons/ChevronsRightIcon';
 import { BookOpenIcon } from './icons/BookOpenIcon';
 import { ChatBubbleIcon } from './icons/ChatBubbleIcon';
+import { useData } from '../DataContext';
 
 
 interface SidebarProps {
@@ -38,19 +39,34 @@ const NavLink: React.FC<{
     activeTab: Tab;
     onClick: (tab: Tab) => void;
     isCollapsed: boolean;
-  }> = ({ tabName, label, icon, activeTab, onClick, isCollapsed }) => (
+    badge?: number;
+  }> = ({ tabName, label, icon, activeTab, onClick, isCollapsed, badge }) => (
     <li>
       <button
         onClick={() => onClick(tabName)}
         title={label}
-        className={`flex items-center w-full space-x-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all ${isCollapsed ? 'justify-center' : ''} ${
+        className={`relative flex items-center w-full space-x-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all ${isCollapsed ? 'justify-center' : ''} ${
           activeTab === tabName
             ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-md'
             : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
         }`}
       >
-        {icon}
-        {!isCollapsed && <span className="whitespace-nowrap">{label}</span>}
+        <div className="relative">
+            {icon}
+            {isCollapsed && badge !== undefined && badge > 0 && (
+                 <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-[16px] h-4 text-[9px] font-bold text-white bg-pink-500 rounded-full border border-white dark:border-gray-800 px-0.5">
+                    {badge > 9 ? '!' : badge}
+                </span>
+            )}
+        </div>
+        {!isCollapsed && (
+            <span className="whitespace-nowrap flex-1 text-left">{label}</span>
+        )}
+        {!isCollapsed && badge !== undefined && badge > 0 && (
+            <span className="ml-auto bg-pink-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                {badge > 99 ? '99+' : badge}
+            </span>
+        )}
       </button>
     </li>
 );
@@ -71,6 +87,11 @@ const ClubHubLogo = () => (
 );
 
 const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, theme, onToggleTheme, activeTab, setActiveTab, isOpen, onClose, isCollapsed, onToggleCollapse }) => {
+  const { unreadMessageCounts } = useData();
+  
+  const totalUnread = useMemo(() => {
+      return Object.values(unreadMessageCounts).reduce((acc: number, count: number) => acc + count, 0);
+  }, [unreadMessageCounts]);
 
   const handleNavClick = (tab: Tab) => {
     setActiveTab(tab);
@@ -109,7 +130,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, theme, onToggleTheme,
         <nav className="flex-1 px-4 py-6 overflow-y-auto">
           <ul className="space-y-2">
             <NavLink tabName="feed" label="Feed" icon={<HomeIcon />} activeTab={activeTab} onClick={handleNavClick} isCollapsed={isCollapsed}/>
-            <NavLink tabName="chat" label="Messages" icon={<ChatBubbleIcon />} activeTab={activeTab} onClick={handleNavClick} isCollapsed={isCollapsed}/>
+            <NavLink tabName="chat" label="Messages" icon={<ChatBubbleIcon />} activeTab={activeTab} onClick={handleNavClick} isCollapsed={isCollapsed} badge={totalUnread}/>
             <NavLink tabName="projects" label="Projects" icon={<ClipboardListIcon />} activeTab={activeTab} onClick={handleNavClick} isCollapsed={isCollapsed}/>
             <NavLink tabName="activities" label="Activities" icon={<CalendarIcon />} activeTab={activeTab} onClick={handleNavClick} isCollapsed={isCollapsed}/>
             <NavLink tabName="resources" label="Resources" icon={<BookOpenIcon />} activeTab={activeTab} onClick={handleNavClick} isCollapsed={isCollapsed}/>
