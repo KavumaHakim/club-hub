@@ -3,7 +3,10 @@ import { Activity, User } from '../types';
 import * as api from '../services/apiService';
 import AddActivityForm from './AddActivityForm';
 import ActivityCard from './ActivityCard';
+import CalendarView from './CalendarView';
 import { useData } from '../DataContext';
+import { CalendarIcon } from './icons/CalendarIcon';
+import { ViewListIcon } from './icons/ViewListIcon';
 
 interface ActivitiesProps {
   currentUser: User;
@@ -14,6 +17,7 @@ type FilterType = 'UPCOMING' | 'PAST' | 'ALL';
 const Activities: React.FC<ActivitiesProps> = ({ currentUser }) => {
   const { activities, isLoadingActivities, activitiesError, fetchActivities } = useData();
   const [filter, setFilter] = useState<FilterType>('UPCOMING');
+  const [viewMode, setViewMode] = useState<'LIST' | 'CALENDAR'>('LIST');
 
   const handleAddActivity = useCallback(async (newActivity: Omit<Activity, 'id'>) => {
     await api.addActivity(newActivity);
@@ -52,7 +56,7 @@ const Activities: React.FC<ActivitiesProps> = ({ currentUser }) => {
     });
   }, [activities, filter]);
 
-  const renderContent = () => {
+  const renderListContent = () => {
     if (isLoadingActivities) {
         return <p className="text-center text-gray-500 dark:text-gray-400">Loading activities...</p>;
     }
@@ -76,51 +80,88 @@ const Activities: React.FC<ActivitiesProps> = ({ currentUser }) => {
     return <p className="text-center text-gray-500 dark:text-gray-400 py-4">{emptyMessage}</p>;
   };
 
+  const getTitle = () => {
+      if (viewMode === 'CALENDAR') return 'Activity Calendar';
+      if (filter === 'UPCOMING') return 'Upcoming Activities';
+      if (filter === 'PAST') return 'Past Activities';
+      return 'All Activities';
+  };
+
   return (
     <div>
         {currentUser.role === 'PATRON' && <AddActivityForm onAddActivity={handleAddActivity} />}
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
             <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200">
-                {filter === 'UPCOMING' ? 'Upcoming Activities' : filter === 'PAST' ? 'Past Activities' : 'All Activities'}
+                {getTitle()}
             </h2>
 
-            {/* Filter Controls */}
-            <div className="flex bg-gray-200 dark:bg-gray-700 p-1 rounded-lg self-start sm:self-auto">
-                <button
-                    onClick={() => setFilter('UPCOMING')}
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
-                        filter === 'UPCOMING'
-                            ? 'bg-white dark:bg-gray-600 text-pink-600 dark:text-pink-400 shadow-sm'
-                            : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100'
-                    }`}
-                >
-                    Upcoming
-                </button>
-                <button
-                    onClick={() => setFilter('PAST')}
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
-                        filter === 'PAST'
-                            ? 'bg-white dark:bg-gray-600 text-pink-600 dark:text-pink-400 shadow-sm'
-                            : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100'
-                    }`}
-                >
-                    Past
-                </button>
-                 <button
-                    onClick={() => setFilter('ALL')}
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
-                        filter === 'ALL'
-                            ? 'bg-white dark:bg-gray-600 text-pink-600 dark:text-pink-400 shadow-sm'
-                            : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100'
-                    }`}
-                >
-                    All
-                </button>
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                 {/* View Toggle */}
+                <div className="flex bg-gray-200 dark:bg-gray-700 p-1 rounded-lg self-start sm:self-auto">
+                    <button
+                        onClick={() => setViewMode('LIST')}
+                        className={`p-2 rounded-md transition-all ${
+                            viewMode === 'LIST'
+                                ? 'bg-white dark:bg-gray-600 text-pink-600 dark:text-pink-400 shadow-sm'
+                                : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100'
+                        }`}
+                        title="List View"
+                    >
+                         <ViewListIcon />
+                    </button>
+                    <button
+                        onClick={() => setViewMode('CALENDAR')}
+                        className={`p-2 rounded-md transition-all ${
+                            viewMode === 'CALENDAR'
+                                ? 'bg-white dark:bg-gray-600 text-pink-600 dark:text-pink-400 shadow-sm'
+                                : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100'
+                        }`}
+                        title="Calendar View"
+                    >
+                        <CalendarIcon />
+                    </button>
+                </div>
+
+                {/* Filter Controls - Only visible in List Mode */}
+                {viewMode === 'LIST' && (
+                    <div className="flex bg-gray-200 dark:bg-gray-700 p-1 rounded-lg self-start sm:self-auto">
+                        <button
+                            onClick={() => setFilter('UPCOMING')}
+                            className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                                filter === 'UPCOMING'
+                                    ? 'bg-white dark:bg-gray-600 text-pink-600 dark:text-pink-400 shadow-sm'
+                                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100'
+                            }`}
+                        >
+                            Upcoming
+                        </button>
+                        <button
+                            onClick={() => setFilter('PAST')}
+                            className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                                filter === 'PAST'
+                                    ? 'bg-white dark:bg-gray-600 text-pink-600 dark:text-pink-400 shadow-sm'
+                                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100'
+                            }`}
+                        >
+                            Past
+                        </button>
+                        <button
+                            onClick={() => setFilter('ALL')}
+                            className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                                filter === 'ALL'
+                                    ? 'bg-white dark:bg-gray-600 text-pink-600 dark:text-pink-400 shadow-sm'
+                                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100'
+                            }`}
+                        >
+                            All
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
 
-        {renderContent()}
+        {viewMode === 'LIST' ? renderListContent() : <CalendarView activities={activities} />}
     </div>
   );
 };
