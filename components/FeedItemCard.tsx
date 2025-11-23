@@ -1,8 +1,10 @@
 
-import React from 'react';
-import { FeedItem, FeedItemType } from '../types';
-import { HeartIcon } from './icons/HeartIcon';
+
+import React, { useState } from 'react';
+import { FeedItem, FeedItemType, User, FeedComment } from '../types';
 import { ChatBubbleIcon } from './icons/ChatBubbleIcon';
+import { SendIcon } from './icons/SendIcon';
+import * as api from '../services/apiService';
 
 const badgeConfig: { [key in FeedItemType]: {
     text: string;
@@ -28,13 +30,51 @@ const badgeConfig: { [key in FeedItemType]: {
 
 interface FeedItemCardProps {
   item: FeedItem;
+  currentUser: User;
 }
 
-const FeedItemCard: React.FC<FeedItemCardProps> = ({ item }) => {
+const FeedItemCard: React.FC<FeedItemCardProps> = ({ item, currentUser }) => {
   const config = badgeConfig[item.type];
+  const [showComments, setShowComments] = useState(false);
+  const [comments, setComments] = useState<FeedComment[]>([]);
+  const [isLoadingComments, setIsLoadingComments] = useState(false);
+  const [newComment, setNewComment] = useState('');
+  const [isPosting, setIsPosting] = useState(false);
+
+  const handleToggleComments = async () => {
+      if (!showComments) {
+          setIsLoadingComments(true);
+          try {
+              const fetchedComments = await api.getFeedComments(item.id);
+              setComments(fetchedComments);
+          } catch (error) {
+              console.error("Failed to load comments", error);
+          } finally {
+              setIsLoadingComments(false);
+          }
+      }
+      setShowComments(!showComments);
+  };
+
+  const handlePostComment = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!newComment.trim()) return;
+
+      setIsPosting(true);
+      try {
+          const comment = await api.addFeedComment(item.id, currentUser.uid, newComment);
+          setComments([...comments, comment]);
+          setNewComment('');
+      } catch (error) {
+          console.error("Failed to post comment", error);
+          alert("Failed to post comment.");
+      } finally {
+          setIsPosting(false);
+      }
+  };
   
   return (
-    <div className="group bg-white dark:bg-gray-800 rounded-3xl p-1 shadow-sm hover:shadow-2xl border border-gray-100 dark:border-gray-700 transition-all duration-300 hover:-translate-y-1">
+    <div className="group bg-white dark:bg-gray-800 rounded-3xl p-1 shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all duration-300">
         <div className="bg-white dark:bg-gray-800 rounded-[1.4rem] p-5 sm:p-6 h-full relative overflow-hidden">
              {/* Decorative gradient blur top right */}
              <div className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-full opacity-50 blur-2xl group-hover:from-pink-100 group-hover:to-purple-100 dark:group-hover:from-pink-900/30 dark:group-hover:to-purple-900/30 transition-colors duration-500"></div>
@@ -48,8 +88,6 @@ const FeedItemCard: React.FC<FeedItemCardProps> = ({ item }) => {
                             alt={item.author} 
                             className="w-12 h-12 rounded-full object-cover ring-4 ring-gray-50 dark:ring-gray-750 shadow-sm" 
                         />
-                        {/* Online/Status indicator dot mockup */}
-                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full"></div>
                     </div>
                     <div>
                         <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">{item.author}</p>
@@ -64,7 +102,7 @@ const FeedItemCard: React.FC<FeedItemCardProps> = ({ item }) => {
             {/* Content */}
             <div className="mb-6 relative z-10">
                 {item.title && (
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-3 leading-tight group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-pink-600 group-hover:to-purple-600 transition-all duration-300">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-3 leading-tight">
                         {item.title}
                     </h3>
                 )}
@@ -75,14 +113,13 @@ const FeedItemCard: React.FC<FeedItemCardProps> = ({ item }) => {
 
             {/* Footer / Interactive Area */}
             <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700/50 relative z-10">
-                <div className="flex gap-4">
-                    <button className="flex items-center gap-2 px-3 py-1.5 rounded-full text-gray-500 dark:text-gray-400 hover:bg-pink-50 dark:hover:bg-pink-900/20 hover:text-pink-600 dark:hover:text-pink-400 transition-all group/btn">
-                        <HeartIcon className="w-5 h-5 group-hover/btn:scale-110 transition-transform" />
-                        <span className="text-xs font-medium">Like</span>
-                    </button>
-                    <button className="flex items-center gap-2 px-3 py-1.5 rounded-full text-gray-500 dark:text-gray-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:text-purple-600 dark:hover:text-purple-400 transition-all group/btn">
+                <div>
+                    <button 
+                        onClick={handleToggleComments}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all group/btn ${showComments ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400' : 'text-gray-500 dark:text-gray-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:text-purple-600 dark:hover:text-purple-400'}`}
+                    >
                          <ChatBubbleIcon />
-                         <span className="text-xs font-medium">Comment</span>
+                         <span className="text-xs font-medium">Comments {comments.length > 0 && `(${comments.length})`}</span>
                     </button>
                 </div>
                 
@@ -90,9 +127,57 @@ const FeedItemCard: React.FC<FeedItemCardProps> = ({ item }) => {
                     #{item.id.slice(0,4)}
                 </div>
             </div>
+
+            {/* Comments Section */}
+            {showComments && (
+                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700/50 animate-fade-in-down relative z-10">
+                    {/* Comments List */}
+                    <div className="space-y-4 mb-4 max-h-60 overflow-y-auto custom-scrollbar pr-2">
+                        {isLoadingComments ? (
+                            <p className="text-center text-xs text-gray-500">Loading comments...</p>
+                        ) : comments.length === 0 ? (
+                            <p className="text-center text-xs text-gray-400 italic">No comments yet. Be the first!</p>
+                        ) : (
+                            comments.map(comment => (
+                                <div key={comment.id} className="flex gap-3">
+                                    <img src={comment.userAvatarUrl} alt={comment.userName} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+                                    <div className="bg-gray-50 dark:bg-gray-750 p-3 rounded-2xl rounded-tl-none text-sm flex-1">
+                                        <div className="flex justify-between items-baseline mb-1">
+                                            <span className="font-bold text-gray-900 dark:text-white text-xs">{comment.userName}</span>
+                                            <span className="text-[10px] text-gray-400">{comment.createdAt}</span>
+                                        </div>
+                                        <p className="text-gray-700 dark:text-gray-300">{comment.content}</p>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+                    {/* Add Comment Form */}
+                    <form onSubmit={handlePostComment} className="flex gap-2 items-center">
+                        <img src={currentUser.avatarUrl || `https://i.pravatar.cc/40?u=${currentUser.username}`} className="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-700" alt="My Avatar" />
+                        <div className="flex-1 relative">
+                            <input 
+                                type="text" 
+                                value={newComment}
+                                onChange={(e) => setNewComment(e.target.value)}
+                                placeholder="Write a comment..." 
+                                className="w-full pl-4 pr-10 py-2 bg-gray-100 dark:bg-gray-750 border-none rounded-full text-sm focus:ring-2 focus:ring-purple-500 dark:text-white placeholder-gray-500"
+                            />
+                            <button 
+                                type="submit"
+                                disabled={!newComment.trim() || isPosting}
+                                className="absolute right-1 top-1 p-1.5 bg-purple-600 text-white rounded-full hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                <SendIcon className="w-3 h-3 transform rotate-90" />
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
         </div>
     </div>
   );
 };
 
-export default React.memo(FeedItemCard);
+export default FeedItemCard;

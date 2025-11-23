@@ -1,11 +1,11 @@
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { FeedItem, User, FeedItemType } from '../types';
 import * as api from '../services/apiService';
 import AddAnnouncement from './AddAnnouncement';
 import FeedItemCard from './FeedItemCard';
 import { useData } from '../DataContext';
-import { SparklesIcon } from './icons/SparklesIcon';
 
 interface FeedProps {
   currentUser: User;
@@ -83,20 +83,18 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
       </div>
 
       <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6">
-        <header className="mb-10 pt-4 text-center">
-            <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-pink-500/10 to-purple-500/10 rounded-2xl mb-4 backdrop-blur-sm border border-white/50 dark:border-white/10">
-                <SparklesIcon className="h-8 w-8 text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600" />
-            </div>
-            <h2 className="text-4xl font-black text-gray-900 dark:text-white tracking-tight mb-2">
+        {/* Restored Header Alignment */}
+        <header className="mb-8 pt-4">
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
               Club Feed
             </h2>
-            <p className="text-lg text-gray-500 dark:text-gray-400 max-w-lg mx-auto leading-relaxed">
-              Stay connected with the latest announcements, events, and community updates.
+            <p className="text-md text-gray-500 dark:text-gray-400 mt-1">
+              Latest announcements and community updates.
             </p>
         </header>
         
         {currentUser.role === 'PATRON' && (
-            <div className="mb-12 transform transition-all hover:-translate-y-1 duration-300 relative z-20">
+            <div className="mb-10 transform transition-all hover:-translate-y-1 duration-300 relative z-20">
                 <AddAnnouncement 
                     currentUser={currentUser}
                     onAddAnnouncement={handleAddAnnouncement}
@@ -128,7 +126,7 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
                     {/* Timeline Dot (Desktop only) */}
                     <div className="hidden md:flex absolute left-6 top-8 w-4 h-4 rounded-full border-4 border-white dark:border-gray-900 bg-gradient-to-r from-pink-500 to-purple-600 shadow-md z-10"></div>
                     
-                    <FeedItemCard item={item} />
+                    <FeedItemCard item={item} currentUser={currentUser} />
                 </div>
                 ))
             )}

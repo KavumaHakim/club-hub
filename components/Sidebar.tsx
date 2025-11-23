@@ -1,4 +1,5 @@
 
+
 import React, { useMemo, useEffect, useRef } from 'react';
 import { User, Tab } from '../types';
 import { LogoutIcon } from './icons/LogoutIcon';
@@ -111,20 +112,26 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, theme, onToggleTheme,
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    let width = canvas.parentElement?.clientWidth || 0;
-    let height = canvas.parentElement?.clientHeight || 0;
+    let animationFrameId: number;
     
-    const resize = () => {
-        width = canvas.parentElement?.clientWidth || 0;
-        height = canvas.parentElement?.clientHeight || 0;
-        canvas.width = width;
-        canvas.height = height;
-    };
+    // Resize observer to handle robust resizing
+    const resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+            const { width, height } = entry.contentRect;
+            canvas.width = width;
+            canvas.height = height;
+        }
+    });
     
-    window.addEventListener('resize', resize);
-    resize();
+    if (canvas.parentElement) {
+        resizeObserver.observe(canvas.parentElement);
+    }
 
-    const columns = Math.floor(width / 20) + 1;
+    // Initial size
+    canvas.width = canvas.parentElement?.clientWidth || 0;
+    canvas.height = canvas.parentElement?.clientHeight || 0;
+
+    const columns = Math.floor(canvas.width / 20) + 1;
     const drops: number[] = [];
 
     for (let i = 0; i < columns; i++) {
@@ -135,8 +142,8 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, theme, onToggleTheme,
     
     const draw = () => {
       // Fade out effect for trails
-      ctx.fillStyle = theme === 'dark' ? 'rgba(17, 24, 39, 0.1)' : 'rgba(255, 255, 255, 0.1)';
-      ctx.fillRect(0, 0, width, height);
+      ctx.fillStyle = theme === 'dark' ? 'rgba(17, 24, 39, 0.1)' : 'rgba(255, 255, 255, 0.15)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Set text color (Subtle Pink/Purple)
       ctx.fillStyle = theme === 'dark' ? '#db2777' : '#d946ef'; // Pink-600/Fuchsia-500
@@ -148,29 +155,34 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, theme, onToggleTheme,
         const y = drops[i] * 20;
 
         // Draw the character only if it's within view
-        if (y > 0 && y < height) {
+        if (y > 0 && y < canvas.height) {
             // Add randomness to opacity for "glitch" feel
-            ctx.globalAlpha = Math.random() * 0.5 + 0.1; 
+            ctx.globalAlpha = Math.random() * 0.4 + 0.05; 
             ctx.fillText(text, x, y);
             ctx.globalAlpha = 1.0;
         }
 
         // Reset drop to top randomly after it crosses screen
-        if (y > height && Math.random() > 0.975) {
+        if (y > canvas.height && Math.random() > 0.975) {
           drops[i] = 0;
         }
 
         drops[i]++;
       }
+      
+      // Loop via setTimeout for slower animation
+      setTimeout(() => {
+          animationFrameId = requestAnimationFrame(draw);
+      }, 50);
     };
 
-    const interval = setInterval(draw, 50);
+    draw();
 
     return () => {
-      clearInterval(interval);
-      window.removeEventListener('resize', resize);
+      cancelAnimationFrame(animationFrameId);
+      resizeObserver.disconnect();
     };
-  }, [theme, isCollapsed]); // Re-run if theme or width changes
+  }, [theme]); // Removed isCollapsed dependency as ResizeObserver handles it
 
   const handleNavClick = (tab: Tab) => {
     setActiveTab(tab);

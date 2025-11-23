@@ -1,4 +1,5 @@
 
+
 export type Tab = 'feed' | 'activities' | 'attendance' | 'projects' | 'profile' | 'members' | 'playground' | 'resources' | 'chat';
 
 export interface User {
@@ -45,6 +46,16 @@ export interface FeedItem {
   timestamp: string; // This will be handled by Supabase server timestamps
   title?: string;
   message: string;
+}
+
+export interface FeedComment {
+  id: string;
+  feedItemId: string;
+  userId: string;
+  userName: string;
+  userAvatarUrl: string;
+  content: string;
+  createdAt: string;
 }
 
 // New types for Project Board

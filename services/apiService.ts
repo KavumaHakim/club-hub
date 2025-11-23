@@ -1,6 +1,7 @@
 
+
 import { supabase } from './supabaseClient';
-import { User, Activity, AttendanceRecord, FeedItem, ProjectData, ProjectTask, FeedItemType, ProjectColumn, Resource, Notification, Tab, Room, Message, ActivityCategory, TaskPriority } from '../types';
+import { User, Activity, AttendanceRecord, FeedItem, ProjectData, ProjectTask, FeedItemType, ProjectColumn, Resource, Notification, Tab, Room, Message, ActivityCategory, TaskPriority, FeedComment } from '../types';
 import { predefinedAvatars } from '../constants';
 
 // --- INTERNAL HELPERS ---
@@ -452,6 +453,71 @@ export const addFeedItem = async (itemData: Omit<FeedItem, 'id' | 'author' | 'au
 
     // Notify all users about the new announcement (except the author)
     await notifyAllUsers(`New Announcement: ${itemData.title || 'Update'}`, 'feed', authorId);
+};
+
+export const getFeedComments = async (feedItemId: string): Promise<FeedComment[]> => {
+    const { data, error } = await supabase
+        .from('feed_comments')
+        .select(`
+            *,
+            user:user_uid ( uid, name, avatar_url )
+        `)
+        .eq('feed_item_id', feedItemId)
+        .order('created_at', { ascending: true });
+
+    if (error) throw new Error(error.message);
+    if (!data) return [];
+
+    return data.map(item => ({
+        id: item.id.toString(),
+        feedItemId: item.feed_item_id.toString(),
+        userId: item.user_uid,
+        userName: item.user?.name || 'Unknown',
+        userAvatarUrl: item.user?.avatar_url || `https://i.pravatar.cc/40?u=${item.user_uid}`,
+        content: item.content,
+        createdAt: new Date(item.created_at).toLocaleString('en-US', { 
+            timeZone: 'Africa/Kampala',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        }),
+    }));
+};
+
+export const addFeedComment = async (feedItemId: string, userId: string, content: string): Promise<FeedComment> => {
+    const { data, error } = await supabase
+        .from('feed_comments')
+        .insert({
+            feed_item_id: Number(feedItemId),
+            user_uid: userId,
+            content: content
+        })
+        .select(`
+            *,
+            user:user_uid ( uid, name, avatar_url )
+        `)
+        .single();
+
+    if (error) throw new Error(error.message);
+
+    return {
+        id: data.id.toString(),
+        feedItemId: data.feed_item_id.toString(),
+        userId: data.user_uid,
+        userName: data.user?.name || 'Unknown',
+        userAvatarUrl: data.user?.avatar_url || `https://i.pravatar.cc/40?u=${data.user_uid}`,
+        content: data.content,
+        createdAt: new Date(data.created_at).toLocaleString('en-US', { 
+            timeZone: 'Africa/Kampala',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        }),
+    };
 };
 
 // --- PROJECTS API ---
