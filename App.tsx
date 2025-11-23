@@ -9,6 +9,7 @@ import Welcome from './components/Welcome';
 import PatronLogin from './components/PatronLogin';
 import PatronSignUp from './components/PatronSignUp';
 import PendingApprovalModal from './components/PendingApprovalModal';
+import FeatureTourModal from './components/FeatureTourModal';
 import * as api from './services/apiService';
 import { supabase } from './services/supabaseClient';
 import { MenuIcon } from './components/icons/MenuIcon';
@@ -30,6 +31,7 @@ const App: React.FC = () => {
   const [view, setView] = useState<View>('welcome');
   const [isLoading, setIsLoading] = useState(true);
   const [showPendingModal, setShowPendingModal] = useState(false);
+  const [showTourModal, setShowTourModal] = useState(false);
   
   // Initialize activeTab from localStorage or default to 'feed'
   const [activeTab, setActiveTab] = useState<Tab>(() => {
@@ -53,6 +55,13 @@ const App: React.FC = () => {
               if (userProfile.status === 'APPROVED') {
                   setUser(userProfile);
                   setView('dashboard');
+                  
+                  // Check if user has seen the feature tour
+                  const hasSeenTour = localStorage.getItem(`has_seen_tour_${userProfile.uid}`);
+                  if (!hasSeenTour) {
+                      setShowTourModal(true);
+                  }
+
                   // Run attendance marking in background
                   api.markAttendanceOnLogin(userProfile.uid)
                      .catch(err => console.warn("Background attendance check failed:", err));
@@ -167,6 +176,13 @@ const App: React.FC = () => {
   const handleUpdateUserProfile = useCallback((updatedUser: User) => {
     setUser(updatedUser);
   }, []);
+  
+  const handleCloseTour = useCallback(() => {
+    setShowTourModal(false);
+    if (user) {
+        localStorage.setItem(`has_seen_tour_${user.uid}`, 'true');
+    }
+  }, [user]);
 
 
   const toggleTheme = useCallback(() => {
@@ -275,6 +291,10 @@ const App: React.FC = () => {
       <PendingApprovalModal 
         isOpen={showPendingModal} 
         onClose={() => setShowPendingModal(false)} 
+      />
+      <FeatureTourModal 
+        isOpen={showTourModal} 
+        onClose={handleCloseTour} 
       />
     </div>
   );
