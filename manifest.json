@@ -1,0 +1,17 @@
+{
+  "short_name": "ICT Club",
+  "name": "ICT Club Hub Naggalama",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#111827",
+  "display": "standalone",
+  "scope": "/",
+  "theme_color": "#EC4899",
+  "description": "A sleek and modern system for club members to log in, view activities, and track their attendance."
+}

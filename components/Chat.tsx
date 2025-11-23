@@ -136,7 +136,9 @@ const Chat: React.FC<ChatProps> = ({ currentUser }) => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [realtimeStatus, setRealtimeStatus] = useState<'CONNECTING' | 'SUBSCRIBED' | 'TIMED_OUT' | 'CLOSED' | 'CHANNEL_ERROR'>('CONNECTING');
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-    const [contextMenuMessageId, setContextMenuMessageId] = useState<string | null>(null);
+    
+    // State for Custom Context Menu
+    const [contextMenu, setContextMenu] = useState<{ id: string, x: number, y: number } | null>(null);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const emojiPickerRef = useRef<HTMLDivElement>(null);
@@ -159,13 +161,20 @@ const Chat: React.FC<ChatProps> = ({ currentUser }) => {
             if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
                 setShowEmojiPicker(false);
             }
-            setContextMenuMessageId(null);
+            // Close context menu on any click
+            setContextMenu(null);
         };
         document.addEventListener('click', handleClickOutside);
+        document.addEventListener('contextmenu', (e) => {
+            // Optional: Close our custom menu if right clicking elsewhere, 
+            // but we usually let the browser handle standard right clicks unless on a message
+            if (contextMenu) setContextMenu(null);
+        });
         return () => {
             document.removeEventListener('click', handleClickOutside);
+            document.removeEventListener('contextmenu', () => {});
         };
-    }, []);
+    }, [contextMenu]);
     
     // Clear unread count when room becomes active or if messages come while active
     useEffect(() => {
@@ -215,6 +224,18 @@ const Chat: React.FC<ChatProps> = ({ currentUser }) => {
             alert("Failed to delete message.");
         }
     };
+    
+    const handleContextMenu = (e: React.MouseEvent, msg: Message) => {
+        const isMe = msg.senderId === currentUser.uid;
+        // Allow delete if it's my message and less than 24h old
+        const isRecent = (Date.now() - new Date(msg.createdAt).getTime()) < 24 * 60 * 60 * 1000;
+        
+        if (isMe && isRecent) {
+             e.preventDefault();
+             e.stopPropagation();
+             setContextMenu({ id: msg.id, x: e.clientX, y: e.clientY });
+        }
+    };
 
     // Effect for room change: Fetch initial messages & Set up Realtime
     useEffect(() => {
@@ -227,7 +248,7 @@ const Chat: React.FC<ChatProps> = ({ currentUser }) => {
         clearUnreadCount(activeRoomId);
         
         // Reset context menu
-        setContextMenuMessageId(null);
+        setContextMenu(null);
 
         // 2. Real-time subscription
         setRealtimeStatus('CONNECTING');
@@ -494,10 +515,6 @@ const Chat: React.FC<ChatProps> = ({ currentUser }) => {
                                     const isMe = msg.senderId === currentUser.uid;
                                     const sender = allUsers.find(u => u.uid === msg.senderId);
                                     
-                                    // Check if message is less than 24 hours old
-                                    const isRecent = (Date.now() - new Date(msg.createdAt).getTime()) < 24 * 60 * 60 * 1000;
-                                    const canDelete = isMe && isRecent;
-
                                     return (
                                         <div key={msg.id} className={`flex group ${isMe ? 'justify-end' : 'justify-start'} relative`}>
                                             {!isMe && (
@@ -509,30 +526,9 @@ const Chat: React.FC<ChatProps> = ({ currentUser }) => {
                                                 />
                                             )}
 
-                                            {/* Delete Button (Me) - Shown on Context Menu Trigger */}
-                                            {isMe && canDelete && contextMenuMessageId === msg.id && (
-                                                <button 
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleDeleteMessage(msg.id);
-                                                        setContextMenuMessageId(null);
-                                                    }}
-                                                    className="absolute top-1/2 -translate-y-1/2 -left-10 p-2 rounded-full bg-white dark:bg-gray-800 text-red-500 shadow-lg border border-gray-200 dark:border-gray-700 hover:bg-red-50 dark:hover:bg-red-900/30 transition-all z-20"
-                                                    title="Delete message"
-                                                >
-                                                    <TrashIcon />
-                                                </button>
-                                            )}
-
                                             <div className="flex flex-col max-w-[70%]">
                                                 <div 
-                                                    onContextMenu={(e) => {
-                                                        if (isMe && canDelete) {
-                                                            e.preventDefault();
-                                                            e.stopPropagation();
-                                                            setContextMenuMessageId(msg.id);
-                                                        }
-                                                    }}
+                                                    onContextMenu={(e) => handleContextMenu(e, msg)}
                                                     className={`relative px-4 py-2 shadow-sm rounded-2xl ${
                                                     isMe 
                                                     ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-br-none cursor-context-menu' 
@@ -614,6 +610,26 @@ const Chat: React.FC<ChatProps> = ({ currentUser }) => {
                 allUsers={allUsers}
                 onCreate={handleCreateRoom}
             />
+
+            {/* Custom Context Menu */}
+            {contextMenu && (
+                <div 
+                    className="fixed z-50 bg-white dark:bg-gray-800 shadow-xl rounded-lg py-1 border border-gray-200 dark:border-gray-700 min-w-[160px] animate-fade-in-up"
+                    style={{ top: contextMenu.y, left: contextMenu.x }}
+                    onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
+                >
+                    <button 
+                        onClick={() => {
+                            handleDeleteMessage(contextMenu.id);
+                            setContextMenu(null);
+                        }}
+                        className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center gap-2 transition-colors"
+                    >
+                        <TrashIcon /> 
+                        <span className="font-medium">Delete Message</span>
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

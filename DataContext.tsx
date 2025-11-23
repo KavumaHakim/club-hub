@@ -242,7 +242,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
     if (!currentUser) return;
     
     // Subscribe to INSERT events on the messages table
-    const channel = supabase.channel('global_messages_listener')
+    const messageChannel = supabase.channel('global_messages_listener')
         .on(
             'postgres_changes',
             { 
@@ -257,9 +257,6 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
                 if (newMsg.sender_id === currentUser.uid) return;
 
                 // Check if the user is a member of the room where the message was sent
-                // We depend on the 'rooms' state being somewhat up-to-date.
-                // Note: If 'rooms' state is stale (e.g. user added to new room but didn't refresh), 
-                // they won't get notified until 'rooms' updates.
                 const isRelevantRoom = rooms.some(r => r.id === newMsg.room_id);
 
                 if (isRelevantRoom) {
@@ -272,10 +269,36 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
         )
         .subscribe();
 
+    // Subscribe to notifications table for real-time alerts
+    const notificationChannel = supabase.channel(`notifications:${currentUser.uid}`)
+        .on(
+            'postgres_changes',
+            { 
+                event: 'INSERT', 
+                schema: 'public', 
+                table: 'notifications', 
+                filter: `user_uid=eq.${currentUser.uid}` 
+            },
+            (payload) => {
+                const newNotifRaw = payload.new as any;
+                const newNotif: Notification = {
+                    id: newNotifRaw.id.toString(),
+                    message: newNotifRaw.message,
+                    isRead: newNotifRaw.is_read,
+                    createdAt: new Date(newNotifRaw.created_at).toLocaleString('en-US', { timeZone: 'Africa/Kampala' }),
+                    linkTo: newNotifRaw.link_to,
+                    userId: newNotifRaw.user_uid,
+                };
+                setNotifications(prev => [newNotif, ...prev]);
+            }
+        )
+        .subscribe();
+
     return () => {
-        supabase.removeChannel(channel);
+        supabase.removeChannel(messageChannel);
+        supabase.removeChannel(notificationChannel);
     };
-  }, [currentUser, rooms]); // Re-subscribe if rooms list changes (e.g. joined new room)
+  }, [currentUser, rooms]); 
 
 
   // Fetch all data when the provider mounts (i.e., when the user logs in)
