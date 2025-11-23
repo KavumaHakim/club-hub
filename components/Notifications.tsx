@@ -69,7 +69,7 @@ const Notifications: React.FC<NotificationsProps> = ({ currentUser, setActiveTab
 
             {isOpen && (
                 <div
-                    className={`absolute bottom-full mb-2 ${isSidebarCollapsed ? 'left-1/2 -translate-x-1/2' : 'right-0'} w-80 bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 z-50 transform transition-all duration-300 ease-in-out origin-bottom-right`}
+                    className="absolute bottom-full mb-2 left-0 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 z-50 transform transition-all duration-300 ease-in-out origin-bottom-left"
                     style={{ transform: isOpen ? 'scale(1) translateY(0)' : 'scale(0.95) translateY(10px)', opacity: isOpen ? 1 : 0, pointerEvents: isOpen ? 'auto' : 'none' }}
                 >
                     <div className="p-3 flex justify-between items-center border-b border-gray-200 dark:border-gray-700">
