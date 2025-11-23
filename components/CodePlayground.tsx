@@ -1,6 +1,4 @@
 
-
-
 import React, { useState, useEffect, useRef } from 'react';
 import { PlayIcon } from './icons/PlayIcon';
 import { TrashIcon } from './icons/TrashIcon';
@@ -10,11 +8,13 @@ import { CloudIcon } from './icons/CloudIcon';
 import { XIcon } from './icons/XIcon';
 import { CopyIcon } from './icons/CopyIcon';
 import { GlobeIcon } from './icons/GlobeIcon'; 
+import { ShareIcon } from './icons/ShareIcon';
 import Editor from '@monaco-editor/react';
 import { User, Tab } from '../types';
 import * as api from '../services/apiService';
 import ConfirmationModal from './ConfirmationModal';
 import InputModal from './InputModal';
+import ShareCodeModal from './ShareCodeModal';
 import { useData } from '../DataContext';
 
 interface CodePlaygroundProps {
@@ -150,6 +150,9 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
 
   // Publish State
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+
+  // Share State
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   // Copy Feedback
   const [copyFeedback, setCopyFeedback] = useState(false);
@@ -489,6 +492,14 @@ builtins.input = custom_input_async
                 <span className="hidden sm:inline">Cloud Save</span>
             </button>
             <button
+                onClick={() => setIsShareModalOpen(true)}
+                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm"
+                title="Share Code"
+            >
+                <ShareIcon />
+                <span className="hidden sm:inline">Share</span>
+            </button>
+            <button
                 onClick={() => setIsPublishModalOpen(true)}
                 className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-sm"
                 title="Publish to Showcase"
@@ -698,6 +709,13 @@ builtins.input = custom_input_async
         isOpen={isPublishModalOpen}
         onClose={() => setIsPublishModalOpen(false)}
         onPublish={handlePublish}
+      />
+
+      <ShareCodeModal 
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        code={code}
+        currentUser={currentUser}
       />
 
       <InputModal 
