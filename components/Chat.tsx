@@ -233,7 +233,22 @@ const Chat: React.FC<ChatProps> = ({ currentUser }) => {
         if (isMe && isRecent) {
              e.preventDefault();
              e.stopPropagation();
-             setContextMenu({ id: msg.id, x: e.clientX, y: e.clientY });
+             
+             // Smart positioning logic to prevent menu going off screen
+             const menuWidth = 160;
+             const menuHeight = 50;
+             let x = e.clientX;
+             let y = e.clientY;
+
+             if (x + menuWidth > window.innerWidth) {
+                 x = x - menuWidth;
+             }
+             
+             if (y + menuHeight > window.innerHeight) {
+                 y = y - menuHeight;
+             }
+
+             setContextMenu({ id: msg.id, x, y });
         }
     };
 

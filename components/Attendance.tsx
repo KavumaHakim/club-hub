@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { AttendanceRecord, AttendanceStatus, User } from '../types';
 import * as api from '../services/apiService';
@@ -39,6 +39,22 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, visible = true }) 
   const [selectedActivityId, setSelectedActivityId] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<AttendanceStatus>('Present');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [shouldRenderChart, setShouldRenderChart] = useState(false);
+
+  // Delay chart rendering slightly to allow layout to compute dimensions
+  // This prevents the "width(0) height(0)" warnings from Recharts
+  useEffect(() => {
+    // Fix: Use ReturnType<typeof setTimeout> to avoid 'Cannot find namespace NodeJS' error
+    let timer: ReturnType<typeof setTimeout>;
+    if (visible) {
+        timer = setTimeout(() => {
+            setShouldRenderChart(true);
+        }, 300); // 300ms delay to ensure DOM is ready
+    } else {
+        setShouldRenderChart(false);
+    }
+    return () => clearTimeout(timer);
+  }, [visible]);
 
   const unrecordedActivities = useMemo(() => 
     activities.filter(activity => 
@@ -279,7 +295,7 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, visible = true }) 
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
           <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4 text-center">Summary</h2>
           <div style={{ width: '100%', height: 300 }}>
-            {visible && (
+            {shouldRenderChart ? (
                 <ResponsiveContainer width="99%" height="100%">
                 <PieChart>
                     <Pie
@@ -305,6 +321,8 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, visible = true }) 
                     <Legend wrapperStyle={{color: '#9CA3AF'}}/>
                 </PieChart>
                 </ResponsiveContainer>
+            ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-400">Loading Chart...</div>
             )}
           </div>
         </div>
@@ -314,7 +332,7 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, visible = true }) 
           <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">Attendance Trend</h2>
            {lineChartData.length > 1 ? (
             <div className="h-80 w-full">
-                {visible && (
+                {shouldRenderChart ? (
                     <ResponsiveContainer width="99%" height="100%">
                         <LineChart data={lineChartData} margin={{ top: 5, right: 20, left: -10, bottom: 50 }}>
                             <defs>
@@ -340,6 +358,8 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, visible = true }) 
                             />
                         </LineChart>
                     </ResponsiveContainer>
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400">Loading Chart...</div>
                 )}
             </div>
            ) : (

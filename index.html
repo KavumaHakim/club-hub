@@ -62,6 +62,9 @@
     <div id="root"></div>
     <script src="https://cdn.jsdelivr.net/pyodide/v0.29.0/full/pyodide.js"></script>
     <script>
+      // Service Worker registration is currently commented out to prevent origin mismatch errors 
+      // in the preview environment. Uncomment this block when deploying to production.
+      /*
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js')
@@ -73,6 +76,7 @@
             });
         });
       }
+      */
     </script>
     <script type="module" src="/index.tsx"></script>
   </body>
