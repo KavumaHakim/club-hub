@@ -1,5 +1,4 @@
 
-
 import React, { useMemo, useEffect, useRef } from 'react';
 import { User, Tab } from '../types';
 import { LogoutIcon } from './icons/LogoutIcon';
@@ -141,13 +140,13 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, theme, onToggleTheme,
     const characters = "01ICTCLUBHUB<>/{};[]";
     
     const draw = () => {
-      // Fade out effect for trails
-      ctx.fillStyle = theme === 'dark' ? 'rgba(17, 24, 39, 0.1)' : 'rgba(255, 255, 255, 0.15)';
+      // Fade out effect for trails (Darker/Lighter background based on theme to simulate fade)
+      ctx.fillStyle = theme === 'dark' ? 'rgba(17, 24, 39, 0.1)' : 'rgba(255, 255, 255, 0.1)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Set text color (Subtle Pink/Purple)
-      ctx.fillStyle = theme === 'dark' ? '#db2777' : '#d946ef'; // Pink-600/Fuchsia-500
-      ctx.font = '12px monospace';
+      // Set text color (Pink/Purple)
+      ctx.fillStyle = theme === 'dark' ? '#ec4899' : '#c026d3'; // Pink-500 / Fuchsia-700
+      ctx.font = '14px monospace'; // Slightly larger font
 
       for (let i = 0; i < drops.length; i++) {
         const text = characters[Math.floor(Math.random() * characters.length)];
@@ -156,8 +155,8 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, theme, onToggleTheme,
 
         // Draw the character only if it's within view
         if (y > 0 && y < canvas.height) {
-            // Add randomness to opacity for "glitch" feel
-            ctx.globalAlpha = Math.random() * 0.4 + 0.05; 
+            // Increased alpha range for better visibility
+            ctx.globalAlpha = Math.random() * 0.5 + 0.5; 
             ctx.fillText(text, x, y);
             ctx.globalAlpha = 1.0;
         }
@@ -170,7 +169,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, theme, onToggleTheme,
         drops[i]++;
       }
       
-      // Loop via setTimeout for slower animation
+      // Loop via setTimeout for animation
       setTimeout(() => {
           animationFrameId = requestAnimationFrame(draw);
       }, 50);
@@ -182,7 +181,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, theme, onToggleTheme,
       cancelAnimationFrame(animationFrameId);
       resizeObserver.disconnect();
     };
-  }, [theme]); // Removed isCollapsed dependency as ResizeObserver handles it
+  }, [theme]); 
 
   const handleNavClick = (tab: Tab) => {
     setActiveTab(tab);
@@ -237,10 +236,10 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, theme, onToggleTheme,
 
       <aside className={`bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-screen transform transition-all md:transition-all duration-300 ease-in-out md:sticky md:top-0 ${isCollapsed ? 'md:w-[5.5rem]' : 'w-72'} ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'} fixed inset-y-0 left-0 z-30 shadow-2xl md:shadow-none overflow-hidden`}>
         
-        {/* Matrix Background Canvas */}
+        {/* Matrix Background Canvas - Increased Opacity to 30% */}
         <canvas 
             ref={canvasRef}
-            className="absolute inset-0 z-0 opacity-10 pointer-events-none"
+            className="absolute inset-0 z-0 opacity-30 pointer-events-none"
         />
 
         {/* Header */}
