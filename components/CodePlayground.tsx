@@ -4,15 +4,27 @@ import { PlayIcon } from './icons/PlayIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import { UploadIcon } from './icons/UploadIcon';
 import { DownloadIcon } from './icons/DownloadIcon';
+import { CloudIcon } from './icons/CloudIcon';
+import { XIcon } from './icons/XIcon';
 import Editor from '@monaco-editor/react';
+import { User } from '../types';
+import * as api from '../services/apiService';
 
 interface CodePlaygroundProps {
     theme: 'light' | 'dark';
+    currentUser: User;
 }
 
 interface OutputLine {
     type: 'log' | 'error';
     content: string;
+}
+
+interface ScriptFile {
+    name: string;
+    id: string;
+    lastModified: string;
+    size: number;
 }
 
 const DEFAULT_CODE = `print("Hello from the ICT Club Hub Playground!")
@@ -24,7 +36,7 @@ print(f"Nice to meet you, {name}!")
 import math
 math.pi`;
 
-const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme }) => {
+const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser }) => {
   const [code, setCode] = useState<string>(() => {
       // Load from local storage if available, otherwise use default
       if (typeof window !== 'undefined') {
@@ -37,6 +49,15 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme }) => {
   const [isExecuting, setIsExecuting] = useState<boolean>(false);
   const [pyodide, setPyodide] = useState<any | null>(null);
   const [isPyodideReady, setIsPyodideReady] = useState(false);
+  
+  // Cloud Save/Load State
+  const [isCloudModalOpen, setIsCloudModalOpen] = useState(false);
+  const [cloudScripts, setCloudScripts] = useState<ScriptFile[]>([]);
+  const [isLoadingScripts, setIsLoadingScripts] = useState(false);
+  const [saveFileName, setSaveFileName] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [cloudMessage, setCloudMessage] = useState<{text: string, type: 'success'|'error'} | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-save code to local storage
@@ -95,6 +116,70 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme }) => {
   const triggerFileUpload = () => {
     fileInputRef.current?.click();
   };
+
+  // --- Cloud Functions ---
+
+  const fetchCloudScripts = async () => {
+      setIsLoadingScripts(true);
+      setCloudMessage(null);
+      try {
+          const scripts = await api.listUserScripts(currentUser.uid);
+          setCloudScripts(scripts);
+      } catch (err: any) {
+          setCloudMessage({ text: err.message, type: 'error' });
+      } finally {
+          setIsLoadingScripts(false);
+      }
+  };
+
+  const handleOpenCloudModal = () => {
+      setIsCloudModalOpen(true);
+      fetchCloudScripts();
+  };
+
+  const handleCloudSave = async () => {
+      if (!saveFileName.trim()) {
+          setCloudMessage({ text: "Please enter a file name.", type: 'error' });
+          return;
+      }
+      setIsSaving(true);
+      setCloudMessage(null);
+      try {
+          await api.saveUserScript(currentUser.uid, saveFileName, code);
+          setCloudMessage({ text: "File saved successfully!", type: 'success' });
+          await fetchCloudScripts();
+          setSaveFileName('');
+      } catch (err: any) {
+          setCloudMessage({ text: err.message, type: 'error' });
+      } finally {
+          setIsSaving(false);
+      }
+  };
+
+  const handleCloudLoad = async (fileName: string) => {
+      setCloudMessage(null);
+      try {
+          const content = await api.downloadUserScript(currentUser.uid, fileName);
+          setCode(content);
+          setIsCloudModalOpen(false);
+          setOutput([{ type: 'log', content: `Loaded cloud file: ${fileName}` }]);
+      } catch (err: any) {
+          setCloudMessage({ text: err.message, type: 'error' });
+      }
+  };
+
+  const handleCloudDelete = async (fileName: string) => {
+      if (!confirm(`Are you sure you want to delete ${fileName}?`)) return;
+      setCloudMessage(null);
+      try {
+          await api.deleteUserScript(currentUser.uid, fileName);
+          await fetchCloudScripts();
+      } catch (err: any) {
+          setCloudMessage({ text: err.message, type: 'error' });
+      }
+  };
+
+  // --- End Cloud Functions ---
 
   const handleRunCode = async () => {
     setIsExecuting(true);
@@ -197,7 +282,7 @@ builtins.input = input_override
   const editorTheme = theme === 'dark' ? 'vs-dark' : 'light';
 
   return (
-    <div className="flex flex-col h-[calc(100vh-10rem)]">
+    <div className="flex flex-col h-[calc(100vh-10rem)] relative">
       {/* Hidden file input */}
       <input
         type="file"
@@ -216,7 +301,7 @@ builtins.input = input_override
             <button
                 onClick={triggerFileUpload}
                 className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors shadow-sm"
-                title="Upload Python file"
+                title="Upload Python file from computer"
             >
                 <UploadIcon />
                 <span className="hidden sm:inline">Upload</span>
@@ -224,10 +309,18 @@ builtins.input = input_override
             <button
                 onClick={handleDownloadCode}
                 className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors shadow-sm"
-                title="Save as .py file"
+                title="Download as .py file"
             >
                 <DownloadIcon />
-                <span className="hidden sm:inline">Save</span>
+                <span className="hidden sm:inline">Download</span>
+            </button>
+             <button
+                onClick={handleOpenCloudModal}
+                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors shadow-sm"
+                title="Save/Load from Cloud"
+            >
+                <CloudIcon />
+                <span className="hidden sm:inline">Cloud Save</span>
             </button>
             <div className="h-6 w-px bg-gray-300 dark:bg-gray-600 mx-2 hidden sm:block"></div>
             <button
@@ -297,6 +390,88 @@ builtins.input = input_override
           </pre>
         </div>
       </div>
+
+      {/* Cloud Save Modal */}
+      {isCloudModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full p-6 relative border border-gray-200 dark:border-gray-700">
+                   <button 
+                        onClick={() => setIsCloudModalOpen(false)} 
+                        className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400"
+                    >
+                       <XIcon />
+                    </button>
+                   
+                   <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                       <CloudIcon /> Cloud Scripts
+                   </h3>
+
+                   {/* Message Area */}
+                   {cloudMessage && (
+                       <div className={`mb-4 p-3 rounded text-sm ${cloudMessage.type === 'success' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'}`}>
+                           {cloudMessage.text}
+                       </div>
+                   )}
+
+                   {/* Save Section */}
+                   <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                       <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Save Current Code</h4>
+                       <div className="flex gap-2">
+                           <input 
+                                type="text" 
+                                placeholder="filename.py" 
+                                value={saveFileName}
+                                onChange={(e) => setSaveFileName(e.target.value)}
+                                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                           />
+                           <button 
+                                onClick={handleCloudSave}
+                                disabled={isSaving}
+                                className="px-4 py-2 bg-pink-600 text-white rounded-md text-sm font-medium hover:bg-pink-700 disabled:opacity-50"
+                           >
+                               {isSaving ? 'Saving...' : 'Save'}
+                           </button>
+                       </div>
+                   </div>
+
+                   {/* File List */}
+                   <div>
+                       <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Your Scripts</h4>
+                       <div className="max-h-60 overflow-y-auto space-y-2">
+                           {isLoadingScripts ? (
+                               <p className="text-center text-gray-500 text-sm py-4">Loading scripts...</p>
+                           ) : cloudScripts.length === 0 ? (
+                               <p className="text-center text-gray-500 text-sm py-4">No scripts saved yet.</p>
+                           ) : (
+                               cloudScripts.map(script => (
+                                   <div key={script.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/30 rounded border border-gray-100 dark:border-gray-700">
+                                       <div className="min-w-0 flex-1 mr-2">
+                                           <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{script.name}</p>
+                                           <p className="text-xs text-gray-500 dark:text-gray-400">{script.lastModified}</p>
+                                       </div>
+                                       <div className="flex items-center gap-2">
+                                           <button 
+                                                onClick={() => handleCloudLoad(script.name)}
+                                                className="text-xs px-2 py-1 bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 rounded hover:bg-purple-200 dark:hover:bg-purple-800 transition-colors"
+                                           >
+                                               Load
+                                           </button>
+                                           <button 
+                                                onClick={() => handleCloudDelete(script.name)}
+                                                className="text-gray-400 hover:text-red-500 transition-colors"
+                                                title="Delete"
+                                           >
+                                               <TrashIcon />
+                                           </button>
+                                       </div>
+                                   </div>
+                               ))
+                           )}
+                       </div>
+                   </div>
+              </div>
+          </div>
+      )}
     </div>
   );
 };

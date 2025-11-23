@@ -1,3 +1,4 @@
+
 import React, { Suspense, lazy } from 'react';
 import { User, Tab } from '../types';
 
@@ -52,7 +53,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile,
             <ProjectsBoard currentUser={currentUser} />
         </TabPanel>
         <TabPanel active={activeTab === 'playground'}>
-            <CodePlayground theme={theme} />
+            <CodePlayground theme={theme} currentUser={currentUser} />
         </TabPanel>
         <TabPanel active={activeTab === 'profile'}>
             <Profile currentUser={currentUser} onUpdateUserProfile={onUpdateUserProfile} />

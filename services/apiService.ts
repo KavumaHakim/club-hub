@@ -656,3 +656,64 @@ export const deleteMessage = async (messageId: string): Promise<void> => {
     const { error } = await supabase.from('messages').delete().eq('id', messageId);
     if (error) throw new Error(error.message);
 };
+
+// --- USER SCRIPTS (STORAGE) API ---
+
+const BUCKET_NAME = 'user_scripts';
+
+export const listUserScripts = async (userId: string): Promise<{ name: string; id: string; lastModified: string; size: number }[]> => {
+    // We list items in the folder named after the user's UID
+    const { data, error } = await supabase
+        .storage
+        .from(BUCKET_NAME)
+        .list(userId, {
+            sortBy: { column: 'updated_at', order: 'desc' },
+        });
+
+    if (error) throw new Error(`Failed to list scripts: ${error.message}`);
+    
+    return (data || []).map(file => ({
+        name: file.name,
+        id: file.id,
+        lastModified: new Date(file.updated_at).toLocaleString(),
+        size: file.metadata.size,
+    }));
+};
+
+export const saveUserScript = async (userId: string, fileName: string, content: string): Promise<void> => {
+    // Ensure filename ends with .py
+    const safeName = fileName.endsWith('.py') ? fileName : `${fileName}.py`;
+    const filePath = `${userId}/${safeName}`;
+
+    const { error } = await supabase
+        .storage
+        .from(BUCKET_NAME)
+        .upload(filePath, content, {
+            upsert: true,
+            contentType: 'text/x-python'
+        });
+
+    if (error) throw new Error(`Failed to save script: ${error.message}`);
+};
+
+export const downloadUserScript = async (userId: string, fileName: string): Promise<string> => {
+    const filePath = `${userId}/${fileName}`;
+    const { data, error } = await supabase
+        .storage
+        .from(BUCKET_NAME)
+        .download(filePath);
+
+    if (error) throw new Error(`Failed to download script: ${error.message}`);
+    
+    return await data.text();
+};
+
+export const deleteUserScript = async (userId: string, fileName: string): Promise<void> => {
+    const filePath = `${userId}/${fileName}`;
+    const { error } = await supabase
+        .storage
+        .from(BUCKET_NAME)
+        .remove([filePath]);
+
+    if (error) throw new Error(`Failed to delete script: ${error.message}`);
+};
