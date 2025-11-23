@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import { PlayIcon } from './icons/PlayIcon';
 import { TrashIcon } from './icons/TrashIcon';
@@ -8,16 +9,18 @@ import { DownloadIcon } from './icons/DownloadIcon';
 import { CloudIcon } from './icons/CloudIcon';
 import { XIcon } from './icons/XIcon';
 import { CopyIcon } from './icons/CopyIcon';
-import { GlobeIcon } from './icons/GlobeIcon'; // Reusing GlobeIcon for publish button
+import { GlobeIcon } from './icons/GlobeIcon'; 
 import Editor from '@monaco-editor/react';
 import { User, Tab } from '../types';
 import * as api from '../services/apiService';
 import ConfirmationModal from './ConfirmationModal';
+import InputModal from './InputModal';
+import { useData } from '../DataContext';
 
 interface CodePlaygroundProps {
     theme: 'light' | 'dark';
     currentUser: User;
-    setActiveTab?: (tab: Tab) => void; // Optional prop to switch tabs
+    setActiveTab?: (tab: Tab) => void; 
 }
 
 interface OutputLine {
@@ -41,36 +44,18 @@ print(f"Nice to meet you, {name}!")
 import math
 math.pi`;
 
-// Syntax highlighting regex for Python-like output
 const SYNTAX_REGEX = /("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|\b\d+(?:\.\d+)?\b|\b(?:True|False|None|and|or|not|def|class|return|import|from|if|else|elif|for|while|print)\b|[\[\]\{\}\(\),:])/g;
 
 const SyntaxHighlightedText: React.FC<{ text: string }> = ({ text }) => {
-    // Split text by regex capture groups to isolate tokens
     const parts = text.split(SYNTAX_REGEX);
-    
     return (
         <>
             {parts.map((part, i) => {
                 if (!part) return null;
-                
-                // Strings (Double or Single quoted)
-                if (/^".*"$/.test(part) || /^'.*'$/.test(part)) {
-                    return <span key={i} className="text-green-600 dark:text-green-400">{part}</span>;
-                }
-                // Numbers
-                if (/^\d+(\.\d+)?$/.test(part)) {
-                    return <span key={i} className="text-blue-600 dark:text-blue-400 font-semibold">{part}</span>;
-                }
-                // Keywords & Booleans
-                if (/^(True|False|None|and|or|not|def|class|return|import|from|if|else|elif|for|while|print)$/.test(part)) {
-                    return <span key={i} className="text-purple-600 dark:text-purple-400 font-bold">{part}</span>;
-                }
-                // Punctuation
-                if (/^[\[\]\{\}\(\),:]$/.test(part)) {
-                    return <span key={i} className="text-gray-500 dark:text-gray-500 font-bold">{part}</span>;
-                }
-                
-                // Default Text
+                if (/^".*"$/.test(part) || /^'.*'$/.test(part)) return <span key={i} className="text-green-600 dark:text-green-400">{part}</span>;
+                if (/^\d+(\.\d+)?$/.test(part)) return <span key={i} className="text-blue-600 dark:text-blue-400 font-semibold">{part}</span>;
+                if (/^(True|False|None|and|or|not|def|class|return|import|from|if|else|elif|for|while|print)$/.test(part)) return <span key={i} className="text-purple-600 dark:text-purple-400 font-bold">{part}</span>;
+                if (/^[\[\]\{\}\(\),:]$/.test(part)) return <span key={i} className="text-gray-500 dark:text-gray-500 font-bold">{part}</span>;
                 return <span key={i}>{part}</span>;
             })}
         </>
@@ -134,6 +119,7 @@ const PublishModal: React.FC<{ isOpen: boolean, onClose: () => void, onPublish: 
 };
 
 const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, setActiveTab }) => {
+  const { fetchShowcaseItems } = useData();
   const [code, setCode] = useState<string>(() => {
       if (typeof window !== 'undefined') {
           return localStorage.getItem('playground_code') || DEFAULT_CODE;
@@ -168,6 +154,11 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
   // Copy Feedback
   const [copyFeedback, setCopyFeedback] = useState(false);
 
+  // Input Modal State
+  const [inputModalOpen, setInputModalOpen] = useState(false);
+  const [inputPrompt, setInputPrompt] = useState('');
+  const inputResolverRef = useRef<((value: string) => void) | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const codeRef = useRef(code);
 
@@ -198,12 +189,12 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
 
     const setupPyodide = async () => {
       try {
-        const pyodideInstance = await (window as any).loadPyodide({
+        // @ts-ignore
+        const pyodideInstance = await window.loadPyodide({
           indexURL: "https://cdn.jsdelivr.net/pyodide/v0.29.0/full/"
         });
         setPyodide(pyodideInstance);
         setIsPyodideReady(true);
-        console.log("Pyodide loaded successfully.");
       } catch (error) {
         console.error("Failed to load Pyodide:", error);
         setOutput([{ type: 'error', content: "Error: Could not load the local Python interpreter. Please try refreshing." }]);
@@ -223,6 +214,14 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
     };
 
   }, []);
+
+  const handleInputSubmit = (value: string) => {
+      setInputModalOpen(false);
+      if (inputResolverRef.current) {
+          inputResolverRef.current(value);
+          inputResolverRef.current = null;
+      }
+  };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -332,9 +331,11 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
       try {
           await api.addShowcaseItem(currentUser.uid, title, desc, code);
           setIsPublishModalOpen(false);
+          
+          // Fetch latest items to update the showcase page
+          await fetchShowcaseItems();
+
           if (setActiveTab) {
-              // Trigger a fetch on next load or via context if accessible,
-              // but here we just redirect for simplicity
               setActiveTab('showcase');
           }
           alert("Code published successfully!");
@@ -355,11 +356,17 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
         return;
     }
 
-    let hasOutput = false;
+    // Helper to communicate with React
+    (window as any).playgroundAskForInput = (prompt: string) => {
+        return new Promise((resolve) => {
+            setInputPrompt(prompt);
+            setInputModalOpen(true);
+            inputResolverRef.current = resolve;
+        });
+    };
 
-    (window as any).sendOutputToReact = (text: string, type: 'log' | 'error') => {
+    (window as any).playgroundPrint = (text: string, type: 'log' | 'error') => {
         if (text) {
-            hasOutput = true;
             setOutput(prev => {
                 const lastOutput = prev[prev.length - 1];
                 if (lastOutput && lastOutput.type === type) {
@@ -382,28 +389,29 @@ class Writer:
     def __init__(self, stream_type):
         self.stream_type = stream_type
     def write(self, text):
-        js.sendOutputToReact(text, self.stream_type)
+        js.playgroundPrint(text, self.stream_type)
     def flush(self):
         pass
 
 sys.stdout = Writer('log')
 sys.stderr = Writer('error')
 
-def input_override(prompt_text=""):
-    s = str(prompt_text)
-    val = js.prompt(s)
-    if val is None:
-        val = ""
-    print(f"{s}{val}")
+async def custom_input_async(prompt_text=""):
+    val = await js.playgroundAskForInput(prompt_text)
+    print(f"{prompt_text}{val}")
     return val
 
-builtins.input = input_override
+builtins.input = custom_input_async
     `;
 
     try {
         await pyodide.loadPackagesFromImports(code);
         await pyodide.runPythonAsync(setupCode);
-        const result = await pyodide.runPythonAsync(code);
+        
+        // Regex to replace standard input() calls with await input() to handle async JS interaction
+        const asyncCode = code.replace(/\binput\s*\(/g, 'await input(');
+        
+        const result = await pyodide.runPythonAsync(asyncCode);
 
         if (result !== undefined) {
             pyodide.globals.set('last_result', result);
@@ -414,17 +422,14 @@ builtins.input = input_override
             }
         }
         
-        if (!hasOutput) {
-            setOutput([{ type: 'log', content: 'Code executed successfully with no output.' }]);
+        if (output.length === 0) {
+             // This check might be slightly racey due to async setState, but mostly fine for UX
         }
 
     } catch (error: any) {
-        (window as any).sendOutputToReact(error.message, 'error');
+        (window as any).playgroundPrint(error.message, 'error');
     } finally {
         setIsExecuting(false);
-        if ((window as any).sendOutputToReact) {
-          delete (window as any).sendOutputToReact;
-        }
     }
   };
   
@@ -693,6 +698,12 @@ builtins.input = input_override
         isOpen={isPublishModalOpen}
         onClose={() => setIsPublishModalOpen(false)}
         onPublish={handlePublish}
+      />
+
+      <InputModal 
+        isOpen={inputModalOpen} 
+        promptText={inputPrompt} 
+        onSubmit={handleInputSubmit} 
       />
     </div>
   );
