@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { User, Message, Room } from '../types';
 import { useData } from '../DataContext';
@@ -134,7 +135,9 @@ const Chat: React.FC<ChatProps> = ({ currentUser }) => {
     const activeRoom = useMemo(() => rooms.find(r => r.id === activeRoomId), [rooms, activeRoomId]);
 
     const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        setTimeout(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        }, 100);
     };
 
     // Initial fetch of rooms is handled by DataContext, but we can ensure refresh here
@@ -162,8 +165,8 @@ const Chat: React.FC<ChatProps> = ({ currentUser }) => {
         loadMessages();
 
         // Real-time subscription
-        const subscription = supabase
-            .channel(`room:${activeRoomId}`)
+        const channel = supabase.channel(`room:${activeRoomId}`);
+        const subscription = channel
             .on(
                 'postgres_changes',
                 { event: 'INSERT', schema: 'public', table: 'messages', filter: `room_id=eq.${activeRoomId}` },
@@ -178,7 +181,14 @@ const Chat: React.FC<ChatProps> = ({ currentUser }) => {
                         createdAt: rawMsg.created_at,
                         metadata: rawMsg.metadata
                     };
-                    setMessages(prev => [...prev, newMsg]);
+                    
+                    setMessages(prev => {
+                        // Avoid duplicates if we already added it optimistically
+                        if (prev.some(m => m.id === newMsg.id)) {
+                            return prev;
+                        }
+                        return [...prev, newMsg];
+                    });
                     scrollToBottom();
                 }
             )
@@ -204,8 +214,16 @@ const Chat: React.FC<ChatProps> = ({ currentUser }) => {
 
         if (activeRoomId) {
             try {
-                await api.sendMessage(activeRoomId, currentUser.uid, content);
-                // Note: We rely on subscription to update the UI
+                // Send and get the full message object back
+                const sentMsg = await api.sendMessage(activeRoomId, currentUser.uid, content);
+                
+                // Immediately update UI
+                setMessages(prev => {
+                    // Check for duplicates in case race condition with subscription
+                    if (prev.some(m => m.id === sentMsg.id)) return prev;
+                    return [...prev, sentMsg];
+                });
+                
             } catch (error) {
                 console.error("Failed to send message", error);
                 alert("Failed to send message");

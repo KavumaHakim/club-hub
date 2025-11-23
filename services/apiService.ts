@@ -608,17 +608,26 @@ export const getRoomMessages = async (roomId: string): Promise<Message[]> => {
     }));
 };
 
-export const sendMessage = async (roomId: string, senderId: string, content: string): Promise<void> => {
-    const { error } = await supabase.from('messages').insert({
+export const sendMessage = async (roomId: string, senderId: string, content: string): Promise<Message> => {
+    const { data, error } = await supabase.from('messages').insert({
         room_id: roomId,
         sender_id: senderId,
         content: content,
-    });
+    }).select().single();
 
     if (error) throw new Error(error.message);
 
     // Update room updated_at timestamp
     await supabase.from('rooms').update({ updated_at: new Date().toISOString() }).eq('id', roomId);
+
+    return {
+        id: data.id,
+        roomId: data.room_id,
+        senderId: data.sender_id,
+        content: data.content,
+        createdAt: data.created_at,
+        metadata: data.metadata
+    };
 };
 
 export const createRoom = async (title: string | null, participantIds: string[]): Promise<string> => {
