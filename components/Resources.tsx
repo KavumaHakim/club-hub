@@ -56,10 +56,13 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
 
         try {
             let resourceUrl = url;
+            let resourceFilePath = undefined;
 
             if (type === 'PYTHON' && selectedFile) {
-                // Upload file first
-                resourceUrl = await api.uploadResourceFile(selectedFile);
+                // Upload file first, passing userId to organize by folder
+                const uploadResult = await api.uploadResourceFile(selectedFile, currentUser.uid);
+                resourceUrl = uploadResult.url;
+                resourceFilePath = uploadResult.path;
             }
 
             await api.addResource({
@@ -68,6 +71,7 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
                 category,
                 type,
                 url: resourceUrl,
+                filePath: resourceFilePath,
                 uploaderUid: currentUser.uid,
                 topic: null, // Add topic to satisfy schema
             });
@@ -83,7 +87,12 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
             await fetchResources(); // Refresh data
         } catch (err: any) {
             console.error("Failed to add resource:", err);
-            setError(err.message || "An unexpected error occurred.");
+            // Check for common RLS error message
+            if (err.message && err.message.toLowerCase().includes('row-level security')) {
+                 setError("Permission Denied: Database Row-Level Security (RLS) policies are preventing this action. Please ensure you have enabled RLS and created policies for the 'resources' table and 'resource_files' storage bucket in your Supabase dashboard.");
+            } else {
+                 setError(err.message || "An unexpected error occurred.");
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -199,7 +208,7 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
                                 )}
                             </div>
                         </div>
-                        {error && <p className="text-sm text-red-500">{error}</p>}
+                        {error && <div className="p-3 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300 rounded-md text-sm">{error}</div>}
                         <div className="text-right">
                             <button type="submit" disabled={isSubmitting} className="inline-flex items-center space-x-2 px-5 py-2 font-semibold text-white bg-pink-600 rounded-lg shadow-md hover:bg-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                                 <PlusCircleIcon />

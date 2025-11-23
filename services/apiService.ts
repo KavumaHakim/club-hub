@@ -528,6 +528,7 @@ export const getResources = async (): Promise<Omit<Resource, 'uploaderName' | 'u
         category: item.category,
         topic: item.topic,
         url: item.url,
+        filePath: item.file_path, // Map from DB column file_path
         uploaderUid: item.uploader_uid,
     }));
 };
@@ -536,13 +537,15 @@ export const addResource = async (
     resourceData: Omit<Resource, 'id' | 'createdAt' | 'uploaderName' | 'uploaderAvatarUrl'>
 ): Promise<void> => {
     // Insert metadata into the 'resources' table
+    // Explicitly mapping undefined to null to ensure compatibility with Supabase
     const resourceToInsert = {
         title: resourceData.title,
-        description: resourceData.description,
+        description: resourceData.description || null,
         type: resourceData.type,
         category: resourceData.category,
         topic: resourceData.topic || null,
-        url: resourceData.url,
+        url: resourceData.url || null,
+        file_path: resourceData.filePath || null,
         uploader_uid: resourceData.uploaderUid,
     };
 
@@ -550,26 +553,46 @@ export const addResource = async (
     if (insertError) throw new Error(insertError.message);
 };
 
-export const uploadResourceFile = async (file: File): Promise<string> => {
-    const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+export const uploadResourceFile = async (file: File, userId: string): Promise<{ path: string, url: string }> => {
+    // Generate a safe filename to avoid RLS regex issues with special characters in file names.
+    // Use timestamp + random string + original extension.
+    const fileExt = file.name.split('.').pop()?.toLowerCase() || 'txt';
+    const cleanFileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${fileExt}`;
+    // Store in a user-specific folder for organization and RLS policies
+    const filePath = `${userId}/${cleanFileName}`;
+    
     const { data, error } = await supabase.storage
         .from(RESOURCES_BUCKET)
-        .upload(fileName, file, {
+        .upload(filePath, file, {
             upsert: false,
-            contentType: 'text/x-python'
+            // Automatically detect content type or default to text/x-python for .py files
+            contentType: fileExt === 'py' ? 'text/x-python' : undefined
         });
 
     if (error) throw new Error(`Failed to upload file: ${error.message}`);
 
     const { data: { publicUrl } } = supabase.storage
         .from(RESOURCES_BUCKET)
-        .getPublicUrl(fileName);
+        .getPublicUrl(filePath);
 
-    return publicUrl;
+    return { path: data.path, url: publicUrl };
 };
 
 export const deleteResource = async (resource: Resource): Promise<void> => {
-    // Delete the metadata record from the 'resources' table
+    // 1. If there's a file associated, delete it from storage first
+    if (resource.filePath) {
+        const { error: storageError } = await supabase.storage
+            .from(RESOURCES_BUCKET)
+            .remove([resource.filePath]);
+        
+        if (storageError) {
+             console.warn(`Failed to delete file from storage: ${storageError.message}`);
+             // We continue to delete the DB record even if file deletion fails, 
+             // though ideally we'd want transactional consistency.
+        }
+    }
+
+    // 2. Delete the metadata record from the 'resources' table
     const { error: dbError } = await supabase.from('resources').delete().eq('id', resource.id);
     if (dbError) throw new Error(dbError.message);
 };

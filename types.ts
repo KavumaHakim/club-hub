@@ -75,6 +75,7 @@ export interface Resource {
   category: ResourceCategory;
   topic?: string;
   url?: string; // For LINK and VIDEO types
+  filePath?: string; // Path in storage bucket
   uploaderUid: string;
   uploaderName: string;
   uploaderAvatarUrl?: string;
