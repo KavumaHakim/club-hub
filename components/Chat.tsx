@@ -19,6 +19,7 @@ import { PencilIcon } from './icons/PencilIcon';
 import { UserAddIcon } from './icons/UserAddIcon';
 import { CheckIcon } from './icons/CheckIcon';
 import { CodeIcon } from './icons/CodeIcon';
+import { LinkIcon } from './icons/LinkIcon';
 import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react';
 
 interface ChatProps {
@@ -49,6 +50,44 @@ const getRoomAvatar = (room: Room, allUsers: User[], currentUserId: string) => {
     if (others.length === 1) return others[0]?.avatarUrl;
     // Return undefined to signal generic group icon
     return undefined; 
+};
+
+const LinkPreview: React.FC<{ url: string }> = ({ url }) => {
+    // Check for image extensions
+    const isImage = /\.(jpeg|jpg|gif|png|webp|svg)(\?.*)?$/i.test(url);
+
+    if (isImage) {
+        return (
+            <a href={url} target="_blank" rel="noopener noreferrer" className="block mt-2 mb-1" onClick={(e) => e.stopPropagation()}>
+                <img src={url} alt="Shared content" className="max-w-full rounded-lg border border-gray-200 dark:border-gray-600 max-h-60 object-cover hover:opacity-95 transition-opacity" />
+            </a>
+        );
+    }
+
+    let domain = '';
+    try {
+        domain = new URL(url).hostname;
+    } catch (e) {
+        domain = 'External Link';
+    }
+
+    return (
+        <a 
+            href={url} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="flex items-center gap-3 mt-2 mb-1 p-3 bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group max-w-full sm:max-w-sm backdrop-blur-sm"
+            onClick={(e) => e.stopPropagation()}
+        >
+            <div className="p-2.5 bg-gray-200 dark:bg-gray-700 rounded-lg text-gray-500 dark:text-gray-400 group-hover:text-pink-500 transition-colors flex-shrink-0">
+                <LinkIcon />
+            </div>
+            <div className="flex-1 min-w-0 overflow-hidden text-left">
+                <p className="text-sm font-semibold text-pink-600 dark:text-pink-400 truncate">{url}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{domain}</p>
+            </div>
+        </a>
+    );
 };
 
 const NewChatModal: React.FC<{ 
@@ -277,7 +316,7 @@ const RoomDetailsModal: React.FC<{
                                 placeholder="Search users..." 
                                 value={userSearchTerm}
                                 onChange={(e) => setUserSearchTerm(e.target.value)}
-                                className="w-full px-3 py-2 mb-2 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-900 text-sm focus:outline-none focus:ring-1 focus:ring-pink-500"
+                                className="w-full px-3 py-2 mb-2 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-900 text-sm focus:outline-none focus:ring-1 focus:ring-pink-500"
                             />
                             {availableUsers.length === 0 ? (
                                 <p className="text-center text-gray-500 text-sm py-4">No users found to add.</p>
@@ -825,6 +864,23 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab }) => {
                 </div>
             );
         }
+
+        // Link detection
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        if (urlRegex.test(msg.content)) {
+            const parts = msg.content.split(urlRegex);
+            return (
+                <div className="whitespace-pre-wrap break-words text-sm md:text-base">
+                    {parts.map((part, i) => {
+                        if (part.match(urlRegex)) {
+                            return <LinkPreview key={i} url={part} />;
+                        }
+                        return <span key={i}>{part}</span>;
+                    })}
+                </div>
+            );
+        }
+
         return <p className="whitespace-pre-wrap break-words text-sm md:text-base">{msg.content}</p>;
     };
 
@@ -958,7 +1014,7 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab }) => {
                                                 />
                                             )}
 
-                                            <div className="flex flex-col max-w-[70%]">
+                                            <div className="flex flex-col max-w-[85%] sm:max-w-[70%]">
                                                 <div 
                                                     onContextMenu={(e) => handleContextMenu(e, msg)}
                                                     className={`relative px-4 py-2 shadow-sm rounded-2xl ${
