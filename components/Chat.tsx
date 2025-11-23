@@ -145,57 +145,66 @@ const Chat: React.FC<ChatProps> = ({ currentUser }) => {
         fetchRooms();
     }, [fetchRooms]);
 
-    // Fetch messages when active room changes
+    // Fetch messages when active room changes and setup Realtime subscription
     useEffect(() => {
         if (!activeRoomId) return;
 
+        // 1. Initial Load
         const loadMessages = async () => {
             setIsLoadingMessages(true);
             try {
                 const msgs = await api.getRoomMessages(activeRoomId);
                 setMessages(msgs);
+                scrollToBottom();
             } catch (error) {
                 console.error("Failed to load messages", error);
             } finally {
                 setIsLoadingMessages(false);
-                scrollToBottom();
             }
         };
 
         loadMessages();
 
-        // Real-time subscription
-        const channel = supabase.channel(`room:${activeRoomId}`);
-        const subscription = channel
+        // 2. Real-time subscription
+        // We use a broader topic and filter client-side to ensure no UUID formatting issues in the filter string
+        const channel = supabase.channel(`room_chat:${activeRoomId}`)
             .on(
                 'postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'messages', filter: `room_id=eq.${activeRoomId}` },
+                { event: 'INSERT', schema: 'public', table: 'messages' },
                 (payload) => {
-                    // Correctly map snake_case payload from DB to camelCase Message type
                     const rawMsg = payload.new as any;
-                    const newMsg: Message = {
-                        id: rawMsg.id,
-                        roomId: rawMsg.room_id,
-                        senderId: rawMsg.sender_id,
-                        content: rawMsg.content,
-                        createdAt: rawMsg.created_at,
-                        metadata: rawMsg.metadata
-                    };
                     
-                    setMessages(prev => {
-                        // Avoid duplicates if we already added it optimistically
-                        if (prev.some(m => m.id === newMsg.id)) {
-                            return prev;
-                        }
-                        return [...prev, newMsg];
-                    });
-                    scrollToBottom();
+                    // Client-side filter: Ensure message belongs to current room
+                    if (rawMsg && rawMsg.room_id === activeRoomId) {
+                        const newMsg: Message = {
+                            id: rawMsg.id,
+                            roomId: rawMsg.room_id,
+                            senderId: rawMsg.sender_id,
+                            content: rawMsg.content,
+                            createdAt: rawMsg.created_at,
+                            metadata: rawMsg.metadata
+                        };
+
+                        setMessages(prev => {
+                            // Deduplication: Avoid adding if ID already exists (e.g. from optimistic update)
+                            if (prev.some(m => m.id === newMsg.id)) {
+                                return prev;
+                            }
+                            return [...prev, newMsg];
+                        });
+                        scrollToBottom();
+                    }
                 }
             )
-            .subscribe();
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    // console.debug('Connected to realtime chat for room:', activeRoomId);
+                }
+            });
 
+        // 3. Cleanup
         return () => {
-            subscription.unsubscribe();
+            supabase.removeChannel(channel);
         };
 
     }, [activeRoomId]);
@@ -223,6 +232,7 @@ const Chat: React.FC<ChatProps> = ({ currentUser }) => {
                     if (prev.some(m => m.id === sentMsg.id)) return prev;
                     return [...prev, sentMsg];
                 });
+                scrollToBottom();
                 
             } catch (error) {
                 console.error("Failed to send message", error);
