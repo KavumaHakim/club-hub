@@ -49,6 +49,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser }) =
   const [isExecuting, setIsExecuting] = useState<boolean>(false);
   const [pyodide, setPyodide] = useState<any | null>(null);
   const [isPyodideReady, setIsPyodideReady] = useState(false);
+  const [activeTab, setActiveTab] = useState<'editor' | 'output'>('editor');
   
   // Cloud Save/Load State
   const [isCloudModalOpen, setIsCloudModalOpen] = useState(false);
@@ -94,6 +95,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser }) =
         setCode(content);
         // Clear output to indicate new context
         setOutput([{ type: 'log', content: `Loaded file: ${file.name}` }]);
+        setActiveTab('editor');
       }
     };
     reader.readAsText(file);
@@ -163,6 +165,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser }) =
           setCode(content);
           setIsCloudModalOpen(false);
           setOutput([{ type: 'log', content: `Loaded cloud file: ${fileName}` }]);
+          setActiveTab('editor');
       } catch (err: any) {
           setCloudMessage({ text: err.message, type: 'error' });
       }
@@ -183,6 +186,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser }) =
 
   const handleRunCode = async () => {
     setIsExecuting(true);
+    setActiveTab('output'); // Auto-switch to output tab
     setOutput([]); // Clear previous output
 
     if (!pyodide) {
@@ -280,6 +284,7 @@ builtins.input = input_override
   };
 
   const editorTheme = theme === 'dark' ? 'vs-dark' : 'light';
+  const hasContent = output.length > 0 && output[0].content !== 'Click "Run Code" to see the output here.';
 
   return (
     <div className="flex flex-col h-[calc(100vh-10rem)] relative">
@@ -292,6 +297,7 @@ builtins.input = input_override
         className="hidden"
       />
 
+      {/* Header Actions */}
       <div className="flex-shrink-0 mb-4 flex flex-wrap justify-between items-center gap-4">
         <div>
             <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200">Code Playground</h2>
@@ -337,58 +343,82 @@ builtins.input = input_override
         </div>
       </div>
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-0">
-        {/* Editor Panel */}
-        <div className="flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-            <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">main.py</span>
-            <span className="text-xs text-gray-400 italic">Auto-saved to browser</span>
-          </div>
-          <div className="flex-1 w-full h-full relative">
-            <Editor
-              height="100%"
-              language="python"
-              theme={editorTheme}
-              value={code}
-              onChange={(value) => setCode(value || '')}
-              options={{
-                minimap: { enabled: false },
-                fontSize: 14,
-                wordWrap: 'on',
-                scrollBeyondLastLine: false,
-                automaticLayout: true,
-                padding: { top: 16 },
-              }}
-              // A loading indicator for the editor itself
-              loading={<div className="text-center p-4">Loading editor...</div>}
-            />
-          </div>
+      {/* Tabs */}
+      <div className="flex border-b border-gray-200 dark:border-gray-700">
+        <button
+            onClick={() => setActiveTab('editor')}
+            className={`flex-1 sm:flex-none text-center px-6 py-3 font-medium text-sm border-b-2 transition-colors focus:outline-none ${activeTab === 'editor' ? 'border-pink-500 text-pink-600 dark:text-pink-400 bg-white dark:bg-gray-800' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
+        >
+            Code Editor
+        </button>
+        <button
+            onClick={() => setActiveTab('output')}
+            className={`flex-1 sm:flex-none text-center px-6 py-3 font-medium text-sm border-b-2 transition-colors focus:outline-none flex justify-center items-center gap-2 ${activeTab === 'output' ? 'border-pink-500 text-pink-600 dark:text-pink-400 bg-white dark:bg-gray-800' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
+        >
+            Output
+            {hasContent && (
+                <span className="flex h-2 w-2 relative">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-pink-500"></span>
+                </span>
+            )}
+        </button>
+      </div>
+
+      {/* Content Area */}
+      <div className="flex-1 bg-white dark:bg-gray-800 shadow-md border-x border-b border-gray-200 dark:border-gray-700 rounded-b-lg relative overflow-hidden">
+        
+        {/* Editor Tab */}
+        <div className={`w-full h-full flex flex-col ${activeTab === 'editor' ? '' : 'hidden'}`}>
+            <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
+                <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">main.py</span>
+                <span className="text-xs text-gray-400 italic">Auto-saved to browser</span>
+            </div>
+            <div className="flex-1 w-full h-full relative">
+                <Editor
+                    height="100%"
+                    language="python"
+                    theme={editorTheme}
+                    value={code}
+                    onChange={(value) => setCode(value || '')}
+                    options={{
+                        minimap: { enabled: false },
+                        fontSize: 14,
+                        wordWrap: 'on',
+                        scrollBeyondLastLine: false,
+                        automaticLayout: true,
+                        padding: { top: 16 },
+                    }}
+                    loading={<div className="text-center p-4">Loading editor...</div>}
+                />
+            </div>
         </div>
 
-        {/* Output Panel */}
-        <div className="flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-          <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-            <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">Output</span>
-            <button 
-                onClick={handleClearOutput}
-                className="p-1 text-gray-500 hover:text-red-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                title="Clear Output"
-                aria-label="Clear Output"
-            >
-                <TrashIcon />
-            </button>
-          </div>
-          <pre className="flex-1 w-full p-4 bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-300 font-mono text-sm whitespace-pre-wrap break-words overflow-y-auto rounded-b-lg">
-            <code>
-                {output.length === 0 && <span className="text-gray-400 italic">No output</span>}
-                {output.map((line, index) => (
-                    <span key={index} className={line.type === 'error' ? 'text-red-500' : ''}>
-                        {line.content}
-                    </span>
-                ))}
-            </code>
-          </pre>
+        {/* Output Tab */}
+        <div className={`w-full h-full flex flex-col ${activeTab === 'output' ? '' : 'hidden'}`}>
+            <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
+                <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">Console Output</span>
+                <button 
+                    onClick={handleClearOutput}
+                    className="p-1 text-gray-500 hover:text-red-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    title="Clear Output"
+                    aria-label="Clear Output"
+                >
+                    <TrashIcon />
+                </button>
+            </div>
+            <pre className="flex-1 w-full p-4 bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-300 font-mono text-sm whitespace-pre-wrap break-words overflow-y-auto">
+                <code>
+                    {output.length === 0 && <span className="text-gray-400 italic">No output</span>}
+                    {output.map((line, index) => (
+                        <span key={index} className={line.type === 'error' ? 'text-red-500' : ''}>
+                            {line.content}
+                        </span>
+                    ))}
+                </code>
+            </pre>
         </div>
+
       </div>
 
       {/* Cloud Save Modal */}
