@@ -31,7 +31,7 @@ interface ChatProps {
 
 // --- Syntax Highlighting Components ---
 
-const SYNTAX_REGEX = /("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|\b\d+(?:\.\d+)?\b|\b(?:True|False|None|and|or|not|def|class|return|import|from|if|else|elif|for|while|print)\b|[\[\]\{\}\(\),:])/g;
+const SYNTAX_REGEX = /("""[\s\S]*?"""|'''[\s\S]*?'''|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|#.*$|\b\d+(?:\.\d+)?\b|\b(?:True|False|None|and|or|not|def|class|return|import|from|if|else|elif|for|while|print|try|except|finally|with|as|in|is|lambda|pass|raise|global|nonlocal|assert|del|break|continue|yield|async|await)\b|[\[\]\{\}\(\),:])/gm;
 
 const SyntaxHighlightedText: React.FC<{ text: string }> = ({ text }) => {
     const parts = text.split(SYNTAX_REGEX);
@@ -39,10 +39,16 @@ const SyntaxHighlightedText: React.FC<{ text: string }> = ({ text }) => {
         <>
             {parts.map((part, i) => {
                 if (!part) return null;
-                if (/^".*"$/.test(part) || /^'.*'$/.test(part)) return <span key={i} className="text-green-400">{part}</span>;
+                // Comments
+                if (part.startsWith('#')) return <span key={i} className="text-gray-500 italic">{part}</span>;
+                // Strings
+                if (part.startsWith('"') || part.startsWith("'")) return <span key={i} className="text-green-400">{part}</span>;
+                // Numbers
                 if (/^\d+(\.\d+)?$/.test(part)) return <span key={i} className="text-blue-400 font-semibold">{part}</span>;
-                if (/^(True|False|None|and|or|not|def|class|return|import|from|if|else|elif|for|while|print)$/.test(part)) return <span key={i} className="text-purple-400 font-bold">{part}</span>;
-                if (/^[\[\]\{\}\(\),:]$/.test(part)) return <span key={i} className="text-gray-500 font-bold">{part}</span>;
+                // Keywords
+                if (/^(True|False|None|and|or|not|def|class|return|import|from|if|else|elif|for|while|print|try|except|finally|with|as|in|is|lambda|pass|raise|global|nonlocal|assert|del|break|continue|yield|async|await)$/.test(part)) return <span key={i} className="text-purple-400 font-bold">{part}</span>;
+                // Punctuation
+                if (/^[\[\]\{\}\(\),:]$/.test(part)) return <span key={i} className="text-yellow-500">{part}</span>;
                 return <span key={i}>{part}</span>;
             })}
         </>
@@ -59,12 +65,12 @@ const CodeBlock: React.FC<{ code: string, language?: string }> = ({ code, langua
     };
 
     return (
-        <div className="my-3 rounded-lg overflow-hidden bg-gray-900 border border-gray-700 shadow-sm w-full max-w-full text-left">
-            <div className="flex justify-between items-center px-3 py-1.5 bg-gray-800/80 border-b border-gray-700">
+        <div className="my-3 rounded-lg overflow-hidden bg-[#1e1e1e] border border-gray-700 shadow-lg w-full max-w-full text-left">
+            <div className="flex justify-between items-center px-3 py-1.5 bg-[#252526] border-b border-gray-700">
                 <div className="flex items-center gap-2">
-                    <CodeIcon className="h-4 w-4 text-gray-400" />
+                    <CodeIcon className="h-4 w-4 text-blue-400" />
                     <span className="text-[10px] font-mono uppercase text-gray-400 font-semibold tracking-wider">
-                        {language || 'CODE'}
+                        {language || 'PYTHON'}
                     </span>
                 </div>
                 <button 
@@ -86,7 +92,7 @@ const CodeBlock: React.FC<{ code: string, language?: string }> = ({ code, langua
                 </button>
             </div>
             <div className="p-3 overflow-x-auto custom-scrollbar">
-                <pre className="text-xs md:text-sm font-mono text-gray-300 whitespace-pre leading-relaxed">
+                <pre className="text-xs md:text-sm font-mono text-[#d4d4d4] whitespace-pre leading-relaxed">
                     <SyntaxHighlightedText text={code.trim()} />
                 </pre>
             </div>
@@ -185,7 +191,7 @@ const NewChatModal: React.FC<{
                                 <div className="relative mr-3">
                                     <img src={user.avatarUrl || `https://i.pravatar.cc/40?u=${user.username}`} className="w-8 h-8 rounded-full" alt={user.name} />
                                     {isOnline && (
-                                        <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full ring-1 ring-white dark:ring-gray-800 bg-green-400"></span>
+                                        <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full ring-2 ring-white dark:ring-gray-800 bg-green-500 shadow-sm"></span>
                                     )}
                                 </div>
                                 <span className="text-gray-800 dark:text-gray-200 font-medium">{user.name}</span>
@@ -377,7 +383,7 @@ const RoomDetailsModal: React.FC<{
                                         <div className="relative mr-3">
                                             <img src={user.avatarUrl || `https://i.pravatar.cc/40?u=${user.username}`} className="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-700" alt={user.name} />
                                             {isOnline && (
-                                                <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full ring-1 ring-white dark:ring-gray-800 bg-green-400"></span>
+                                                <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full ring-2 ring-white dark:ring-gray-800 bg-green-500 shadow-sm"></span>
                                             )}
                                         </div>
                                         <div>
@@ -1021,7 +1027,7 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab }) => {
                                             </div>
                                         )}
                                         {isOnline && (
-                                            <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full ring-2 ring-white dark:ring-gray-900 bg-green-400"></span>
+                                            <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full ring-2 ring-white dark:ring-gray-900 bg-green-500 shadow-sm"></span>
                                         )}
                                     </div>
                                     <div className="flex-1 min-w-0">
@@ -1115,7 +1121,7 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab }) => {
                                                         title={sender?.name}
                                                     />
                                                     {sender && isUserOnline(sender.uid) && (
-                                                        <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full ring-1 ring-white dark:ring-gray-900 bg-green-400"></span>
+                                                        <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full ring-1 ring-white dark:ring-gray-900 bg-green-500 shadow-sm"></span>
                                                     )}
                                                 </div>
                                             )}

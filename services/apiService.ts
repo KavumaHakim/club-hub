@@ -494,10 +494,11 @@ export const uploadResourceFile = async (file: File, userId: string): Promise<{ 
 
 export const getRooms = async (userId: string): Promise<Room[]> => {
     // 1. Find rooms the user is in using the 'room_members' table
+    // Uses 'user_id' instead of 'user_uid' based on table schema
     const { data: myParticipations, error: myPartError } = await supabase
         .from('room_members')
         .select('room_id')
-        .eq('user_id', userId); // Corrected column name from user_uid to user_id
+        .eq('user_id', userId);
         
     if (myPartError) {
         console.error("Error fetching room members:", myPartError);
@@ -519,7 +520,7 @@ export const getRooms = async (userId: string): Promise<Room[]> => {
     // 3. Fetch all participants for these rooms to build the lists
     const { data: allParticipants, error: allPartError } = await supabase
         .from('room_members')
-        .select('room_id, user_id') // Corrected column name from user_uid to user_id
+        .select('room_id, user_id')
         .in('room_id', roomIds);
 
     if (allPartError) throw new Error(allPartError.message);
@@ -527,7 +528,7 @@ export const getRooms = async (userId: string): Promise<Room[]> => {
     const participantsMap: Record<string, string[]> = {};
     allParticipants.forEach((p: any) => {
         if (!participantsMap[p.room_id]) participantsMap[p.room_id] = [];
-        participantsMap[p.room_id].push(p.user_id); // Corrected column name from user_uid to user_id
+        participantsMap[p.room_id].push(p.user_id);
     });
 
     // 4. Map to Room interface
@@ -555,7 +556,7 @@ export const createRoom = async (title: string | null, participantIds: string[])
     // 2. Add Participants (using 'room_members' table)
     const participantsData = participantIds.map(uid => ({
         room_id: roomId,
-        user_id: uid // Corrected column name from user_uid to user_id
+        user_id: uid
     }));
 
     const { error: partError } = await supabase.from('room_members').insert(participantsData);
@@ -625,14 +626,14 @@ export const removeGroupMember = async (roomId: string, userId: string): Promise
         .from('room_members')
         .delete()
         .eq('room_id', roomId)
-        .eq('user_id', userId); // Corrected column name from user_uid to user_id
+        .eq('user_id', userId);
     if (error) throw new Error(error.message);
 };
 
 export const addRoomMembers = async (roomId: string, userIds: string[]): Promise<void> => {
     const participantsData = userIds.map(uid => ({
         room_id: roomId,
-        user_id: uid // Corrected column name from user_uid to user_id
+        user_id: uid
     }));
     const { error } = await supabase.from('room_members').insert(participantsData);
     if (error) throw new Error(error.message);

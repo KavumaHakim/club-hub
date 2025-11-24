@@ -63,7 +63,7 @@ const Members: React.FC<MembersProps> = ({ currentUser }) => {
                                                 className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-600" 
                                             />
                                             {onlineUsers.includes(user.uid) && (
-                                                <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full ring-2 ring-white dark:ring-gray-800 bg-green-400"></span>
+                                                <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full ring-2 ring-white dark:ring-gray-800 bg-green-500 shadow-sm"></span>
                                             )}
                                         </div>
                                         <div>
