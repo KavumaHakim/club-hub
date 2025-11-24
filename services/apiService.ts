@@ -1,3 +1,4 @@
+
 import { supabase } from './supabaseClient';
 import { 
   User, Activity, AttendanceRecord, FeedItem, ProjectData, 
@@ -295,7 +296,7 @@ export const getAttendance = async (userId: string): Promise<AttendanceRecord[]>
     const { data, error } = await supabase
         .from('attendance')
         .select('*')
-        .eq('user_uid', userId); // Changed from user_id to user_uid based on schema error
+        .eq('user_uid', userId); // Ensure user_uid is used
     if (error) throw error;
     return data.map((a: any) => ({
         id: a.id,
@@ -303,13 +304,13 @@ export const getAttendance = async (userId: string): Promise<AttendanceRecord[]>
         activityTitle: a.activity_title,
         date: a.date,
         status: a.status,
-        userId: a.user_uid // Changed mapping to match column
+        userId: a.user_uid
     }));
 };
 
 export const addAttendance = async (userId: string, record: Omit<AttendanceRecord, 'id' | 'userId'>) => {
     const { error } = await supabase.from('attendance').insert({
-        user_uid: userId, // Changed from user_id to user_uid
+        user_uid: userId, 
         activity_id: record.activityId,
         activity_title: record.activityTitle,
         date: record.date,
@@ -349,10 +350,18 @@ export const markAttendanceOnLogin = async (userId: string) => {
 // --- Projects ---
 
 export const getProjectData = async (): Promise<ProjectData> => {
-    const { data: columnsData, error: colError } = await supabase.from('project_columns').select('*').order('order_index');
+    // Use 'position' instead of 'order_index' based on error logs
+    const { data: columnsData, error: colError } = await supabase.from('project_columns').select('*').order('position');
     const { data: tasksData, error: taskError } = await supabase.from('project_tasks').select('*');
     
-    if (colError || taskError) throw new Error("Failed to fetch project data");
+    if (colError) {
+        console.error("Error fetching project columns:", colError);
+        throw new Error(`Failed to fetch columns: ${colError.message}`);
+    }
+    if (taskError) {
+        console.error("Error fetching project tasks:", taskError);
+        throw new Error(`Failed to fetch tasks: ${taskError.message}`);
+    }
 
     const tasks: { [key: string]: ProjectTask } = {};
     const columns: { [key: string]: ProjectColumn } = {};
@@ -382,7 +391,8 @@ export const getProjectData = async (): Promise<ProjectData> => {
 };
 
 export const addProjectTask = async (task: { content: string, priority: TaskPriority, dueDate?: string, tags: string[] }, userId: string) => {
-    const { data: columns } = await supabase.from('project_columns').select('id').order('order_index').limit(1);
+    // Use 'position' instead of 'order_index'
+    const { data: columns } = await supabase.from('project_columns').select('id').order('position').limit(1);
     if (!columns || columns.length === 0) throw new Error("No columns defined");
     
     const columnId = columns[0].id;
@@ -491,10 +501,11 @@ export const uploadResourceFile = async (file: File, userId: string) => {
 // --- Chat ---
 
 export const getRooms = async (userId: string): Promise<Room[]> => {
+    // Use 'participant_uids' instead of 'members' based on naming conventions
     const { data, error } = await supabase
         .from('rooms')
         .select('*')
-        .contains('participants', [userId]) // Changed from participant_ids based on probable schema issue
+        .contains('participant_uids', [userId]) 
         .order('updated_at', { ascending: false });
     
     if (error) throw error;
@@ -504,7 +515,7 @@ export const getRooms = async (userId: string): Promise<Room[]> => {
         title: r.title,
         createdAt: r.created_at,
         updatedAt: r.updated_at,
-        participantIds: r.participants, // Mapped from 'participants' column
+        participantIds: r.participant_uids, 
         createdBy: r.created_by,
     }));
 };
@@ -512,7 +523,7 @@ export const getRooms = async (userId: string): Promise<Room[]> => {
 export const createRoom = async (title: string | null, participantIds: string[]): Promise<string> => {
     const { data, error } = await supabase.from('rooms').insert({
         title,
-        participants: participantIds, // Changed from participant_ids
+        participant_uids: participantIds, // Changed from members/participants
         created_by: participantIds[0]
     }).select().single();
     if (error) throw error;
@@ -530,19 +541,19 @@ export const updateRoomTitle = async (roomId: string, title: string) => {
 };
 
 export const addRoomMembers = async (roomId: string, newMemberIds: string[]) => {
-    const { data: room } = await supabase.from('rooms').select('participants').eq('id', roomId).single();
-    const updatedParticipants = [...(room?.participants || []), ...newMemberIds];
+    const { data: room } = await supabase.from('rooms').select('participant_uids').eq('id', roomId).single();
+    const updatedParticipants = [...(room?.participant_uids || []), ...newMemberIds];
     const uniqueParticipants = Array.from(new Set(updatedParticipants));
     
-    const { error } = await supabase.from('rooms').update({ participants: uniqueParticipants }).eq('id', roomId);
+    const { error } = await supabase.from('rooms').update({ participant_uids: uniqueParticipants }).eq('id', roomId);
     if (error) throw error;
 };
 
 export const removeGroupMember = async (roomId: string, userId: string) => {
-    const { data: room } = await supabase.from('rooms').select('participants').eq('id', roomId).single();
-    const updatedParticipants = (room?.participants || []).filter((id: string) => id !== userId);
+    const { data: room } = await supabase.from('rooms').select('participant_uids').eq('id', roomId).single();
+    const updatedParticipants = (room?.participant_uids || []).filter((id: string) => id !== userId);
     
-    const { error } = await supabase.from('rooms').update({ participants: updatedParticipants }).eq('id', roomId);
+    const { error } = await supabase.from('rooms').update({ participant_uids: updatedParticipants }).eq('id', roomId);
     if (error) throw error;
 };
 
@@ -653,7 +664,7 @@ export const notifyAllUsers = async (message: string, linkTo?: string, excludeUs
 
 export const getShowcaseItems = async (): Promise<ShowcaseItem[]> => {
     const { data, error } = await supabase
-        .from('showcase_items') // Updated table name
+        .from('showcase_items') // Correct table name
         .select('*')
         .order('created_at', { ascending: false });
     
@@ -676,7 +687,7 @@ export const addShowcaseItem = async (userId: string, title: string, description
     const user = await getUserProfile(userId);
     if (!user) throw new Error("User not found");
 
-    const { error } = await supabase.from('showcase_items').insert({ // Updated table name
+    const { error } = await supabase.from('showcase_items').insert({ // Correct table name
         user_uid: userId,
         user_name: user.name,
         user_avatar_url: user.avatarUrl,
@@ -693,7 +704,7 @@ export const toggleShowcaseLike = async (itemId: string, userId: string, current
         ? currentLikes.filter(id => id !== userId)
         : [...currentLikes, userId];
     
-    const { error } = await supabase.from('showcase_items').update({ likes: newLikes }).eq('id', itemId); // Updated table name
+    const { error } = await supabase.from('showcase_items').update({ likes: newLikes }).eq('id', itemId);
     if (error) throw error;
 };
 
