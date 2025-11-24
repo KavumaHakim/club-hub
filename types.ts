@@ -1,6 +1,6 @@
 
 
-export type Tab = 'feed' | 'activities' | 'attendance' | 'projects' | 'profile' | 'members' | 'playground' | 'resources' | 'chat' | 'showcase';
+export type Tab = 'feed' | 'activities' | 'attendance' | 'projects' | 'profile' | 'members' | 'playground' | 'resources' | 'chat' | 'showcase' | 'suggestions';
 
 export interface User {
   uid: string; // Changed from id: number
@@ -142,4 +142,21 @@ export interface ShowcaseItem {
   description: string;
   codeContent: string;
   likes: string[]; // Array of user IDs who liked the post
+}
+
+// Suggestions Types
+export type SuggestionType = 'FEATURE' | 'BUG';
+export type SuggestionStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'REJECTED';
+
+export interface Suggestion {
+  id: string;
+  type: SuggestionType;
+  title: string;
+  description: string;
+  userId: string;
+  userName: string;
+  userAvatarUrl?: string;
+  status: SuggestionStatus;
+  createdAt: string;
+  upvotes: string[]; // Array of user IDs
 }

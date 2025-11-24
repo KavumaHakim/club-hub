@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode, useRef } from 'react';
-import { Activity, AttendanceRecord, FeedItem, ProjectData, User, Resource, Notification, Room, ShowcaseItem } from './types';
+import { Activity, AttendanceRecord, FeedItem, ProjectData, User, Resource, Notification, Room, ShowcaseItem, Suggestion } from './types';
 import * as api from './services/apiService';
 import { supabase } from './services/supabaseClient';
 
@@ -18,6 +18,7 @@ interface IDataContext {
   notifications: Notification[];
   rooms: Room[];
   showcaseItems: ShowcaseItem[];
+  suggestions: Suggestion[];
   
   // Chat Unread State
   unreadMessageCounts: Record<string, number>;
@@ -33,6 +34,7 @@ interface IDataContext {
   isLoadingNotifications: boolean;
   isLoadingRooms: boolean;
   isLoadingShowcase: boolean;
+  isLoadingSuggestions: boolean;
   isInitialLoading: boolean;
 
   // Error states
@@ -45,6 +47,7 @@ interface IDataContext {
   notificationsError: string | null;
   roomsError: string | null;
   showcaseError: string | null;
+  suggestionsError: string | null;
 
   // Refetch functions
   fetchActivities: () => Promise<void>;
@@ -56,6 +59,7 @@ interface IDataContext {
   fetchNotifications: () => Promise<void>;
   fetchRooms: () => Promise<void>;
   fetchShowcaseItems: () => Promise<void>;
+  fetchSuggestions: () => Promise<void>;
 }
 
 // Create the context with a default value
@@ -74,6 +78,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [showcaseItems, setShowcaseItems] = useState<ShowcaseItem[]>([]);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [unreadMessageCounts, setUnreadMessageCounts] = useState<Record<string, number>>({});
 
   const [isLoadingActivities, setIsLoadingActivities] = useState(true);
@@ -85,6 +90,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(true);
   const [isLoadingRooms, setIsLoadingRooms] = useState(true);
   const [isLoadingShowcase, setIsLoadingShowcase] = useState(true);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(true);
 
   const [activitiesError, setActivitiesError] = useState<string | null>(null);
   const [attendanceError, setAttendanceError] = useState<string | null>(null);
@@ -95,6 +101,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
   const [notificationsError, setNotificationsError] = useState<string | null>(null);
   const [roomsError, setRoomsError] = useState<string | null>(null);
   const [showcaseError, setShowcaseError] = useState<string | null>(null);
+  const [suggestionsError, setSuggestionsError] = useState<string | null>(null);
 
   // ... (keep existing fetch functions: fetchActivities, fetchAttendance, fetchFeedItems, etc.)
   const fetchActivities = useCallback(async () => {
@@ -219,6 +226,20 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
         setShowcaseError(e.message || 'An unknown error occurred.');
     } finally {
         setIsLoadingShowcase(false);
+    }
+  }, []);
+
+  const fetchSuggestions = useCallback(async () => {
+    setIsLoadingSuggestions(true);
+    setSuggestionsError(null);
+    try {
+        const data = await api.getSuggestions();
+        setSuggestions(data);
+    } catch (e: any) {
+        console.error("Failed to fetch suggestions", e);
+        setSuggestionsError(e.message || 'An unknown error occurred.');
+    } finally {
+        setIsLoadingSuggestions(false);
     }
   }, []);
   
@@ -353,11 +374,12 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
         fetchNotifications(),
         fetchRooms(),
         fetchShowcaseItems(),
+        fetchSuggestions(),
       ]).then(() => {
         fetchResources();
       });
     }
-  }, [currentUser, fetchActivities, fetchAttendance, fetchFeedItems, fetchProjectData, fetchUsers, fetchResources, fetchNotifications, fetchRooms, fetchShowcaseItems]);
+  }, [currentUser, fetchActivities, fetchAttendance, fetchFeedItems, fetchProjectData, fetchUsers, fetchResources, fetchNotifications, fetchRooms, fetchShowcaseItems, fetchSuggestions]);
 
   const value = {
     activities,
@@ -371,6 +393,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
     notifications,
     rooms,
     showcaseItems,
+    suggestions,
     unreadMessageCounts,
     clearUnreadCount,
     isLoadingActivities,
@@ -382,6 +405,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
     isLoadingNotifications,
     isLoadingRooms,
     isLoadingShowcase,
+    isLoadingSuggestions,
     activitiesError,
     attendanceError,
     feedItemsError,
@@ -391,7 +415,8 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
     notificationsError,
     roomsError,
     showcaseError,
-    isInitialLoading: isLoadingActivities || isLoadingAttendance || isLoadingFeed || isLoadingProjects || isLoadingUsers || isLoadingResources || isLoadingNotifications || isLoadingRooms || isLoadingShowcase,
+    suggestionsError,
+    isInitialLoading: isLoadingActivities || isLoadingAttendance || isLoadingFeed || isLoadingProjects || isLoadingUsers || isLoadingResources || isLoadingNotifications || isLoadingRooms || isLoadingShowcase || isLoadingSuggestions,
     fetchActivities,
     fetchAttendance,
     fetchFeedItems,
@@ -401,6 +426,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
     fetchNotifications,
     fetchRooms,
     fetchShowcaseItems,
+    fetchSuggestions,
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

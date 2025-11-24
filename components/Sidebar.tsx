@@ -18,6 +18,7 @@ import { ChevronsRightIcon } from './icons/ChevronsRightIcon';
 import { BookOpenIcon } from './icons/BookOpenIcon';
 import { ChatBubbleIcon } from './icons/ChatBubbleIcon';
 import { GlobeIcon } from './icons/GlobeIcon';
+import { LightBulbIcon } from './icons/LightBulbIcon';
 import { useData } from '../DataContext';
 import Notifications from './Notifications';
 
@@ -200,6 +201,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, theme, onToggleTheme,
           items: [
               { tab: 'feed' as Tab, label: 'Feed', icon: <HomeIcon /> },
               { tab: 'chat' as Tab, label: 'Messages', icon: <ChatBubbleIcon />, badge: totalUnread },
+              { tab: 'suggestions' as Tab, label: 'Suggestions', icon: <LightBulbIcon /> },
           ]
       },
       {

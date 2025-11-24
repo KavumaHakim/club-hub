@@ -26,7 +26,7 @@ const chartColors = {
 
 const formatDate = (dateString: string) => {
   try {
-    if (!dateString || dateString === 'N/A') return dateString;
+    if (!dateString || dateString === 'N/A') return 'N/A';
     const date = new Date(dateString);
     // check if valid date
     if (isNaN(date.getTime())) return dateString;
@@ -38,7 +38,7 @@ const formatDate = (dateString: string) => {
       day: 'numeric'
     }).format(date);
   } catch (error) {
-    return dateString;
+    return dateString || 'Unknown Date';
   }
 };
 
@@ -363,7 +363,7 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, visible = true }) 
                                 </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
-                            <XAxis dataKey="date" tick={{ fontSize: 12 }} angle={-35} textAnchor="end" height={70} interval={0} />
+                            <XAxis dataKey="date" tickFormatter={(d) => formatDate(d).split(',')[0]} tick={{ fontSize: 12 }} angle={-35} textAnchor="end" height={70} interval={0} />
                             <YAxis domain={[0, 2]} ticks={[0, 1, 2]} tickFormatter={yAxisTickFormatter} tick={{ fontSize: 12 }} />
                             <Tooltip content={<CustomTooltip />} />
                             <Line 

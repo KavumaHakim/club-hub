@@ -1,6 +1,6 @@
 
 import { supabase } from './supabaseClient';
-import { User, Activity, AttendanceRecord, FeedItem, ProjectData, ProjectTask, FeedItemType, ProjectColumn, Resource, Notification, Tab, Room, Message, ActivityCategory, TaskPriority, FeedComment, ShowcaseItem, ResourceType, ResourceCategory } from '../types';
+import { User, Activity, AttendanceRecord, FeedItem, ProjectData, ProjectTask, FeedItemType, ProjectColumn, Resource, Notification, Tab, Room, Message, ActivityCategory, TaskPriority, FeedComment, ShowcaseItem, ResourceType, ResourceCategory, Suggestion, SuggestionType, SuggestionStatus } from '../types';
 import { predefinedAvatars } from '../constants';
 
 // --- INTERNAL HELPERS ---
@@ -39,6 +39,7 @@ const uploadFile = async (file: File, bucket: string, path: string): Promise<str
 const LOCAL_SCRIPTS_KEY = 'offline_user_scripts';
 const LOCAL_RSVPS_KEY = 'offline_rsvps';
 const LOCAL_ATTENDANCE_KEY = 'offline_attendance';
+const LOCAL_SUGGESTIONS_KEY = 'offline_suggestions';
 
 const getLocalScripts = (): any[] => {
     if (typeof window === 'undefined') return [];
@@ -94,6 +95,20 @@ const saveLocalAttendance = (record: any) => {
         records.push(record);
         localStorage.setItem(LOCAL_ATTENDANCE_KEY, JSON.stringify(records));
     }
+};
+
+const getLocalSuggestions = (): Suggestion[] => {
+    if (typeof window === 'undefined') return [];
+    try {
+        return JSON.parse(localStorage.getItem(LOCAL_SUGGESTIONS_KEY) || '[]');
+    } catch {
+        return [];
+    }
+};
+
+const setLocalSuggestions = (suggestions: Suggestion[]) => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(LOCAL_SUGGESTIONS_KEY, JSON.stringify(suggestions));
 };
 
 // --- AUTH & USER ---
@@ -365,16 +380,25 @@ export const getAttendance = async (userId: string): Promise<AttendanceRecord[]>
     
     // Map DB records
     const mappedDbRecords = dbRecords.map((a: any) => {
-        const actId = a.activity_id?.toString() || 'unknown';
-        const activityInfo = activitiesMap[actId] || { title: 'Unknown Activity', date: 'N/A' };
+        // Safely handle if activity_id is number or string
+        const actId = a.activity_id !== undefined ? a.activity_id.toString() : 'unknown';
+        const activityInfo = activitiesMap[actId];
         
+        // Robust fallback for date:
+        // 1. 'date' column in attendance table
+        // 2. 'date' from joined activity
+        // 3. 'created_at' timestamp as a last resort
+        // 4. 'N/A'
+        let finalDate = a.date;
+        if (!finalDate && activityInfo) finalDate = activityInfo.date;
+        if (!finalDate && a.created_at) finalDate = a.created_at.split('T')[0];
+        if (!finalDate) finalDate = 'N/A';
+
         return {
             id: a.id.toString(),
             activityId: actId,
-            // Use join-like lookup if title is missing in attendance record
-            activityTitle: a.activity_title || activityInfo.title,
-            // Fix: Use activity date if attendance record date is missing
-            date: a.date || activityInfo.date, 
+            activityTitle: a.activity_title || (activityInfo ? activityInfo.title : 'Unknown Activity'),
+            date: finalDate, 
             status: a.status,
             userId: a.user_uid
         };
@@ -382,12 +406,12 @@ export const getAttendance = async (userId: string): Promise<AttendanceRecord[]>
 
     // Map Local records
     const mappedLocalRecords = localRecords.map((a: any) => {
-        const activityInfo = activitiesMap[a.activityId] || { title: 'Unknown Activity', date: 'N/A' };
+        const activityInfo = activitiesMap[a.activityId];
         return {
             id: a.id,
             activityId: a.activityId,
-            activityTitle: a.activityTitle || activityInfo.title,
-            date: a.date || activityInfo.date,
+            activityTitle: a.activityTitle || (activityInfo ? activityInfo.title : 'Unknown Activity'),
+            date: a.date || (activityInfo ? activityInfo.date : 'N/A'),
             status: a.status,
             userId: a.userId
         };
@@ -944,14 +968,148 @@ export const toggleShowcaseLike = async (id: string, userUid: string, currentLik
     if (error) throw new Error(error.message);
 };
 
+// --- SUGGESTIONS & BUGS ---
+
+export const getSuggestions = async (): Promise<Suggestion[]> => {
+    let dbSuggestions: any[] = [];
+    
+    try {
+        const { data, error } = await supabase.from('suggestions').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
+        dbSuggestions = data;
+    } catch (error: any) {
+        console.warn("Failed to fetch suggestions from DB, using local fallback:", error.message);
+    }
+
+    const localSuggestions = getLocalSuggestions();
+    const allSuggestions = [...dbSuggestions, ...localSuggestions];
+    
+    // Dedup logic (prefer DB version if IDs clash, though local IDs usually differ format)
+    const uniqueSuggestionsMap = new Map();
+    allSuggestions.forEach(s => {
+        uniqueSuggestionsMap.set(s.id.toString(), s);
+    });
+
+    // Need to fetch users to enrich data
+    // We'll do a best-effort enrich with user data
+    const userIds = Array.from(new Set(allSuggestions.map((s: any) => s.user_uid || s.userId)));
+    
+    let userMap = new Map<string, { name: string, avatarUrl?: string }>();
+    try {
+        if (userIds.length > 0) {
+            const { data: users } = await supabase.from('users').select('uid, name, avatar_url').in('uid', userIds);
+            if (users) {
+                users.forEach((u: any) => userMap.set(u.uid, { name: u.name, avatarUrl: u.avatar_url }));
+            }
+        }
+    } catch (e) {
+        console.warn("Could not fetch users for suggestions");
+    }
+
+    return Array.from(uniqueSuggestionsMap.values()).map((s: any) => {
+        const uid = s.user_uid || s.userId;
+        const user = userMap.get(uid);
+        return {
+            id: s.id.toString(),
+            type: s.type,
+            title: s.title,
+            description: s.description,
+            userId: uid,
+            userName: user?.name || s.userName || 'Unknown User',
+            userAvatarUrl: user?.avatarUrl || s.userAvatarUrl,
+            status: s.status,
+            createdAt: s.created_at || s.createdAt || new Date().toISOString(),
+            upvotes: s.upvotes || []
+        };
+    });
+};
+
+export const addSuggestion = async (suggestion: Omit<Suggestion, 'id' | 'createdAt' | 'status' | 'upvotes' | 'userName' | 'userAvatarUrl'>): Promise<void> => {
+    const newSuggestion = {
+        type: suggestion.type,
+        title: suggestion.title,
+        description: suggestion.description,
+        user_uid: suggestion.userId,
+        status: 'PENDING',
+        upvotes: []
+    };
+
+    try {
+        const { error } = await supabase.from('suggestions').insert(newSuggestion);
+        if (error) throw new Error(error.message);
+    } catch (error: any) {
+        console.warn("Cloud suggestion save failed, saving locally:", error.message);
+        // Local Fallback
+        const localSuggestion: Suggestion = {
+            id: `local-${Date.now()}`,
+            type: suggestion.type,
+            title: suggestion.title,
+            description: suggestion.description,
+            userId: suggestion.userId,
+            userName: 'You (Offline)',
+            status: 'PENDING',
+            createdAt: new Date().toISOString(),
+            upvotes: []
+        };
+        const current = getLocalSuggestions();
+        setLocalSuggestions([localSuggestion, ...current]);
+    }
+};
+
+export const deleteSuggestion = async (id: string): Promise<void> => {
+    if (id.startsWith('local-')) {
+        const current = getLocalSuggestions().filter(s => s.id !== id);
+        setLocalSuggestions(current);
+        return;
+    }
+    const { error } = await supabase.from('suggestions').delete().eq('id', id);
+    if (error) throw new Error(error.message);
+};
+
+export const toggleSuggestionUpvote = async (id: string, userId: string, currentUpvotes: string[]): Promise<void> => {
+    const hasUpvoted = currentUpvotes.includes(userId);
+    const newUpvotes = hasUpvoted 
+        ? currentUpvotes.filter(uid => uid !== userId)
+        : [...currentUpvotes, userId];
+
+    if (id.startsWith('local-')) {
+        const current = getLocalSuggestions();
+        const index = current.findIndex(s => s.id === id);
+        if (index !== -1) {
+            current[index].upvotes = newUpvotes;
+            setLocalSuggestions(current);
+        }
+        return;
+    }
+
+    const { error } = await supabase.from('suggestions').update({ upvotes: newUpvotes }).eq('id', id);
+    if (error) throw new Error(error.message);
+};
+
+export const updateSuggestionStatus = async (id: string, status: SuggestionStatus): Promise<void> => {
+    if (id.startsWith('local-')) {
+        const current = getLocalSuggestions();
+        const index = current.findIndex(s => s.id === id);
+        if (index !== -1) {
+            current[index].status = status;
+            setLocalSuggestions(current);
+        }
+        return;
+    }
+    
+    const { error } = await supabase.from('suggestions').update({ status }).eq('id', id);
+    if (error) throw new Error(error.message);
+};
+
 // --- PLAYGROUND CLOUD WITH FALLBACK ---
 
 export const saveUserScript = async (userId: string, name: string, code: string): Promise<void> => {
     try {
         // Check if exists in Supabase
+        // Note: Ensure the DB table has column `user_uid` not `user_id` based on the pattern in this app.
         const { data: existing, error: fetchError } = await supabase.from('user_scripts').select('id').eq('user_uid', userId).eq('name', name).single();
         
-        if (fetchError && fetchError.code !== 'PGRST116') {
+        if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 is "Row not found"
              throw fetchError;
         }
 
@@ -986,11 +1144,13 @@ export const saveUserScript = async (userId: string, name: string, code: string)
 
 export const listUserScripts = async (userId: string): Promise<{id: string, name: string, lastModified: string, size: number}[]> => {
     let cloudScripts: any[] = [];
+    let cloudError = null;
     
     // Try fetching from Cloud
     try {
         const { data, error } = await supabase.from('user_scripts').select('*').eq('user_uid', userId).order('updated_at', { ascending: false });
-        if (!error && data) {
+        if (error) throw error;
+        if (data) {
             cloudScripts = data.map((s: any) => ({
                 id: s.id.toString(),
                 name: s.name,
@@ -999,34 +1159,51 @@ export const listUserScripts = async (userId: string): Promise<{id: string, name
             }));
         }
     } catch (error: any) {
-        console.warn("Cloud list failed, ignoring cloud results:", error.message);
+        cloudError = error.message;
+        console.warn("Cloud list failed, returning local scripts only:", error.message);
     }
 
     // Always fetch Local scripts
     const localScripts = getLocalScripts()
         .filter((s: any) => s.user_uid === userId)
         .map((s: any) => ({
-            id: s.id,
+            id: s.id, // local IDs are already strings 'local-...'
             name: s.name,
             lastModified: new Date(s.updated_at).toLocaleString(),
             size: s.code.length
         }));
 
-    // Merge lists. De-duplicate by ID just in case.
-    // If cloud fails, we just have local scripts. If cloud works, we show both.
+    // If cloud failed entirely, just return local.
+    // If cloud worked, merge them. Prefer cloud if name matches? 
+    // Current strategy: show all. ID deduplication helps if ID is same, but IDs are likely different.
+    // Actually, we should probably dedupe by Name if we want to show a unified list, but that's risky if content differs.
+    // For now, let's just concat and dedupe by ID string.
     const allScripts = [...cloudScripts, ...localScripts];
-    const uniqueScripts = Array.from(new Map(allScripts.map(item => [item.id, item])).values());
     
+    // Simple Map dedupe by ID
+    const uniqueScriptsMap = new Map();
+    allScripts.forEach(item => uniqueScriptsMap.set(item.id, item));
+    const uniqueScripts = Array.from(uniqueScriptsMap.values());
+    
+    if (uniqueScripts.length === 0 && cloudError) {
+        // If we have nothing and cloud failed, we might want to throw or return a special indicator,
+        // but the UI handles empty lists. The console warning covers debugging.
+    }
+
     return uniqueScripts.sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime());
 };
 
 export const downloadUserScript = async (userId: string, name: string): Promise<string> => {
-    // Try local first if it exists there, it might be newer/offline
+    // Try local first if it exists there (offline priority if key matches local pattern)
+    // However, listUserScripts returns items. The UI calls this with a Name.
+    // We need to find the script content.
+    
     const localScript = getLocalScripts().find((s: any) => s.user_uid === userId && s.name === name);
-    if (localScript && localScript.id.toString().startsWith('local-')) {
-        return localScript.code;
-    }
-
+    // If we found a local script and we are offline or prefer local, return it.
+    // But usually we want the authoritative source.
+    // If we have a local script, it might be the fallback copy.
+    
+    // Strategy: Try cloud. If fail, return local.
     try {
         const { data, error } = await supabase.from('user_scripts').select('code').eq('user_uid', userId).eq('name', name).single();
         if (error) throw error;
