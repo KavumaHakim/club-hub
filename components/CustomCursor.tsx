@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 
 export type CursorVariant = 
@@ -64,7 +63,7 @@ const CustomCursor: React.FC = () => {
   const [hovering, setHovering] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
-  const [variant, setVariant] = useState<CursorVariant>('figma');
+  const [variant, setVariant] = useState<CursorVariant>('normal');
   
   // Initialize off-screen
   const position = useRef({ x: -100, y: -100 });
@@ -852,7 +851,7 @@ const CustomCursor: React.FC = () => {
               return (
                   <>
                     <div ref={cursorRef} className="fixed top-0 left-0 pointer-events-none z-[9999] -ml-3 -mt-3 text-gray-500 dark:text-gray-400">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C7.58 2 4 5.58 4 10c0 2.04.78 3.9 2.07 5.32C6.63 16.38 7 17.62 7 19v1h10v-1c0-1.38.37-2.62.93-3.68C19.22 13.9 20 12.04 20 10c0-4.42-3.58-8-8-8zm0 13c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm4.29-3.29l-1.41 1.41c-.63-.63-1.66-.63-2.29 0-.63.63-1.66.63-2.29 0L8.9 11.71c1.41-1.41 3.69-1.41 5.1 0 1.41 1.41 3.69 1.41 5.1 0 1.41 1.41 3.69 1.41 5.1 0 1.41-1.41-2.29-1.41z"/></svg>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C7.58 2 4 5.58 4 10c0 2.04.78 3.9 2.07 5.32C6.63 16.38 7 17.62 7 19v1h10v-1c0-1.38.37-2.62.93-3.68C19.22 13.9 20 12.04 20 10c0-4.42-3.58-8-8-8zm0 13c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm4.29-3.29l-1.41 1.41c-.63-.63-1.66-.63-2.29 0-.63.63-1.66.63-2.29 0L8.9 11.71c1.41-1.41 3.69-1.41 5.1 0 1.41 1.41 3.69 1.41 5.1 0 1.41-1.41-2.29-1.41z"/></svg>
                     </div>
                     <div 
                         ref={followerRef}
