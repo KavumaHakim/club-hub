@@ -295,7 +295,7 @@ export const getAttendance = async (userId: string): Promise<AttendanceRecord[]>
     const { data, error } = await supabase
         .from('attendance')
         .select('*')
-        .eq('user_id', userId);
+        .eq('user_uid', userId); // Changed from user_id to user_uid based on schema error
     if (error) throw error;
     return data.map((a: any) => ({
         id: a.id,
@@ -303,13 +303,13 @@ export const getAttendance = async (userId: string): Promise<AttendanceRecord[]>
         activityTitle: a.activity_title,
         date: a.date,
         status: a.status,
-        userId: a.user_id
+        userId: a.user_uid // Changed mapping to match column
     }));
 };
 
 export const addAttendance = async (userId: string, record: Omit<AttendanceRecord, 'id' | 'userId'>) => {
     const { error } = await supabase.from('attendance').insert({
-        user_id: userId,
+        user_uid: userId, // Changed from user_id to user_uid
         activity_id: record.activityId,
         activity_title: record.activityTitle,
         date: record.date,
@@ -330,7 +330,7 @@ export const markAttendanceOnLogin = async (userId: string) => {
             const { data: existing } = await supabase
                 .from('attendance')
                 .select('*')
-                .eq('user_id', userId)
+                .eq('user_uid', userId)
                 .eq('activity_id', activity.id)
                 .single();
             
@@ -494,7 +494,7 @@ export const getRooms = async (userId: string): Promise<Room[]> => {
     const { data, error } = await supabase
         .from('rooms')
         .select('*')
-        .contains('participant_ids', [userId])
+        .contains('participants', [userId]) // Changed from participant_ids based on probable schema issue
         .order('updated_at', { ascending: false });
     
     if (error) throw error;
@@ -504,7 +504,7 @@ export const getRooms = async (userId: string): Promise<Room[]> => {
         title: r.title,
         createdAt: r.created_at,
         updatedAt: r.updated_at,
-        participantIds: r.participant_ids,
+        participantIds: r.participants, // Mapped from 'participants' column
         createdBy: r.created_by,
     }));
 };
@@ -512,7 +512,7 @@ export const getRooms = async (userId: string): Promise<Room[]> => {
 export const createRoom = async (title: string | null, participantIds: string[]): Promise<string> => {
     const { data, error } = await supabase.from('rooms').insert({
         title,
-        participant_ids: participantIds,
+        participants: participantIds, // Changed from participant_ids
         created_by: participantIds[0]
     }).select().single();
     if (error) throw error;
@@ -530,19 +530,19 @@ export const updateRoomTitle = async (roomId: string, title: string) => {
 };
 
 export const addRoomMembers = async (roomId: string, newMemberIds: string[]) => {
-    const { data: room } = await supabase.from('rooms').select('participant_ids').eq('id', roomId).single();
-    const updatedParticipants = [...(room?.participant_ids || []), ...newMemberIds];
+    const { data: room } = await supabase.from('rooms').select('participants').eq('id', roomId).single();
+    const updatedParticipants = [...(room?.participants || []), ...newMemberIds];
     const uniqueParticipants = Array.from(new Set(updatedParticipants));
     
-    const { error } = await supabase.from('rooms').update({ participant_ids: uniqueParticipants }).eq('id', roomId);
+    const { error } = await supabase.from('rooms').update({ participants: uniqueParticipants }).eq('id', roomId);
     if (error) throw error;
 };
 
 export const removeGroupMember = async (roomId: string, userId: string) => {
-    const { data: room } = await supabase.from('rooms').select('participant_ids').eq('id', roomId).single();
-    const updatedParticipants = (room?.participant_ids || []).filter((id: string) => id !== userId);
+    const { data: room } = await supabase.from('rooms').select('participants').eq('id', roomId).single();
+    const updatedParticipants = (room?.participants || []).filter((id: string) => id !== userId);
     
-    const { error } = await supabase.from('rooms').update({ participant_ids: updatedParticipants }).eq('id', roomId);
+    const { error } = await supabase.from('rooms').update({ participants: updatedParticipants }).eq('id', roomId);
     if (error) throw error;
 };
 
@@ -653,7 +653,7 @@ export const notifyAllUsers = async (message: string, linkTo?: string, excludeUs
 
 export const getShowcaseItems = async (): Promise<ShowcaseItem[]> => {
     const { data, error } = await supabase
-        .from('showcase')
+        .from('showcase_items') // Updated table name
         .select('*')
         .order('created_at', { ascending: false });
     
@@ -676,7 +676,7 @@ export const addShowcaseItem = async (userId: string, title: string, description
     const user = await getUserProfile(userId);
     if (!user) throw new Error("User not found");
 
-    const { error } = await supabase.from('showcase').insert({
+    const { error } = await supabase.from('showcase_items').insert({ // Updated table name
         user_uid: userId,
         user_name: user.name,
         user_avatar_url: user.avatarUrl,
@@ -693,7 +693,7 @@ export const toggleShowcaseLike = async (itemId: string, userId: string, current
         ? currentLikes.filter(id => id !== userId)
         : [...currentLikes, userId];
     
-    const { error } = await supabase.from('showcase').update({ likes: newLikes }).eq('id', itemId);
+    const { error } = await supabase.from('showcase_items').update({ likes: newLikes }).eq('id', itemId); // Updated table name
     if (error) throw error;
 };
 
@@ -859,6 +859,28 @@ export const reviewSubmission = async (submissionId: string, status: 'APPROVED' 
             const currentBadges = user.badges || [];
             if (!currentBadges.includes(challengeTitle)) {
                 await updateUser(userId, { badges: [...currentBadges, challengeTitle] });
+                
+                // Send email notification via Brevo
+                if (process.env.BREVO_API_KEY && user.email) {
+                    try {
+                        await fetch("https://api.brevo.com/v3/smtp/email", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "api-key": process.env.BREVO_API_KEY,
+                            },
+                            body: JSON.stringify({
+                                sender: { name: "Club Hub", email: "noreply@clubhub.com" },
+                                to: [{ email: user.email }],
+                                subject: `🎉 You've earned a badge!`,
+                                htmlContent: `<p>Hi ${user.username},</p>
+                                              <p>You've earned the <strong>${challengeTitle}</strong> badge for completing the challenge.</p>`
+                            }),
+                        });
+                    } catch (emailError) {
+                        console.error("Failed to send badge email notification:", emailError);
+                    }
+                }
             }
         }
     }
@@ -868,36 +890,34 @@ export const approveMember = async (uid: string): Promise<void> => {
     await updateUser(uid, { status: 'APPROVED' });
     await notifyAllUsers("A new member has joined the club! 🎉", "members", uid);
 
-    if (process.env.BREVO_API_KEY) {
-        const user = await getUserProfile(uid);
-        if (user && user.email) {
-            try {
-                await fetch("https://api.brevo.com/v3/smtp/email", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "api-key": process.env.BREVO_API_KEY,
-                    },
-                    body: JSON.stringify({
-                        sender: { name: "ICT Club Hub", email: "noreply@clubhub.com" },
-                        to: [{ email: user.email }],
-                        subject: `🎉 Your account has been approved!`,
-                        htmlContent: `
-                            <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
-                                <h2 style="color: #ec4899;">Welcome to ICT Club Hub!</h2>
-                                <p>Hi <strong>${user.name}</strong>,</p>
-                                <p>Great news! Your account has been approved by a patron.</p>
-                                <p>You can now log in and access all features of the club.</p>
-                                <div style="text-align: center; margin: 30px 0;">
-                                    <a href="${typeof window !== 'undefined' ? window.location.origin : '#'}" style="background-color: #ec4899; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Log In Now</a>
-                                </div>
+    const user = await getUserProfile(uid);
+    if (user && user.email && process.env.BREVO_API_KEY) {
+        try {
+            await fetch("https://api.brevo.com/v3/smtp/email", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "api-key": process.env.BREVO_API_KEY,
+                },
+                body: JSON.stringify({
+                    sender: { name: "ICT Club Hub", email: "noreply@clubhub.com" },
+                    to: [{ email: user.email }],
+                    subject: `🎉 Your account has been approved!`,
+                    htmlContent: `
+                        <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
+                            <h2 style="color: #ec4899;">Welcome to ICT Club Hub!</h2>
+                            <p>Hi <strong>${user.name}</strong>,</p>
+                            <p>Great news! Your account has been approved by a patron.</p>
+                            <p>You can now log in and access all features of the club.</p>
+                            <div style="text-align: center; margin: 30px 0;">
+                                <a href="${typeof window !== 'undefined' ? window.location.origin : '#'}" style="background-color: #ec4899; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Log In Now</a>
                             </div>
-                        `
-                    }),
-                });
-            } catch (emailError) {
-                console.error("Failed to send approval email notification:", emailError);
-            }
+                        </div>
+                    `
+                }),
+            });
+        } catch (emailError) {
+            console.error("Failed to send approval email notification:", emailError);
         }
     }
 };

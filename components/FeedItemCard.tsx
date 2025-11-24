@@ -170,7 +170,7 @@ const FeedItemCard: React.FC<FeedItemCardProps> = ({ item, currentUser, onDelete
                 </div>
                 
                 <div className="text-[10px] text-gray-400 dark:text-gray-500 font-mono opacity-0 group-hover:opacity-100 transition-opacity">
-                    #{item.id.slice(0,4)}
+                    #{String(item.id).slice(0,4)}
                 </div>
             </div>
 
