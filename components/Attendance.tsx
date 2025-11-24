@@ -25,20 +25,23 @@ const chartColors = {
 };
 
 const formatDate = (dateString: string) => {
+  if (!dateString || dateString === 'N/A') return 'N/A';
   try {
-    if (!dateString || dateString === 'N/A') return 'N/A';
-    const date = new Date(dateString);
-    // check if valid date
+    // Handle YYYY-MM-DD strings by appending time to prevent UTC shift issues
+    // or use the string directly if it already has time
+    const dateToParse = dateString.includes('T') ? dateString : `${dateString}T12:00:00`;
+    const date = new Date(dateToParse);
+    
     if (isNaN(date.getTime())) return dateString;
     
     return new Intl.DateTimeFormat('en-US', {
-      weekday: 'short',
+      weekday: 'long',
       year: 'numeric',
-      month: 'short',
+      month: 'long',
       day: 'numeric'
     }).format(date);
   } catch (error) {
-    return dateString || 'Unknown Date';
+    return dateString;
   }
 };
 
@@ -60,14 +63,12 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, visible = true }) 
   const [shouldRenderChart, setShouldRenderChart] = useState(false);
 
   // Delay chart rendering slightly to allow layout to compute dimensions
-  // This prevents the "width(0) height(0)" warnings from Recharts
   useEffect(() => {
-    // Fix: Use ReturnType<typeof setTimeout> to avoid 'Cannot find namespace NodeJS' error
     let timer: ReturnType<typeof setTimeout>;
     if (visible) {
         timer = setTimeout(() => {
             setShouldRenderChart(true);
-        }, 300); // 300ms delay to ensure DOM is ready
+        }, 300); 
     } else {
         setShouldRenderChart(false);
     }
@@ -98,7 +99,10 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, visible = true }) 
         if (status === 'Excused') return 1;
         return 0; // Absent
     };
-    return [...attendanceRecords].reverse().map(rec => ({
+    // Sort by date ascending for the chart
+    const sorted = [...attendanceRecords].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    
+    return sorted.map(rec => ({
         date: rec.date,
         name: rec.activityTitle,
         value: statusToValue(rec.status),

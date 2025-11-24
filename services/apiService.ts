@@ -282,7 +282,6 @@ export const getActivities = async (): Promise<Activity[]> => {
     try {
         const { data, error } = await supabase.from('activities').select('*');
         if (error) {
-            // Log but don't throw, allowing fallback to return empty array or partial data
             console.warn("Error fetching activities:", error.message);
         }
         if (data) dbActivities = data;
@@ -325,15 +324,14 @@ export const addActivity = async (activity: Omit<Activity, 'id' | 'rsvpUserIds'>
 };
 
 export const toggleRSVP = async (activityId: string, userId: string, isJoining: boolean): Promise<void> => {
-    // Always update local storage first for immediate UI feedback and offline support
+    // Update local storage for immediate feedback
     saveLocalRSVP(activityId, userId, isJoining);
 
     try {
-        // Try to update DB, but don't fail the operation if DB column is missing or network is down
         const { data: activity, error: fetchError } = await supabase.from('activities').select('rsvp_users').eq('id', activityId).single();
         
         if (fetchError) {
-            console.warn("Could not fetch remote RSVP list (DB might be missing column):", fetchError.message);
+            console.warn("Could not fetch remote RSVP list:", fetchError.message);
             return;
         }
         
@@ -360,12 +358,10 @@ export const getAttendance = async (userId: string): Promise<AttendanceRecord[]>
     let activitiesMap: Record<string, { title: string, date: string }> = {};
 
     try {
-        // 1. Fetch attendance records
         const { data, error } = await supabase.from('attendance').select('*').eq('user_uid', userId);
         if (error) throw error;
         if (data) dbRecords = data;
 
-        // 2. Fetch activity details (title AND date) to resolve missing info
         const { data: activitiesData } = await supabase.from('activities').select('id, title, date');
         if (activitiesData) {
             activitiesData.forEach((act: any) => {
@@ -378,17 +374,10 @@ export const getAttendance = async (userId: string): Promise<AttendanceRecord[]>
 
     const localRecords = getLocalAttendance().filter((r: any) => r.userId === userId);
     
-    // Map DB records
     const mappedDbRecords = dbRecords.map((a: any) => {
-        // Safely handle if activity_id is number or string
         const actId = a.activity_id !== undefined ? a.activity_id.toString() : 'unknown';
         const activityInfo = activitiesMap[actId];
         
-        // Robust fallback for date:
-        // 1. 'date' column in attendance table
-        // 2. 'date' from joined activity
-        // 3. 'created_at' timestamp as a last resort
-        // 4. 'N/A'
         let finalDate = a.date;
         if (!finalDate && activityInfo) finalDate = activityInfo.date;
         if (!finalDate && a.created_at) finalDate = a.created_at.split('T')[0];
@@ -404,7 +393,6 @@ export const getAttendance = async (userId: string): Promise<AttendanceRecord[]>
         };
     });
 
-    // Map Local records
     const mappedLocalRecords = localRecords.map((a: any) => {
         const activityInfo = activitiesMap[a.activityId];
         return {
@@ -417,8 +405,6 @@ export const getAttendance = async (userId: string): Promise<AttendanceRecord[]>
         };
     });
 
-    // Combine, removing potential duplicates from local if they now exist in DB (by ID or activity+date match)
-    // For simplicity, we just concat for now to ensure data shows up.
     return [...mappedDbRecords, ...mappedLocalRecords];
 };
 
@@ -584,7 +570,6 @@ export const getProjectData = async (): Promise<ProjectData> => {
         return projectData;
     } catch (error: any) {
         console.error("Failed to fetch projects:", error);
-        // Return empty structure instead of failing
         return { tasks: {}, columns: {}, columnOrder: [] };
     }
 };
@@ -912,10 +897,7 @@ export const getShowcaseItems = async (): Promise<ShowcaseItem[]> => {
 
         if (error) throw error;
 
-        // Extract unique user IDs
         const userIds = [...new Set(data.map((item: any) => item.user_uid))];
-        
-        // Fetch user info manually
         let usersData: any[] = [];
         if (userIds.length > 0) {
             const { data: users, error: userError } = await supabase.from('users').select('uid, name, avatar_url').in('uid', userIds);
@@ -984,16 +966,12 @@ export const getSuggestions = async (): Promise<Suggestion[]> => {
     const localSuggestions = getLocalSuggestions();
     const allSuggestions = [...dbSuggestions, ...localSuggestions];
     
-    // Dedup logic (prefer DB version if IDs clash, though local IDs usually differ format)
     const uniqueSuggestionsMap = new Map();
     allSuggestions.forEach(s => {
         uniqueSuggestionsMap.set(s.id.toString(), s);
     });
 
-    // Need to fetch users to enrich data
-    // We'll do a best-effort enrich with user data
     const userIds = Array.from(new Set(allSuggestions.map((s: any) => s.user_uid || s.userId)));
-    
     let userMap = new Map<string, { name: string, avatarUrl?: string }>();
     try {
         if (userIds.length > 0) {
@@ -1039,7 +1017,6 @@ export const addSuggestion = async (suggestion: Omit<Suggestion, 'id' | 'created
         if (error) throw new Error(error.message);
     } catch (error: any) {
         console.warn("Cloud suggestion save failed, saving locally:", error.message);
-        // Local Fallback
         const localSuggestion: Suggestion = {
             id: `local-${Date.now()}`,
             type: suggestion.type,
@@ -1096,7 +1073,6 @@ export const updateSuggestionStatus = async (id: string, status: SuggestionStatu
         }
         return;
     }
-    
     const { error } = await supabase.from('suggestions').update({ status }).eq('id', id);
     if (error) throw new Error(error.message);
 };
@@ -1105,11 +1081,9 @@ export const updateSuggestionStatus = async (id: string, status: SuggestionStatu
 
 export const saveUserScript = async (userId: string, name: string, code: string): Promise<void> => {
     try {
-        // Check if exists in Supabase
-        // Note: Ensure the DB table has column `user_uid` not `user_id` based on the pattern in this app.
         const { data: existing, error: fetchError } = await supabase.from('user_scripts').select('id').eq('user_uid', userId).eq('name', name).single();
         
-        if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 is "Row not found"
+        if (fetchError && fetchError.code !== 'PGRST116') { 
              throw fetchError;
         }
 
@@ -1120,9 +1094,13 @@ export const saveUserScript = async (userId: string, name: string, code: string)
             const { error } = await supabase.from('user_scripts').insert({ user_uid: userId, name, code });
             if (error) throw error;
         }
+
+        // Successful cloud save: remove duplicate from local storage if it exists to prevent ghosting
+        const localScripts = getLocalScripts().filter((s: any) => !(s.user_uid === userId && s.name === name));
+        setLocalScripts(localScripts);
+
     } catch (error: any) {
         console.warn("Cloud save failed, falling back to local storage:", error.message);
-        // Fallback to LocalStorage
         const scripts = getLocalScripts();
         const existingIndex = scripts.findIndex((s: any) => s.user_uid === userId && s.name === name);
         const now = new Date().toISOString();
@@ -1146,7 +1124,6 @@ export const listUserScripts = async (userId: string): Promise<{id: string, name
     let cloudScripts: any[] = [];
     let cloudError = null;
     
-    // Try fetching from Cloud
     try {
         const { data, error } = await supabase.from('user_scripts').select('*').eq('user_uid', userId).order('updated_at', { ascending: false });
         if (error) throw error;
@@ -1160,56 +1137,46 @@ export const listUserScripts = async (userId: string): Promise<{id: string, name
         }
     } catch (error: any) {
         cloudError = error.message;
-        console.warn("Cloud list failed, returning local scripts only:", error.message);
+        console.warn("Cloud list failed, checking local scripts:", error.message);
     }
 
-    // Always fetch Local scripts
     const localScripts = getLocalScripts()
         .filter((s: any) => s.user_uid === userId)
         .map((s: any) => ({
-            id: s.id, // local IDs are already strings 'local-...'
+            id: s.id, 
             name: s.name,
             lastModified: new Date(s.updated_at).toLocaleString(),
             size: s.code.length
         }));
 
-    // If cloud failed entirely, just return local.
-    // If cloud worked, merge them. Prefer cloud if name matches? 
-    // Current strategy: show all. ID deduplication helps if ID is same, but IDs are likely different.
-    // Actually, we should probably dedupe by Name if we want to show a unified list, but that's risky if content differs.
-    // For now, let's just concat and dedupe by ID string.
-    const allScripts = [...cloudScripts, ...localScripts];
+    // Merge: Deduplicate by NAME. Prefer Cloud version.
+    const scriptMap = new Map();
     
-    // Simple Map dedupe by ID
-    const uniqueScriptsMap = new Map();
-    allScripts.forEach(item => uniqueScriptsMap.set(item.id, item));
-    const uniqueScripts = Array.from(uniqueScriptsMap.values());
+    // Add local first
+    localScripts.forEach(s => scriptMap.set(s.name, s));
     
-    if (uniqueScripts.length === 0 && cloudError) {
-        // If we have nothing and cloud failed, we might want to throw or return a special indicator,
-        // but the UI handles empty lists. The console warning covers debugging.
-    }
+    // Add cloud second (overwriting local with same name)
+    cloudScripts.forEach(s => scriptMap.set(s.name, s));
+    
+    const uniqueScripts = Array.from(scriptMap.values());
 
     return uniqueScripts.sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime());
 };
 
 export const downloadUserScript = async (userId: string, name: string): Promise<string> => {
-    // Try local first if it exists there (offline priority if key matches local pattern)
-    // However, listUserScripts returns items. The UI calls this with a Name.
-    // We need to find the script content.
-    
     const localScript = getLocalScripts().find((s: any) => s.user_uid === userId && s.name === name);
-    // If we found a local script and we are offline or prefer local, return it.
-    // But usually we want the authoritative source.
-    // If we have a local script, it might be the fallback copy.
     
-    // Strategy: Try cloud. If fail, return local.
     try {
-        const { data, error } = await supabase.from('user_scripts').select('code').eq('user_uid', userId).eq('name', name).single();
+        // Use limit(1) instead of single() to prevent errors if duplicates somehow exist in DB
+        const { data, error } = await supabase.from('user_scripts').select('code').eq('user_uid', userId).eq('name', name).limit(1);
         if (error) throw error;
-        return data.code;
+        if (data && data.length > 0) {
+            return data[0].code;
+        } else {
+            throw new Error("Script not found in cloud");
+        }
     } catch (error: any) {
-        console.warn("Cloud download failed, checking local fallback:", error.message);
+        console.warn("Cloud download failed/missing, checking local fallback:", error.message);
         if (localScript) return localScript.code;
         throw new Error("Script not found locally or in cloud.");
     }
@@ -1219,7 +1186,6 @@ export const deleteUserScript = async (userId: string, name: string): Promise<vo
     try {
         const { error } = await supabase.from('user_scripts').delete().eq('user_uid', userId).eq('name', name);
         if (error) {
-             // Only throw if it's not a "not found" error, so we can proceed to clear local
              console.warn("Cloud delete warning:", error.message);
         }
     } catch (error: any) {
