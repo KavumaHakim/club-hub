@@ -14,6 +14,7 @@ const Resources = lazy(() => import('./Resources'));
 const Chat = lazy(() => import('./Chat'));
 const Showcase = lazy(() => import('./Showcase'));
 const Suggestions = lazy(() => import('./Suggestions'));
+const Challenges = lazy(() => import('./Challenges'));
 
 
 type Theme = 'light' | 'dark';
@@ -73,6 +74,9 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile,
         </TabPanel>
         <TabPanel active={activeTab === 'suggestions'}>
             <Suggestions currentUser={currentUser} />
+        </TabPanel>
+        <TabPanel active={activeTab === 'challenges'}>
+            <Challenges currentUser={currentUser} />
         </TabPanel>
         {currentUser.role === 'PATRON' && (
             <TabPanel active={activeTab === 'members'}>

@@ -28,7 +28,7 @@ const Members: React.FC<MembersProps> = ({ currentUser }) => {
 
     const onDeleteUser = (uid: string) => handleAction(() => api.deleteUser(uid));
     const onUpdateUserRole = (uid: string, role: 'MEMBER' | 'PATRON') => handleAction(() => api.updateUser(uid, { role }));
-    const onApproveUser = (uid: string) => handleAction(() => api.updateUser(uid, { status: 'APPROVED' }));
+    const onApproveUser = (uid: string) => handleAction(() => api.approveMember(uid));
     
     if (isLoadingUsers) {
         return <div className="text-center p-8 text-gray-500 dark:text-gray-400">Loading members...</div>;

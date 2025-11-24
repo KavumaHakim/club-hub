@@ -135,12 +135,12 @@ const CustomCursor: React.FC = () => {
     const animate = () => {
       // Follower movement with smooth lerp
       if (followerRef.current) {
-        // Adjust speed based on variant - SIGNIFICANTLY FASTER
-        let speed = 0.65; // Base speed
+        // Adjust speed based on variant - EVEN FASTER FOR SNAPPY FEEL
+        let speed = 0.85; // High Base speed
         
-        if (['retro', 'pixel', 'target', 'ring', 'gear', 'figma'].includes(variant)) speed = 0.85; // Almost instant
-        if (['bubble', 'ghost', 'ufo', 'potion'].includes(variant)) speed = 0.3; // Floating
-        if (['crosshair', 'pencil', 'wand', 'sword'].includes(variant)) speed = 0.75; // Precise
+        if (['retro', 'pixel', 'target', 'ring', 'gear', 'figma'].includes(variant)) speed = 0.95; // Near instant
+        if (['bubble', 'ghost', 'ufo', 'potion'].includes(variant)) speed = 0.5; // Floating feel but faster
+        if (['crosshair', 'pencil', 'wand', 'sword'].includes(variant)) speed = 0.9; // Very Precise
         
         followerPosition.current.x += (position.current.x - followerPosition.current.x) * speed;
         followerPosition.current.y += (position.current.y - followerPosition.current.y) * speed;
@@ -197,7 +197,7 @@ const CustomCursor: React.FC = () => {
                     />
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border-2 border-green-500 transition-all duration-100
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border-2 border-green-500 transition-all duration-75
                         ${hovering ? 'bg-green-500/20 scale-110' : 'scale-100'}`}
                     />
                   </>
@@ -211,7 +211,7 @@ const CustomCursor: React.FC = () => {
                     />
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-8 -mt-8 w-16 h-16 rounded-full bg-blue-500/30 blur-xl transition-all duration-300 ease-out
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-8 -mt-8 w-16 h-16 rounded-full bg-blue-500/30 blur-xl transition-all duration-200 ease-out
                         ${hovering ? 'scale-150 bg-blue-400/40' : 'scale-100'}`}
                     />
                   </>
@@ -225,7 +225,7 @@ const CustomCursor: React.FC = () => {
                     />
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border-2 border-cyan-400/40 bg-cyan-400/10 rounded-full transition-all duration-200 ease-out backdrop-blur-[1px]
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border-2 border-cyan-400/40 bg-cyan-400/10 rounded-full transition-all duration-150 ease-out backdrop-blur-[1px]
                         ${hovering ? 'scale-125 border-cyan-400 bg-cyan-400/20' : 'scale-100'}`}
                     />
                   </>
@@ -239,7 +239,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 border border-red-500/50 transition-all duration-150 ease-out
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 border border-red-500/50 transition-all duration-100 ease-out
                         ${hovering ? 'scale-75 rotate-45 border-red-500 bg-red-500/10' : 'scale-100'}`}
                     />
                   </>
@@ -253,7 +253,7 @@ const CustomCursor: React.FC = () => {
                     />
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 border-2 border-yellow-400/60 rounded-full transition-all duration-300 ease-out flex items-center justify-center
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 border-2 border-yellow-400/60 rounded-full transition-all duration-200 ease-out flex items-center justify-center
                         ${hovering ? 'scale-150 rotate-180 border-yellow-300' : 'scale-100'}`}
                     >
                         <div className={`w-full h-full border-2 border-purple-400/30 rounded-full absolute ${hovering ? 'animate-ping' : ''}`}></div>
@@ -269,7 +269,7 @@ const CustomCursor: React.FC = () => {
                     />
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-4 -mt-4 w-8 h-8 border-2 border-dashed border-gray-500 dark:border-gray-400 transition-all duration-100
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-4 -mt-4 w-8 h-8 border-2 border-dashed border-gray-500 dark:border-gray-400 transition-all duration-75
                         ${hovering ? 'scale-125 bg-gray-500/20 border-solid' : 'scale-100'}`}
                     />
                   </>
@@ -283,7 +283,7 @@ const CustomCursor: React.FC = () => {
                     />
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-8 -mt-8 w-16 h-16 rounded-full bg-white/20 blur-md transition-all duration-200 ease-out
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-8 -mt-8 w-16 h-16 rounded-full bg-white/20 blur-md transition-all duration-150 ease-out
                         ${hovering ? 'scale-125 bg-white/40' : 'scale-100'}`}
                     />
                   </>
@@ -297,7 +297,7 @@ const CustomCursor: React.FC = () => {
                     />
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border border-green-500/50 rounded-full transition-all duration-200
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border border-green-500/50 rounded-full transition-all duration-150
                         ${hovering ? 'bg-green-500/10' : ''}`}
                     >
                         <div className="absolute inset-0 rounded-full border border-green-500/30 animate-ping"></div>
@@ -312,7 +312,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border border-pink-400/50 rounded-full transition-all duration-200 ease-out
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border border-pink-400/50 rounded-full transition-all duration-150 ease-out
                         ${hovering ? 'scale-150 bg-pink-500/10 border-pink-500' : 'scale-100'}`}
                     />
                   </>
@@ -325,7 +325,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border border-yellow-400/50 rounded-full transition-all duration-200 ease-out
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border border-yellow-400/50 rounded-full transition-all duration-150 ease-out
                         ${hovering ? 'scale-150 bg-yellow-400/10 rotate-45' : 'scale-100'}`}
                     />
                   </>
@@ -352,7 +352,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 bg-gray-200/20 dark:bg-white/10 rounded-full blur-sm transition-all duration-300 ease-out
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 bg-gray-200/20 dark:bg-white/10 rounded-full blur-sm transition-all duration-200 ease-out
                         ${hovering ? 'scale-150 opacity-50' : 'scale-100'}`}
                     />
                   </>
@@ -365,7 +365,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 bg-red-500/20 rounded-full blur-md transition-all duration-200 ease-out
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 bg-red-500/20 rounded-full blur-md transition-all duration-150 ease-out
                         ${hovering ? 'bg-orange-500/40 scale-125' : 'scale-100'}`}
                     />
                   </>
@@ -378,7 +378,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border border-cyan-200/50 bg-white/10 rounded-full backdrop-blur-sm transition-all duration-200 ease-out
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border border-cyan-200/50 bg-white/10 rounded-full backdrop-blur-sm transition-all duration-150 ease-out
                         ${hovering ? 'rotate-180 scale-110 border-cyan-300' : 'scale-100'}`}
                     />
                   </>
@@ -391,7 +391,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 border border-purple-400 rounded-full transition-all duration-200 ease-out
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 border border-purple-400 rounded-full transition-all duration-150 ease-out
                         ${hovering ? 'animate-ping opacity-50' : 'scale-100'}`}
                     />
                   </>
@@ -404,7 +404,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 border border-blue-300/50 rotate-45 transition-all duration-200 ease-out
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 border border-blue-300/50 rotate-45 transition-all duration-150 ease-out
                         ${hovering ? 'rotate-90 scale-125 bg-blue-300/10' : 'rotate-45'}`}
                     />
                   </>
@@ -417,7 +417,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-4 w-12 h-8 bg-green-500/10 rounded-[100%] border border-green-500/30 transition-all duration-300 ease-out
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-4 w-12 h-8 bg-green-500/10 rounded-[100%] border border-green-500/30 transition-all duration-200 ease-out
                         ${hovering ? 'translate-y-2 scale-110' : 'scale-100'}`}
                     />
                   </>
@@ -459,7 +459,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border border-amber-600/30 rounded-full transition-all duration-200 ease-out
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border border-amber-600/30 rounded-full transition-all duration-150 ease-out
                         ${hovering ? 'bg-amber-600/10 scale-110' : 'scale-100'}`}
                     />
                   </>
@@ -472,7 +472,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 bg-green-500/10 rounded-full blur-sm transition-all duration-200 ease-out
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 bg-green-500/10 rounded-full blur-sm transition-all duration-150 ease-out
                         ${hovering ? 'scale-150 bg-green-500/20' : 'scale-100'}`}
                     />
                   </>
@@ -485,7 +485,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border-2 border-dashed border-indigo-400 rounded-full transition-all duration-200 ease-out animate-spin-slow
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border-2 border-dashed border-indigo-400 rounded-full transition-all duration-150 ease-out animate-spin-slow
                         ${hovering ? 'scale-125' : 'scale-100'}`}
                     />
                   </>
@@ -498,7 +498,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 bg-yellow-400/20 rounded-full transition-all duration-200 ease-out
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 bg-yellow-400/20 rounded-full transition-all duration-150 ease-out
                         ${hovering ? 'scale-150 rotate-12' : 'scale-100'}`}
                     />
                   </>
@@ -511,7 +511,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-4 -mt-4 text-green-500/50 font-mono font-bold text-sm transition-all duration-100
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-4 -mt-4 text-green-500/50 font-mono font-bold text-sm transition-all duration-75
                         ${hovering ? 'scale-150 opacity-80' : 'scale-100'}`}
                     >
                         0
@@ -539,7 +539,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-3 -mt-3 w-6 h-6 bg-pink-500/30 rounded-full blur-sm transition-all duration-100
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-3 -mt-3 w-6 h-6 bg-pink-500/30 rounded-full blur-sm transition-all duration-75
                         ${hovering ? 'w-10 h-10 -ml-5 -mt-5 bg-pink-500/50' : ''}`}
                     />
                   </>
@@ -552,7 +552,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border-2 border-blue-700/30 rounded-full transition-all duration-200 ease-out
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border-2 border-blue-700/30 rounded-full transition-all duration-150 ease-out
                         ${hovering ? 'rotate-180 scale-90 border-blue-700' : 'scale-100'}`}
                     />
                   </>
@@ -565,7 +565,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 bg-pink-400/20 rounded-full transition-all duration-200 ease-out
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 bg-pink-400/20 rounded-full transition-all duration-150 ease-out
                         ${hovering ? 'scale-125 rotate-45' : 'scale-100'}`}
                     />
                   </>
@@ -578,7 +578,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border-2 border-dashed border-teal-500/50 rounded-lg transition-all duration-200 ease-out
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border-2 border-dashed border-teal-500/50 rounded-lg transition-all duration-150 ease-out
                         ${hovering ? 'rotate-90 scale-90 bg-teal-500/10' : 'scale-100'}`}
                     />
                   </>
@@ -591,7 +591,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 bg-yellow-200/20 rounded-full blur-sm transition-all duration-200 ease-out
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 bg-yellow-200/20 rounded-full blur-sm transition-all duration-150 ease-out
                         ${hovering ? 'scale-125 bg-orange-200/30' : 'scale-100'}`}
                     />
                   </>
@@ -604,7 +604,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border border-green-400/30 rounded-full bg-green-900/10 transition-all duration-200
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border border-green-400/30 rounded-full bg-green-900/10 transition-all duration-150
                         ${hovering ? 'scale-110 border-green-400' : 'scale-100'}`}
                     />
                   </>
@@ -617,7 +617,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 border-2 border-orange-500/50 rounded-full transition-all duration-100
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 border-2 border-orange-500/50 rounded-full transition-all duration-75
                         ${hovering ? 'scale-90 border-orange-600' : 'scale-100'}`}
                     />
                   </>
@@ -643,7 +643,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-4 -mt-4 w-8 h-8 bg-indigo-400/20 rounded-full blur transition-all duration-150
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-4 -mt-4 w-8 h-8 bg-indigo-400/20 rounded-full blur transition-all duration-100
                         ${hovering ? 'animate-pulse bg-indigo-500/30 scale-125' : 'scale-100'}`}
                     />
                   </>
@@ -656,7 +656,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border border-gray-400/30 rounded-full flex items-center justify-center transition-all duration-200
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border border-gray-400/30 rounded-full flex items-center justify-center transition-all duration-150
                         ${hovering ? 'scale-110 border-gray-500/50' : 'scale-100'}`}
                     >
                         <div className="w-8 h-8 border border-gray-400/20 rounded-full"></div>
@@ -671,7 +671,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border-2 border-dashed border-blue-400/40 rounded-full transition-all duration-200 animate-spin-slow
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border-2 border-dashed border-blue-400/40 rounded-full transition-all duration-150 animate-spin-slow
                         ${hovering ? 'scale-110 border-blue-500' : 'scale-100'}`}
                     />
                   </>
@@ -684,7 +684,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border-2 border-red-500/20 rounded-full transition-all duration-200
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border-2 border-red-500/20 rounded-full transition-all duration-150
                         ${hovering ? 'rotate-90 scale-110' : 'scale-100'}`}
                     />
                   </>
@@ -697,7 +697,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 border border-gray-500 rounded-md transition-all duration-100
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 border border-gray-500 rounded-md transition-all duration-75
                         ${hovering ? 'scale-125 bg-black/10' : 'scale-100'}`}
                     />
                   </>
@@ -710,7 +710,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 border-2 border-dashed border-gray-500/50 rounded-full transition-all duration-200
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 border-2 border-dashed border-gray-500/50 rounded-full transition-all duration-150
                         ${hovering ? 'rotate-180 scale-110 border-gray-600' : 'scale-100'}`}
                     />
                   </>
@@ -723,7 +723,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 border border-red-500/30 rounded-full flex items-center justify-center transition-all duration-200
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 border border-red-500/30 rounded-full flex items-center justify-center transition-all duration-150
                         ${hovering ? 'scale-125 bg-red-500/10' : 'scale-100'}`}
                     >
                         <div className="w-full h-0.5 bg-red-500/20"></div>
@@ -739,7 +739,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-3 -mt-3 w-6 h-6 border-2 border-red-500 rounded-full transition-all duration-150 ease-out
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-3 -mt-3 w-6 h-6 border-2 border-red-500 rounded-full transition-all duration-100 ease-out
                         ${hovering ? 'scale-150 opacity-50' : 'scale-100 opacity-20'}`}
                     />
                   </>
@@ -752,7 +752,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 bg-yellow-200/20 rounded-full blur-sm transition-all duration-200
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 bg-yellow-200/20 rounded-full blur-sm transition-all duration-150
                         ${hovering ? 'scale-125 bg-yellow-300/30' : 'scale-100'}`}
                     />
                   </>
@@ -765,7 +765,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border border-gray-400/30 rounded-full transition-all duration-150
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border border-gray-400/30 rounded-full transition-all duration-100
                         ${hovering ? 'scale-110 border-2 border-pink-500/50' : 'scale-100'}`}
                     />
                   </>
@@ -778,7 +778,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 bg-gradient-to-tr from-pink-400 via-purple-400 to-blue-400 rounded-full opacity-20 transition-all duration-200
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 bg-gradient-to-tr from-pink-400 via-purple-400 to-blue-400 rounded-full opacity-20 transition-all duration-150
                         ${hovering ? 'scale-150 opacity-40' : 'scale-100'}`}
                     />
                   </>
@@ -791,7 +791,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border border-yellow-400/40 rounded-full transition-all duration-200 animate-spin-slow
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border border-yellow-400/40 rounded-full transition-all duration-150 animate-spin-slow
                         ${hovering ? 'scale-125 border-dashed border-2' : 'scale-100'}`}
                     />
                   </>
@@ -804,7 +804,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 bg-indigo-900/20 rounded-full blur-sm transition-all duration-200
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 bg-indigo-900/20 rounded-full blur-sm transition-all duration-150
                         ${hovering ? 'scale-150 bg-indigo-500/20' : 'scale-100'}`}
                     />
                   </>
@@ -817,7 +817,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 border-t-2 border-blue-400/50 rounded-full transition-all duration-200
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 border-t-2 border-blue-400/50 rounded-full transition-all duration-150
                         ${hovering ? 'translate-y-1 scale-110 border-t-4' : 'scale-100'}`}
                     />
                   </>
@@ -830,7 +830,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 bg-red-500/10 rounded-full blur-md transition-all duration-100
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 bg-red-500/10 rounded-full blur-md transition-all duration-75
                         ${hovering ? 'scale-150 bg-orange-500/30 animate-pulse' : 'scale-100'}`}
                     />
                   </>
@@ -843,7 +843,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 border border-gray-400/50 rounded-md transition-all duration-150
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 border border-gray-400/50 rounded-md transition-all duration-100
                         ${hovering ? 'scale-110 bg-green-500/10 border-green-500' : 'scale-100'}`}
                     />
                   </>
@@ -856,7 +856,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 bg-gray-300/10 rounded-full blur-sm transition-all duration-200
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 bg-gray-300/10 rounded-full blur-sm transition-all duration-150
                         ${hovering ? 'scale-125 opacity-20' : 'scale-100'}`}
                     />
                   </>
@@ -869,7 +869,7 @@ const CustomCursor: React.FC = () => {
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 bg-purple-500/20 rounded-full blur-md transition-all duration-500 ease-out
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 bg-purple-500/20 rounded-full blur-md transition-all duration-300 ease-out
                         ${hovering ? 'scale-150 bg-purple-400/30 animate-pulse' : 'scale-100'}`}
                     />
                   </>
@@ -883,7 +883,7 @@ const CustomCursor: React.FC = () => {
                     />
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 border-2 rounded-full transition-all duration-300 ease-out flex items-center justify-center
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 border-2 rounded-full transition-all duration-150 ease-out flex items-center justify-center
                         ${hovering 
                             ? 'border-pink-500/80 bg-pink-500/10 dark:border-pink-400/80 dark:bg-pink-400/10 scale-125' 
                             : 'border-gray-400/60 dark:border-gray-500/60 scale-75'}`}

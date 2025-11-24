@@ -1,6 +1,6 @@
 
 import { supabase } from './supabaseClient';
-import { User, Activity, AttendanceRecord, FeedItem, ProjectData, ProjectTask, FeedItemType, ProjectColumn, Resource, Notification, Tab, Room, Message, ActivityCategory, TaskPriority, FeedComment, ShowcaseItem, ResourceType, ResourceCategory, Suggestion, SuggestionType, SuggestionStatus } from '../types';
+import { User, Activity, AttendanceRecord, FeedItem, ProjectData, ProjectTask, FeedItemType, ProjectColumn, Resource, Notification, Tab, Room, Message, ActivityCategory, TaskPriority, FeedComment, ShowcaseItem, ResourceType, ResourceCategory, Suggestion, SuggestionType, SuggestionStatus, Challenge, ChallengeSubmission, SubmissionStatus } from '../types';
 import { predefinedAvatars } from '../constants';
 
 // --- INTERNAL HELPERS ---
@@ -27,6 +27,19 @@ export const notifyAllUsers = async (message: string, linkTo: string, senderId: 
     }
 };
 
+export const notifyUser = async (userId: string, message: string, linkTo: string) => {
+    try {
+        await supabase.from('notifications').insert({
+            user_uid: userId,
+            message,
+            link_to: linkTo,
+            is_read: false
+        });
+    } catch (error) {
+        console.warn("Failed to notify user:", error);
+    }
+};
+
 const uploadFile = async (file: File, bucket: string, path: string): Promise<string> => {
     const { data, error } = await supabase.storage.from(bucket).upload(path, file);
     if (error) throw new Error(error.message);
@@ -40,6 +53,8 @@ const LOCAL_SCRIPTS_KEY = 'offline_user_scripts';
 const LOCAL_RSVPS_KEY = 'offline_rsvps';
 const LOCAL_ATTENDANCE_KEY = 'offline_attendance';
 const LOCAL_SUGGESTIONS_KEY = 'offline_suggestions';
+const LOCAL_CHALLENGES_KEY = 'offline_challenges';
+const LOCAL_SUBMISSIONS_KEY = 'offline_submissions';
 
 const getLocalScripts = (): any[] => {
     if (typeof window === 'undefined') return [];
@@ -111,6 +126,34 @@ const setLocalSuggestions = (suggestions: Suggestion[]) => {
     localStorage.setItem(LOCAL_SUGGESTIONS_KEY, JSON.stringify(suggestions));
 };
 
+const getLocalChallenges = (): Challenge[] => {
+    if (typeof window === 'undefined') return [];
+    try {
+        return JSON.parse(localStorage.getItem(LOCAL_CHALLENGES_KEY) || '[]');
+    } catch {
+        return [];
+    }
+};
+
+const setLocalChallenges = (challenges: Challenge[]) => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(LOCAL_CHALLENGES_KEY, JSON.stringify(challenges));
+};
+
+const getLocalSubmissions = (): ChallengeSubmission[] => {
+    if (typeof window === 'undefined') return [];
+    try {
+        return JSON.parse(localStorage.getItem(LOCAL_SUBMISSIONS_KEY) || '[]');
+    } catch {
+        return [];
+    }
+};
+
+const setLocalSubmissions = (submissions: ChallengeSubmission[]) => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(LOCAL_SUBMISSIONS_KEY, JSON.stringify(submissions));
+};
+
 // --- AUTH & USER ---
 
 export const getUserProfile = async (uid: string): Promise<User | null> => {
@@ -124,7 +167,8 @@ export const getUserProfile = async (uid: string): Promise<User | null> => {
         role: data.role,
         status: data.status,
         avatarUrl: data.avatar_url,
-        phoneNumber: data.phone_number
+        phoneNumber: data.phone_number,
+        badges: data.badges || []
     };
 };
 
@@ -154,7 +198,8 @@ export const signUp = async (userData: Omit<User, 'uid' | 'role' | 'status' | 'a
             phone_number: userData.phoneNumber,
             role: 'MEMBER',
             status: 'PENDING',
-            avatar_url: `https://i.pravatar.cc/150?u=${data.user.id}`
+            avatar_url: `https://i.pravatar.cc/150?u=${data.user.id}`,
+            badges: []
         });
         if (profileError) throw new Error(profileError.message);
     }
@@ -175,7 +220,8 @@ export const signUpAsPatron = async (userData: Omit<User, 'uid' | 'role' | 'stat
             phone_number: userData.phoneNumber,
             role: 'PATRON',
             status: 'PENDING', 
-             avatar_url: `https://i.pravatar.cc/150?u=${data.user.id}`
+             avatar_url: `https://i.pravatar.cc/150?u=${data.user.id}`,
+             badges: []
         });
         if (profileError) throw new Error(profileError.message);
     }
@@ -209,7 +255,8 @@ export const getUsers = async (): Promise<User[]> => {
             role: u.role,
             status: u.status,
             avatarUrl: u.avatar_url,
-            phoneNumber: u.phone_number
+            phoneNumber: u.phone_number,
+            badges: u.badges || []
         }));
     } catch (error: any) {
         console.error("Failed to fetch users:", error);
@@ -223,9 +270,15 @@ export const updateUser = async (uid: string, data: Partial<User>): Promise<void
     if (data.role) updates.role = data.role;
     if (data.status) updates.status = data.status;
     if (data.avatarUrl) updates.avatar_url = data.avatarUrl;
+    if (data.badges) updates.badges = data.badges;
     
     const { error } = await supabase.from('users').update(updates).eq('uid', uid);
     if (error) throw new Error(error.message);
+};
+
+export const approveMember = async (uid: string): Promise<void> => {
+    await updateUser(uid, { status: 'APPROVED' });
+    await notifyAllUsers("A new member has joined the club! 🎉", "members", uid);
 };
 
 export const deleteUser = async (uid: string): Promise<void> => {
@@ -233,51 +286,153 @@ export const deleteUser = async (uid: string): Promise<void> => {
     if (error) throw new Error(error.message);
 };
 
-export const markAttendanceOnLogin = async (uid: string): Promise<void> => {
+// --- CHALLENGES ---
+
+export const getChallenges = async (): Promise<Challenge[]> => {
+    let dbChallenges: any[] = [];
     try {
-        const today = new Date().toISOString().split('T')[0];
-        const { data: activities } = await supabase.from('activities').select('*').eq('date', today);
-        
-        if (activities && activities.length > 0) {
-            for (const activity of activities) {
-                // Check attendance via Supabase first
-                const { data: existing } = await supabase.from('attendance')
-                    .select('*')
-                    .eq('activity_id', activity.id)
-                    .eq('user_uid', uid)
-                    .single();
-                
-                if (!existing) {
-                    try {
-                        await supabase.from('attendance').insert({
-                            activity_id: activity.id,
-                            user_uid: uid,
-                            status: 'Present',
-                            date: today,
-                            activity_title: activity.title
-                        });
-                    } catch (insertError) {
-                        // Fallback for background attendance
-                        saveLocalAttendance({
-                            id: `local-${Date.now()}-${Math.random()}`,
-                            activityId: activity.id.toString(),
-                            activityTitle: activity.title,
-                            date: today,
-                            status: 'Present',
-                            userId: uid
-                        });
-                    }
+        const { data, error } = await supabase.from('challenges').select('*').order('deadline', { ascending: true });
+        if (error) throw error;
+        dbChallenges = data;
+    } catch (e: any) {
+        console.warn("Failed to fetch challenges from DB, using local fallback:", e.message);
+        dbChallenges = [];
+    }
+    
+    const localChallenges = getLocalChallenges();
+    // Prefer DB, fallback merge
+    const merged = [...dbChallenges];
+    localChallenges.forEach(lc => {
+        if (!merged.find(d => d.id === lc.id)) {
+            merged.push(lc);
+        }
+    });
+    return merged;
+};
+
+export const addChallenge = async (challenge: Omit<Challenge, 'id' | 'createdAt' | 'status'>): Promise<void> => {
+    const newChallenge = {
+        title: challenge.title,
+        description: challenge.description,
+        deadline: challenge.deadline,
+        created_by: challenge.createdBy,
+        status: 'ACTIVE'
+    };
+
+    try {
+        const { error } = await supabase.from('challenges').insert(newChallenge);
+        if (error) throw error;
+        await notifyAllUsers(`New Challenge Posted: ${challenge.title} 🏆`, 'challenges', challenge.createdBy);
+    } catch (e: any) {
+        console.warn("Failed to add challenge to DB, saving locally:", e.message);
+        const localChallenge: Challenge = {
+            id: `local-${Date.now()}`,
+            title: challenge.title,
+            description: challenge.description,
+            deadline: challenge.deadline,
+            createdBy: challenge.createdBy,
+            createdAt: new Date().toISOString(),
+            status: 'ACTIVE'
+        };
+        setLocalChallenges([localChallenge, ...getLocalChallenges()]);
+    }
+};
+
+export const submitChallenge = async (challengeId: string, userId: string, content: string): Promise<void> => {
+    const submissionData = {
+        challenge_id: challengeId,
+        user_uid: userId,
+        content: content,
+        status: 'PENDING'
+    };
+
+    try {
+        const { error } = await supabase.from('challenge_submissions').insert(submissionData);
+        if (error) throw error;
+    } catch (e: any) {
+        console.warn("Failed to submit challenge to DB, saving locally:", e.message);
+        const localSubmission: ChallengeSubmission = {
+            id: `local-sub-${Date.now()}`,
+            challengeId,
+            userId,
+            userName: 'Me (Offline)', // Ideally fetch user name from context/storage
+            content,
+            status: 'PENDING',
+            submittedAt: new Date().toISOString()
+        };
+        setLocalSubmissions([localSubmission, ...getLocalSubmissions()]);
+    }
+};
+
+export const getSubmissions = async (challengeId: string): Promise<ChallengeSubmission[]> => {
+    let dbSubmissions: any[] = [];
+    try {
+        const { data, error } = await supabase.from('challenge_submissions').select('*').eq('challenge_id', challengeId);
+        if (error) throw error;
+        dbSubmissions = data;
+    } catch (e) {
+        console.warn("Failed to fetch submissions");
+    }
+
+    const localSubmissions = getLocalSubmissions().filter(s => s.challengeId === challengeId);
+    
+    // Map DB to Type
+    const mappedDb = await Promise.all(dbSubmissions.map(async (s: any) => {
+        // Get user details
+        const { data: user } = await supabase.from('users').select('name, avatar_url').eq('uid', s.user_uid).single();
+        return {
+            id: s.id.toString(),
+            challengeId: s.challenge_id.toString(),
+            userId: s.user_uid,
+            userName: user?.name || 'Unknown',
+            userAvatarUrl: user?.avatar_url,
+            content: s.content,
+            status: s.status,
+            submittedAt: s.created_at
+        };
+    }));
+
+    return [...mappedDb, ...localSubmissions];
+};
+
+export const reviewSubmission = async (submissionId: string, status: 'APPROVED' | 'REJECTED', challengeTitle: string, userId: string): Promise<void> => {
+    try {
+        // 1. Update Submission Status
+        if (submissionId.startsWith('local-')) {
+            const locals = getLocalSubmissions();
+            const idx = locals.findIndex(s => s.id === submissionId);
+            if (idx !== -1) {
+                locals[idx].status = status;
+                setLocalSubmissions(locals);
+            }
+        } else {
+            const { error } = await supabase.from('challenge_submissions').update({ status }).eq('id', submissionId);
+            if (error) throw error;
+        }
+
+        // 2. If Approved, Award Badge
+        if (status === 'APPROVED') {
+            const user = await getUserProfile(userId);
+            if (user) {
+                const currentBadges = user.badges || [];
+                if (!currentBadges.includes(challengeTitle)) {
+                    const newBadges = [...currentBadges, challengeTitle];
+                    await updateUser(userId, { badges: newBadges });
+                    await notifyUser(userId, `You earned the badge: ${challengeTitle}! 🏅`, 'profile');
+                    await notifyAllUsers(`User ${user.name} solved the challenge "${challengeTitle}"!`, 'challenges', 'system');
                 }
             }
         }
-    } catch (error) {
-        console.warn("Background attendance check failed:", error);
+    } catch (e: any) {
+        console.error("Review failed:", e);
+        throw new Error(e.message);
     }
 };
 
 // --- ACTIVITIES ---
 
 export const getActivities = async (): Promise<Activity[]> => {
+    // ... (keep existing getActivities implementation)
     let dbActivities: any[] = [];
     let dbRsvps: any[] = [];
 
@@ -373,6 +528,48 @@ export const toggleRSVP = async (activityId: string, userId: string, isJoining: 
     }
 };
 
+export const markAttendanceOnLogin = async (uid: string): Promise<void> => {
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        const { data: activities } = await supabase.from('activities').select('*').eq('date', today);
+        
+        if (activities && activities.length > 0) {
+            for (const activity of activities) {
+                // Check attendance via Supabase first
+                const { data: existing } = await supabase.from('attendance')
+                    .select('*')
+                    .eq('activity_id', activity.id)
+                    .eq('user_uid', uid)
+                    .single();
+                
+                if (!existing) {
+                    try {
+                        await supabase.from('attendance').insert({
+                            activity_id: activity.id,
+                            user_uid: uid,
+                            status: 'Present',
+                            date: today,
+                            activity_title: activity.title
+                        });
+                    } catch (insertError) {
+                        // Fallback for background attendance
+                        saveLocalAttendance({
+                            id: `local-${Date.now()}-${Math.random()}`,
+                            activityId: activity.id.toString(),
+                            activityTitle: activity.title,
+                            date: today,
+                            status: 'Present',
+                            userId: uid
+                        });
+                    }
+                }
+            }
+        }
+    } catch (error) {
+        console.warn("Background attendance check failed:", error);
+    }
+};
+
 // --- ATTENDANCE ---
 
 export const getAttendance = async (userId: string): Promise<AttendanceRecord[]> => {
@@ -461,24 +658,50 @@ export const addAttendance = async (userId: string, record: Omit<AttendanceRecor
 
 export const getFeedItems = async (): Promise<FeedItem[]> => {
     try {
-        // Some deployments might also have issues with author join, but let's keep it unless it breaks
-        // If it breaks, we can use the same strategy as getFeedComments
-        const { data, error } = await supabase
+        // Fetch Items first
+        const { data: items, error } = await supabase
             .from('feed_items')
-            .select(`
-                *,
-                author:author_uid ( uid, name, avatar_url ),
-                feed_comments (count)
-            `)
+            .select('*')
             .order('created_at', { ascending: false });
         
         if (error) throw error;
-        if (!data) return [];
-        
-        return data.map((item: any) => {
-            const authorProfile = item.author as { uid: string; name: string; avatar_url: string } | null;
-            const commentCount = item.feed_comments?.[0]?.count || 0;
+        if (!items || items.length === 0) return [];
 
+        // Get Author IDs
+        const authorIds = Array.from(new Set(items.map((i: any) => i.author_uid))).filter(Boolean);
+        
+        // Fetch Authors Manually
+        let userMap = new Map();
+        if (authorIds.length > 0) {
+            const { data: users } = await supabase
+                .from('users')
+                .select('uid, name, avatar_url')
+                .in('uid', authorIds);
+            
+            if (users) {
+                users.forEach((u: any) => userMap.set(u.uid, u));
+            }
+        }
+
+        // Fetch Comment Counts Manually
+        // We'll fetch all comments for these items to count them. 
+        // For scalability, a separate count query or rpc would be better, but this works for now and fixes relationship errors.
+        const itemIds = items.map((i: any) => i.id);
+        const { data: comments } = await supabase
+            .from('feed_comments')
+            .select('feed_item_id')
+            .in('feed_item_id', itemIds);
+            
+        const commentCounts: Record<string, number> = {};
+        if (comments) {
+            comments.forEach((c: any) => {
+                const fid = c.feed_item_id.toString();
+                commentCounts[fid] = (commentCounts[fid] || 0) + 1;
+            });
+        }
+        
+        return items.map((item: any) => {
+            const authorProfile = userMap.get(item.author_uid);
             return {
                 id: item.id.toString(),
                 type: item.type,
@@ -487,7 +710,7 @@ export const getFeedItems = async (): Promise<FeedItem[]> => {
                 author: authorProfile?.name || 'Unknown User',
                 authorAvatarUrl: authorProfile?.avatar_url || `https://i.pravatar.cc/40?u=${item.author_uid}`,
                 timestamp: new Date(item.created_at).toLocaleString('en-US', { timeZone: 'Africa/Kampala' }),
-                commentCount: commentCount,
+                commentCount: commentCounts[item.id.toString()] || 0,
             };
         });
     } catch (error: any) {

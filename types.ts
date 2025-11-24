@@ -1,6 +1,6 @@
 
 
-export type Tab = 'feed' | 'activities' | 'attendance' | 'projects' | 'profile' | 'members' | 'playground' | 'resources' | 'chat' | 'showcase' | 'suggestions';
+export type Tab = 'feed' | 'activities' | 'attendance' | 'projects' | 'profile' | 'members' | 'playground' | 'resources' | 'chat' | 'showcase' | 'suggestions' | 'challenges';
 
 export interface User {
   uid: string; // Changed from id: number
@@ -11,6 +11,7 @@ export interface User {
   status: 'APPROVED' | 'PENDING';
   avatarUrl?: string;
   phoneNumber?: string;
+  badges?: string[]; // List of challenge titles won
 }
 
 export type ActivityCategory = 'WORKSHOP' | 'SOCIAL' | 'COMPETITION' | 'GUEST_SPEAKER' | 'OTHER';
@@ -159,4 +160,28 @@ export interface Suggestion {
   status: SuggestionStatus;
   createdAt: string;
   upvotes: string[]; // Array of user IDs
+}
+
+// Challenges Types
+export interface Challenge {
+  id: string;
+  title: string;
+  description: string;
+  deadline: string;
+  createdBy: string;
+  createdAt: string;
+  status: 'ACTIVE' | 'CLOSED';
+}
+
+export type SubmissionStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface ChallengeSubmission {
+  id: string;
+  challengeId: string;
+  userId: string;
+  userName: string;
+  userAvatarUrl?: string;
+  content: string;
+  status: SubmissionStatus;
+  submittedAt: string;
 }
