@@ -122,8 +122,9 @@ const NewChatModal: React.FC<{
     onClose: () => void; 
     currentUser: User;
     allUsers: User[];
+    onlineUsers: string[];
     onCreate: (selectedUserIds: string[], title?: string) => void;
-}> = ({ isOpen, onClose, currentUser, allUsers, onCreate }) => {
+}> = ({ isOpen, onClose, currentUser, allUsers, onlineUsers, onCreate }) => {
     const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [groupTitle, setGroupTitle] = useState('');
@@ -173,17 +174,25 @@ const NewChatModal: React.FC<{
                  />
 
                  <div className="flex-1 overflow-y-auto space-y-2 mb-4">
-                    {filteredUsers.map(user => (
-                        <div 
-                            key={user.uid} 
-                            onClick={() => toggleUser(user.uid)}
-                            className={`flex items-center p-2 rounded-lg cursor-pointer border ${selectedUserIds.includes(user.uid) ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20' : 'border-transparent hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                        >
-                            <img src={user.avatarUrl || `https://i.pravatar.cc/40?u=${user.username}`} className="w-8 h-8 rounded-full mr-3" alt={user.name} />
-                            <span className="text-gray-800 dark:text-gray-200 font-medium">{user.name}</span>
-                            {selectedUserIds.includes(user.uid) && <span className="ml-auto text-pink-500">✓</span>}
-                        </div>
-                    ))}
+                    {filteredUsers.map(user => {
+                        const isOnline = onlineUsers.includes(user.uid);
+                        return (
+                            <div 
+                                key={user.uid} 
+                                onClick={() => toggleUser(user.uid)}
+                                className={`flex items-center p-2 rounded-lg cursor-pointer border ${selectedUserIds.includes(user.uid) ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20' : 'border-transparent hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                            >
+                                <div className="relative mr-3">
+                                    <img src={user.avatarUrl || `https://i.pravatar.cc/40?u=${user.username}`} className="w-8 h-8 rounded-full" alt={user.name} />
+                                    {isOnline && (
+                                        <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full ring-1 ring-white dark:ring-gray-800 bg-green-400"></span>
+                                    )}
+                                </div>
+                                <span className="text-gray-800 dark:text-gray-200 font-medium">{user.name}</span>
+                                {selectedUserIds.includes(user.uid) && <span className="ml-auto text-pink-500">✓</span>}
+                            </div>
+                        );
+                    })}
                  </div>
 
                  <button 
@@ -204,10 +213,11 @@ const RoomDetailsModal: React.FC<{
     room: Room;
     allUsers: User[];
     currentUser: User;
+    onlineUsers: string[];
     onRemoveMember: (roomId: string, userId: string) => Promise<void>;
     onAddMembers: (roomId: string, userIds: string[]) => Promise<void>;
     onRenameGroup: (roomId: string, newTitle: string) => Promise<void>;
-}> = ({ isOpen, onClose, room, allUsers, currentUser, onRemoveMember, onAddMembers, onRenameGroup }) => {
+}> = ({ isOpen, onClose, room, allUsers, currentUser, onlineUsers, onRemoveMember, onAddMembers, onRenameGroup }) => {
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [tempTitle, setTempTitle] = useState(room.title || '');
     const [isAddingMode, setIsAddingMode] = useState(false);
@@ -359,29 +369,37 @@ const RoomDetailsModal: React.FC<{
                             )}
                         </>
                     ) : (
-                        participants.map(user => (
-                            <div key={user.uid} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-750 group">
-                                <div className="flex items-center">
-                                    <img src={user.avatarUrl || `https://i.pravatar.cc/40?u=${user.username}`} className="w-10 h-10 rounded-full mr-3 border border-gray-200 dark:border-gray-700" alt={user.name} />
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{user.name}</p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                                            {user.uid === room.createdBy ? 'Group Creator' : 'Member'}
-                                        </p>
+                        participants.map(user => {
+                            const isOnline = onlineUsers.includes(user.uid);
+                            return (
+                                <div key={user.uid} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-750 group">
+                                    <div className="flex items-center">
+                                        <div className="relative mr-3">
+                                            <img src={user.avatarUrl || `https://i.pravatar.cc/40?u=${user.username}`} className="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-700" alt={user.name} />
+                                            {isOnline && (
+                                                <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full ring-1 ring-white dark:ring-gray-800 bg-green-400"></span>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{user.name}</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                {user.uid === room.createdBy ? 'Group Creator' : 'Member'}
+                                            </p>
+                                        </div>
                                     </div>
+                                    {isCreator && user.uid !== currentUser.uid && (
+                                        <button 
+                                            onClick={() => handleRemoveClick(user.uid, user.name)}
+                                            className="ml-2 p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full transition-colors flex-shrink-0"
+                                            title="Remove member from group"
+                                            aria-label="Remove member"
+                                        >
+                                            <UserRemoveIcon className="w-5 h-5" />
+                                        </button>
+                                    )}
                                 </div>
-                                {isCreator && user.uid !== currentUser.uid && (
-                                    <button 
-                                        onClick={() => handleRemoveClick(user.uid, user.name)}
-                                        className="ml-2 p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full transition-colors flex-shrink-0"
-                                        title="Remove member from group"
-                                        aria-label="Remove member"
-                                    >
-                                        <UserRemoveIcon className="w-5 h-5" />
-                                    </button>
-                                )}
-                            </div>
-                        ))
+                            );
+                        })
                     )}
                 </div>
 
@@ -455,6 +473,25 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab }) => {
     const activeRoom = useMemo(() => rooms.find(r => r.id === activeRoomId), [rooms, activeRoomId]);
 
     const isUserOnline = (uid: string) => onlineUsers.includes(uid);
+
+    const getHeaderStatus = () => {
+        if (!activeRoom) return null;
+        
+        // DM Check
+        if (!activeRoom.title && activeRoom.participantIds.length === 2) {
+            const otherId = activeRoom.participantIds.find(id => id !== currentUser.uid);
+            if (otherId && onlineUsers.includes(otherId)) {
+                return { text: 'Online', color: 'bg-green-500' };
+            }
+            return { text: 'Offline', color: 'bg-gray-300 dark:bg-gray-600' };
+        }
+    
+        // Group Check
+        const onlineCount = activeRoom.participantIds.filter(id => onlineUsers.includes(id)).length;
+        return { text: `${onlineCount} online`, color: onlineCount > 0 ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600' };
+    };
+
+    const headerStatus = getHeaderStatus();
 
     const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
         setTimeout(() => {
@@ -794,22 +831,6 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab }) => {
         if (window.innerWidth < 768) setIsSidebarOpen(false);
     };
 
-    const getConnectionStatusColor = () => {
-        switch (realtimeStatus) {
-            case 'SUBSCRIBED': return 'bg-green-500';
-            case 'CONNECTING': return 'bg-yellow-500';
-            default: return 'bg-red-500';
-        }
-    };
-
-    const getConnectionStatusText = () => {
-        switch (realtimeStatus) {
-            case 'SUBSCRIBED': return 'Live';
-            case 'CONNECTING': return 'Connecting...';
-            default: return 'Offline';
-        }
-    };
-
     const triggerFileUpload = () => {
         fileInputRef.current?.click();
     };
@@ -1043,8 +1064,12 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab }) => {
                                         {getRoomName(activeRoom, allUsers, currentUser.uid)}
                                     </h2>
                                     <div className="flex items-center space-x-2 mt-0.5">
-                                        <div className={`w-2 h-2 rounded-full ${getConnectionStatusColor()}`}></div>
-                                        <span className="text-xs text-gray-500 dark:text-gray-400">{getConnectionStatusText()}</span>
+                                        {headerStatus && (
+                                            <>
+                                                <div className={`w-2 h-2 rounded-full ${headerStatus.color}`}></div>
+                                                <span className="text-xs text-gray-500 dark:text-gray-400">{headerStatus.text}</span>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -1206,6 +1231,7 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab }) => {
                 onClose={() => setIsModalOpen(false)} 
                 currentUser={currentUser}
                 allUsers={allUsers}
+                onlineUsers={onlineUsers}
                 onCreate={handleCreateRoom}
             />
 
@@ -1216,6 +1242,7 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab }) => {
                     room={activeRoom}
                     allUsers={allUsers}
                     currentUser={currentUser}
+                    onlineUsers={onlineUsers}
                     onRemoveMember={handleRemoveMember}
                     onAddMembers={handleAddMembers}
                     onRenameGroup={handleRenameGroup}
