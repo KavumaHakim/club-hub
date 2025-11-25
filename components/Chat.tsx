@@ -306,8 +306,8 @@ const RoomDetailsModal: React.FC<{
                                 className="flex-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-sm"
                                 autoFocus
                             />
-                            <button onClick={handleSaveTitle} className="text-green-500 hover:text-green-600"><CheckIcon /></button>
-                            <button onClick={() => { setIsEditingTitle(false); setTempTitle(room.title || ''); }} className="text-red-500 hover:text-red-600"><XIcon /></button>
+                            <button onClick={handleSaveTitle} className="text-green-500 hover:text-green-600"><CheckIcon className="h-5 w-5" /></button>
+                            <button onClick={() => { setIsEditingTitle(false); setTempTitle(room.title || ''); }} className="text-red-500 hover:text-red-600"><XIcon className="h-5 w-5" /></button>
                         </div>
                     ) : (
                         <div className="flex items-center justify-between group">
@@ -753,6 +753,7 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab }) => {
     
     const onEmojiClick = (emojiData: EmojiClickData) => {
         setNewMessage(prev => prev + emojiData.emoji);
+        textareaRef.current?.focus();
     };
 
     const handleCreateRoom = async (participantIds: string[], title?: string) => {

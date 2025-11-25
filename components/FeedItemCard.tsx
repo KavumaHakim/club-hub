@@ -164,8 +164,17 @@ const FeedItemCard: React.FC<FeedItemCardProps> = ({ item, currentUser, onDelete
                     >
                          <ChatBubbleIcon />
                          <span className="text-xs font-medium">
-                             Comments {commentCount > 0 && `(${commentCount})`}
+                             Comments
                          </span>
+                         {commentCount > 0 && (
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm ${
+                                showComments 
+                                ? 'bg-white/30 text-purple-700 dark:text-purple-200' 
+                                : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200'
+                            }`}>
+                                {commentCount}
+                            </span>
+                         )}
                     </button>
                 </div>
                 

@@ -132,7 +132,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ isOpen, onClose, task, cu
                     {tags.map(tag => (
                         <span key={tag} className="bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 text-xs px-2 py-1 rounded-full flex items-center">
                             {tag}
-                            <button type="button" onClick={() => removeTag(tag)} className="ml-1 hover:text-purple-900"><XIcon /></button>
+                            <button type="button" onClick={() => removeTag(tag)} className="ml-1 hover:text-purple-900"><XIcon className="w-4 h-4" /></button>
                         </span>
                     ))}
                 </div>

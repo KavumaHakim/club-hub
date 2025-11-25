@@ -284,7 +284,7 @@ export const markAttendanceOnLogin = async (userId: string) => {
 // --- Feed ---
 
 export const getFeedItems = async (): Promise<FeedItem[]> => {
-    // Join with users table using foreign key `author_uid`
+    // Join with users table and count comments
     const { data, error } = await supabase
         .from('feed_items')
         .select(`
@@ -292,7 +292,8 @@ export const getFeedItems = async (): Promise<FeedItem[]> => {
             users (
                 name,
                 avatar_url
-            )
+            ),
+            feed_comments ( count )
         `)
         .order('created_at', { ascending: false });
 
@@ -305,10 +306,11 @@ export const getFeedItems = async (): Promise<FeedItem[]> => {
         authorAvatarUrl: item.users?.avatar_url,
         timestamp: new Date(item.created_at).toLocaleString(),
         title: item.title,
-        message: item.message, // Mapped from 'message' column in schema
-        commentCount: 0 // 'comment_count' removed from schema
+        message: item.message,
+        commentCount: item.feed_comments[0]?.count || 0
     }));
 };
+
 
 export const addFeedItem = async (item: { title: string, message: string, type: FeedItemType }, userId: string) => {
     // Insert uses 'message' and 'author_uid'
