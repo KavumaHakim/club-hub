@@ -32,7 +32,7 @@ export const signUp = async (userData: Omit<User, 'uid' | 'role' | 'status' | 'a
   if (error) throw error;
   
   if (data.user) {
-      // Use 'uid' instead of 'id' for the users table insert
+      // Use 'uid' instead of 'id' for the users table insert as per schema
       const { error: profileError } = await supabase.from('users').insert({
           uid: data.user.id,
           email: userData.email,
@@ -50,7 +50,6 @@ export const signUp = async (userData: Omit<User, 'uid' | 'role' | 'status' | 'a
 };
 
 export const signUpAsPatron = async (userData: Omit<User, 'uid' | 'role' | 'status' | 'avatarUrl'> & {password: string}) => {
-    // Same as signUp but role is PATRON
     const { data, error } = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password,
@@ -67,7 +66,7 @@ export const signUpAsPatron = async (userData: Omit<User, 'uid' | 'role' | 'stat
     if (error) throw error;
 
     if (data.user) {
-        // Use 'uid' instead of 'id' for the users table insert
+        // Use 'uid' instead of 'id' for the users table insert as per schema
         const { error: profileError } = await supabase.from('users').insert({
             uid: data.user.id,
             email: userData.email,
@@ -85,14 +84,14 @@ export const signUpAsPatron = async (userData: Omit<User, 'uid' | 'role' | 'stat
 };
 
 export const getUserProfile = async (userId: string): Promise<User | null> => {
-  // Query using 'uid' instead of 'id'
+  // Query using 'uid' as primary key
   const { data, error } = await supabase.from('users').select('*').eq('uid', userId).single();
   if (error) {
       console.error("Error fetching user profile:", error);
       return null;
   }
   return {
-      uid: data.uid, // Map from 'uid'
+      uid: data.uid,
       email: data.email,
       name: data.name,
       username: data.username,
@@ -108,7 +107,7 @@ export const getUsers = async (): Promise<User[]> => {
     const { data, error } = await supabase.from('users').select('*');
     if (error) throw error;
     return data.map((u: any) => ({
-        uid: u.uid, // Map from 'uid'
+        uid: u.uid,
         email: u.email,
         name: u.name,
         username: u.username,
@@ -136,13 +135,11 @@ export const updateUser = async (uid: string, data: Partial<User>) => {
 };
 
 export const deleteUser = async (uid: string) => {
-    // Delete where 'uid' matches
     const { error } = await supabase.from('users').delete().eq('uid', uid);
     if (error) throw error;
 };
 
 export const approveMember = async (uid: string) => {
-    // Update where 'uid' matches
     const { error } = await supabase.from('users').update({ status: 'APPROVED' }).eq('uid', uid);
     if (error) throw error;
 };
@@ -210,7 +207,7 @@ export const toggleRSVP = async (activityId: string, userId: string, isJoining: 
 // --- Attendance ---
 
 export const getAttendance = async (userId: string): Promise<AttendanceRecord[]> => {
-    // Schema uses user_uid and joins with activities
+    // Schema uses user_uid (text) and joins with activities via activity_id (bigint)
     const { data, error } = await supabase
         .from('attendance')
         .select(`
@@ -238,7 +235,7 @@ export const getAttendance = async (userId: string): Promise<AttendanceRecord[]>
 };
 
 export const addAttendance = async (userId: string, record: Omit<AttendanceRecord, 'id' | 'userId'>) => {
-    // Schema uses user_uid, activity_id, status. recorded_at is automatic.
+    // Schema: user_uid (text), activity_id (bigint), status (text)
     const { error } = await supabase.from('attendance').insert({
         user_uid: userId,
         activity_id: record.activityId,
@@ -249,16 +246,17 @@ export const addAttendance = async (userId: string, record: Omit<AttendanceRecor
 
 export const markAttendanceOnLogin = async (userId: string) => {
     const today = new Date().toISOString().split('T')[0];
+    // This implies an activities table exists with a 'date' column (YYYY-MM-DD or date type)
     const { data: activities } = await supabase.from('activities').select('*').eq('date', today);
     
     if (activities && activities.length > 0) {
         for (const activity of activities) {
-            // Check if already recorded using user_uid
+            // Check if already recorded. Use maybeSingle to avoid error if not found.
             const { data: existing } = await supabase.from('attendance')
                 .select('*')
                 .eq('user_uid', userId)
                 .eq('activity_id', activity.id)
-                .single();
+                .maybeSingle();
             
             if (!existing) {
                 await supabase.from('attendance').insert({
@@ -289,8 +287,8 @@ export const getFeedItems = async (): Promise<FeedItem[]> => {
 };
 
 export const addFeedItem = async (item: { title: string, message: string, type: FeedItemType }, userId: string) => {
-    // Use 'uid' to find user
-    const { data: user } = await supabase.from('users').select('name, avatar_url').eq('uid', userId).single();
+    // Use 'uid' to find user in public.users
+    const { data: user } = await supabase.from('users').select('name, avatar_url').eq('uid', userId).maybeSingle();
     
     const { error } = await supabase.from('feed_items').insert({
         type: item.type,
@@ -324,8 +322,7 @@ export const getFeedComments = async (feedItemId: string): Promise<FeedComment[]
 };
 
 export const addFeedComment = async (feedItemId: string, userId: string, content: string): Promise<FeedComment> => {
-    // Use 'uid' to find user
-    const { data: user } = await supabase.from('users').select('name, avatar_url').eq('uid', userId).single();
+    const { data: user } = await supabase.from('users').select('name, avatar_url').eq('uid', userId).maybeSingle();
     
     const { data, error } = await supabase.from('feed_comments').insert({
         feed_item_id: feedItemId,
@@ -337,7 +334,7 @@ export const addFeedComment = async (feedItemId: string, userId: string, content
     
     if (error) throw error;
 
-    const { data: feedItem } = await supabase.from('feed_items').select('comment_count').eq('id', feedItemId).single();
+    const { data: feedItem } = await supabase.from('feed_items').select('comment_count').eq('id', feedItemId).maybeSingle();
     if (feedItem) {
         await supabase.from('feed_items').update({ comment_count: (feedItem.comment_count || 0) + 1 }).eq('id', feedItemId);
     }
@@ -533,6 +530,7 @@ export const deleteResource = async (resource: Resource) => {
 // --- Notifications ---
 
 export const getNotifications = async (userId: string): Promise<Notification[]> => {
+    // Using 'user_uid' as per schema patterns
     const { data, error } = await supabase.from('notifications').select('*').eq('user_uid', userId).order('created_at', { ascending: false });
     if (error) throw error;
     return data.map((n: any) => ({
@@ -558,7 +556,6 @@ export const markAllNotificationsAsRead = async (userId: string) => {
 // --- Chat ---
 
 export const getRooms = async (userId: string): Promise<Room[]> => {
-    // Rooms where participant_ids contains userId
     const { data, error } = await supabase.from('rooms').select('*').contains('participant_ids', [userId]);
     if (error) throw error;
     return data.map((r: any) => ({
@@ -666,8 +663,9 @@ export const getShowcaseItems = async (): Promise<ShowcaseItem[]> => {
     if (error) throw error;
     
     return Promise.all(data.map(async (item: any) => {
-        // Fetch user details
-        const { data: user } = await supabase.from('users').select('name, avatar_url').eq('uid', item.user_uid).single();
+        // Fetch user details from public.users table using user_uid
+        // Use maybeSingle to prevent failure if user is missing
+        const { data: user } = await supabase.from('users').select('name, avatar_url').eq('uid', item.user_uid).maybeSingle();
         
         return {
             id: item.id,
@@ -684,6 +682,7 @@ export const getShowcaseItems = async (): Promise<ShowcaseItem[]> => {
 };
 
 export const addShowcaseItem = async (userId: string, title: string, description: string, codeContent: string) => {
+    // Schema: user_uid (uuid), title (text), description (text), code_content (text), likes (text[])
     const { error } = await supabase.from('showcase_items').insert({
         user_uid: userId,
         title,
@@ -712,12 +711,11 @@ export const getSuggestions = async (): Promise<Suggestion[]> => {
     return Promise.all(data.map(async (s: any) => {
         let userName = 'Unknown';
         let userAvatarUrl = undefined;
-        // Check for user_uid (schema) or fallback to user_id if schema is different
         const userId = s.user_uid || s.user_id;
         
         if (userId) {
              // Use 'uid' to find user, matching the 'users' table schema
-             const { data: u } = await supabase.from('users').select('name, avatar_url').eq('uid', userId).single();
+             const { data: u } = await supabase.from('users').select('name, avatar_url').eq('uid', userId).maybeSingle();
              if (u) {
                  userName = u.name;
                  userAvatarUrl = u.avatar_url;
@@ -740,7 +738,6 @@ export const getSuggestions = async (): Promise<Suggestion[]> => {
 };
 
 export const addSuggestion = async (suggestion: { type: SuggestionType, title: string, description: string, userId: string }) => {
-    // Matches schema: 'user_uid' is the foreign key
     const { error } = await supabase.from('suggestions').insert({
         type: suggestion.type,
         title: suggestion.title,
@@ -807,7 +804,7 @@ export const getSubmissions = async (challengeId: string): Promise<ChallengeSubm
         let userAvatarUrl = undefined;
         if (s.user_id) {
              // Use 'uid' to find user
-             const { data: u } = await supabase.from('users').select('name, avatar_url').eq('uid', s.user_id).single();
+             const { data: u } = await supabase.from('users').select('name, avatar_url').eq('uid', s.user_id).maybeSingle();
              if (u) {
                  userName = u.name;
                  userAvatarUrl = u.avatar_url;
