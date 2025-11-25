@@ -23,13 +23,14 @@ const AssignmentsView: React.FC<AssignmentsViewProps> = (props) => {
         const unassigned: ProjectTask[] = [];
         const assigned: Record<string, ProjectTask[]> = {};
 
-        // FIX: Explicitly type `task` as ProjectTask to resolve 'unknown' type error from Object.values().
         Object.values(data.tasks).forEach((task: ProjectTask) => {
-            if (task.assigneeId) {
-                if (!assigned[task.assigneeId]) {
-                    assigned[task.assigneeId] = [];
-                }
-                assigned[task.assigneeId].push(task);
+            if (task.assigneeIds && task.assigneeIds.length > 0) {
+                task.assigneeIds.forEach(assigneeId => {
+                    if (!assigned[assigneeId]) {
+                        assigned[assigneeId] = [];
+                    }
+                    assigned[assigneeId].push(task);
+                });
             } else {
                 unassigned.push(task);
             }

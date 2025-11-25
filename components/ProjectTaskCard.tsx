@@ -45,16 +45,13 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = (props) => {
   const [isAssignDropdownOpen, setIsAssignDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Resolve single assignee object from ID
-  const assignee = task.assigneeId ? allUsers.find(u => u.uid === task.assigneeId) : null;
+  const assignees = task.assigneeIds.map(id => allUsers.find(u => u.uid === id)).filter(Boolean) as User[];
   const approvedMembers = allUsers.filter(u => u.status === 'APPROVED');
   const isCompleted = task.isCompleted;
 
-  // Determine if due date is passed
   const isOverdue = task.dueDate ? new Date(task.dueDate) < new Date() && !isCompleted : false;
 
-  // Allow completion toggling if user is a Patron OR is the assignee
-  const canToggleCompletion = isPatron || (task.assigneeId === currentUser.uid);
+  const canToggleCompletion = isPatron || task.assigneeIds.includes(currentUser.uid);
 
   useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
@@ -65,12 +62,6 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = (props) => {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const toggleAssignee = (e: React.MouseEvent, userId: string) => {
-      e.stopPropagation();
-      onToggleTaskAssignee(task.id, userId);
-      setIsAssignDropdownOpen(false);
-  };
 
   return (
     <div
@@ -123,7 +114,6 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = (props) => {
           </p>
       </div>
 
-      {/* Metadata Row: Due Date & Tags */}
       {(task.dueDate || (task.tags && task.tags.length > 0)) && (
           <div className="mt-2 pl-9 flex flex-wrap gap-2 transition-opacity duration-300" style={{ opacity: isCompleted ? 0.6 : 1 }}>
               {task.dueDate && (
@@ -141,15 +131,22 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = (props) => {
 
       <div className="pt-3 mt-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between relative">
         <div className="flex items-center min-w-0" onClick={e => e.stopPropagation()}>
-            {assignee ? (
-                <div className="flex items-center gap-2">
-                    <img
-                        src={assignee.avatarUrl || `https://i.pravatar.cc/24?u=${assignee.username}`}
-                        alt={assignee.name}
-                        className="w-6 h-6 rounded-full border-2 border-white dark:border-gray-800 object-cover"
-                        title={assignee.name}
-                    />
-                    <span className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[80px]">{assignee.name}</span>
+            {assignees.length > 0 ? (
+                <div className="flex -space-x-2 items-center">
+                    {assignees.slice(0, 3).map(user => (
+                        <img
+                            key={user.uid}
+                            src={user.avatarUrl || `https://i.pravatar.cc/24?u=${user.username}`}
+                            alt={user.name}
+                            className="w-6 h-6 rounded-full border-2 border-white dark:border-gray-800 object-cover"
+                            title={user.name}
+                        />
+                    ))}
+                    {assignees.length > 3 && (
+                         <div className="w-6 h-6 rounded-full border-2 border-white dark:border-gray-800 bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-[10px] font-bold text-gray-600 dark:text-gray-300">
+                            +{assignees.length - 3}
+                         </div>
+                    )}
                 </div>
             ) : (
                 <div className="flex items-center gap-2 opacity-50">
@@ -179,15 +176,15 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = (props) => {
                                 Assign to...
                             </div>
                             {approvedMembers.map(user => {
-                                const isAssigned = task.assigneeId === user.uid;
+                                const isAssigned = task.assigneeIds.includes(user.uid);
                                 return (
                                     <div 
                                         key={user.uid}
-                                        onClick={(e) => toggleAssignee(e, user.uid)}
+                                        onClick={() => onToggleTaskAssignee(task.id, user.uid)}
                                         className={`px-3 py-2 flex items-center gap-2 text-sm cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 ${isAssigned ? 'bg-pink-50 dark:bg-pink-900/10' : ''}`}
                                     >
-                                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 ${isAssigned ? 'bg-pink-500 border-pink-500' : 'border-gray-300 dark:border-gray-500'}`}>
-                                            {isAssigned && <div className="w-1.5 h-1.5 bg-white rounded-full"></div>}
+                                        <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${isAssigned ? 'bg-pink-500 border-pink-500' : 'border-gray-300 dark:border-gray-500'}`}>
+                                            {isAssigned && <CheckIcon className="w-3 h-3 text-white" />}
                                         </div>
                                         <img src={user.avatarUrl || `https://i.pravatar.cc/20?u=${user.username}`} className="w-5 h-5 rounded-full object-cover" alt="" />
                                         <span className={`truncate ${isAssigned ? 'text-pink-700 dark:text-pink-300 font-medium' : 'text-gray-700 dark:text-gray-300'}`}>

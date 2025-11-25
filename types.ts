@@ -66,8 +66,8 @@ export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH';
 export interface ProjectTask {
   id: string;
   content: string;
-  columnId: string; 
-  assigneeId: string | null; // Changed to single string for new schema
+  columnId: string;
+  assigneeIds: string[]; // Changed from assigneeId: string | null
   isCompleted?: boolean;
   priority: TaskPriority;
   dueDate?: string;

@@ -1,38 +1,43 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { ProjectTask, TaskPriority, User } from '../types';
 import { XIcon } from './icons/XIcon';
 import { CheckIcon } from './icons/CheckIcon';
+import { UserAddIcon } from './icons/UserAddIcon';
 
 interface EditTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
-  task?: ProjectTask; // If provided, we are editing. If null, creating.
+  task?: ProjectTask;
   currentUser: User;
-  onSave: (taskData: { content: string, priority: TaskPriority, dueDate?: string, tags: string[] }) => Promise<void>;
+  allUsers: User[];
+  onSave: (taskData: { content: string, priority: TaskPriority, dueDate?: string, tags: string[], assigneeIds: string[] }) => Promise<void>;
 }
 
-const EditTaskModal: React.FC<EditTaskModalProps> = ({ isOpen, onClose, task, currentUser, onSave }) => {
+const EditTaskModal: React.FC<EditTaskModalProps> = ({ isOpen, onClose, task, currentUser, allUsers, onSave }) => {
   const [content, setContent] = useState('');
   const [priority, setPriority] = useState<TaskPriority>('MEDIUM');
   const [dueDate, setDueDate] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
+  const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-        // Reset or Populate
         if (task) {
             setContent(task.content);
             setPriority(task.priority);
             setDueDate(task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '');
             setTags(task.tags || []);
+            setAssigneeIds(task.assigneeIds || []);
         } else {
             setContent('');
             setPriority('MEDIUM');
             setDueDate('');
             setTags([]);
+            setAssigneeIds([]);
         }
         setNewTag('');
     }
@@ -54,6 +59,12 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ isOpen, onClose, task, cu
     setTags(tags.filter(t => t !== tagToRemove));
   };
 
+  const toggleAssignee = (userId: string) => {
+    setAssigneeIds(prev => 
+      prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim()) return;
@@ -64,7 +75,8 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ isOpen, onClose, task, cu
             content,
             priority,
             dueDate: dueDate || undefined,
-            tags
+            tags,
+            assigneeIds
         });
         onClose();
     } catch (error) {
@@ -74,10 +86,12 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ isOpen, onClose, task, cu
         setIsSubmitting(false);
     }
   };
+  
+  const approvedMembers = allUsers.filter(u => u.status === 'APPROVED');
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 relative border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full p-6 relative border border-gray-200 dark:border-gray-700">
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400">
             <XIcon />
         </button>
@@ -86,8 +100,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ isOpen, onClose, task, cu
             {task ? 'Edit Task' : 'New Task'}
         </h3>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Content */}
+        <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
             <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Task Description</label>
                 <textarea 
@@ -100,7 +113,6 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ isOpen, onClose, task, cu
                 />
             </div>
 
-            {/* Priority & Due Date */}
             <div className="grid grid-cols-2 gap-4">
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priority</label>
@@ -125,7 +137,28 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ isOpen, onClose, task, cu
                 </div>
             </div>
 
-            {/* Tags */}
+            <div>
+                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assignees</label>
+                 <div className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg max-h-40 overflow-y-auto custom-scrollbar">
+                     {approvedMembers.map(user => {
+                         const isAssigned = assigneeIds.includes(user.uid);
+                         return (
+                            <div 
+                                key={user.uid} 
+                                onClick={() => toggleAssignee(user.uid)}
+                                className={`flex items-center gap-3 p-2 rounded-md cursor-pointer ${isAssigned ? 'bg-pink-50 dark:bg-pink-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                            >
+                                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${isAssigned ? 'bg-pink-500 border-pink-500' : 'border-gray-300 dark:border-gray-500'}`}>
+                                    {isAssigned && <CheckIcon className="w-3 h-3 text-white"/>}
+                                </div>
+                                <img src={user.avatarUrl} className="w-6 h-6 rounded-full" alt={user.name}/>
+                                <span className={`text-sm ${isAssigned ? 'font-semibold text-pink-800 dark:text-pink-300' : 'text-gray-700 dark:text-gray-300'}`}>{user.name}</span>
+                            </div>
+                         );
+                     })}
+                 </div>
+            </div>
+
             <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tags (Press Enter)</label>
                 <div className="flex flex-wrap gap-2 mb-2">
@@ -145,20 +178,18 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ isOpen, onClose, task, cu
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500 focus:border-pink-500 text-sm"
                 />
             </div>
-
-            <button 
-                type="submit" 
-                disabled={isSubmitting}
-                className="w-full py-2.5 bg-pink-600 hover:bg-pink-700 text-white font-semibold rounded-lg shadow-md transition-all flex items-center justify-center gap-2 mt-4"
-            >
-                {isSubmitting ? 'Saving...' : (
-                    <>
-                        <CheckIcon /> Save Task
-                    </>
-                )}
-            </button>
-
         </form>
+        <button 
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="w-full py-2.5 bg-pink-600 hover:bg-pink-700 text-white font-semibold rounded-lg shadow-md transition-all flex items-center justify-center gap-2 mt-4"
+        >
+            {isSubmitting ? 'Saving...' : (
+                <>
+                    <CheckIcon /> Save Task
+                </>
+            )}
+        </button>
       </div>
     </div>
   );

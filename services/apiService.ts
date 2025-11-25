@@ -389,10 +389,34 @@ export const addFeedComment = async (feedItemId: string, userId: string, content
 // --- Projects ---
 
 export const getProjectData = async (): Promise<ProjectData | null> => {
+    // Fetch columns, tasks, and assignments in separate queries for robustness.
     const { data: columns, error: colError } = await supabase.from('project_columns').select('*').order('column_order');
+    if (colError) {
+        console.error("Failed to get project columns:", colError);
+        throw colError;
+    }
+
     const { data: tasks, error: taskError } = await supabase.from('project_tasks').select('*').order('created_at', { ascending: true });
-    
-    if (colError || taskError) return null;
+    if (taskError) {
+        console.error("Failed to get project tasks:", taskError);
+        throw taskError;
+    }
+
+    const { data: assignments, error: assignError } = await supabase.from('project_task_assignees').select('task_id, user_uid');
+    if (assignError) {
+        console.error("Failed to get task assignments:", assignError);
+        throw assignError;
+    }
+
+    // Create a map of taskId -> [userIds] for easy lookup
+    const assignmentsMap = new Map<string, string[]>();
+    assignments.forEach(a => {
+        const taskIdStr = String(a.task_id);
+        if (!assignmentsMap.has(taskIdStr)) {
+            assignmentsMap.set(taskIdStr, []);
+        }
+        assignmentsMap.get(taskIdStr)!.push(a.user_uid);
+    });
 
     const projectData: ProjectData = {
         tasks: {},
@@ -401,11 +425,12 @@ export const getProjectData = async (): Promise<ProjectData | null> => {
     };
 
     tasks.forEach((t: any) => {
-        projectData.tasks[t.id] = {
-            id: String(t.id),
+        const taskIdStr = String(t.id);
+        projectData.tasks[taskIdStr] = {
+            id: taskIdStr,
             content: t.content,
             columnId: String(t.column_id),
-            assigneeId: t.assignee_uid, // Use assignee_uid (single)
+            assigneeIds: assignmentsMap.get(taskIdStr) || [], // Populate from the map
             isCompleted: t.is_completed,
             priority: t.priority,
             dueDate: t.due_date,
@@ -414,49 +439,84 @@ export const getProjectData = async (): Promise<ProjectData | null> => {
     });
 
     columns.forEach((c: any) => {
-        // Filter tasks that belong to this column
-        const colTasks = tasks.filter((t: any) => String(t.column_id) === String(c.id));
+        const colIdStr = String(c.id);
+        const colTasks = tasks.filter((t: any) => String(t.column_id) === colIdStr);
         const taskIds = colTasks.map((t: any) => String(t.id));
 
-        projectData.columns[c.id] = {
-            id: String(c.id),
+        projectData.columns[colIdStr] = {
+            id: colIdStr,
             title: c.title,
             taskIds: taskIds 
         };
-        projectData.columnOrder.push(String(c.id));
+        projectData.columnOrder.push(colIdStr);
     });
 
     return projectData;
 };
 
-export const addProjectTask = async (taskData: { content: string, priority: TaskPriority, dueDate?: string, tags: string[] }, userId: string, columnId: string) => {
-    const { error } = await supabase.from('project_tasks').insert({
+
+export const addProjectTask = async (taskData: { content: string, priority: TaskPriority, dueDate?: string, tags: string[], assigneeIds: string[] }, userId: string, columnId: string) => {
+    // 1. Insert the task and get its ID
+    const { data: newTask, error: taskInsertError } = await supabase.from('project_tasks').insert({
         content: taskData.content,
         priority: taskData.priority,
         due_date: taskData.dueDate,
         tags: taskData.tags,
         column_id: columnId,
-        assignee_uid: null,
-        is_completed: false
-    });
+        is_completed: false,
+    }).select('id').single();
     
-    if (error) throw error;
+    if (taskInsertError) throw taskInsertError;
+
+    const newTaskId = newTask.id;
+
+    // 2. If there are assignees, add them to the join table
+    if (taskData.assigneeIds && taskData.assigneeIds.length > 0) {
+        const assignmentRecords = taskData.assigneeIds.map(assigneeId => ({
+            task_id: newTaskId,
+            user_uid: assigneeId
+        }));
+        
+        const { error: assignmentError } = await supabase.from('project_task_assignees').insert(assignmentRecords);
+        if (assignmentError) throw assignmentError;
+
+        // 3. Send notifications
+        const { data: assigner } = await supabase.from('users').select('name').eq('uid', userId).single();
+        if (!assigner) return;
+
+        const notifications = taskData.assigneeIds
+            .filter(id => id !== userId)
+            .map(assigneeId => ({
+                user_uid: assigneeId,
+                message: `${assigner.name} assigned you a new task: "${taskData.content}"`,
+                is_read: false,
+                link_to: 'projects' as Tab
+            }));
+        
+        if (notifications.length > 0) {
+            await supabase.from('notifications').insert(notifications);
+        }
+    }
 };
 
-export const updateProjectTask = async (taskId: string, data: Partial<ProjectTask>) => {
+export const updateProjectTask = async (taskId: string, data: Partial<ProjectTask>, assigner: { uid: string, name: string }) => {
     const updates: any = {};
     if (data.content) updates.content = data.content;
     if (data.priority) updates.priority = data.priority;
     if (data.dueDate) updates.due_date = data.dueDate;
     if (data.tags) updates.tags = data.tags;
     if (data.isCompleted !== undefined) updates.is_completed = data.isCompleted;
-    if (data.assigneeId !== undefined) updates.assignee_uid = data.assigneeId; // Map assigneeId to assignee_uid
 
     const { error } = await supabase.from('project_tasks').update(updates).eq('id', taskId);
     if (error) throw error;
+
+    if (data.assigneeIds !== undefined) {
+        await updateTaskAssignees(taskId, data.assigneeIds, assigner);
+    }
 };
 
 export const deleteProjectTask = async (taskId: string, columnId: string) => {
+    // With `ON DELETE CASCADE` in the schema, deleting a task will auto-delete its assignments.
     const { error } = await supabase.from('project_tasks').delete().eq('id', taskId);
     if (error) throw error;
 };
@@ -466,33 +526,49 @@ export const moveProjectTask = async (taskId: string, destinationColumnId: strin
     if (error) throw error;
 };
 
-export const updateTaskAssignee = async (taskId: string, assigneeId: string | null, assigner: { uid: string, name: string }) => {
-    // Get task details before update to check old assignee
-    const { data: taskBeforeUpdate, error: taskFetchError } = await supabase
+export const updateTaskAssignees = async (taskId: string, newAssigneeIds: string[], assigner: { uid: string, name: string }) => {
+    // 1. Fetch old assignees and task content for notification logic
+    const { data: taskData, error: taskFetchError } = await supabase
         .from('project_tasks')
-        .select('content, assignee_uid')
+        .select('content')
         .eq('id', taskId)
         .single();
     if (taskFetchError) throw taskFetchError;
 
-    const oldAssigneeId = taskBeforeUpdate.assignee_uid;
+    const { data: oldAssignments } = await supabase.from('project_task_assignees').select('user_uid').eq('task_id', taskId);
+    const oldAssigneeIds = oldAssignments?.map(a => a.user_uid) || [];
 
-    // Perform the update
-    const { error } = await supabase.from('project_tasks').update({ assignee_uid: assigneeId }).eq('id', taskId);
-    if (error) throw error;
+    // 2. "Delete and replace" strategy for simplicity and correctness
+    const { error: deleteError } = await supabase.from('project_task_assignees').delete().eq('task_id', taskId);
+    if (deleteError) throw deleteError;
+    
+    // 3. Insert new assignments if any are provided
+    if (newAssigneeIds.length > 0) {
+        const newAssignmentRecords = newAssigneeIds.map(userId => ({
+            task_id: taskId,
+            user_uid: userId
+        }));
+        const { error: insertError } = await supabase.from('project_task_assignees').insert(newAssignmentRecords);
+        if (insertError) throw insertError;
+    }
+    
+    // 4. Send notifications to newly added assignees
+    const newlyAddedIds = newAssigneeIds.filter(id => !oldAssigneeIds.includes(id) && id !== assigner.uid);
 
-    // If new assignee exists, is different from old one, and is not the assigner themselves
-    if (assigneeId && assigneeId !== oldAssigneeId && assigneeId !== assigner.uid) {
+    if (newlyAddedIds.length > 0) {
         try {
-            await supabase.from('notifications').insert({
+            const notifications = newlyAddedIds.map(assigneeId => ({
                 user_uid: assigneeId,
-                message: `${assigner.name} assigned you a task: "${taskBeforeUpdate.content}"`,
+                message: `${assigner.name} assigned you a task: "${taskData.content}"`,
                 is_read: false,
-                link_to: 'projects'
-            });
+                link_to: 'projects' as Tab
+            }));
+
+            if (notifications.length > 0) {
+                await supabase.from('notifications').insert(notifications);
+            }
         } catch (notifError) {
-            console.error("Failed to send assignment notification:", notifError);
-            // Don't fail the whole operation if notification fails
+            console.error("Failed to send assignment notifications:", notifError);
         }
     }
 };
@@ -501,23 +577,19 @@ export const toggleProjectTaskCompletion = async (taskId: string, isCompleted: b
     const { error } = await supabase.from('project_tasks').update({ is_completed: isCompleted }).eq('id', taskId);
     if (error) throw error;
 
-    // If task is being marked as complete, notify patrons
     if (isCompleted) {
         try {
-            // Get user who completed the task
             const { data: user } = await supabase.from('users').select('name').eq('uid', userId).single();
-            if (!user) return; // User not found, can't create message
+            if (!user) return;
 
-            // Get task content
             const { data: task } = await supabase.from('project_tasks').select('content').eq('id', taskId).single();
-            if (!task) return; // Task not found
+            if (!task) return;
 
-            // Get all patrons but not the user who completed it if they are a patron
             const { data: patrons } = await supabase.from('users').select('uid').eq('role', 'PATRON');
 
             if (patrons && patrons.length > 0) {
                 const notifications = patrons
-                    .filter(p => p.uid !== userId) // Don't notify person who completed it
+                    .filter(p => p.uid !== userId)
                     .map((p: any) => ({
                         user_uid: p.uid,
                         message: `${user.name} completed the task: "${task.content}"`,
@@ -531,7 +603,6 @@ export const toggleProjectTaskCompletion = async (taskId: string, isCompleted: b
             }
         } catch (notifError) {
             console.error("Failed to send task completion notification:", notifError);
-            // Don't fail the whole operation
         }
     }
 };
