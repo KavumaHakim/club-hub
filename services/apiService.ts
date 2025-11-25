@@ -1,31 +1,29 @@
 
 import { supabase } from './supabaseClient';
-import { 
-  User, Activity, AttendanceRecord, FeedItem, ProjectData, 
-  ProjectTask, Resource, Notification, Room, Message, 
-  ShowcaseItem, Suggestion, Challenge, ChallengeSubmission,
-  FeedItemType, TaskPriority, SuggestionType, SuggestionStatus,
-  ActivityCategory, ResourceType, ResourceCategory,
-  ProjectColumn, FeedComment
-} from '../types';
+import { User, Activity, AttendanceRecord, FeedItem, ProjectData, ProjectTask, Resource, Notification, Room, Message, ShowcaseItem, Suggestion, Challenge, ChallengeSubmission, FeedComment, SuggestionType, SuggestionStatus, SubmissionStatus, ActivityCategory, FeedItemType, TaskPriority, ResourceCategory, ResourceType } from '../types';
 
-// --- Auth ---
+// --- Auth & User ---
 
 export const login = async (email: string, password?: string) => {
-  if (!password) throw new Error("Password required");
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (!password) throw new Error("Password is required for login");
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw error;
-  return data;
 };
 
-export const signUp = async (userData: any) => {
-  const { email, password, ...metadata } = userData;
+export const logout = async () => {
+  const { error } = await supabase.auth.signOut();
+  if (error) throw error;
+};
+
+export const signUp = async (userData: Omit<User, 'uid' | 'role' | 'status' | 'avatarUrl'> & {password: string}) => {
   const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
+    email: userData.email,
+    password: userData.password,
     options: {
       data: {
-        ...metadata,
+        name: userData.name,
+        username: userData.username,
+        phoneNumber: userData.phoneNumber,
         role: 'MEMBER',
         status: 'PENDING'
       }
@@ -33,53 +31,120 @@ export const signUp = async (userData: any) => {
   });
   if (error) throw error;
   
-  // Create profile entry in public.users table
   if (data.user) {
-      await supabase.from('users').insert({
+      // Use 'uid' instead of 'id' for the users table insert
+      const { error: profileError } = await supabase.from('users').insert({
           uid: data.user.id,
-          email: email,
-          name: metadata.name,
-          username: metadata.username,
+          email: userData.email,
+          name: userData.name,
+          username: userData.username,
+          phone_number: userData.phoneNumber,
           role: 'MEMBER',
-          status: 'PENDING',
-          phone_number: metadata.phoneNumber
-      });
+          status: 'PENDING'
+      }).select().single();
+      
+      if (profileError && profileError.code !== '23505') { // Ignore unique violation if trigger exists
+          console.error("Error creating user profile:", profileError);
+      }
   }
-  return data;
 };
 
-export const signUpAsPatron = async (userData: any) => {
-    const { email, password, ...metadata } = userData;
+export const signUpAsPatron = async (userData: Omit<User, 'uid' | 'role' | 'status' | 'avatarUrl'> & {password: string}) => {
+    // Same as signUp but role is PATRON
     const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          ...metadata,
-          role: 'PATRON',
-          status: 'PENDING'
+        email: userData.email,
+        password: userData.password,
+        options: {
+            data: {
+                name: userData.name,
+                username: userData.username,
+                phoneNumber: userData.phoneNumber,
+                role: 'PATRON',
+                status: 'PENDING' 
+            }
         }
-      }
     });
     if (error) throw error;
 
     if (data.user) {
-      await supabase.from('users').insert({
-          uid: data.user.id,
-          email: email,
-          name: metadata.name,
-          username: metadata.username,
-          role: 'PATRON',
-          status: 'PENDING',
-          phone_number: metadata.phoneNumber
-      });
-  }
-    return data;
+        // Use 'uid' instead of 'id' for the users table insert
+        const { error: profileError } = await supabase.from('users').insert({
+            uid: data.user.id,
+            email: userData.email,
+            name: userData.name,
+            username: userData.username,
+            phone_number: userData.phoneNumber,
+            role: 'PATRON',
+            status: 'PENDING'
+        }).select().single();
+
+        if (profileError && profileError.code !== '23505') {
+            console.error("Error creating patron profile:", profileError);
+        }
+    }
 };
 
-export const logout = async () => {
-  const { error } = await supabase.auth.signOut();
-  if (error) throw error;
+export const getUserProfile = async (userId: string): Promise<User | null> => {
+  // Query using 'uid' instead of 'id'
+  const { data, error } = await supabase.from('users').select('*').eq('uid', userId).single();
+  if (error) {
+      console.error("Error fetching user profile:", error);
+      return null;
+  }
+  return {
+      uid: data.uid, // Map from 'uid'
+      email: data.email,
+      name: data.name,
+      username: data.username,
+      role: data.role,
+      status: data.status,
+      avatarUrl: data.avatar_url,
+      phoneNumber: data.phone_number,
+      badges: data.badges
+  };
+};
+
+export const getUsers = async (): Promise<User[]> => {
+    const { data, error } = await supabase.from('users').select('*');
+    if (error) throw error;
+    return data.map((u: any) => ({
+        uid: u.uid, // Map from 'uid'
+        email: u.email,
+        name: u.name,
+        username: u.username,
+        role: u.role,
+        status: u.status,
+        avatarUrl: u.avatar_url,
+        phoneNumber: u.phone_number,
+        badges: u.badges
+    }));
+};
+
+export const updateUser = async (uid: string, data: Partial<User>) => {
+    const updates: any = {};
+    if (data.name) updates.name = data.name;
+    if (data.username) updates.username = data.username;
+    if (data.role) updates.role = data.role;
+    if (data.status) updates.status = data.status;
+    if (data.avatarUrl) updates.avatar_url = data.avatarUrl;
+    if (data.phoneNumber) updates.phone_number = data.phoneNumber;
+    if (data.badges) updates.badges = data.badges;
+
+    // Update where 'uid' matches
+    const { error } = await supabase.from('users').update(updates).eq('uid', uid);
+    if (error) throw error;
+};
+
+export const deleteUser = async (uid: string) => {
+    // Delete where 'uid' matches
+    const { error } = await supabase.from('users').delete().eq('uid', uid);
+    if (error) throw error;
+};
+
+export const approveMember = async (uid: string) => {
+    // Update where 'uid' matches
+    const { error } = await supabase.from('users').update({ status: 'APPROVED' }).eq('uid', uid);
+    if (error) throw error;
 };
 
 export const changePassword = async (newPassword: string) => {
@@ -92,124 +157,149 @@ export const sendPasswordResetEmail = async (email: string) => {
     if (error) throw error;
 };
 
-export const resetPasswordWithOtp = async (email: string, token: string, password: string) => {
-    const { error } = await supabase.auth.verifyOtp({ email, token, type: 'recovery' });
+export const resetPasswordWithOtp = async (email: string, otp: string, newPassword: string) => {
+    const { error } = await supabase.auth.verifyOtp({ email, token: otp, type: 'recovery' });
     if (error) throw error;
-    await changePassword(password);
+    const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+    if (updateError) throw updateError;
 };
 
-// --- Users ---
+// --- Activities ---
 
-export const getUserProfile = async (userId: string): Promise<User | null> => {
-  const { data, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('uid', userId)
-    .single();
-  
-  if (error) return null;
-  
-  return {
-      uid: data.uid,
-      email: data.email,
-      name: data.name,
-      username: data.username,
-      role: data.role,
-      status: data.status,
-      avatarUrl: data.avatar_url,
-      phoneNumber: data.phone_number,
-      badges: data.badges || []
-  };
-};
-
-export const getUsers = async (): Promise<User[]> => {
-    const { data, error } = await supabase.from('users').select('*');
+export const getActivities = async (): Promise<Activity[]> => {
+    const { data, error } = await supabase.from('activities').select('*');
     if (error) throw error;
-    return data.map((u: any) => ({
-        uid: u.uid,
-        email: u.email,
-        name: u.name,
-        username: u.username,
-        role: u.role,
-        status: u.status,
-        avatarUrl: u.avatar_url,
-        phoneNumber: u.phone_number,
-        badges: u.badges || []
+    return data.map((a: any) => ({
+        id: String(a.id),
+        title: a.title,
+        date: a.date,
+        description: a.description,
+        location: a.location,
+        category: a.category,
+        rsvpUserIds: a.rsvp_user_ids || []
     }));
 };
 
-export const updateUser = async (uid: string, updates: Partial<User>) => {
-    const dbUpdates: any = {};
-    if (updates.name) dbUpdates.name = updates.name;
-    if (updates.username) dbUpdates.username = updates.username;
-    if (updates.role) dbUpdates.role = updates.role;
-    if (updates.status) dbUpdates.status = updates.status;
-    if (updates.avatarUrl) dbUpdates.avatar_url = updates.avatarUrl;
-    if (updates.phoneNumber) dbUpdates.phone_number = updates.phoneNumber;
-    if (updates.badges) dbUpdates.badges = updates.badges;
-
-    const { error } = await supabase.from('users').update(dbUpdates).eq('uid', uid);
+export const addActivity = async (activity: Omit<Activity, 'id' | 'rsvpUserIds'>) => {
+    const { error } = await supabase.from('activities').insert({
+        title: activity.title,
+        date: activity.date,
+        description: activity.description,
+        location: activity.location,
+        category: activity.category,
+        rsvp_user_ids: []
+    });
     if (error) throw error;
 };
 
-export const deleteUser = async (uid: string) => {
-    // Deleting from public.users table
-    const { error } = await supabase.from('users').delete().eq('uid', uid);
+export const toggleRSVP = async (activityId: string, userId: string, isJoining: boolean) => {
+    const { data: activity, error: fetchError } = await supabase.from('activities').select('rsvp_user_ids').eq('id', activityId).single();
+    if (fetchError) throw fetchError;
+    
+    let currentRsvps: string[] = activity.rsvp_user_ids || [];
+    if (isJoining) {
+        if (!currentRsvps.includes(userId)) currentRsvps.push(userId);
+    } else {
+        currentRsvps = currentRsvps.filter(id => id !== userId);
+    }
+
+    const { error } = await supabase.from('activities').update({ rsvp_user_ids: currentRsvps }).eq('id', activityId);
     if (error) throw error;
+};
+
+// --- Attendance ---
+
+export const getAttendance = async (userId: string): Promise<AttendanceRecord[]> => {
+    // Schema uses user_uid and joins with activities
+    const { data, error } = await supabase
+        .from('attendance')
+        .select(`
+            id,
+            user_uid,
+            activity_id,
+            status,
+            activities (
+                title,
+                date
+            )
+        `)
+        .eq('user_uid', userId);
+
+    if (error) throw error;
+
+    return data.map((r: any) => ({
+        id: String(r.id),
+        activityId: String(r.activity_id),
+        activityTitle: r.activities?.title || 'Unknown Activity',
+        date: r.activities?.date || '',
+        status: r.status,
+        userId: r.user_uid
+    }));
+};
+
+export const addAttendance = async (userId: string, record: Omit<AttendanceRecord, 'id' | 'userId'>) => {
+    // Schema uses user_uid, activity_id, status. recorded_at is automatic.
+    const { error } = await supabase.from('attendance').insert({
+        user_uid: userId,
+        activity_id: record.activityId,
+        status: record.status
+    });
+    if (error) throw error;
+};
+
+export const markAttendanceOnLogin = async (userId: string) => {
+    const today = new Date().toISOString().split('T')[0];
+    const { data: activities } = await supabase.from('activities').select('*').eq('date', today);
+    
+    if (activities && activities.length > 0) {
+        for (const activity of activities) {
+            // Check if already recorded using user_uid
+            const { data: existing } = await supabase.from('attendance')
+                .select('*')
+                .eq('user_uid', userId)
+                .eq('activity_id', activity.id)
+                .single();
+            
+            if (!existing) {
+                await supabase.from('attendance').insert({
+                    user_uid: userId,
+                    activity_id: activity.id,
+                    status: 'Present'
+                });
+            }
+        }
+    }
 };
 
 // --- Feed ---
 
 export const getFeedItems = async (): Promise<FeedItem[]> => {
-    // Manual fetch approach to avoid "Could not find relationship" errors if FKs are missing
-    const { data: items, error } = await supabase
-        .from('feed_items')
-        .select('*')
-        .order('created_at', { ascending: false });
-    
+    const { data, error } = await supabase.from('feed_items').select('*').order('created_at', { ascending: false });
     if (error) throw error;
-
-    if (!items || items.length === 0) return [];
-
-    // Collect distinct author IDs
-    const authorIds = [...new Set(items.map((item: any) => item.author_uid))].filter(Boolean);
-
-    // Fetch user details for these authors
-    let userMap = new Map<string, any>();
-    if (authorIds.length > 0) {
-        const { data: users, error: userError } = await supabase
-            .from('users')
-            .select('uid, name, avatar_url')
-            .in('uid', authorIds);
-        
-        if (!userError && users) {
-            userMap = new Map(users.map((u: any) => [u.uid, u]));
-        } else {
-            console.warn("Error fetching feed authors:", userError);
-        }
-    }
-    
-    return items.map((item: any) => {
-        const user = userMap.get(item.author_uid) as any;
-        return {
-            id: item.id,
-            type: item.type,
-            author: user?.name || 'Unknown',
-            authorAvatarUrl: user?.avatar_url,
-            timestamp: new Date(item.created_at).toLocaleString(),
-            title: item.title,
-            message: item.message, 
-            commentCount: item.likes || 0 
-        };
-    });
+    return data.map((item: any) => ({
+        id: item.id,
+        type: item.type,
+        author: item.author_name,
+        authorAvatarUrl: item.author_avatar_url,
+        timestamp: new Date(item.created_at).toLocaleString(),
+        title: item.title,
+        message: item.content,
+        commentCount: item.comment_count
+    }));
 };
 
 export const addFeedItem = async (item: { title: string, message: string, type: FeedItemType }, userId: string) => {
+    // Use 'uid' to find user
+    const { data: user } = await supabase.from('users').select('name, avatar_url').eq('uid', userId).single();
+    
     const { error } = await supabase.from('feed_items').insert({
         type: item.type,
         title: item.title,
-        message: item.message,
-        author_uid: userId,
+        content: item.message,
+        author_id: userId,
+        author_name: user?.name || 'Unknown',
+        author_avatar_url: user?.avatar_url,
+        comment_count: 0
     });
     if (error) throw error;
 };
@@ -219,152 +309,66 @@ export const deleteFeedItem = async (id: string) => {
     if (error) throw error;
 };
 
-export const getFeedComments = async (feedId: string): Promise<FeedComment[]> => {
-    const { data, error } = await supabase
-        .from('feed_comments')
-        .select('*')
-        .eq('feed_item_id', feedId)
-        .order('created_at', { ascending: true });
-    
+export const getFeedComments = async (feedItemId: string): Promise<FeedComment[]> => {
+    const { data, error } = await supabase.from('feed_comments').select('*').eq('feed_item_id', feedItemId).order('created_at', { ascending: true });
     if (error) throw error;
-
-    // Need to manually fetch user details because user_uid refs auth.users not public.users
-    // We'll fetch all public users involved
-    const userIds = [...new Set(data.map((c: any) => c.user_uid))];
-    const { data: users } = await supabase.from('users').select('uid, name, avatar_url').in('uid', userIds);
-    
-    const userMap = new Map(users?.map((u: any) => [u.uid, u]));
-
-    return data.map((c: any) => {
-        const user = userMap.get(c.user_uid) as any;
-        return {
-            id: c.id,
-            feedItemId: c.feed_item_id,
-            userId: c.user_uid,
-            userName: user?.name || 'Unknown User',
-            userAvatarUrl: user?.avatar_url || '',
-            content: c.content,
-            createdAt: new Date(c.created_at).toLocaleString()
-        };
-    });
+    return data.map((c: any) => ({
+        id: c.id,
+        feedItemId: c.feed_item_id,
+        userId: c.user_id,
+        userName: c.user_name,
+        userAvatarUrl: c.user_avatar_url,
+        content: c.content,
+        createdAt: new Date(c.created_at).toLocaleString()
+    }));
 };
 
-export const addFeedComment = async (feedId: string, userId: string, content: string): Promise<FeedComment> => {
-    const user = await getUserProfile(userId);
-    if (!user) throw new Error("User not found");
-
+export const addFeedComment = async (feedItemId: string, userId: string, content: string): Promise<FeedComment> => {
+    // Use 'uid' to find user
+    const { data: user } = await supabase.from('users').select('name, avatar_url').eq('uid', userId).single();
+    
     const { data, error } = await supabase.from('feed_comments').insert({
-        feed_item_id: feedId,
-        user_uid: userId,
+        feed_item_id: feedItemId,
+        user_id: userId,
+        user_name: user?.name || 'Unknown',
+        user_avatar_url: user?.avatar_url,
         content: content
     }).select().single();
     
     if (error) throw error;
+
+    const { data: feedItem } = await supabase.from('feed_items').select('comment_count').eq('id', feedItemId).single();
+    if (feedItem) {
+        await supabase.from('feed_items').update({ comment_count: (feedItem.comment_count || 0) + 1 }).eq('id', feedItemId);
+    }
+
     return {
         id: data.id,
         feedItemId: data.feed_item_id,
-        userId: data.user_uid,
-        userName: user.name,
-        userAvatarUrl: user.avatarUrl || '',
+        userId: data.user_id,
+        userName: data.user_name,
+        userAvatarUrl: data.user_avatar_url,
         content: data.content,
         createdAt: new Date(data.created_at).toLocaleString()
     };
 };
 
-// --- Activities ---
-
-export const getActivities = async (): Promise<Activity[]> => {
-    const { data, error } = await supabase.from('activities').select('*, activity_rsvps(user_uid)');
-    if (error) throw error;
-    return data.map((a: any) => ({
-        id: a.id,
-        title: a.title,
-        date: a.date,
-        description: a.description,
-        location: a.location,
-        category: a.category,
-        rsvpUserIds: a.activity_rsvps ? a.activity_rsvps.map((r: any) => r.user_uid) : []
-    }));
-};
-
-export const addActivity = async (activity: Omit<Activity, 'id' | 'rsvpUserIds'>) => {
-    const { error } = await supabase.from('activities').insert({
-        ...activity
-    });
-    if (error) throw error;
-};
-
-export const toggleRSVP = async (activityId: string, userId: string, isJoining: boolean) => {
-    if (isJoining) {
-        const { error } = await supabase.from('activity_rsvps').insert({
-            activity_id: activityId,
-            user_uid: userId
-        });
-        if (error) throw error;
-    } else {
-        const { error } = await supabase.from('activity_rsvps').delete()
-            .eq('activity_id', activityId)
-            .eq('user_uid', userId);
-        if (error) throw error;
-    }
-};
-
-// --- Attendance ---
-
-export const getAttendance = async (userId: string): Promise<AttendanceRecord[]> => {
-    // Uses user_uid column
-    const { data, error } = await supabase
-        .from('attendance')
-        .select('*, activities(title)') // Join to get title
-        .eq('user_uid', userId); 
-    if (error) throw error;
-    return data.map((a: any) => ({
-        id: a.id,
-        activityId: a.activity_id,
-        activityTitle: a.activities?.title || 'Unknown Activity',
-        date: a.recorded_at, // Or join date from activities if needed
-        status: a.status,
-        userId: a.user_uid
-    }));
-};
-
-export const addAttendance = async (userId: string, record: Omit<AttendanceRecord, 'id' | 'userId'>) => {
-    // Uses user_uid column
-    const { error } = await supabase.from('attendance').insert({
-        user_uid: userId, 
-        activity_id: record.activityId,
-        status: record.status
-    });
-    if (error) throw error;
-};
-
-export const markAttendanceOnLogin = async (userId: string) => {
-    const today = new Date().toISOString(); 
-    // Simple check if user attended anything today not implemented fully in backend logic
-};
-
 // --- Projects ---
 
-export const getProjectData = async (): Promise<ProjectData> => {
-    // Uses position column
-    const { data: columnsData, error: colError } = await supabase.from('project_columns').select('*').order('position');
-    const { data: tasksData, error: taskError } = await supabase.from('project_tasks').select('*');
+export const getProjectData = async (): Promise<ProjectData | null> => {
+    const { data: columns, error: colError } = await supabase.from('project_columns').select('*').order('order_index');
+    const { data: tasks, error: taskError } = await supabase.from('project_tasks').select('*');
     
-    if (colError) {
-        console.error("Error fetching project columns:", colError);
-        throw new Error(`Failed to fetch columns: ${colError.message}`);
-    }
-    if (taskError) {
-        console.error("Error fetching project tasks:", taskError);
-        throw new Error(`Failed to fetch tasks: ${taskError.message}`);
-    }
+    if (colError || taskError) return null;
 
-    const tasks: { [key: string]: ProjectTask } = {};
-    const columns: { [key: string]: ProjectColumn } = {};
-    const columnOrder: string[] = columnsData.map((c: any) => c.id);
+    const projectData: ProjectData = {
+        tasks: {},
+        columns: {},
+        columnOrder: []
+    };
 
-    tasksData.forEach((t: any) => {
-        tasks[t.id] = {
+    tasks.forEach((t: any) => {
+        projectData.tasks[t.id] = {
             id: t.id,
             content: t.content,
             assigneeIds: t.assignee_ids || [],
@@ -375,56 +379,83 @@ export const getProjectData = async (): Promise<ProjectData> => {
         };
     });
 
-    columnsData.forEach((c: any) => {
-        columns[c.id] = {
+    columns.forEach((c: any) => {
+        projectData.columns[c.id] = {
             id: c.id,
             title: c.title,
-            taskIds: tasksData.filter((t: any) => t.column_id === c.id).map((t: any) => t.id)
+            taskIds: c.task_ids || [] 
         };
+        projectData.columnOrder.push(c.id);
     });
 
-    return { tasks, columns, columnOrder };
+    return projectData;
 };
 
-export const addProjectTask = async (task: { content: string, priority: TaskPriority, dueDate?: string, tags: string[] }, userId: string) => {
-    // Uses position column for ordering reference if needed
-    const { data: columns } = await supabase.from('project_columns').select('id').order('position').limit(1);
-    if (!columns || columns.length === 0) throw new Error("No columns defined");
+export const addProjectTask = async (taskData: { content: string, priority: TaskPriority, dueDate?: string, tags: string[] }, userId: string) => {
+    const { data: task, error } = await supabase.from('project_tasks').insert({
+        content: taskData.content,
+        priority: taskData.priority,
+        due_date: taskData.dueDate,
+        tags: taskData.tags,
+        assignee_ids: [],
+        is_completed: false
+    }).select().single();
     
-    const columnId = columns[0].id;
-
-    const { error } = await supabase.from('project_tasks').insert({
-        content: task.content,
-        priority: task.priority,
-        due_date: task.dueDate,
-        tags: task.tags,
-        column_id: columnId,
-        created_by: userId,
-        assignee_ids: []
-    });
     if (error) throw error;
+
+    const { data: columns } = await supabase.from('project_columns').select('*').order('order_index').limit(1);
+    if (columns && columns.length > 0) {
+        const col = columns[0];
+        const newTaskIds = [...(col.task_ids || []), task.id];
+        await supabase.from('project_columns').update({ task_ids: newTaskIds }).eq('id', col.id);
+    }
 };
 
-export const updateProjectTask = async (taskId: string, updates: Partial<ProjectTask>) => {
-    const dbUpdates: any = {};
-    if (updates.content) dbUpdates.content = updates.content;
-    if (updates.priority) dbUpdates.priority = updates.priority;
-    if (updates.dueDate !== undefined) dbUpdates.due_date = updates.dueDate;
-    if (updates.tags) dbUpdates.tags = updates.tags;
-    if (updates.isCompleted !== undefined) dbUpdates.is_completed = updates.isCompleted;
-    
-    const { error } = await supabase.from('project_tasks').update(dbUpdates).eq('id', taskId);
-    if (error) throw error;
-};
+export const updateProjectTask = async (taskId: string, data: Partial<ProjectTask>) => {
+    const updates: any = {};
+    if (data.content) updates.content = data.content;
+    if (data.priority) updates.priority = data.priority;
+    if (data.dueDate) updates.due_date = data.dueDate;
+    if (data.tags) updates.tags = data.tags;
+    if (data.isCompleted !== undefined) updates.is_completed = data.isCompleted;
+    if (data.assigneeIds) updates.assignee_ids = data.assigneeIds;
 
-export const moveProjectTask = async (taskId: string, newColumnId: string) => {
-    const { error } = await supabase.from('project_tasks').update({ column_id: newColumnId }).eq('id', taskId);
+    const { error } = await supabase.from('project_tasks').update(updates).eq('id', taskId);
     if (error) throw error;
 };
 
 export const deleteProjectTask = async (taskId: string, columnId: string) => {
     const { error } = await supabase.from('project_tasks').delete().eq('id', taskId);
     if (error) throw error;
+
+    const { data: col } = await supabase.from('project_columns').select('task_ids').eq('id', columnId).single();
+    if (col) {
+        const newTaskIds = (col.task_ids || []).filter((id: string) => id !== taskId);
+        await supabase.from('project_columns').update({ task_ids: newTaskIds }).eq('id', columnId);
+    }
+};
+
+export const moveProjectTask = async (taskId: string, destinationColumnId: string) => {
+    const { data: columns } = await supabase.from('project_columns').select('*');
+    if (!columns) return;
+
+    let sourceColId = '';
+    for (const col of columns) {
+        if (col.task_ids && col.task_ids.includes(taskId)) {
+            sourceColId = col.id;
+            break;
+        }
+    }
+
+    if (sourceColId && sourceColId !== destinationColumnId) {
+        const sourceCol = columns.find((c: any) => c.id === sourceColId);
+        const newSourceTaskIds = sourceCol.task_ids.filter((id: string) => id !== taskId);
+        await supabase.from('project_columns').update({ task_ids: newSourceTaskIds }).eq('id', sourceColId);
+
+        const destCol = columns.find((c: any) => c.id === destinationColumnId);
+        const newDestTaskIds = [...(destCol.task_ids || []), taskId];
+        await supabase.from('project_columns').update({ task_ids: newDestTaskIds }).eq('id', destinationColumnId);
+    }
 };
 
 export const updateTaskAssignees = async (taskId: string, assigneeIds: string[]) => {
@@ -439,7 +470,7 @@ export const toggleProjectTaskCompletion = async (taskId: string, isCompleted: b
 
 // --- Resources ---
 
-export const getResources = async (): Promise<Resource[]> => {
+export const getResources = async (): Promise<Omit<Resource, 'uploaderName' | 'uploaderAvatarUrl'>[]> => {
     const { data, error } = await supabase.from('resources').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     return data.map((r: any) => ({
@@ -453,66 +484,89 @@ export const getResources = async (): Promise<Resource[]> => {
         url: r.url,
         filePath: r.file_path,
         uploaderUid: r.uploader_id,
-        uploaderName: '', 
-        uploaderAvatarUrl: ''
     }));
 };
 
-export const addResource = async (resource: Omit<Resource, 'id' | 'createdAt' | 'uploaderName' | 'uploaderAvatarUrl'>) => {
+export const uploadResourceFile = async (file: File, userId: string) => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+    const filePath = `${userId}/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage.from('resource_files').upload(filePath, file);
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage.from('resource_files').getPublicUrl(filePath);
+    return { url: data.publicUrl, path: filePath };
+};
+
+export const addResource = async (resource: {
+    title: string;
+    description: string;
+    category: ResourceCategory;
+    type: ResourceType;
+    url?: string;
+    filePath?: string;
+    uploaderUid: string;
+    topic?: string | null;
+}) => {
     const { error } = await supabase.from('resources').insert({
         title: resource.title,
         description: resource.description,
-        type: resource.type,
         category: resource.category,
-        topic: resource.topic,
+        type: resource.type,
         url: resource.url,
         file_path: resource.filePath,
-        uploader_id: resource.uploaderUid
+        uploader_id: resource.uploaderUid,
+        topic: resource.topic
     });
     if (error) throw error;
 };
 
 export const deleteResource = async (resource: Resource) => {
-    const { error } = await supabase.from('resources').delete().eq('id', resource.id);
-    if (error) throw error;
-    
     if (resource.filePath) {
         await supabase.storage.from('resource_files').remove([resource.filePath]);
     }
+    const { error } = await supabase.from('resources').delete().eq('id', resource.id);
+    if (error) throw error;
 };
 
-export const uploadResourceFile = async (file: File, userId: string) => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${userId}/${Date.now()}.${fileExt}`;
-    const { data, error } = await supabase.storage
-        .from('resource_files')
-        .upload(fileName, file);
-    
+// --- Notifications ---
+
+export const getNotifications = async (userId: string): Promise<Notification[]> => {
+    const { data, error } = await supabase.from('notifications').select('*').eq('user_uid', userId).order('created_at', { ascending: false });
     if (error) throw error;
-    
-    const { data: urlData } = supabase.storage.from('resource_files').getPublicUrl(fileName);
-    return { url: urlData.publicUrl, path: fileName };
+    return data.map((n: any) => ({
+        id: n.id,
+        message: n.message,
+        isRead: n.is_read,
+        createdAt: new Date(n.created_at).toLocaleString(),
+        linkTo: n.link_to,
+        userId: n.user_uid
+    }));
+};
+
+export const markNotificationAsRead = async (notificationId: string) => {
+    const { error } = await supabase.from('notifications').update({ is_read: true }).eq('id', notificationId);
+    if (error) throw error;
+};
+
+export const markAllNotificationsAsRead = async (userId: string) => {
+    const { error } = await supabase.from('notifications').update({ is_read: true }).eq('user_uid', userId);
+    if (error) throw error;
 };
 
 // --- Chat ---
 
 export const getRooms = async (userId: string): Promise<Room[]> => {
-    // Using metadata for participants as schema lacks a dedicated column or join table
-    // We specifically filter for rooms where the 'participants' array in metadata contains the userId
-    const { data, error } = await supabase
-        .from('rooms')
-        .select('*')
-        .contains('metadata', { participants: [userId] }) 
-        .order('updated_at', { ascending: false });
-    
+    // Rooms where participant_ids contains userId
+    const { data, error } = await supabase.from('rooms').select('*').contains('participant_ids', [userId]);
     if (error) throw error;
-    
     return data.map((r: any) => ({
         id: r.id,
         title: r.title,
         createdAt: r.created_at,
         updatedAt: r.updated_at,
-        participantIds: r.metadata?.participants || [], // Extract from metadata
+        participantIds: r.participant_ids,
         createdBy: r.created_by,
     }));
 };
@@ -520,55 +574,42 @@ export const getRooms = async (userId: string): Promise<Room[]> => {
 export const createRoom = async (title: string | null, participantIds: string[]): Promise<string> => {
     const { data, error } = await supabase.from('rooms').insert({
         title,
-        metadata: { participants: participantIds }, // Store in metadata
+        participant_ids: participantIds,
         created_by: participantIds[0]
     }).select().single();
     if (error) throw error;
     return data.id;
 };
 
+export const updateRoomTitle = async (roomId: string, newTitle: string) => {
+    const { error } = await supabase.from('rooms').update({ title: newTitle }).eq('id', roomId);
+    if (error) throw error;
+};
+
 export const deleteRoom = async (roomId: string) => {
+    await supabase.from('messages').delete().eq('room_id', roomId);
     const { error } = await supabase.from('rooms').delete().eq('id', roomId);
     if (error) throw error;
 };
 
-export const updateRoomTitle = async (roomId: string, title: string) => {
-    const { error } = await supabase.from('rooms').update({ title }).eq('id', roomId);
-    if (error) throw error;
-};
-
-export const addRoomMembers = async (roomId: string, newMemberIds: string[]) => {
-    // Fetch current metadata
-    const { data: room } = await supabase.from('rooms').select('metadata').eq('id', roomId).single();
-    const currentParticipants = room?.metadata?.participants || [];
-    const updatedParticipants = Array.from(new Set([...currentParticipants, ...newMemberIds]));
-    
-    const { error } = await supabase.from('rooms').update({ 
-        metadata: { ...room?.metadata, participants: updatedParticipants } 
-    }).eq('id', roomId);
-    
-    if (error) throw error;
+export const addRoomMembers = async (roomId: string, userIds: string[]) => {
+    const { data: room } = await supabase.from('rooms').select('participant_ids').eq('id', roomId).single();
+    if (room) {
+        const newParticipants = [...new Set([...room.participant_ids, ...userIds])];
+        await supabase.from('rooms').update({ participant_ids: newParticipants }).eq('id', roomId);
+    }
 };
 
 export const removeGroupMember = async (roomId: string, userId: string) => {
-    const { data: room } = await supabase.from('rooms').select('metadata').eq('id', roomId).single();
-    const currentParticipants = room?.metadata?.participants || [];
-    const updatedParticipants = currentParticipants.filter((id: string) => id !== userId);
-    
-    const { error } = await supabase.from('rooms').update({ 
-        metadata: { ...room?.metadata, participants: updatedParticipants } 
-    }).eq('id', roomId);
-    
-    if (error) throw error;
+    const { data: room } = await supabase.from('rooms').select('participant_ids').eq('id', roomId).single();
+    if (room) {
+        const newParticipants = room.participant_ids.filter((id: string) => id !== userId);
+        await supabase.from('rooms').update({ participant_ids: newParticipants }).eq('id', roomId);
+    }
 };
 
 export const getRoomMessages = async (roomId: string): Promise<Message[]> => {
-    const { data, error } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('room_id', roomId)
-        .order('created_at', { ascending: true });
-    
+    const { data, error } = await supabase.from('messages').select('*').eq('room_id', roomId).order('created_at', { ascending: true });
     if (error) throw error;
     return data.map((m: any) => ({
         id: m.id,
@@ -608,96 +649,43 @@ export const deleteMessage = async (messageId: string) => {
 };
 
 export const uploadChatFile = async (file: File, roomId: string, userId: string) => {
-    const fileName = `chat/${roomId}/${Date.now()}_${file.name}`;
-    const { error } = await supabase.storage.from('chat_files').upload(fileName, file);
-    if (error) throw error;
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${roomId}/${userId}/${Date.now()}.${fileExt}`;
     
+    const { error: uploadError } = await supabase.storage.from('chat_files').upload(fileName, file);
+    if (uploadError) throw uploadError;
+
     const { data } = supabase.storage.from('chat_files').getPublicUrl(fileName);
     return data.publicUrl;
-};
-
-// --- Notifications ---
-
-export const getNotifications = async (userId: string): Promise<Notification[]> => {
-    // Uses user_uid column as per corrected schema
-    const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_uid', userId)
-        .order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    
-    return data.map((n: any) => ({
-        id: n.id,
-        message: n.message,
-        isRead: n.is_read,
-        createdAt: new Date(n.created_at).toLocaleString(),
-        linkTo: n.link_to,
-        userId: n.user_uid
-    }));
-};
-
-export const markNotificationAsRead = async (id: string) => {
-    const { error } = await supabase.from('notifications').update({ is_read: true }).eq('id', id);
-    if (error) throw error;
-};
-
-export const markAllNotificationsAsRead = async (userId: string) => {
-    // Uses user_uid
-    const { error } = await supabase.from('notifications').update({ is_read: true }).eq('user_uid', userId);
-    if (error) throw error;
-};
-
-export const notifyAllUsers = async (message: string, linkTo?: string, excludeUserId?: string) => {
-    const { data: users } = await supabase.from('users').select('uid');
-    if (!users) return;
-
-    const notifications = users
-        .filter((u: any) => u.uid !== excludeUserId)
-        .map((u: any) => ({
-            user_uid: u.uid,
-            message,
-            link_to: linkTo,
-            is_read: false
-        }));
-    
-    if (notifications.length > 0) {
-        await supabase.from('notifications').insert(notifications);
-    }
 };
 
 // --- Showcase ---
 
 export const getShowcaseItems = async (): Promise<ShowcaseItem[]> => {
-    const { data, error } = await supabase
-        .from('showcase_items')
-        .select('*')
-        .order('created_at', { ascending: false });
-    
+    const { data, error } = await supabase.from('showcase_items').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     
-    return data.map((item: any) => ({
-        id: item.id,
-        createdAt: new Date(item.created_at).toLocaleDateString(),
-        userUid: item.user_id,
-        userName: item.user_name,
-        userAvatarUrl: item.user_avatar_url,
-        title: item.title,
-        description: item.description,
-        codeContent: item.code_content,
-        likes: item.likes || []
+    return Promise.all(data.map(async (item: any) => {
+        // Fetch user details
+        const { data: user } = await supabase.from('users').select('name, avatar_url').eq('uid', item.user_uid).single();
+        
+        return {
+            id: item.id,
+            createdAt: new Date(item.created_at).toLocaleDateString(),
+            userUid: item.user_uid,
+            userName: user?.name || 'Unknown Member',
+            userAvatarUrl: user?.avatar_url,
+            title: item.title,
+            description: item.description,
+            codeContent: item.code_content,
+            likes: item.likes || []
+        };
     }));
 };
 
 export const addShowcaseItem = async (userId: string, title: string, description: string, codeContent: string) => {
-    const user = await getUserProfile(userId);
-    if (!user) throw new Error("User not found");
-
     const { error } = await supabase.from('showcase_items').insert({
-        user_id: userId,
-        user_name: user.name,
-        user_avatar_url: user.avatarUrl,
+        user_uid: userId,
         title,
         description,
         code_content: codeContent,
@@ -707,53 +695,11 @@ export const addShowcaseItem = async (userId: string, title: string, description
 };
 
 export const toggleShowcaseLike = async (itemId: string, userId: string, currentLikes: string[]) => {
-    const newLikes = currentLikes.includes(userId) 
+    let newLikes = currentLikes.includes(userId) 
         ? currentLikes.filter(id => id !== userId)
         : [...currentLikes, userId];
-    
+        
     const { error } = await supabase.from('showcase_items').update({ likes: newLikes }).eq('id', itemId);
-    if (error) throw error;
-};
-
-// --- Playground Scripts ---
-
-export const listUserScripts = async (userId: string) => {
-    const { data, error } = await supabase.storage.from('user_scripts').list(userId);
-    if (error) throw error;
-    
-    return data.map(file => ({
-        name: file.name,
-        id: file.id,
-        lastModified: new Date(file.updated_at || file.created_at).toLocaleString(),
-        size: file.metadata?.size || 0
-    }));
-};
-
-export const saveUserScript = async (userId: string, fileName: string, content: string) => {
-    if (!fileName.endsWith('.py')) fileName += '.py';
-    
-    const { error } = await supabase.storage
-        .from('user_scripts')
-        .upload(`${userId}/${fileName}`, content, {
-            contentType: 'text/x-python',
-            upsert: true
-        });
-    if (error) throw error;
-};
-
-export const downloadUserScript = async (userId: string, fileName: string) => {
-    const { data, error } = await supabase.storage
-        .from('user_scripts')
-        .download(`${userId}/${fileName}`);
-    
-    if (error) throw error;
-    return await data.text();
-};
-
-export const deleteUserScript = async (userId: string, fileName: string) => {
-    const { error } = await supabase.storage
-        .from('user_scripts')
-        .remove([`${userId}/${fileName}`]);
     if (error) throw error;
 };
 
@@ -762,60 +708,73 @@ export const deleteUserScript = async (userId: string, fileName: string) => {
 export const getSuggestions = async (): Promise<Suggestion[]> => {
     const { data, error } = await supabase.from('suggestions').select('*').order('created_at', { ascending: false });
     if (error) throw error;
-    return data.map((s: any) => ({
-        id: s.id,
-        type: s.type,
-        title: s.title,
-        description: s.description,
-        userId: s.user_id,
-        userName: s.user_name,
-        userAvatarUrl: s.user_avatar_url,
-        status: s.status,
-        createdAt: s.created_at,
-        upvotes: s.upvotes || []
+    
+    return Promise.all(data.map(async (s: any) => {
+        let userName = 'Unknown';
+        let userAvatarUrl = undefined;
+        // Check for user_uid (schema) or fallback to user_id if schema is different
+        const userId = s.user_uid || s.user_id;
+        
+        if (userId) {
+             // Use 'uid' to find user, matching the 'users' table schema
+             const { data: u } = await supabase.from('users').select('name, avatar_url').eq('uid', userId).single();
+             if (u) {
+                 userName = u.name;
+                 userAvatarUrl = u.avatar_url;
+             }
+        }
+
+        return {
+            id: s.id,
+            type: s.type,
+            title: s.title,
+            description: s.description,
+            userId: userId,
+            userName: userName,
+            userAvatarUrl: userAvatarUrl,
+            status: s.status,
+            createdAt: new Date(s.created_at).toLocaleDateString(),
+            upvotes: s.upvotes || []
+        };
     }));
 };
 
 export const addSuggestion = async (suggestion: { type: SuggestionType, title: string, description: string, userId: string }) => {
-    const user = await getUserProfile(suggestion.userId);
-    if (!user) throw new Error("User not found");
-
+    // Matches schema: 'user_uid' is the foreign key
     const { error } = await supabase.from('suggestions').insert({
         type: suggestion.type,
         title: suggestion.title,
         description: suggestion.description,
-        user_id: suggestion.userId,
-        user_name: user.name,
-        user_avatar_url: user.avatarUrl,
+        user_uid: suggestion.userId, 
         status: 'PENDING',
         upvotes: []
     });
     if (error) throw error;
 };
 
-export const toggleSuggestionUpvote = async (id: string, userId: string, currentUpvotes: string[]) => {
-    const newUpvotes = currentUpvotes.includes(userId)
-        ? currentUpvotes.filter(uid => uid !== userId)
+export const toggleSuggestionUpvote = async (suggestionId: string, userId: string, currentUpvotes: string[]) => {
+    let newUpvotes = currentUpvotes.includes(userId)
+        ? currentUpvotes.filter(id => id !== userId)
         : [...currentUpvotes, userId];
     
-    const { error } = await supabase.from('suggestions').update({ upvotes: newUpvotes }).eq('id', id);
+    const { error } = await supabase.from('suggestions').update({ upvotes: newUpvotes }).eq('id', suggestionId);
     if (error) throw error;
 };
 
-export const deleteSuggestion = async (id: string) => {
-    const { error } = await supabase.from('suggestions').delete().eq('id', id);
+export const deleteSuggestion = async (suggestionId: string) => {
+    const { error } = await supabase.from('suggestions').delete().eq('id', suggestionId);
     if (error) throw error;
 };
 
-export const updateSuggestionStatus = async (id: string, status: SuggestionStatus, userId: string) => {
-    const { error } = await supabase.from('suggestions').update({ status }).eq('id', id);
+export const updateSuggestionStatus = async (suggestionId: string, status: string, userId: string) => {
+    const { error } = await supabase.from('suggestions').update({ status }).eq('id', suggestionId);
     if (error) throw error;
 };
 
 // --- Challenges ---
 
 export const getChallenges = async (): Promise<Challenge[]> => {
-    const { data, error } = await supabase.from('challenges').select('*').order('deadline', { ascending: true });
+    const { data, error } = await supabase.from('challenges').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     return data.map((c: any) => ({
         id: c.id,
@@ -830,23 +789,11 @@ export const getChallenges = async (): Promise<Challenge[]> => {
 
 export const addChallenge = async (challenge: { title: string, description: string, deadline: string, createdBy: string }) => {
     const { error } = await supabase.from('challenges').insert({
-        ...challenge,
+        title: challenge.title,
+        description: challenge.description,
+        deadline: challenge.deadline,
+        created_by: challenge.createdBy,
         status: 'ACTIVE'
-    });
-    if (error) throw error;
-};
-
-export const submitChallenge = async (challengeId: string, userId: string, content: string) => {
-    const user = await getUserProfile(userId);
-    if (!user) throw new Error("User not found");
-
-    const { error } = await supabase.from('challenge_submissions').insert({
-        challenge_id: challengeId,
-        user_id: userId,
-        user_name: user.name,
-        user_avatar_url: user.avatarUrl,
-        content,
-        status: 'PENDING'
     });
     if (error) throw error;
 };
@@ -854,35 +801,85 @@ export const submitChallenge = async (challengeId: string, userId: string, conte
 export const getSubmissions = async (challengeId: string): Promise<ChallengeSubmission[]> => {
     const { data, error } = await supabase.from('challenge_submissions').select('*').eq('challenge_id', challengeId);
     if (error) throw error;
-    return data.map((s: any) => ({
-        id: s.id,
-        challengeId: s.challenge_id,
-        userId: s.user_id,
-        userName: s.user_name,
-        userAvatarUrl: s.user_avatar_url,
-        content: s.content,
-        status: s.status,
-        submittedAt: s.created_at
+    
+    return Promise.all(data.map(async (s: any) => {
+        let userName = 'Unknown';
+        let userAvatarUrl = undefined;
+        if (s.user_id) {
+             // Use 'uid' to find user
+             const { data: u } = await supabase.from('users').select('name, avatar_url').eq('uid', s.user_id).single();
+             if (u) {
+                 userName = u.name;
+                 userAvatarUrl = u.avatar_url;
+             }
+        }
+        return {
+            id: s.id,
+            challengeId: s.challenge_id,
+            userId: s.user_id,
+            userName,
+            userAvatarUrl,
+            content: s.content,
+            status: s.status,
+            submittedAt: s.submitted_at
+        };
     }));
 };
 
-export const reviewSubmission = async (submissionId: string, status: 'APPROVED' | 'REJECTED', challengeTitle: string, userId: string) => {
+export const submitChallenge = async (challengeId: string, userId: string, content: string) => {
+    const { error } = await supabase.from('challenge_submissions').insert({
+        challenge_id: challengeId,
+        user_id: userId,
+        content,
+        status: 'PENDING'
+    });
+    if (error) throw error;
+};
+
+export const reviewSubmission = async (submissionId: string, status: string, challengeTitle: string, userId: string) => {
     const { error } = await supabase.from('challenge_submissions').update({ status }).eq('id', submissionId);
     if (error) throw error;
 
     if (status === 'APPROVED') {
-        // Award badge
-        const user = await getUserProfile(userId);
+        // Use 'uid' to find and update user
+        const { data: user } = await supabase.from('users').select('badges').eq('uid', userId).single();
         if (user) {
-            const currentBadges = user.badges || [];
-            if (!currentBadges.includes(challengeTitle)) {
-                await updateUser(userId, { badges: [...currentBadges, challengeTitle] });
+            const badges = user.badges || [];
+            if (!badges.includes(challengeTitle)) {
+                await supabase.from('users').update({ badges: [...badges, challengeTitle] }).eq('uid', userId);
             }
         }
     }
 };
 
-export const approveMember = async (uid: string): Promise<void> => {
-    await updateUser(uid, { status: 'APPROVED' });
-    await notifyAllUsers("A new member has joined the club! 🎉", "members", uid);
+// --- User Scripts (Playground) ---
+
+export const listUserScripts = async (userId: string) => {
+    const { data, error } = await supabase.storage.from('user_scripts').list(userId);
+    if (error) throw error;
+    return data.map(f => ({
+        name: f.name,
+        id: f.id,
+        lastModified: new Date(f.updated_at || f.created_at).toLocaleString(),
+        size: f.metadata.size
+    }));
+};
+
+export const saveUserScript = async (userId: string, name: string, content: string) => {
+    const path = `${userId}/${name}`;
+    const { error } = await supabase.storage.from('user_scripts').upload(path, content, { upsert: true });
+    if (error) throw error;
+};
+
+export const downloadUserScript = async (userId: string, name: string) => {
+    const path = `${userId}/${name}`;
+    const { data, error } = await supabase.storage.from('user_scripts').download(path);
+    if (error) throw error;
+    return await data.text();
+};
+
+export const deleteUserScript = async (userId: string, name: string) => {
+    const path = `${userId}/${name}`;
+    const { error } = await supabase.storage.from('user_scripts').remove([path]);
+    if (error) throw error;
 };

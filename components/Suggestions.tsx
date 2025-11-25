@@ -128,6 +128,9 @@ const SuggestionCard: React.FC<{
     const isAuthor = currentUser.uid === suggestion.userId;
     const hasVoted = suggestion.upvotes.includes(currentUser.uid);
 
+    // Fallback avatar if URL is missing
+    const avatarSrc = suggestion.userAvatarUrl || (suggestion.userId ? `https://i.pravatar.cc/24?u=${suggestion.userId}` : undefined);
+
     return (
         <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col gap-4 transition-all hover:shadow-md">
             <div className="flex justify-between items-start">
@@ -157,12 +160,18 @@ const SuggestionCard: React.FC<{
 
             <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
                 <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                    <img 
-                        src={suggestion.userAvatarUrl || `https://i.pravatar.cc/24?u=${suggestion.userId}`} 
-                        alt={suggestion.userName}
-                        className="w-6 h-6 rounded-full border border-gray-200 dark:border-gray-600"
-                    />
-                    <span className="font-medium">{suggestion.userName}</span>
+                    {avatarSrc ? (
+                        <img 
+                            src={avatarSrc} 
+                            alt={suggestion.userName || 'User'}
+                            className="w-6 h-6 rounded-full border border-gray-200 dark:border-gray-600 object-cover"
+                        />
+                    ) : (
+                        <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-[10px] font-bold text-gray-500 dark:text-gray-300">
+                            ?
+                        </div>
+                    )}
+                    <span className="font-medium">{suggestion.userName || 'Unknown User'}</span>
                     <span>•</span>
                     <span>{new Date(suggestion.createdAt).toLocaleDateString()}</span>
                 </div>
