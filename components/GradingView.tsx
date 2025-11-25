@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ProjectData, User, ProjectTask } from '../types';
 import * as api from '../services/apiService';
@@ -26,7 +25,9 @@ const GradingView: React.FC<GradingViewProps> = ({ data, allUsers, onGrade }) =>
         .sort((a: ProjectTask, b: ProjectTask) => (a.dueDate || '').localeCompare(b.dueDate || ''));
         
     const userMap = new Map<string, User>();
-    allUsers.forEach(user => userMap.set(user.uid, user));
+    if (allUsers) {
+        allUsers.forEach(user => userMap.set(user.uid, user));
+    }
 
     if (tasksWithSubmissions.length === 0) {
         return (

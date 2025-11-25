@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { StarIcon } from './icons/StarIcon';
 
@@ -27,7 +26,7 @@ const StarRating: React.FC<StarRatingProps> = ({ rating, onRate, disabled }) => 
           disabled={disabled}
           className={`transition-colors duration-150 ease-in-out focus:outline-none p-0.5 ${displayRating >= star ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'} ${!disabled ? 'hover:text-yellow-300' : ''}`}
           onMouseEnter={() => !disabled && setHoverRating(star)}
-          onClick={() => !disabled && onRate(star)}
+          onClick={() => !disabled && onRate && onRate(star)}
           aria-label={`Rate ${star} stars`}
         >
           <StarIcon 

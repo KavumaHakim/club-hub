@@ -1,6 +1,4 @@
-
-
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { CalendarIcon } from './icons/CalendarIcon';
 import { ClipboardListIcon } from './icons/ClipboardListIcon';
 import { ChatBubbleIcon } from './icons/ChatBubbleIcon';
@@ -29,105 +27,96 @@ const AnimatedFeatureCard: React.FC<{ children: React.ReactNode, delay?: number 
     return <div ref={ref} className="scroll-animate">{children}</div>
 }
 
+// Hacker Text Effect Component
+const HackerText: React.FC<{ text: string, className?: string }> = ({ text, className }) => {
+  const [displayText, setDisplayText] = useState(text);
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&";
+  const [isHovered, setIsHovered] = useState(false);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    let iterations = 0;
+
+    const animate = () => {
+        clearInterval(interval);
+        interval = setInterval(() => {
+            setDisplayText(prev => 
+                text.split("")
+                .map((char, index) => {
+                    if(index < iterations) return text[index];
+                    return letters[Math.floor(Math.random() * letters.length)];
+                })
+                .join("")
+            );
+            
+            if(iterations >= text.length) clearInterval(interval);
+            iterations += 1/2; // Speed of decoding
+        }, 40);
+    };
+
+    animate();
+
+    return () => clearInterval(interval);
+  }, [text, isHovered]); // Re-run on hover
+
+  return (
+    <span 
+        className={className} 
+        onMouseEnter={() => setIsHovered(!isHovered)} // Trigger re-animation
+    >
+        {displayText}
+    </span>
+  );
+};
+
 const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToPatronLogin }) => {
   return (
-    <div className="bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen flex flex-col">
+    <div className="bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen flex flex-col font-sans selection:bg-pink-500 selection:text-white">
       {/* Hero Section */}
-      <header className="min-h-[100dvh] flex flex-col items-center justify-center relative overflow-hidden p-6">
-        {/* Animated background shapes */}
-        <div className="absolute inset-0 z-0 opacity-50 dark:opacity-20 pointer-events-none">
-          <style>
-            {`
-              @keyframes float {
-                0% { transform: translateY(0) rotate(0deg); opacity: 1; border-radius: 20%; }
-                50% { opacity: 0.5; border-radius: 50%; }
-                100% { transform: translateY(-1000px) rotate(720deg); opacity: 0; border-radius: 20%; }
-              }
-              .shape {
-                position: absolute;
-                display: block;
-                list-style: none;
-                background: linear-gradient(to right, #EC4899, #8B5CF6);
-                animation: float 25s linear infinite;
-                bottom: -150px;
-              }
-              .shape:nth-child(1) { left: 25%; width: 80px; height: 80px; animation-delay: 0s; }
-              .shape:nth-child(2) { left: 10%; width: 20px; height: 20px; animation-delay: 2s; animation-duration: 12s; }
-              .shape:nth-child(3) { left: 70%; width: 20px; height: 20px; animation-delay: 4s; }
-              .shape:nth-child(4) { left: 40%; width: 60px; height: 60px; animation-delay: 0s; animation-duration: 18s; }
-              .shape:nth-child(5) { left: 65%; width: 20px; height: 20px; animation-delay: 0s; }
-              .shape:nth-child(6) { left: 75%; width: 110px; height: 110px; animation-delay: 3s; }
-              .shape:nth-child(7) { left: 35%; width: 150px; height: 150px; animation-delay: 7s; }
-              .shape:nth-child(8) { left: 50%; width: 25px; height: 25px; animation-delay: 15s; animation-duration: 45s; }
-              .shape:nth-child(9) { left: 20%; width: 15px; height: 15px; animation-delay: 2s; animation-duration: 35s; }
-              .shape:nth-child(10) { left: 85%; width: 150px; height: 150px; animation-delay: 0s; animation-duration: 11s; }
-            `}
-          </style>
-          <span className="shape"></span>
-          <span className="shape"></span>
-          <span className="shape"></span>
-          <span className="shape"></span>
-          <span className="shape"></span>
-          <span className="shape"></span>
-          <span className="shape"></span>
-          <span className="shape"></span>
-          <span className="shape"></span>
-          <span className="shape"></span>
+      <header className="min-h-[100dvh] flex flex-col items-center justify-center relative overflow-hidden p-6 bg-gray-50 dark:bg-gray-950">
+        
+        {/* Dynamic Background Grid & Glow */}
+        <div className="absolute inset-0 z-0">
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+            <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-pink-500 opacity-20 blur-[100px]"></div>
+            <div className="absolute right-0 bottom-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-purple-500 opacity-20 blur-[100px]"></div>
         </div>
 
-        <div className="text-center z-10 p-4 max-w-4xl mx-auto flex flex-col items-center">
-          <style>
-            {`
-              @keyframes fade-in-up {
-                  0% { opacity: 0; transform: translateY(20px); }
-                  100% { opacity: 1; transform: translateY(0); }
-              }
-              .animate-fade-in-up { animation: fade-in-up 1s ease-out forwards; opacity: 0; }
-
-              @keyframes letter-reveal {
-                0% {
-                  opacity: 0;
-                  transform: translateY(20px) scale(0.8) rotateX(-40deg);
-                }
-                100% {
-                  opacity: 1;
-                  transform: translateY(0) scale(1) rotateX(0);
-                }
-              }
-              .animate-letter-reveal {
-                display: inline-block;
-                transform-origin: bottom;
-                opacity: 0;
-                animation: letter-reveal 0.6s cubic-bezier(0.2, 0.8, 0.4, 1) forwards;
-              }
-            `}
-          </style>
+        <div className="text-center z-10 p-4 max-w-5xl mx-auto flex flex-col items-center">
           
-          {/* Logo or Icon could go here */}
-          
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-600 drop-shadow-sm pb-2">
-            {'ICT Club Hub'.split('').map((char, index) => (
-              <span key={index} className="animate-letter-reveal" style={{ animationDelay: `${index * 50}ms` }}>
-                  {char === ' ' ? '\u00A0' : char}
+          {/* Top Tagline */}
+          <div className="mb-6 animate-fade-in-up opacity-0" style={{ animationDelay: '0.1s' }}>
+              <span className="px-4 py-1.5 rounded-full text-xs font-bold bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-600 dark:text-gray-300 uppercase tracking-widest">
+                  Naggalama
               </span>
-            ))}
+          </div>
+
+          {/* Main Heading with Hacker Effect */}
+          <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-gray-900 via-gray-700 to-gray-900 dark:from-white dark:via-gray-200 dark:to-gray-400 drop-shadow-sm pb-4 leading-[1.1] sm:leading-tight">
+            <div className="flex flex-col items-center">
+                <HackerText text="ICT CLUB" className="bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 bg-clip-text text-transparent animate-gradient-x" />
+                <span className="text-gray-800 dark:text-white mt-[-10px] sm:mt-[-20px]">HUB</span>
+            </div>
           </h1>
           
-          <p className="mt-6 text-xl md:text-2xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto animate-fade-in-up leading-relaxed" style={{ animationDelay: '0.6s' }}>
-            Empowering students to connect, code, and create. <br className="hidden md:block"/> Your central hub for all club activities.
+          <p className="mt-8 text-lg md:text-2xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto animate-fade-in-up opacity-0 leading-relaxed font-light" style={{ animationDelay: '0.8s', animationFillMode: 'forwards' }}>
+            The ultimate platform for students to <span className="font-semibold text-pink-600 dark:text-pink-400">connect</span>, <span className="font-semibold text-purple-600 dark:text-purple-400">code</span>, and <span className="font-semibold text-indigo-600 dark:text-indigo-400">create</span> the future.
           </p>
           
-          <div className="mt-12 flex flex-col sm:flex-row items-center gap-4 w-full justify-center animate-fade-in-up" style={{ animationDelay: '0.9s' }}>
+          <div className="mt-12 flex flex-col sm:flex-row items-center gap-5 w-full justify-center animate-fade-in-up opacity-0" style={{ animationDelay: '1.2s', animationFillMode: 'forwards' }}>
               <button
                 onClick={onNavigateToLogin}
-                className="w-full sm:w-auto px-10 py-4 text-lg font-bold text-white bg-gradient-to-r from-pink-600 to-purple-600 rounded-xl shadow-lg hover:shadow-purple-500/30 hover:scale-105 transform transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-pink-500/50 dark:focus:ring-purple-500/50"
+                className="group relative w-full sm:w-auto px-10 py-4 text-lg font-bold text-white rounded-xl shadow-xl shadow-pink-500/20 overflow-hidden transition-all hover:scale-105 hover:shadow-pink-500/40 focus:outline-none focus:ring-4 focus:ring-pink-500/50"
               >
-                Enter the Hub
+                <div className="absolute inset-0 bg-gradient-to-r from-pink-600 to-purple-600 group-hover:from-pink-500 group-hover:to-purple-500 transition-all"></div>
+                <span className="relative flex items-center justify-center gap-2">
+                    Enter the Hub <span className="group-hover:translate-x-1 transition-transform">→</span>
+                </span>
               </button>
               
               <button
                 onClick={onNavigateToPatronLogin}
-                className="w-full sm:w-auto px-10 py-4 text-lg font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-750 transition-all duration-300"
+                className="w-full sm:w-auto px-10 py-4 text-lg font-medium text-gray-700 dark:text-gray-300 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all hover:scale-105"
               >
                 Patron Login
               </button>
@@ -141,50 +130,53 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToPatron
       </header>
       
       {/* Features Section */}
-      <section className="py-24 bg-gray-50 dark:bg-gray-950">
+      <section className="py-24 bg-white dark:bg-gray-900">
         <div className="container mx-auto px-6 max-w-6xl">
-            <div className="text-center mb-16">
-                <h2 className="text-4xl font-bold mb-4 text-gray-900 dark:text-white">Why ICT Club Hub?</h2>
-                <div className="w-24 h-1 bg-gradient-to-r from-pink-500 to-purple-600 mx-auto rounded-full"></div>
-                <p className="mt-4 text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">We've built a comprehensive platform to streamline your club experience and foster collaboration.</p>
+            <div className="text-center mb-20">
+                <h2 className="text-4xl md:text-5xl font-black mb-6 text-gray-900 dark:text-white tracking-tight">
+                    Everything you need.
+                </h2>
+                <p className="text-xl text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
+                    We've built a comprehensive suite of tools to streamline your club experience and foster collaboration.
+                </p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {/* Feature 1 */}
                 <AnimatedFeatureCard delay={0}>
-                  <div className="group p-8 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-xl shadow-gray-200/50 dark:shadow-none hover:shadow-2xl hover:shadow-pink-500/10 transition-all duration-300 hover:-translate-y-1">
-                      <div className="w-14 h-14 mb-6 rounded-2xl bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center text-pink-600 dark:text-pink-400 group-hover:scale-110 transition-transform duration-300">
+                  <div className="group p-8 h-full rounded-3xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700/50 hover:border-pink-200 dark:hover:border-pink-900 hover:bg-white dark:hover:bg-gray-800 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-pink-500/10">
+                      <div className="w-16 h-16 mb-8 rounded-2xl bg-pink-100 dark:bg-pink-900/20 flex items-center justify-center text-pink-600 dark:text-pink-400 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
                           <CalendarIcon />
                       </div>
-                      <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-gray-100">Track Activities</h3>
+                      <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Activities</h3>
                       <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                          Stay up-to-date with all club events, workshops, and meetings. View them in a list or calendar format and never miss an opportunity.
+                          Never miss a beat. Track workshops, hackathons, and meetings. RSVP instantly and keep your schedule synced.
                       </p>
                   </div>
                 </AnimatedFeatureCard>
                 
                 {/* Feature 2 */}
                 <AnimatedFeatureCard delay={100}>
-                  <div className="group p-8 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-xl shadow-gray-200/50 dark:shadow-none hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-300 hover:-translate-y-1">
-                      <div className="w-14 h-14 mb-6 rounded-2xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform duration-300">
+                  <div className="group p-8 h-full rounded-3xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700/50 hover:border-purple-200 dark:hover:border-purple-900 hover:bg-white dark:hover:bg-gray-800 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-purple-500/10">
+                      <div className="w-16 h-16 mb-8 rounded-2xl bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 dark:text-purple-400 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300">
                           <ClipboardListIcon />
                       </div>
-                      <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-gray-100">Project Management</h3>
+                      <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Projects</h3>
                       <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                          Organize and manage club projects with our interactive Kanban board. Assign tasks, track progress, and collaborate effectively.
+                          Collaborate like pros. Use our Kanban board to manage tasks, assign roles, review code, and ship projects faster.
                       </p>
                   </div>
                 </AnimatedFeatureCard>
                 
                 {/* Feature 3 */}
                 <AnimatedFeatureCard delay={200}>
-                  <div className="group p-8 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-xl shadow-gray-200/50 dark:shadow-none hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300 hover:-translate-y-1">
-                      <div className="w-14 h-14 mb-6 rounded-2xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform duration-300">
+                  <div className="group p-8 h-full rounded-3xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700/50 hover:border-indigo-200 dark:hover:border-indigo-900 hover:bg-white dark:hover:bg-gray-800 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-indigo-500/10">
+                      <div className="w-16 h-16 mb-8 rounded-2xl bg-indigo-100 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
                           <ChatBubbleIcon />
                       </div>
-                      <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-gray-100">Real-time Chat</h3>
+                      <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Community</h3>
                       <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                          Engage with fellow members through direct messages and group chats. Share ideas, ask questions, and build a community.
+                          Stay connected. Engage in real-time discussions, share resources, ask for help, and celebrate wins together.
                       </p>
                   </div>
                 </AnimatedFeatureCard>
@@ -192,22 +184,23 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToPatron
         </div>
       </section>
       
-      {/* Final CTA Section */}
-      <section className="py-24 bg-white dark:bg-gray-900">
-        <div className="container mx-auto px-6 text-center max-w-4xl">
-            <div className="p-12 rounded-3xl bg-gradient-to-br from-gray-900 to-gray-800 dark:from-gray-800 dark:to-gray-900 text-white shadow-2xl overflow-hidden relative">
-                {/* Decorative background circle */}
-                <div className="absolute top-0 right-0 -mt-20 -mr-20 w-80 h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-                <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-
+      {/* CTA Section */}
+      <section className="py-32 bg-gray-50 dark:bg-gray-950 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
+        <div className="container mx-auto px-6 text-center max-w-4xl relative z-10">
+            <div className="p-12 md:p-16 rounded-[2.5rem] bg-gradient-to-b from-gray-900 to-black dark:from-gray-800 dark:to-gray-900 text-white shadow-2xl overflow-hidden relative border border-gray-800">
+                
+                {/* Glowing orbs */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-pink-600/30 rounded-full blur-[120px] pointer-events-none"></div>
+                
                 <div className="relative z-10">
-                    <h2 className="text-4xl md:text-5xl font-bold mb-6">Ready to Join?</h2>
-                    <p className="mb-10 text-xl text-gray-300 max-w-2xl mx-auto">
-                        Become a part of our growing community of tech enthusiasts, makers, and future innovators.
+                    <h2 className="text-4xl md:text-6xl font-black mb-8 tracking-tight">Ready to join the club?</h2>
+                    <p className="mb-12 text-xl text-gray-300 max-w-2xl mx-auto font-light">
+                        Start your journey today. Become a part of the most innovative student community in Naggalama.
                     </p>
                     <button
                         onClick={onNavigateToLogin}
-                        className="px-10 py-4 text-lg font-bold text-gray-900 bg-white rounded-xl shadow-lg hover:bg-gray-50 transform hover:scale-105 transition-all duration-300"
+                        className="px-12 py-5 text-xl font-bold text-gray-900 bg-white rounded-2xl shadow-lg hover:bg-gray-50 hover:scale-105 transition-all duration-300"
                     >
                         Get Started Now
                     </button>
@@ -217,10 +210,12 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToPatron
       </section>
 
       {/* Footer */}
-      <footer className="py-8 bg-gray-100 dark:bg-gray-950 text-center text-gray-500 dark:text-gray-400 text-sm border-t border-gray-200 dark:border-gray-800">
-        <div className="container mx-auto px-6 flex flex-col items-center">
-            <p className="mb-2">&copy; {new Date().getFullYear()} ICT Club Naggalama. All rights reserved.</p>
-            <p className="text-xs text-gray-400">Built with <span className="text-pink-500">♥</span> for the love of tech.</p>
+      <footer className="py-10 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 text-center">
+        <div className="container mx-auto px-6">
+            <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-2">&copy; {new Date().getFullYear()} ICT Club Naggalama. All rights reserved.</p>
+            <p className="text-xs text-gray-400 dark:text-gray-600 flex items-center justify-center gap-1">
+                Made with <span className="text-pink-500 animate-pulse">♥</span> and Code
+            </p>
         </div>
       </footer>
     </div>

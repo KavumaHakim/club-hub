@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 export const StarIcon: React.FC<{ className?: string; filled?: boolean }> = ({ className, filled }) => (
