@@ -161,16 +161,36 @@ export const deleteUser = async (uid: string) => {
 // --- Feed ---
 
 export const getFeedItems = async (): Promise<FeedItem[]> => {
-    // Join with users table using author_uid to get author details
-    const { data, error } = await supabase
+    // Manual fetch approach to avoid "Could not find relationship" errors if FKs are missing
+    const { data: items, error } = await supabase
         .from('feed_items')
-        .select('*, users:author_uid(name, avatar_url)')
+        .select('*')
         .order('created_at', { ascending: false });
     
     if (error) throw error;
+
+    if (!items || items.length === 0) return [];
+
+    // Collect distinct author IDs
+    const authorIds = [...new Set(items.map((item: any) => item.author_uid))].filter(Boolean);
+
+    // Fetch user details for these authors
+    let userMap = new Map<string, any>();
+    if (authorIds.length > 0) {
+        const { data: users, error: userError } = await supabase
+            .from('users')
+            .select('uid, name, avatar_url')
+            .in('uid', authorIds);
+        
+        if (!userError && users) {
+            userMap = new Map(users.map((u: any) => [u.uid, u]));
+        } else {
+            console.warn("Error fetching feed authors:", userError);
+        }
+    }
     
-    return data.map((item: any) => {
-        const user = item.users as { name: string; avatar_url: string } | null;
+    return items.map((item: any) => {
+        const user = userMap.get(item.author_uid) as any;
         return {
             id: item.id,
             type: item.type,
@@ -216,7 +236,7 @@ export const getFeedComments = async (feedId: string): Promise<FeedComment[]> =>
     const userMap = new Map(users?.map((u: any) => [u.uid, u]));
 
     return data.map((c: any) => {
-        const user = userMap.get(c.user_uid);
+        const user = userMap.get(c.user_uid) as any;
         return {
             id: c.id,
             feedItemId: c.feed_item_id,
@@ -478,6 +498,7 @@ export const uploadResourceFile = async (file: File, userId: string) => {
 
 export const getRooms = async (userId: string): Promise<Room[]> => {
     // Using metadata for participants as schema lacks a dedicated column or join table
+    // We specifically filter for rooms where the 'participants' array in metadata contains the userId
     const { data, error } = await supabase
         .from('rooms')
         .select('*')
