@@ -72,6 +72,8 @@ export interface ProjectTask {
   priority: TaskPriority;
   dueDate?: string;
   tags: string[];
+  submissionFilePath?: string;
+  submittedAt?: string;
 }
 
 export interface ProjectColumn {

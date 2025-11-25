@@ -1,3 +1,5 @@
+
+
 import React, { useState, useMemo } from 'react';
 import { ProjectData, ProjectTask, User } from '../types';
 import ProjectTaskCard from './ProjectTaskCard';
@@ -11,6 +13,8 @@ interface AssignmentsViewProps {
     onEditTask: (task: ProjectTask) => void;
     onDeleteTask: (taskId: string, columnId: string) => void;
     onToggleTaskCompletion: (taskId: string, currentStatus: boolean) => void;
+    onSubmitTaskFile: (taskId: string, file: File) => Promise<void>;
+    onDeleteSubmission: (taskId: string, filePath: string) => Promise<void>;
 }
 
 
@@ -83,6 +87,8 @@ const AssignmentsView: React.FC<AssignmentsViewProps> = (props) => {
                             onToggleTaskAssignee={props.onToggleTaskAssignee}
                             onToggleTaskCompletion={props.onToggleTaskCompletion}
                             onEditTask={props.onEditTask}
+                            onSubmitTaskFile={props.onSubmitTaskFile}
+                            onDeleteSubmission={props.onDeleteSubmission}
                         />
                     ))}
                     {unassignedTasks.length === 0 && <div className="h-24"></div>}
@@ -120,6 +126,8 @@ const AssignmentsView: React.FC<AssignmentsViewProps> = (props) => {
                                 onToggleTaskAssignee={props.onToggleTaskAssignee}
                                 onToggleTaskCompletion={props.onToggleTaskCompletion}
                                 onEditTask={props.onEditTask}
+                                onSubmitTaskFile={props.onSubmitTaskFile}
+                                onDeleteSubmission={props.onDeleteSubmission}
                             />
                         ))}
                          {(assignedTasks[member.uid] || []).length === 0 && <div className="h-24"></div>}

@@ -1,4 +1,5 @@
 
+
 import { supabase } from './supabaseClient';
 import { User, Activity, AttendanceRecord, FeedItem, ProjectData, ProjectTask, Resource, Notification, Room, Message, ShowcaseItem, Suggestion, Challenge, ChallengeSubmission, FeedComment, SuggestionType, SuggestionStatus, SubmissionStatus, ActivityCategory, FeedItemType, TaskPriority, ResourceCategory, ResourceType, Tab } from '../types';
 
@@ -434,7 +435,9 @@ export const getProjectData = async (): Promise<ProjectData | null> => {
             isCompleted: t.is_completed,
             priority: t.priority,
             dueDate: t.due_date,
-            tags: t.tags || []
+            tags: t.tags || [],
+            submissionFilePath: t.submission_file_path,
+            submittedAt: t.submitted_at,
         };
     });
 
@@ -607,6 +610,50 @@ export const toggleProjectTaskCompletion = async (taskId: string, isCompleted: b
     }
 };
 
+export const uploadTaskSubmission = async (taskId: string, file: File, userId: string) => {
+  const fileExt = file.name.split('.').pop();
+  const filePath = `${userId}/${taskId}/${Date.now()}.${fileExt}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('task_submissions')
+    .upload(filePath, file);
+
+  if (uploadError) throw uploadError;
+
+  const { error: updateError } = await supabase
+    .from('project_tasks')
+    .update({ submission_file_path: filePath, submitted_at: new Date().toISOString() })
+    .eq('id', taskId);
+
+  if (updateError) {
+    // If DB update fails, try to clean up the uploaded file
+    await supabase.storage.from('task_submissions').remove([filePath]);
+    throw updateError;
+  }
+
+  return filePath;
+};
+
+export const deleteTaskSubmission = async (taskId: string, filePath: string) => {
+  const { error: deleteError } = await supabase.storage
+    .from('task_submissions')
+    .remove([filePath]);
+
+  if (deleteError) throw deleteError;
+
+  const { error: updateError } = await supabase
+    .from('project_tasks')
+    .update({ submission_file_path: null, submitted_at: null })
+    .eq('id', taskId);
+  
+  if (updateError) throw updateError;
+};
+
+export const getSubmissionPublicUrl = (filePath: string) => {
+    const { data } = supabase.storage.from('task_submissions').getPublicUrl(filePath);
+    return data.publicUrl;
+}
+
 // --- Resources ---
 
 export const getResources = async (): Promise<Omit<Resource, 'uploaderName' | 'uploaderAvatarUrl'>[]> => {
@@ -631,10 +678,10 @@ export const uploadResourceFile = async (file: File, userId: string) => {
     const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
     const filePath = `${userId}/${fileName}`;
 
-    const { error: uploadError } = await supabase.storage.from('resource_files').upload(filePath, file);
+    const { error: uploadError } = await supabase.storage.from('resource_uploads').upload(filePath, file);
     if (uploadError) throw uploadError;
 
-    const { data } = supabase.storage.from('resource_files').getPublicUrl(filePath);
+    const { data } = supabase.storage.from('resource_uploads').getPublicUrl(filePath);
     return { url: data.publicUrl, path: filePath };
 };
 
@@ -663,7 +710,7 @@ export const addResource = async (resource: {
 
 export const deleteResource = async (resource: Resource) => {
     if (resource.filePath) {
-        await supabase.storage.from('resource_files').remove([resource.filePath]);
+        await supabase.storage.from('resource_uploads').remove([resource.filePath]);
     }
     const { error } = await supabase.from('resources').delete().eq('id', resource.id);
     if (error) throw error;

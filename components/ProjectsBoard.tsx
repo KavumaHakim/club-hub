@@ -195,6 +195,26 @@ const ProjectsBoard: React.FC<ProjectsBoardProps> = ({ currentUser }) => {
     }
   };
 
+  const handleSubmitTaskFile = async (taskId: string, file: File) => {
+    try {
+        await api.uploadTaskSubmission(taskId, file, currentUser.uid);
+        await fetchProjectData();
+    } catch (error: any) {
+        console.error("Failed to submit file:", error);
+        alert(`Could not submit file: ${error.message}`);
+    }
+  };
+
+  const handleDeleteSubmission = async (taskId: string, filePath: string) => {
+    try {
+        await api.deleteTaskSubmission(taskId, filePath);
+        await fetchProjectData();
+    } catch (error: any) {
+        console.error("Failed to delete submission:", error);
+        alert(`Could not delete submission: ${error.message}`);
+    }
+  };
+
   if (isLoadingProjects || isLoadingUsers) {
     return <div className="text-center p-8 text-gray-500 dark:text-gray-400">Loading project board...</div>;
   }
@@ -265,6 +285,8 @@ const ProjectsBoard: React.FC<ProjectsBoardProps> = ({ currentUser }) => {
                     onToggleTaskAssignee={handleToggleTaskAssignee}
                     onToggleTaskCompletion={handleToggleTaskCompletion}
                     onEditTask={handleOpenEditTaskModal}
+                    onSubmitTaskFile={handleSubmitTaskFile}
+                    onDeleteSubmission={handleDeleteSubmission}
                     />
                 );
                 })}
@@ -279,6 +301,8 @@ const ProjectsBoard: React.FC<ProjectsBoardProps> = ({ currentUser }) => {
                 onEditTask={handleOpenEditTaskModal}
                 onDeleteTask={handleDeleteTaskClick}
                 onToggleTaskCompletion={handleToggleTaskCompletion}
+                onSubmitTaskFile={handleSubmitTaskFile}
+                onDeleteSubmission={handleDeleteSubmission}
             />
         )}
 

@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { ProjectColumn as ProjectColumnType, ProjectTask, User } from '../types';
 import ProjectTaskCard from './ProjectTaskCard';
@@ -19,6 +20,8 @@ interface ProjectColumnProps {
   onToggleTaskAssignee: (taskId: string, userId: string) => void;
   onToggleTaskCompletion: (taskId: string, currentStatus: boolean) => void;
   onEditTask: (task: ProjectTask) => void;
+  onSubmitTaskFile: (taskId: string, file: File) => Promise<void>;
+  onDeleteSubmission: (taskId: string, filePath: string) => Promise<void>;
 }
 
 const getDragAfterElement = (container: HTMLElement, y: number) => {
@@ -39,7 +42,8 @@ const getDragAfterElement = (container: HTMLElement, y: number) => {
 const ProjectColumn: React.FC<ProjectColumnProps> = (props) => {
   const { 
     column, tasks, allUsers, isPatron, currentUser, draggedItemId, dropIndicator, setDropIndicator,
-    onDragStart, onDrop, onDeleteTask, onToggleTaskAssignee, onToggleTaskCompletion, onEditTask
+    onDragStart, onDrop, onDeleteTask, onToggleTaskAssignee, onToggleTaskCompletion, onEditTask,
+    onSubmitTaskFile, onDeleteSubmission
   } = props;
   
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -91,6 +95,8 @@ const ProjectColumn: React.FC<ProjectColumnProps> = (props) => {
                     onToggleTaskAssignee={onToggleTaskAssignee}
                     onToggleTaskCompletion={onToggleTaskCompletion}
                     onEditTask={onEditTask}
+                    onSubmitTaskFile={onSubmitTaskFile}
+                    onDeleteSubmission={onDeleteSubmission}
                 />
             </React.Fragment>
         ))}
