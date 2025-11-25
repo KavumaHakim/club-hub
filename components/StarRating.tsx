@@ -1,16 +1,16 @@
+
 import React, { useState } from 'react';
 import { StarIcon } from './icons/StarIcon';
 
 interface StarRatingProps {
   rating: number | null | undefined;
-  onRate: (newRating: number) => void;
+  onRate?: (newRating: number) => void;
   disabled?: boolean;
 }
 
 const StarRating: React.FC<StarRatingProps> = ({ rating, onRate, disabled }) => {
   const [hoverRating, setHoverRating] = useState(0);
   
-  // Ensure we always have a number for comparison, default to 0 if null/undefined
   const currentRating = typeof rating === 'number' ? rating : 0;
   const displayRating = hoverRating || currentRating;
 
@@ -24,13 +24,13 @@ const StarRating: React.FC<StarRatingProps> = ({ rating, onRate, disabled }) => 
           key={star}
           type="button"
           disabled={disabled}
-          className={`transition-colors duration-150 ease-in-out focus:outline-none p-0.5 ${displayRating >= star ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'} ${!disabled ? 'hover:text-yellow-300' : ''}`}
+          className={`transition-all duration-200 ease-in-out focus:outline-none p-0.5 transform ${!disabled ? 'hover:scale-110' : ''} ${displayRating >= star ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`}
           onMouseEnter={() => !disabled && setHoverRating(star)}
           onClick={() => !disabled && onRate && onRate(star)}
           aria-label={`Rate ${star} stars`}
         >
           <StarIcon 
-            className={`w-6 h-6 transition-transform duration-150 ${!disabled ? 'hover:scale-110' : ''}`}
+            className="w-6 h-6"
             filled={displayRating >= star}
           />
         </button>

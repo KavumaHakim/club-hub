@@ -325,7 +325,13 @@ const App: React.FC = () => {
     if (view === 'patronSignUp') {
         return <PatronSignUp onSignUp={handlePatronSignUp} onNavigateToLogin={() => setView('patronLogin')} />;
     }
-    return <Welcome onNavigateToLogin={() => setView('login')} onNavigateToPatronLogin={() => setView('patronLogin')} />;
+    return (
+      <Welcome 
+        onNavigateToLogin={() => setView('login')} 
+        onNavigateToSignUp={() => setView('signup')}
+        onNavigateToPatronLogin={() => setView('patronLogin')} 
+      />
+    );
   };
 
   return (

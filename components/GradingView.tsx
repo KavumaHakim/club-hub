@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ProjectData, User, ProjectTask } from '../types';
 import * as api from '../services/apiService';
@@ -5,7 +6,7 @@ import StarRating from './StarRating';
 import { DocumentTextIcon } from './icons/DocumentTextIcon';
 
 interface GradingViewProps {
-    data: ProjectData;
+    data: ProjectData | null;
     allUsers: User[];
     onGrade: (taskId: string, userId: string, grade: number) => void;
 }
@@ -58,7 +59,7 @@ const GradingView: React.FC<GradingViewProps> = ({ data, allUsers, onGrade }) =>
                             const fileName = submission?.filePath ? submission.filePath.split('/').pop() : 'File';
                             
                             return (
-                                <div key={userId} className="p-4 flex flex-col md:flex-row items-center justify-between gap-4 hover:bg-gray-50/50 dark:hover:bg-gray-700/20">
+                                <div key={userId} className="p-4 flex flex-col md:flex-row items-center justify-between gap-4 hover:bg-gray-50/50 dark:hover:bg-gray-700/20 transition-colors">
                                     <div className="flex items-center gap-3 flex-1 w-full md:w-auto">
                                         <img 
                                             src={user.avatarUrl || `https://i.pravatar.cc/40?u=${user.username}`}
