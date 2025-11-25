@@ -825,9 +825,11 @@ export const getSubmissions = async (challengeId: string): Promise<ChallengeSubm
     return Promise.all(data.map(async (s: any) => {
         let userName = 'Unknown';
         let userAvatarUrl = undefined;
-        if (s.user_id) {
+        
+        // Use user_uid as per schema
+        if (s.user_uid) {
              // Use 'uid' to find user
-             const { data: u } = await supabase.from('users').select('name, avatar_url').eq('uid', s.user_id).maybeSingle();
+             const { data: u } = await supabase.from('users').select('name, avatar_url').eq('uid', s.user_uid).maybeSingle();
              if (u) {
                  userName = u.name;
                  userAvatarUrl = u.avatar_url;
@@ -836,12 +838,12 @@ export const getSubmissions = async (challengeId: string): Promise<ChallengeSubm
         return {
             id: s.id,
             challengeId: s.challenge_id,
-            userId: s.user_id,
+            userId: s.user_uid, // mapped from user_uid
             userName,
             userAvatarUrl,
             content: s.content,
             status: s.status,
-            submittedAt: s.submitted_at
+            submittedAt: s.created_at // mapped from created_at
         };
     }));
 };
@@ -849,7 +851,7 @@ export const getSubmissions = async (challengeId: string): Promise<ChallengeSubm
 export const submitChallenge = async (challengeId: string, userId: string, content: string) => {
     const { error } = await supabase.from('challenge_submissions').insert({
         challenge_id: challengeId,
-        user_id: userId,
+        user_uid: userId, // mapped to user_uid
         content,
         status: 'PENDING'
     });

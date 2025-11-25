@@ -9,11 +9,13 @@ import { XIcon } from './icons/XIcon';
 import { CopyIcon } from './icons/CopyIcon';
 import { GlobeIcon } from './icons/GlobeIcon'; 
 import { ShareIcon } from './icons/ShareIcon';
+import { TrophyIcon } from './icons/TrophyIcon';
 import Editor from '@monaco-editor/react';
 import { User, Tab } from '../types';
 import * as api from '../services/apiService';
 import ConfirmationModal from './ConfirmationModal';
 import ShareCodeModal from './ShareCodeModal';
+import SubmitToChallengeModal from './SubmitToChallengeModal';
 import { useData } from '../DataContext';
 
 interface CodePlaygroundProps {
@@ -152,6 +154,9 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
 
   // Share State
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+
+  // Submit to Challenge State
+  const [isSubmitChallengeModalOpen, setIsSubmitChallengeModalOpen] = useState(false);
 
   // Copy Feedback
   const [copyFeedback, setCopyFeedback] = useState(false);
@@ -541,6 +546,14 @@ builtins.input = custom_input_async
                 <GlobeIcon />
                 <span className="hidden sm:inline">Publish</span>
             </button>
+            <button
+                onClick={() => setIsSubmitChallengeModalOpen(true)}
+                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-yellow-500 hover:bg-yellow-600 rounded-lg transition-colors shadow-sm"
+                title="Submit to Challenge"
+            >
+                <TrophyIcon />
+                <span className="hidden sm:inline">Submit</span>
+            </button>
             <div className="h-6 w-px bg-gray-300 dark:bg-gray-600 mx-2 hidden sm:block"></div>
             <button
                 onClick={handleRunCode}
@@ -776,6 +789,13 @@ builtins.input = custom_input_async
       <ShareCodeModal 
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
+        code={code}
+        currentUser={currentUser}
+      />
+
+      <SubmitToChallengeModal 
+        isOpen={isSubmitChallengeModalOpen}
+        onClose={() => setIsSubmitChallengeModalOpen(false)}
         code={code}
         currentUser={currentUser}
       />
