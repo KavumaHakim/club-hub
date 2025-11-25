@@ -623,7 +623,7 @@ export const toggleProjectTaskCompletion = async (taskId: string, isCompleted: b
 
 export const uploadTaskSubmission = async (taskId: string, file: File, userId: string) => {
   const fileExt = file.name.split('.').pop();
-  const filePath = `${userId}/${taskId}/${Date.now()}.${fileExt}`;
+  const filePath = `submissions/${taskId}/${userId}/${Date.now()}.${fileExt}`;
 
   const { error: uploadError } = await supabase.storage
     .from('resource_uploads')
