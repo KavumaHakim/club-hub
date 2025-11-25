@@ -373,7 +373,7 @@ const ReviewSubmissionsModal: React.FC<{
                                     <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-600 mb-3 relative group">
                                         <button 
                                             onClick={() => handleRunCode(sub.content, sub.userName)}
-                                            className="absolute top-2 right-2 p-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-md text-gray-500 dark:text-gray-400 transition-all opacity-0 group-hover:opacity-100 shadow-sm border border-gray-200 dark:border-gray-600"
+                                            className="absolute top-2 right-2 p-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-md text-gray-500 dark:text-gray-400 transition-all shadow-sm border border-gray-200 dark:border-gray-600"
                                             title="Run Code"
                                         >
                                             <PlayIcon className="w-4 h-4" />
