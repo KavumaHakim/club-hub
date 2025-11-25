@@ -11,6 +11,7 @@ import PatronSignUp from './components/PatronSignUp';
 import PendingApprovalModal from './components/PendingApprovalModal';
 import FeatureTourModal from './components/FeatureTourModal';
 import CustomCursor from './components/CustomCursor';
+import Notifications from './components/Notifications';
 import * as api from './services/apiService';
 import { supabase } from './services/supabaseClient';
 import { MenuIcon } from './components/icons/MenuIcon';
@@ -245,16 +246,27 @@ const App: React.FC = () => {
               onToggleCollapse={handleSidebarCollapseToggle}
             />
             <div className="flex-1 flex flex-col w-full h-full relative overflow-hidden transition-all duration-300">
-               {/* Mobile Header */}
-              <header className="md:hidden bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 flex items-center justify-between p-4 sticky top-0 z-20 flex-shrink-0">
-                <button onClick={handleSidebarToggle} className="text-gray-600 dark:text-gray-300 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Open menu">
-                  <MenuIcon />
-                </button>
-                <h1 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600">
-                  ICT Club Hub
-                </h1>
-                <div className="w-6 h-6"></div> 
+               {/* Unified Header (Mobile & Desktop) */}
+              <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 flex items-center justify-between p-4 sticky top-0 z-20 flex-shrink-0">
+                <div className="flex items-center gap-3">
+                    <button onClick={handleSidebarToggle} className="md:hidden text-gray-600 dark:text-gray-300 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Open menu">
+                      <MenuIcon />
+                    </button>
+                    {/* Mobile Title */}
+                    <h1 className="md:hidden text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600">
+                      ICT Club Hub
+                    </h1>
+                    {/* Desktop Title */}
+                    <h1 className="hidden md:block text-xl font-bold text-gray-800 dark:text-white capitalize">
+                        {activeTab === 'chat' ? 'Messages' : activeTab.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </h1>
+                </div>
+                
+                <div className="flex items-center gap-4">
+                    <Notifications currentUser={user} setActiveTab={handleTabChange} isSidebarCollapsed={false} />
+                </div>
               </header>
+
               {/* Conditionally apply padding and overflow for chat/playground to allow full height */}
               <main className={`flex-1 h-full w-full ${(activeTab === 'chat' || activeTab === 'playground') ? 'overflow-hidden' : 'p-4 sm:p-6 lg:p-8 overflow-y-auto scroll-smooth custom-scrollbar'}`}>
                 <Dashboard

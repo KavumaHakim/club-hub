@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { useData } from '../DataContext';
 import * as api from '../services/apiService';
@@ -53,14 +54,14 @@ const Notifications: React.FC<NotificationsProps> = ({ currentUser, setActiveTab
         <div className="relative" ref={dropdownRef}>
             <button
               onClick={handleToggle}
-              className="relative p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="relative p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
               aria-label="Toggle notifications"
             >
                 <BellIcon />
                 {unreadCount > 0 && (
                     <span className="absolute top-0 right-0 flex h-4 w-4">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-4 w-4 bg-pink-500 text-white text-[10px] items-center justify-center">
+                        <span className="relative inline-flex rounded-full h-4 w-4 bg-pink-500 text-white text-[10px] items-center justify-center shadow-sm">
                             {unreadCount}
                         </span>
                     </span>
@@ -69,8 +70,8 @@ const Notifications: React.FC<NotificationsProps> = ({ currentUser, setActiveTab
 
             {isOpen && (
                 <div
-                    className="absolute bottom-full mb-2 left-0 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 z-50 transform transition-all duration-300 ease-in-out origin-bottom-left"
-                    style={{ transform: isOpen ? 'scale(1) translateY(0)' : 'scale(0.95) translateY(10px)', opacity: isOpen ? 1 : 0, pointerEvents: isOpen ? 'auto' : 'none' }}
+                    className="absolute top-full mt-2 right-0 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 z-50 transform transition-all duration-300 ease-in-out origin-top-right"
+                    style={{ transform: isOpen ? 'scale(1) translateY(0)' : 'scale(0.95) translateY(-10px)', opacity: isOpen ? 1 : 0, pointerEvents: isOpen ? 'auto' : 'none' }}
                 >
                     <div className="p-3 flex justify-between items-center border-b border-gray-200 dark:border-gray-700">
                         <h4 className="font-semibold text-gray-800 dark:text-gray-200">Notifications</h4>
@@ -80,7 +81,7 @@ const Notifications: React.FC<NotificationsProps> = ({ currentUser, setActiveTab
                             </button>
                         )}
                     </div>
-                    <div className="max-h-80 overflow-y-auto">
+                    <div className="max-h-80 overflow-y-auto custom-scrollbar">
                         {isLoadingNotifications ? (
                             <p className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">Loading...</p>
                         ) : notifications.length === 0 ? (

@@ -1,5 +1,4 @@
 
-
 import React, { useMemo, useEffect, useRef } from 'react';
 import { User, Tab } from '../types';
 import { LogoutIcon } from './icons/LogoutIcon';
@@ -21,7 +20,6 @@ import { GlobeIcon } from './icons/GlobeIcon';
 import { LightBulbIcon } from './icons/LightBulbIcon';
 import { TrophyIcon } from './icons/TrophyIcon';
 import { useData } from '../DataContext';
-import Notifications from './Notifications';
 
 
 interface SidebarProps {
@@ -331,7 +329,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, theme, onToggleTheme,
              )}
           </div>
 
-          {/* Action Row */}
+          {/* Action Row - Notifications removed */}
           <div className={`mt-4 flex items-center ${isCollapsed ? 'flex-col gap-3' : 'justify-between gap-2'}`}>
              <button
                 onClick={onToggleTheme}
@@ -341,10 +339,6 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, theme, onToggleTheme,
                 {theme === 'light' ? <MoonIcon /> : <SunIcon />}
              </button>
              
-             <div className={isCollapsed ? '' : 'mx-auto'}>
-                <Notifications currentUser={user} setActiveTab={setActiveTab} isSidebarCollapsed={isCollapsed} />
-             </div>
-
              <button
                 onClick={onLogout}
                 className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-700 hover:text-red-500 dark:hover:text-red-400 shadow-sm hover:shadow transition-all"
