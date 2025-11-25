@@ -1,4 +1,5 @@
 
+
 import React, { useRef, useEffect } from 'react';
 import { CalendarIcon } from './icons/CalendarIcon';
 import { ClipboardListIcon } from './icons/ClipboardListIcon';
@@ -77,30 +78,46 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToPatron
         <div className="text-center z-10 p-4 max-w-4xl mx-auto flex flex-col items-center">
           <style>
             {`
-              @keyframes fade-in-down {
-                  0% { opacity: 0; transform: translateY(-20px); }
-                  100% { opacity: 1; transform: translateY(0); }
-              }
               @keyframes fade-in-up {
                   0% { opacity: 0; transform: translateY(20px); }
                   100% { opacity: 1; transform: translateY(0); }
               }
-              .animate-fade-in-down { animation: fade-in-down 1s ease-out forwards; opacity: 0; }
               .animate-fade-in-up { animation: fade-in-up 1s ease-out forwards; opacity: 0; }
+
+              @keyframes letter-reveal {
+                0% {
+                  opacity: 0;
+                  transform: translateY(20px) scale(0.8) rotateX(-40deg);
+                }
+                100% {
+                  opacity: 1;
+                  transform: translateY(0) scale(1) rotateX(0);
+                }
+              }
+              .animate-letter-reveal {
+                display: inline-block;
+                transform-origin: bottom;
+                opacity: 0;
+                animation: letter-reveal 0.6s cubic-bezier(0.2, 0.8, 0.4, 1) forwards;
+              }
             `}
           </style>
           
           {/* Logo or Icon could go here */}
           
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-600 animate-fade-in-down drop-shadow-sm pb-2">
-            ICT Club Hub
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-600 drop-shadow-sm pb-2">
+            {'ICT Club Hub'.split('').map((char, index) => (
+              <span key={index} className="animate-letter-reveal" style={{ animationDelay: `${index * 50}ms` }}>
+                  {char === ' ' ? '\u00A0' : char}
+              </span>
+            ))}
           </h1>
           
-          <p className="mt-6 text-xl md:text-2xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto animate-fade-in-up leading-relaxed" style={{ animationDelay: '0.3s' }}>
+          <p className="mt-6 text-xl md:text-2xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto animate-fade-in-up leading-relaxed" style={{ animationDelay: '0.6s' }}>
             Empowering students to connect, code, and create. <br className="hidden md:block"/> Your central hub for all club activities.
           </p>
           
-          <div className="mt-12 flex flex-col sm:flex-row items-center gap-4 w-full justify-center animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
+          <div className="mt-12 flex flex-col sm:flex-row items-center gap-4 w-full justify-center animate-fade-in-up" style={{ animationDelay: '0.9s' }}>
               <button
                 onClick={onNavigateToLogin}
                 className="w-full sm:w-auto px-10 py-4 text-lg font-bold text-white bg-gradient-to-r from-pink-600 to-purple-600 rounded-xl shadow-lg hover:shadow-purple-500/30 hover:scale-105 transform transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-pink-500/50 dark:focus:ring-purple-500/50"

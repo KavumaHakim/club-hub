@@ -1,6 +1,5 @@
 
-
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { User, ProjectData, ProjectTask, TaskPriority } from '../types';
 import * as api from '../services/apiService';
 import ProjectColumn from './ProjectColumn';
@@ -11,6 +10,8 @@ import ConfirmationModal from './ConfirmationModal';
 import { ViewGridIcon } from './icons/ViewGridIcon';
 import { UsersIcon } from './icons/UsersIcon';
 import AssignmentsView from './AssignmentsView';
+import { AcademicCapIcon } from './icons/AcademicCapIcon';
+import GradingView from './GradingView';
 
 interface ProjectsBoardProps {
   currentUser: User;
@@ -40,7 +41,7 @@ const ProjectsBoard: React.FC<ProjectsBoardProps> = ({ currentUser }) => {
   const [taskToDelete, setTaskToDelete] = useState<{taskId: string, columnId: string} | null>(null);
   
   // View State
-  const [viewMode, setViewMode] = useState<'board' | 'assignments'>('board');
+  const [viewMode, setViewMode] = useState<'board' | 'assignments' | 'grading'>('board');
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, taskId: string, colId: string) => {
     if (currentUser.role !== 'PATRON') return;
@@ -215,6 +216,24 @@ const ProjectsBoard: React.FC<ProjectsBoardProps> = ({ currentUser }) => {
     }
   };
 
+  const handleGradeSubmission = useCallback(async (taskId: string, userId: string, grade: number) => {
+      try {
+          await api.gradeSubmission(taskId, userId, grade);
+          // Optimistic update
+          if (data) {
+              const newData = JSON.parse(JSON.stringify(data));
+              if (newData.tasks[taskId]?.submissions?.[userId]) {
+                  newData.tasks[taskId].submissions[userId].grade = grade;
+                  setProjectData(newData);
+              }
+          }
+      } catch (error: any) {
+          console.error("Failed to grade submission:", error);
+          alert(`Could not save grade: ${error.message}`);
+          await fetchProjectData(); // Revert on failure
+      }
+  }, [data, setProjectData, fetchProjectData]);
+
   if (isLoadingProjects || isLoadingUsers) {
     return <div className="text-center p-8 text-gray-500 dark:text-gray-400">Loading project board...</div>;
   }
@@ -227,12 +246,76 @@ const ProjectsBoard: React.FC<ProjectsBoardProps> = ({ currentUser }) => {
     return <div className="text-center p-8 text-gray-500 dark:text-gray-400">No project data found.</div>;
   }
 
+  const renderCurrentView = () => {
+      switch(viewMode) {
+          case 'board':
+              return (
+                <div className="flex-1 flex space-x-4 overflow-x-auto pb-4 custom-scrollbar">
+                    {data.columnOrder.map(columnId => {
+                    const column = data.columns[columnId];
+                    const tasks = (column.taskIds || []).map(taskId => data.tasks[taskId]).filter(Boolean);
+                    return (
+                        <ProjectColumn
+                        key={column.id}
+                        column={column}
+                        tasks={tasks}
+                        allUsers={allUsers}
+                        isPatron={currentUser.role === 'PATRON'}
+                        currentUser={currentUser}
+                        draggedItemId={draggedItemId}
+                        dropIndicator={dropIndicator}
+                        setDropIndicator={setDropIndicator}
+                        onDragStart={handleDragStart}
+                        onDrop={handleDrop}
+                        onDeleteTask={handleDeleteTaskClick}
+                        onToggleTaskAssignee={handleToggleTaskAssignee}
+                        onToggleTaskCompletion={handleToggleTaskCompletion}
+                        onEditTask={handleOpenEditTaskModal}
+                        onSubmitTaskFile={handleSubmitTaskFile}
+                        onDeleteSubmission={handleDeleteSubmission}
+                        />
+                    );
+                    })}
+                </div>
+              );
+          case 'assignments':
+              return (
+                  <AssignmentsView 
+                    data={data}
+                    allUsers={allUsers}
+                    currentUser={currentUser}
+                    onSetAssignee={handleSetTaskAssignee}
+                    onToggleTaskAssignee={handleToggleTaskAssignee}
+                    onEditTask={handleOpenEditTaskModal}
+                    onDeleteTask={handleDeleteTaskClick}
+                    onToggleTaskCompletion={handleToggleTaskCompletion}
+                    onSubmitTaskFile={handleSubmitTaskFile}
+                    onDeleteSubmission={handleDeleteSubmission}
+                />
+              );
+          case 'grading':
+              return (
+                  <GradingView 
+                      data={data}
+                      allUsers={allUsers}
+                      onGrade={handleGradeSubmission}
+                  />
+              );
+          default:
+              return null;
+      }
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div className="mb-6 flex flex-col md:flex-row justify-between md:items-center gap-4">
         <div>
             <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200">Club Projects</h2>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">{viewMode === 'board' ? 'Track tasks across workflow stages.' : 'Assign tasks to team members.'}</p>
+            <p className="text-gray-500 dark:text-gray-400 mt-1">{
+                viewMode === 'board' ? 'Track tasks across workflow stages.' : 
+                viewMode === 'assignments' ? 'Assign tasks to team members.' :
+                'Review and grade member submissions.'
+            }</p>
         </div>
         <div className="flex items-center gap-2">
             {/* View Toggle */}
@@ -251,6 +334,15 @@ const ProjectsBoard: React.FC<ProjectsBoardProps> = ({ currentUser }) => {
                 >
                     <UsersIcon /> <span className="text-sm font-medium pr-2 hidden sm:inline">Assignments</span>
                 </button>
+                {currentUser.role === 'PATRON' && (
+                    <button
+                        onClick={() => setViewMode('grading')}
+                        className={`p-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 ${viewMode === 'grading' ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-pink-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                        title="Grading View"
+                    >
+                        <AcademicCapIcon /> <span className="text-sm font-medium pr-2 hidden sm:inline">Grading</span>
+                    </button>
+                )}
             </div>
             {currentUser.role === 'PATRON' && (
                  <button
@@ -263,49 +355,8 @@ const ProjectsBoard: React.FC<ProjectsBoardProps> = ({ currentUser }) => {
             )}
         </div>
       </div>
-        {viewMode === 'board' ? (
-            <div className="flex-1 flex space-x-4 overflow-x-auto pb-4 custom-scrollbar">
-                {data.columnOrder.map(columnId => {
-                const column = data.columns[columnId];
-                const tasks = (column.taskIds || []).map(taskId => data.tasks[taskId]).filter(Boolean);
-                return (
-                    <ProjectColumn
-                    key={column.id}
-                    column={column}
-                    tasks={tasks}
-                    allUsers={allUsers}
-                    isPatron={currentUser.role === 'PATRON'}
-                    currentUser={currentUser}
-                    draggedItemId={draggedItemId}
-                    dropIndicator={dropIndicator}
-                    setDropIndicator={setDropIndicator}
-                    onDragStart={handleDragStart}
-                    onDrop={handleDrop}
-                    onDeleteTask={handleDeleteTaskClick}
-                    onToggleTaskAssignee={handleToggleTaskAssignee}
-                    onToggleTaskCompletion={handleToggleTaskCompletion}
-                    onEditTask={handleOpenEditTaskModal}
-                    onSubmitTaskFile={handleSubmitTaskFile}
-                    onDeleteSubmission={handleDeleteSubmission}
-                    />
-                );
-                })}
-            </div>
-        ) : (
-            <AssignmentsView 
-                data={data}
-                allUsers={allUsers}
-                currentUser={currentUser}
-                onSetAssignee={handleSetTaskAssignee}
-                onToggleTaskAssignee={handleToggleTaskAssignee}
-                onEditTask={handleOpenEditTaskModal}
-                onDeleteTask={handleDeleteTaskClick}
-                onToggleTaskCompletion={handleToggleTaskCompletion}
-                onSubmitTaskFile={handleSubmitTaskFile}
-                onDeleteSubmission={handleDeleteSubmission}
-            />
-        )}
 
+        {renderCurrentView()}
 
       <EditTaskModal 
         isOpen={isEditModalOpen}

@@ -72,7 +72,7 @@ export interface ProjectTask {
   priority: TaskPriority;
   dueDate?: string;
   tags: string[];
-  submissions?: { [userId: string]: { filePath: string; submittedAt: string } };
+  submissions?: { [userId: string]: { filePath: string; submittedAt: string; grade?: number | null } };
 }
 
 export interface ProjectColumn {

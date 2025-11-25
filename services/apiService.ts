@@ -403,7 +403,7 @@ export const getProjectData = async (): Promise<ProjectData | null> => {
         throw taskError;
     }
 
-    const { data: assignments, error: assignError } = await supabase.from('project_task_assignees').select('*');
+    const { data: assignments, error: assignError } = await supabase.from('project_task_assignees').select('*, grade');
     if (assignError) {
         console.error("Failed to get task assignments:", assignError);
         throw assignError;
@@ -411,7 +411,7 @@ export const getProjectData = async (): Promise<ProjectData | null> => {
 
     // Create maps for assignees and submissions
     const assignmentsMap = new Map<string, string[]>();
-    const submissionsMap = new Map<string, { [userId: string]: { filePath: string; submittedAt: string } }>();
+    const submissionsMap = new Map<string, { [userId: string]: { filePath: string; submittedAt: string, grade?: number | null } }>();
 
     assignments.forEach(a => {
         const taskIdStr = String(a.task_id);
@@ -426,7 +426,8 @@ export const getProjectData = async (): Promise<ProjectData | null> => {
             }
             submissionsMap.get(taskIdStr)![a.user_uid] = {
                 filePath: a.submission_file_path,
-                submittedAt: a.submitted_at
+                submittedAt: a.submitted_at,
+                grade: a.grade
             };
         }
     });
@@ -468,6 +469,14 @@ export const getProjectData = async (): Promise<ProjectData | null> => {
     return projectData;
 };
 
+export const gradeSubmission = async (taskId: string, userId: string, grade: number) => {
+    const { error } = await supabase
+        .from('project_task_assignees')
+        .update({ grade: grade })
+        .match({ task_id: taskId, user_uid: userId });
+
+    if (error) throw error;
+};
 
 export const addProjectTask = async (taskData: { content: string, priority: TaskPriority, dueDate?: string, tags: string[], assigneeIds: string[] }, userId: string, columnId: string) => {
     // 1. Insert the task and get its ID
