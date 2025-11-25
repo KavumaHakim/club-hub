@@ -67,7 +67,7 @@ export interface ProjectTask {
   id: string;
   content: string;
   columnId: string; 
-  assigneeId?: string; // Changed to single string for new schema
+  assigneeId: string | null; // Changed to single string for new schema
   isCompleted?: boolean;
   priority: TaskPriority;
   dueDate?: string;

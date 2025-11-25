@@ -1,4 +1,5 @@
 
+
 import { supabase } from './supabaseClient';
 import { User, Activity, AttendanceRecord, FeedItem, ProjectData, ProjectTask, Resource, Notification, Room, Message, ShowcaseItem, Suggestion, Challenge, ChallengeSubmission, FeedComment, SuggestionType, SuggestionStatus, SubmissionStatus, ActivityCategory, FeedItemType, TaskPriority, ResourceCategory, ResourceType } from '../types';
 
@@ -369,7 +370,7 @@ export const addFeedComment = async (feedItemId: string, userId: string, content
 // --- Projects ---
 
 export const getProjectData = async (): Promise<ProjectData | null> => {
-    const { data: columns, error: colError } = await supabase.from('project_columns').select('*').order('order_index');
+    const { data: columns, error: colError } = await supabase.from('project_columns').select('*').order('column_order');
     const { data: tasks, error: taskError } = await supabase.from('project_tasks').select('*').order('created_at', { ascending: true });
     
     if (colError || taskError) return null;
