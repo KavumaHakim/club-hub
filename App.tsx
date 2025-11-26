@@ -335,9 +335,11 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-full font-sans text-gray-800 dark:text-gray-200">
+    <div className="min-h-full font-sans text-gray-800 dark:text-gray-200 relative">
       <CustomCursor />
-      {renderContent()}
+      <div className="relative z-10">
+        {renderContent()}
+      </div>
       <PendingApprovalModal 
         isOpen={showPendingModal} 
         onClose={() => setShowPendingModal(false)} 

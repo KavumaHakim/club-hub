@@ -152,7 +152,7 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToSignUp
       <header className="min-h-[100dvh] flex flex-col items-center justify-center relative overflow-hidden p-6 bg-gray-50 dark:bg-gray-950">
         
         {/* Constant Locomoting Background Grid */}
-        <div className="absolute inset-0 z-0 opacity-20 dark:opacity-30 overflow-hidden">
+        <div className="absolute inset-0 z-0 opacity-10 dark:opacity-20 overflow-hidden">
              <div className="absolute inset-0 animate-move-grid" 
                 style={{ 
                     backgroundImage: 'linear-gradient(rgba(128, 128, 128, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(128, 128, 128, 0.2) 1px, transparent 1px)', 
@@ -186,7 +186,7 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToSignUp
           
           {/* Top Tagline */}
           <div className="mb-8 animate-fade-in-up opacity-0" style={{ animationDelay: '0.1s' }}>
-              <span className="px-4 py-1.5 rounded-full text-xs font-bold bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg text-gray-600 dark:text-gray-300 uppercase tracking-widest backdrop-blur-md">
+              <span className="px-4 py-1.5 rounded-full text-xs font-bold bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 shadow-lg text-gray-600 dark:text-gray-300 uppercase tracking-widest backdrop-blur-md">
                   Naggalama
               </span>
           </div>
@@ -207,7 +207,7 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToSignUp
           <div className="mt-6 flex flex-col sm:flex-row items-center gap-4 w-full justify-center animate-fade-in-up opacity-0" style={{ animationDelay: '0.3s', animationFillMode: 'forwards' }}>
               <button
                 onClick={onNavigateToLogin}
-                className="w-full sm:w-40 px-8 py-4 text-lg font-bold text-gray-700 bg-white border border-gray-200 dark:text-white dark:bg-gray-800 dark:border-gray-700 rounded-xl shadow-lg hover:scale-105 transition-all hover:shadow-xl"
+                className="w-full sm:w-40 px-8 py-4 text-lg font-bold text-gray-700 bg-white/90 backdrop-blur-sm border border-gray-200 dark:text-white dark:bg-gray-800/90 dark:border-gray-700 rounded-xl shadow-lg hover:scale-105 transition-all hover:shadow-xl"
               >
                 Login
               </button>
@@ -231,16 +231,11 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToSignUp
               </button>
           </div>
           
-          <p className="mt-8 text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto animate-fade-in-up opacity-0 leading-relaxed font-light" style={{ animationDelay: '0.7s', animationFillMode: 'forwards' }}>
+          <p className="mt-8 text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto animate-fade-in-up opacity-0 leading-relaxed font-light bg-white/20 dark:bg-black/20 p-4 rounded-xl backdrop-blur-sm" style={{ animationDelay: '0.7s', animationFillMode: 'forwards' }}>
             Connect. Code. Create. <br/>
             <span className="text-sm font-mono text-pink-500 mt-2 block">System.Status: LOCOMOTING...</span>
           </p>
           
-        </div>
-        
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 animate-bounce text-gray-400 dark:text-gray-600 hidden md:block">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
         </div>
       </header>
       
@@ -259,7 +254,7 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToSignUp
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {/* Feature 1 */}
                 <AnimatedFeatureCard delay={0}>
-                  <div className="group p-8 h-full rounded-3xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700/50 hover:border-pink-200 dark:hover:border-pink-900 hover:bg-white dark:hover:bg-gray-800 transition-all duration-500 hover:-translate-y-4 hover:shadow-2xl hover:shadow-pink-500/10">
+                  <div className="group p-8 h-full rounded-3xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 hover:border-pink-200 dark:hover:border-pink-900 hover:bg-white dark:hover:bg-gray-800 transition-all duration-500 hover:-translate-y-4 hover:shadow-2xl hover:shadow-pink-500/10">
                       <div className="w-16 h-16 mb-8 rounded-2xl bg-pink-100 dark:bg-pink-900/20 flex items-center justify-center text-pink-600 dark:text-pink-400 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500">
                           <CalendarIcon />
                       </div>
@@ -272,7 +267,7 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToSignUp
                 
                 {/* Feature 2 */}
                 <AnimatedFeatureCard delay={100}>
-                  <div className="group p-8 h-full rounded-3xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700/50 hover:border-purple-200 dark:hover:border-purple-900 hover:bg-white dark:hover:bg-gray-800 transition-all duration-500 hover:-translate-y-4 hover:shadow-2xl hover:shadow-purple-500/10">
+                  <div className="group p-8 h-full rounded-3xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 hover:border-purple-200 dark:hover:border-purple-900 hover:bg-white dark:hover:bg-gray-800 transition-all duration-500 hover:-translate-y-4 hover:shadow-2xl hover:shadow-purple-500/10">
                       <div className="w-16 h-16 mb-8 rounded-2xl bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 dark:text-purple-400 group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-500">
                           <ClipboardListIcon />
                       </div>
@@ -285,7 +280,7 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToSignUp
                 
                 {/* Feature 3 */}
                 <AnimatedFeatureCard delay={200}>
-                  <div className="group p-8 h-full rounded-3xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700/50 hover:border-indigo-200 dark:hover:border-indigo-900 hover:bg-white dark:hover:bg-gray-800 transition-all duration-500 hover:-translate-y-4 hover:shadow-2xl hover:shadow-indigo-500/10">
+                  <div className="group p-8 h-full rounded-3xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 hover:border-indigo-200 dark:hover:border-indigo-900 hover:bg-white dark:hover:bg-gray-800 transition-all duration-500 hover:-translate-y-4 hover:shadow-2xl hover:shadow-indigo-500/10">
                       <div className="w-16 h-16 mb-8 rounded-2xl bg-indigo-100 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500">
                           <ChatBubbleIcon />
                       </div>

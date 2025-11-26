@@ -1,5 +1,5 @@
 
-import React, { useMemo, useEffect, useRef } from 'react';
+import React, { useMemo } from 'react';
 import { User, Tab } from '../types';
 import { CalendarIcon } from './icons/CalendarIcon';
 import { CheckCircleIcon } from './icons/CheckCircleIcon';
@@ -17,6 +17,7 @@ import { GlobeIcon } from './icons/GlobeIcon';
 import { LightBulbIcon } from './icons/LightBulbIcon';
 import { TrophyIcon } from './icons/TrophyIcon';
 import { useData } from '../DataContext';
+import MatrixRain from './MatrixRain';
 
 
 interface SidebarProps {
@@ -48,7 +49,7 @@ const NavLink: React.FC<{
         className={`group relative flex items-center w-full px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 ease-out ${isCollapsed ? 'justify-center' : 'space-x-3'} ${
           isActive
             ? 'bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow-lg shadow-pink-500/25'
-            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
+            : 'text-gray-700 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white'
         }`}
       >
         <div className={`relative flex items-center justify-center transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
@@ -93,94 +94,10 @@ const ClubHubLogo = () => (
 
 const Sidebar: React.FC<SidebarProps> = ({ user, activeTab, setActiveTab, isOpen, onClose, isCollapsed, onToggleCollapse }) => {
   const { unreadMessageCounts } = useData();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   
   const totalUnread = useMemo(() => {
       return Object.values(unreadMessageCounts).reduce((acc: number, count: number) => acc + count, 0);
   }, [unreadMessageCounts]);
-
-  // Matrix Animation Effect
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    let animationFrameId: number;
-    
-    // Resize observer to handle robust resizing
-    const resizeObserver = new ResizeObserver((entries) => {
-        for (const entry of entries) {
-            const { width, height } = entry.contentRect;
-            canvas.width = width;
-            canvas.height = height;
-        }
-    });
-    
-    if (canvas.parentElement) {
-        resizeObserver.observe(canvas.parentElement);
-    }
-
-    // Initial size
-    canvas.width = canvas.parentElement?.clientWidth || 0;
-    canvas.height = canvas.parentElement?.clientHeight || 0;
-
-    const columns = Math.floor(canvas.width / 20) + 1;
-    const drops: number[] = [];
-
-    for (let i = 0; i < columns; i++) {
-      drops[i] = Math.random() * -100; // Random start positions above canvas
-    }
-
-    const characters = "01ICTCLUBHUB<>/{};[]";
-    
-    const draw = () => {
-      // Fade out effect for trails (Darker/Lighter background based on theme to simulate fade)
-      // Checking theme from document class since prop is removed
-      const isDark = document.documentElement.classList.contains('dark');
-      
-      ctx.fillStyle = isDark ? 'rgba(17, 24, 39, 0.1)' : 'rgba(255, 255, 255, 0.1)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Set text color (Pink/Purple)
-      ctx.fillStyle = isDark ? '#ec4899' : '#c026d3'; // Pink-500 / Fuchsia-700
-      ctx.font = '14px monospace'; // Slightly larger font
-
-      for (let i = 0; i < drops.length; i++) {
-        const text = characters[Math.floor(Math.random() * characters.length)];
-        const x = i * 20;
-        const y = drops[i] * 20;
-
-        // Draw the character only if it's within view
-        if (y > 0 && y < canvas.height) {
-            // Increased alpha range for better visibility
-            ctx.globalAlpha = Math.random() * 0.5 + 0.5; 
-            ctx.fillText(text, x, y);
-            ctx.globalAlpha = 1.0;
-        }
-
-        // Reset drop to top randomly after it crosses screen
-        if (y > canvas.height && Math.random() > 0.975) {
-          drops[i] = 0;
-        }
-
-        drops[i]++;
-      }
-      
-      // Loop via setTimeout for animation
-      setTimeout(() => {
-          animationFrameId = requestAnimationFrame(draw);
-      }, 50);
-    };
-
-    draw();
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-      resizeObserver.disconnect();
-    };
-  }, []); 
 
   const handleNavClick = (tab: Tab) => {
     setActiveTab(tab);
@@ -236,13 +153,11 @@ const Sidebar: React.FC<SidebarProps> = ({ user, activeTab, setActiveTab, isOpen
         aria-hidden="true"
       />
 
-      <aside className={`bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-screen transform transition-all md:transition-all duration-300 ease-in-out md:sticky md:top-0 ${isCollapsed ? 'md:w-[5.5rem]' : 'w-72'} ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'} fixed inset-y-0 left-0 z-30 shadow-2xl md:shadow-none overflow-hidden`}>
+      {/* Sidebar Container */}
+      <aside className={`bg-white/80 dark:bg-gray-900/80 border-r border-gray-200 dark:border-gray-800 flex flex-col h-screen transform transition-all md:transition-all duration-300 ease-in-out md:sticky md:top-0 ${isCollapsed ? 'md:w-[5.5rem]' : 'w-72'} ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'} fixed inset-y-0 left-0 z-30 shadow-2xl md:shadow-none overflow-hidden`}>
         
-        {/* Matrix Background Canvas - Increased Opacity to 30% */}
-        <canvas 
-            ref={canvasRef}
-            className="absolute inset-0 z-0 opacity-30 pointer-events-none"
-        />
+        {/* Matrix Rain Background inside Sidebar */}
+        <MatrixRain />
 
         {/* Header */}
         <div className={`flex items-center h-20 flex-shrink-0 px-6 relative z-10 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
@@ -269,11 +184,11 @@ const Sidebar: React.FC<SidebarProps> = ({ user, activeTab, setActiveTab, isOpen
             {navGroups.map((group, groupIndex) => (
                 <div key={group.title}>
                     {!isCollapsed && (
-                        <h3 className="px-3 mb-2 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                        <h3 className="px-3 mb-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             {group.title}
                         </h3>
                     )}
-                    {isCollapsed && groupIndex > 0 && <div className="h-px bg-gray-100 dark:bg-gray-800 mx-2 my-2"></div>}
+                    {isCollapsed && groupIndex > 0 && <div className="h-px bg-gray-200 dark:bg-gray-800 mx-2 my-2"></div>}
                     
                     <ul className="space-y-1">
                         {group.items.map(item => (
@@ -294,11 +209,11 @@ const Sidebar: React.FC<SidebarProps> = ({ user, activeTab, setActiveTab, isOpen
         </nav>
 
         {/* Footer with Collapse only */}
-        <div className="p-4 relative z-10">
+        <div className="p-4 relative z-10 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-t border-gray-200 dark:border-gray-800">
           <div className="hidden md:flex justify-end">
             <button
                 onClick={onToggleCollapse}
-                className="p-1.5 text-gray-400 hover:text-pink-600 dark:text-gray-500 dark:hover:text-pink-400 transition-colors rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 w-full flex justify-center"
+                className="p-1.5 text-gray-500 hover:text-pink-600 dark:text-gray-400 dark:hover:text-pink-400 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 w-full flex justify-center"
                 title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
             >
                 {isCollapsed ? <ChevronsRightIcon /> : <ChevronsLeftIcon />}

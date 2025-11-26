@@ -1,5 +1,4 @@
 
-
 import React, { Suspense, lazy } from 'react';
 import { User, Tab } from '../types';
 
