@@ -1,7 +1,44 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Safely retrieve API Key, handling both standard process.env and Vite's import.meta.env
+const getApiKey = () => {
+  let key = '';
+  
+  // Try standard Node/Webpack process.env
+  try {
+    // @ts-ignore
+    if (typeof process !== 'undefined' && process.env) {
+      // @ts-ignore
+      key = process.env.API_KEY || '';
+    }
+  } catch (e) {
+    // Ignore reference errors
+  }
+
+  // If not found, try Vite's import.meta.env (Standard for Vercel + React)
+  if (!key) {
+    try {
+      // @ts-ignore
+      if (typeof import.meta !== 'undefined' && import.meta.env) {
+        // @ts-ignore
+        key = import.meta.env.VITE_API_KEY || '';
+      }
+    } catch (e) {
+      // Ignore errors
+    }
+  }
+
+  return key;
+};
+
+const apiKey = getApiKey();
+
+if (!apiKey) {
+    console.warn("Gemini API Key is missing. Please check your environment variables (API_KEY or VITE_API_KEY).");
+}
+
+const ai = new GoogleGenAI({ apiKey });
 
 export interface ActivityIdea {
   title: string;
