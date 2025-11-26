@@ -174,11 +174,11 @@ const ChallengeCard: React.FC<{
                     {hasBadge && <div className="bg-green-100 dark:bg-green-900/30 p-1.5 rounded-full text-green-600 dark:text-green-400"><BadgeCheckIcon className="w-5 h-5" /></div>}
                 </div>
                 
-                <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-pink-600 dark:group-hover:text-pink-400 transition-colors">
+                <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2 group-hover:text-pink-600 dark:group-hover:text-pink-400 transition-colors">
                     {challenge.title}
                 </h4>
                 
-                <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 leading-relaxed line-clamp-3">
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 leading-relaxed whitespace-pre-wrap">
                     {challenge.description}
                 </p>
             </div>
