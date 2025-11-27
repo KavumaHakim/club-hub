@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { User, Roadmap, Milestone } from '../types';
 import { useData } from '../DataContext';
 import * as api from '../services/apiService';
@@ -34,11 +34,18 @@ const CreateRoadmapModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
     onSave: (roadmap: Roadmap) => Promise<void>;
-}> = ({ isOpen, onClose, onSave }) => {
+    initialLevel?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+}> = ({ isOpen, onClose, onSave, initialLevel = 'BEGINNER' }) => {
     const [topic, setTopic] = useState('');
-    const [level, setLevel] = useState<'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'>('BEGINNER');
+    const [level, setLevel] = useState<'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'>(initialLevel);
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedMilestones, setGeneratedMilestones] = useState<Milestone[] | null>(null);
+
+    useEffect(() => {
+        if (isOpen) {
+            setLevel(initialLevel);
+        }
+    }, [isOpen, initialLevel]);
 
     const handleGenerate = async () => {
         if (!topic) return;
@@ -264,6 +271,9 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [deleteId, setDeleteId] = useState<string | null>(null);
     
+    // Patron View State
+    const [activePatronTab, setActivePatronTab] = useState<'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'>('BEGINNER');
+
     // Quiz State
     const [quizModalOpen, setQuizModalOpen] = useState(false);
     const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[] | null>(null);
@@ -276,10 +286,13 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
 
     const isPatron = currentUser.role === 'PATRON';
 
-    // Filter logic: Patrons see all, Students see only their level
-    const visibleRoadmaps = isPatron 
-        ? roadmaps 
-        : roadmaps.filter(r => r.skillLevel === currentUser.skillLevel);
+    // Filter logic: Patrons see based on tab, Students see only their level
+    const visibleRoadmaps = useMemo(() => {
+        if (isPatron) {
+            return roadmaps.filter(r => r.skillLevel === activePatronTab);
+        }
+        return roadmaps.filter(r => r.skillLevel === currentUser.skillLevel);
+    }, [roadmaps, isPatron, activePatronTab, currentUser.skillLevel]);
 
     useEffect(() => {
         if (!isPatron && visibleRoadmaps.length > 0) {
@@ -425,13 +438,31 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
                 )}
             </div>
 
+            {isPatron && (
+                <div className="flex border-b border-gray-200 dark:border-gray-700 space-x-1 mb-8">
+                    {(['BEGINNER', 'INTERMEDIATE', 'ADVANCED'] as const).map((level) => (
+                        <button
+                            key={level}
+                            onClick={() => setActivePatronTab(level)}
+                            className={`pb-3 px-4 sm:px-6 text-sm sm:text-base font-medium transition-colors relative focus:outline-none ${
+                                activePatronTab === level 
+                                ? 'text-pink-600 dark:text-pink-400 border-b-2 border-pink-600 dark:border-pink-400' 
+                                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                            }`}
+                        >
+                            {level.charAt(0) + level.slice(1).toLowerCase()}
+                        </button>
+                    ))}
+                </div>
+            )}
+
             {visibleRoadmaps.length === 0 ? (
                 <div className="text-center py-20 bg-gray-50 dark:bg-gray-800/50 rounded-3xl border-2 border-dashed border-gray-200 dark:border-gray-700">
                     <MapIcon className="h-16 w-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No Roadmaps Found</h3>
                     <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
                         {isPatron 
-                            ? "Use the AI generator to create structured learning paths for your students." 
+                            ? `No ${activePatronTab.toLowerCase()} roadmaps found. Use the AI generator to create one!` 
                             : "Your patrons haven't published a roadmap for your skill level yet. Check back soon!"}
                     </p>
                 </div>
@@ -500,7 +531,8 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
             <CreateRoadmapModal 
                 isOpen={isCreateModalOpen} 
                 onClose={() => setIsCreateModalOpen(false)} 
-                onSave={handleCreate} 
+                onSave={handleCreate}
+                initialLevel={activePatronTab}
             />
 
             <ConfirmationModal 
