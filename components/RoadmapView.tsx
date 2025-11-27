@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Roadmap, Milestone } from '../types';
 import { useData } from '../DataContext';
 import * as api from '../services/apiService';
-import { generateLearningRoadmap, generateMilestoneQuestion, RoadmapQuestion } from '../services/geminiService';
+import { generateLearningRoadmap, generateMilestoneQuiz, QuizQuestion } from '../services/geminiService';
 import { MapIcon } from './icons/MapIcon';
 import { PlusCircleIcon } from './icons/PlusCircleIcon';
 import { XIcon } from './icons/XIcon';
@@ -244,7 +244,7 @@ const MilestoneCard: React.FC<MilestoneCardProps> = ({ milestone, index, isLast,
                                 onClick={onTakeQuiz}
                                 className="w-full py-2 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white font-bold rounded-lg shadow-md transition-all flex items-center justify-center gap-2 animate-pulse-slow"
                             >
-                                <CheckCircleIcon className="w-4 h-4" /> Take Quiz to Complete
+                                <CheckCircleIcon className="w-4 h-4" /> Assessment Quiz
                             </button>
                         )}
                         {isCompleted && (
@@ -266,7 +266,7 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
     
     // Quiz State
     const [quizModalOpen, setQuizModalOpen] = useState(false);
-    const [quizQuestion, setQuizQuestion] = useState<RoadmapQuestion | null>(null);
+    const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[] | null>(null);
     const [activeMilestoneIndex, setActiveMilestoneIndex] = useState<number | null>(null);
     const [activeRoadmapId, setActiveRoadmapId] = useState<string | null>(null);
     const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
@@ -329,8 +329,8 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
     const handleTakeQuiz = async (roadmapId: string, milestoneIndex: number, milestone: Milestone) => {
         setIsGeneratingQuiz(true);
         try {
-            const question = await generateMilestoneQuestion(milestone.title, milestone.description);
-            setQuizQuestion(question);
+            const questions = await generateMilestoneQuiz(milestone.title, milestone.description);
+            setQuizQuestions(questions);
             setActiveRoadmapId(roadmapId);
             setActiveMilestoneIndex(milestoneIndex);
             setQuizModalOpen(true);
@@ -516,7 +516,7 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
             <RoadmapQuizModal 
                 isOpen={quizModalOpen}
                 onClose={() => setQuizModalOpen(false)}
-                questionData={quizQuestion}
+                quizQuestions={quizQuestions}
                 onPass={handleQuizPass}
             />
         </div>

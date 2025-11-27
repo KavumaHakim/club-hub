@@ -3,126 +3,260 @@ import React, { useState, useEffect } from 'react';
 import { XIcon } from './icons/XIcon';
 import { CheckCircleIcon } from './icons/CheckCircleIcon';
 import { XCircleIcon } from './icons/XCircleIcon';
-import { evaluateMilestoneAnswer } from '../services/geminiService';
-
-interface RoadmapQuestion {
-    question: string;
-    options: string[];
-    correctIndex: number;
-}
+import { CheckIcon } from './icons/CheckIcon';
+import { QuizQuestion, evaluateShortAnswer } from '../services/geminiService';
 
 interface RoadmapQuizModalProps {
     isOpen: boolean;
     onClose: () => void;
-    questionData: RoadmapQuestion | null;
+    quizQuestions: QuizQuestion[] | null;
     onPass: () => void;
 }
 
-const RoadmapQuizModal: React.FC<RoadmapQuizModalProps> = ({ isOpen, onClose, questionData, onPass }) => {
-    const [selectedOption, setSelectedOption] = useState<number | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+const RoadmapQuizModal: React.FC<RoadmapQuizModalProps> = ({ isOpen, onClose, quizQuestions, onPass }) => {
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [userAnswer, setUserAnswer] = useState('');
+    const [isChecking, setIsChecking] = useState(false);
     const [feedback, setFeedback] = useState<{ isCorrect: boolean; message: string } | null>(null);
+    const [score, setScore] = useState(0);
+    const [quizComplete, setQuizComplete] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
-            setSelectedOption(null);
-            setFeedback(null);
-            setIsSubmitting(false);
+            resetQuiz();
         }
     }, [isOpen]);
 
-    if (!isOpen || !questionData) return null;
+    const resetQuiz = () => {
+        setCurrentIndex(0);
+        setUserAnswer('');
+        setIsChecking(false);
+        setFeedback(null);
+        setScore(0);
+        setQuizComplete(false);
+    };
 
-    const handleSubmit = async () => {
-        if (selectedOption === null) return;
-        
-        setIsSubmitting(true);
-        const isCorrect = selectedOption === questionData.correctIndex;
-        
+    if (!isOpen || !quizQuestions || quizQuestions.length === 0) return null;
+
+    const currentQuestion = quizQuestions[currentIndex];
+    const totalQuestions = quizQuestions.length;
+    const passingScore = Math.ceil(totalQuestions * 0.66); // 2 out of 3 usually
+
+    const handleCheckAnswer = async () => {
+        if (!userAnswer.trim()) return;
+        setIsChecking(true);
+
+        let isCorrect = false;
+        let message = "";
+
         try {
-            const explanation = await evaluateMilestoneAnswer(
-                questionData.question, 
-                questionData.options[selectedOption], 
-                isCorrect
-            );
-            
-            setFeedback({
-                isCorrect,
-                message: explanation
-            });
+            if (currentQuestion.type === 'SHORT_ANSWER') {
+                // Use AI to grade
+                const result = await evaluateShortAnswer(currentQuestion.question, userAnswer, currentQuestion.correctAnswer);
+                isCorrect = result.correct;
+                message = result.feedback;
+            } else {
+                // Strict equality for MC/TF
+                // Normalize for case insensitivity if needed, but usually options match exactly
+                isCorrect = userAnswer.toLowerCase() === currentQuestion.correctAnswer.toLowerCase();
+                message = isCorrect ? "Correct! Well done." : `Incorrect. The correct answer was: ${currentQuestion.correctAnswer}`;
+            }
 
-            if (isCorrect) {
-                setTimeout(() => {
-                    onPass();
-                    onClose();
-                }, 2500); // Close after delay to read feedback
-            }
+            setFeedback({ isCorrect, message });
+            if (isCorrect) setScore(prev => prev + 1);
+
         } catch (error) {
-            console.error(error);
-            // Fallback
-            setFeedback({
-                isCorrect,
-                message: isCorrect ? "Correct! Well done." : "Incorrect. Please try again."
-            });
-             if (isCorrect) {
-                setTimeout(() => {
-                    onPass();
-                    onClose();
-                }, 2000);
-            }
+            console.error("Grading error", error);
+            setFeedback({ isCorrect: false, message: "Error checking answer. Please try again." });
         } finally {
-            setIsSubmitting(false);
+            setIsChecking(false);
         }
     };
 
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full p-6 relative border border-gray-200 dark:border-gray-700 animate-fade-in-up">
-                <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400">
-                    <XIcon />
-                </button>
+    const handleNext = () => {
+        if (currentIndex < totalQuestions - 1) {
+            setCurrentIndex(prev => prev + 1);
+            setUserAnswer('');
+            setFeedback(null);
+        } else {
+            setQuizComplete(true);
+        }
+    };
 
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Milestone Assessment</h3>
-                
-                <p className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-6 leading-relaxed">
-                    {questionData.question}
-                </p>
+    const handleFinish = () => {
+        if (score >= passingScore) {
+            onPass();
+        }
+        onClose();
+    };
 
-                <div className="space-y-3 mb-6">
-                    {questionData.options.map((option, index) => (
+    // Render Logic for different inputs
+    const renderInput = () => {
+        if (currentQuestion.type === 'SHORT_ANSWER') {
+            return (
+                <textarea
+                    value={userAnswer}
+                    onChange={(e) => setUserAnswer(e.target.value)}
+                    placeholder="Type your answer here..."
+                    className="w-full p-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500 focus:outline-none resize-none"
+                    rows={3}
+                    disabled={!!feedback || isChecking}
+                />
+            );
+        }
+
+        if (currentQuestion.type === 'TRUE_FALSE') {
+            return (
+                <div className="flex gap-4">
+                    {['True', 'False'].map(opt => (
                         <button
-                            key={index}
-                            onClick={() => setSelectedOption(index)}
-                            disabled={isSubmitting || feedback !== null}
-                            className={`w-full p-3 rounded-xl border-2 text-left transition-all ${
-                                selectedOption === index 
-                                ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-300' 
-                                : 'border-gray-200 dark:border-gray-700 hover:border-pink-300 dark:hover:border-gray-600 text-gray-700 dark:text-gray-300'
-                            } ${feedback && index === questionData.correctIndex ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : ''}
-                              ${feedback && selectedOption === index && !feedback.isCorrect ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : ''}
-                            `}
+                            key={opt}
+                            onClick={() => setUserAnswer(opt)}
+                            disabled={!!feedback || isChecking}
+                            className={`flex-1 py-4 rounded-xl font-bold border-2 transition-all ${
+                                userAnswer === opt
+                                ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-300 shadow-md'
+                                : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 text-gray-700 dark:text-gray-300'
+                            }`}
                         >
-                            <span className="font-bold mr-2">{String.fromCharCode(65 + index)}.</span> {option}
+                            {opt}
                         </button>
                     ))}
                 </div>
+            );
+        }
 
+        // Multiple Choice
+        return (
+            <div className="space-y-3">
+                {currentQuestion.options?.map((opt, idx) => (
+                    <button
+                        key={idx}
+                        onClick={() => setUserAnswer(opt)}
+                        disabled={!!feedback || isChecking}
+                        className={`w-full p-4 rounded-xl border-2 text-left transition-all flex items-center ${
+                            userAnswer === opt
+                            ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-300 shadow-md'
+                            : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 text-gray-700 dark:text-gray-300'
+                        }`}
+                    >
+                        <span className="w-6 h-6 rounded-full border-2 border-current flex items-center justify-center mr-3 text-xs font-bold flex-shrink-0">
+                            {userAnswer === opt ? <div className="w-2.5 h-2.5 bg-current rounded-full" /> : String.fromCharCode(65 + idx)}
+                        </span>
+                        {opt}
+                    </button>
+                ))}
+            </div>
+        );
+    };
+
+    if (quizComplete) {
+        const passed = score >= passingScore;
+        return (
+            <div className="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+                <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-sm w-full p-8 text-center relative border border-gray-200 dark:border-gray-700 animate-fade-in-up">
+                    <div className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-6 ${passed ? 'bg-green-100 text-green-600 dark:bg-green-900/30' : 'bg-red-100 text-red-600 dark:bg-red-900/30'}`}>
+                        {passed ? <CheckCircleIcon className="w-10 h-10" /> : <XCircleIcon className="w-10 h-10" />}
+                    </div>
+                    <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-2">
+                        {passed ? 'Assessment Passed!' : 'Needs Improvement'}
+                    </h2>
+                    <p className="text-gray-600 dark:text-gray-400 mb-6">
+                        You scored {score} out of {totalQuestions}. {passed ? 'You have mastered this milestone.' : 'Review the material and try again.'}
+                    </p>
+                    <button 
+                        onClick={passed ? handleFinish : resetQuiz}
+                        className={`w-full py-3 rounded-xl font-bold text-white shadow-lg transition-transform hover:scale-105 active:scale-95 ${passed ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-800 dark:bg-gray-600 hover:bg-gray-900'}`}
+                    >
+                        {passed ? 'Continue Journey' : 'Try Again'}
+                    </button>
+                    {passed && (
+                        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none rounded-3xl">
+                            {/* Simple confetti effect could go here */}
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full p-6 relative border border-gray-200 dark:border-gray-700 flex flex-col max-h-[90vh] animate-fade-in-up transition-all">
+                {/* Header */}
+                <div className="flex justify-between items-center mb-6">
+                    <div className="flex flex-col">
+                        <span className="text-xs font-bold text-pink-600 dark:text-pink-400 uppercase tracking-wider mb-1">Question {currentIndex + 1} of {totalQuestions}</span>
+                        <div className="w-32 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div 
+                                className="h-full bg-pink-500 transition-all duration-500 ease-out" 
+                                style={{ width: `${((currentIndex + 1) / totalQuestions) * 100}%` }}
+                            />
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="p-2 bg-gray-100 dark:bg-gray-700 rounded-full text-gray-500 hover:text-gray-700 dark:hover:text-white transition-colors">
+                        <XIcon className="w-5 h-5" />
+                    </button>
+                </div>
+
+                {/* Question */}
+                <div className="mb-6">
+                    <span className="inline-block px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[10px] font-bold rounded mb-2 uppercase">
+                        {currentQuestion.type.replace('_', ' ')}
+                    </span>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white leading-relaxed">
+                        {currentQuestion.question}
+                    </h3>
+                </div>
+
+                {/* Inputs */}
+                <div className="mb-6 flex-1 overflow-y-auto custom-scrollbar">
+                    {renderInput()}
+                </div>
+
+                {/* Feedback Area */}
                 {feedback && (
-                    <div className={`p-4 rounded-xl mb-4 flex items-start gap-3 ${feedback.isCorrect ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'}`}>
-                        {feedback.isCorrect ? <CheckCircleIcon className="w-6 h-6 flex-shrink-0" /> : <XCircleIcon className="w-6 h-6 flex-shrink-0" />}
-                        <p className="text-sm">{feedback.message}</p>
+                    <div className={`p-4 rounded-xl mb-4 flex items-start gap-3 animate-fade-in-up ${feedback.isCorrect ? 'bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800'}`}>
+                        <div className={`mt-0.5 p-1 rounded-full ${feedback.isCorrect ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                            {feedback.isCorrect ? <CheckIcon className="w-4 h-4" /> : <XIcon className="w-4 h-4" />}
+                        </div>
+                        <div>
+                            <p className={`font-bold text-sm ${feedback.isCorrect ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
+                                {feedback.isCorrect ? 'That is correct!' : 'Not quite right.'}
+                            </p>
+                            <p className={`text-sm mt-1 ${feedback.isCorrect ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
+                                {feedback.message}
+                            </p>
+                        </div>
                     </div>
                 )}
 
-                {!feedback && (
-                    <button 
-                        onClick={handleSubmit}
-                        disabled={selectedOption === null || isSubmitting}
-                        className="w-full py-3 bg-gradient-to-r from-pink-600 to-purple-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {isSubmitting ? 'Grading...' : 'Submit Answer'}
-                    </button>
-                )}
+                {/* Footer Buttons */}
+                <div className="mt-auto pt-2">
+                    {!feedback ? (
+                        <button 
+                            onClick={handleCheckAnswer}
+                            disabled={!userAnswer || isChecking}
+                            className="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-bold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md flex justify-center items-center gap-2"
+                        >
+                            {isChecking ? (
+                                <>
+                                    <span className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent"></span>
+                                    Checking...
+                                </>
+                            ) : (
+                                "Check Answer"
+                            )}
+                        </button>
+                    ) : (
+                        <button 
+                            onClick={handleNext}
+                            className="w-full py-3 bg-pink-600 hover:bg-pink-700 text-white rounded-xl font-bold shadow-lg shadow-pink-500/30 transition-all transform active:scale-95"
+                        >
+                            {currentIndex < totalQuestions - 1 ? "Next Question" : "Finish Quiz"}
+                        </button>
+                    )}
+                </div>
             </div>
         </div>
     );
