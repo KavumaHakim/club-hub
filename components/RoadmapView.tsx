@@ -38,12 +38,16 @@ const CreateRoadmapModal: React.FC<{
 }> = ({ isOpen, onClose, onSave, initialLevel = 'BEGINNER' }) => {
     const [topic, setTopic] = useState('');
     const [level, setLevel] = useState<'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'>(initialLevel);
+    const [requiredConcepts, setRequiredConcepts] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedMilestones, setGeneratedMilestones] = useState<Milestone[] | null>(null);
 
     useEffect(() => {
         if (isOpen) {
             setLevel(initialLevel);
+            setTopic('');
+            setRequiredConcepts('');
+            setGeneratedMilestones(null);
         }
     }, [isOpen, initialLevel]);
 
@@ -51,7 +55,7 @@ const CreateRoadmapModal: React.FC<{
         if (!topic) return;
         setIsGenerating(true);
         try {
-            const milestones = await generateLearningRoadmap(topic, level);
+            const milestones = await generateLearningRoadmap(topic, level, requiredConcepts);
             // Add IDs to milestones for React keys
             const milestonesWithIds = milestones.map((m: any, idx: number) => ({
                 ...m,
@@ -75,6 +79,7 @@ const CreateRoadmapModal: React.FC<{
         });
         onClose();
         setTopic('');
+        setRequiredConcepts('');
         setGeneratedMilestones(null);
     };
 
@@ -97,6 +102,17 @@ const CreateRoadmapModal: React.FC<{
                                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500"
                                 placeholder="e.g., Python Data Structures, Web Development Basics"
                             />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Required Concepts (Optional)</label>
+                            <textarea 
+                                value={requiredConcepts} 
+                                onChange={e => setRequiredConcepts(e.target.value)} 
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500 text-sm"
+                                placeholder="e.g., Loops, Arrays, API integration. The AI will include these and fill in the gaps."
+                                rows={2}
+                            />
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Specify topics the AI must include.</p>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Target Skill Level</label>
