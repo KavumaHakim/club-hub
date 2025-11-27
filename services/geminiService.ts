@@ -1,7 +1,4 @@
-
-
 import { GoogleGenAI, Type } from "@google/genai";
-import { Roadmap } from "../types";
 
 // Robustly retrieve API Key checking all common build tool conventions
 const getApiKey = (): string => {
@@ -144,4 +141,55 @@ export const getAiTutorResponse = async (
                 ${clubContext}
                 
                 CRITICAL RULES:
-                1. DO NOT write complete, functional code solutions
+                1. DO NOT write complete, functional code solutions for the user if they ask for homework help or challenge solutions.
+                2. Instead, provide hints, pseudo-code, explain concepts, or fix syntax errors in *their* code.
+                3. Be encouraging and use emojis.
+                4. If they ask about club activities, use the provided context.
+                5. Format code blocks with \`\`\`python ... \`\`\`.
+                `
+            },
+            history: history
+        });
+
+        const response = await chat.sendMessage({ message });
+        return response.text;
+    } catch (error) {
+        console.error("Tutor Error:", error);
+        return "I'm having trouble thinking right now. Ask me again in a moment!";
+    }
+};
+
+export const analyzeChallengeSubmission = async (challengeTitle: string, code: string) => {
+    if (!ai) {
+        throw new Error("API Key Missing");
+    }
+
+    const model = "gemini-2.5-flash";
+    const prompt = `
+      You are a Code Reviewer for the ICT Club.
+      Challenge Title: ${challengeTitle}
+      
+      Student Submission (Python):
+      \`\`\`python
+      ${code}
+      \`\`\`
+      
+      Please provide a brief, constructive review.
+      1. Is it correct? (Does it likely solve the challenge?)
+      2. Code Style/Efficiency tips.
+      3. A short encouraging comment.
+      
+      Keep it under 150 words. Use Markdown.
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model,
+            contents: prompt,
+        });
+        return response.text || "Could not analyze submission.";
+    } catch (error) {
+        console.error("Analysis Error:", error);
+        throw new Error("Failed to analyze submission.");
+    }
+};
