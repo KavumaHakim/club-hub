@@ -1,6 +1,6 @@
 
 import { supabase } from './supabaseClient';
-import { User, Activity, AttendanceRecord, FeedItem, ProjectData, ProjectTask, Resource, Notification, Room, Message, ShowcaseItem, Suggestion, Challenge, ChallengeSubmission, FeedComment, SuggestionType, SuggestionStatus, SubmissionStatus, ActivityCategory, FeedItemType, TaskPriority, ResourceCategory, ResourceType, Tab, Roadmap } from '../types';
+import { User, Activity, AttendanceRecord, FeedItem, ProjectData, ProjectTask, Resource, Notification, Room, Message, ShowcaseItem, Suggestion, Challenge, ChallengeSubmission, FeedComment, SuggestionType, SuggestionStatus, SubmissionStatus, ActivityCategory, FeedItemType, TaskPriority, ResourceCategory, ResourceType, Tab, Roadmap, RoadmapProgress } from '../types';
 
 // --- Auth & User ---
 
@@ -423,14 +423,14 @@ export const getProjectData = async (): Promise<ProjectData | null> => {
         projectData.tasks[taskIdStr] = {
             id: taskIdStr,
             content: t.content,
-            columnId: String(t.column_id),
+            column_id: String(t.column_id),
             assigneeIds: assignmentsMap.get(taskIdStr) || [],
             isCompleted: t.is_completed,
             priority: t.priority,
             dueDate: t.due_date,
             tags: t.tags || [],
             submissions: submissionsMap.get(taskIdStr)
-        };
+        } as any; // Type assertion due to camelCase mapping
     });
 
     columns.forEach((c: any) => {
@@ -1056,7 +1056,6 @@ export const reviewSubmission = async (submissionId: string, status: string, cha
 // --- Roadmaps ---
 
 export const getRoadmaps = async (): Promise<Roadmap[]> => {
-    // Use updated_at instead of created_at, as defined in the schema
     const { data, error } = await supabase.from('roadmaps').select('*').order('updated_at', { ascending: false });
     if (error) throw error;
     
@@ -1065,13 +1064,11 @@ export const getRoadmaps = async (): Promise<Roadmap[]> => {
         skillLevel: r.skill_level,
         topic: r.topic,
         milestones: r.content,
-        updatedAt: r.updated_at // Mapped from 'updated_at'
+        updatedAt: r.updated_at
     }));
 };
 
 export const addRoadmap = async (roadmap: Roadmap) => {
-    // Use upsert to handle updates for existing skill_level/topic combo if uniqueness is constrained
-    // The schema has UNIQUE(skill_level) constraint.
     const { error } = await supabase.from('roadmaps').upsert({
         skill_level: roadmap.skillLevel,
         topic: roadmap.topic,
@@ -1084,6 +1081,71 @@ export const addRoadmap = async (roadmap: Roadmap) => {
 
 export const deleteRoadmap = async (roadmapId: string) => {
     const { error } = await supabase.from('roadmaps').delete().eq('id', roadmapId);
+    if (error) throw error;
+};
+
+export const getUserRoadmapProgress = async (userId: string, roadmapId: string): Promise<RoadmapProgress | null> => {
+    const { data, error } = await supabase
+        .from('user_roadmap_progress')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('roadmap_id', roadmapId)
+        .maybeSingle();
+        
+    if (error && error.code !== 'PGRST116') { // Ignore not found error
+        // 42P01 means table does not exist
+        if (error.code === '42P01') {
+            console.warn("Table 'user_roadmap_progress' does not exist yet. Please run migration.");
+            return null;
+        }
+        console.error("Error fetching roadmap progress:", error.message || error);
+        return null;
+    }
+    
+    if (!data) return null;
+
+    return {
+        id: data.id,
+        userId: data.user_id,
+        roadmapId: data.roadmap_id,
+        completedMilestoneIndices: data.completed_milestone_indices || []
+    };
+};
+
+export const updateMilestoneProgress = async (userId: string, roadmapId: string, milestoneIndex: number) => {
+    try {
+        // First get existing progress
+        const { data: existing, error: fetchError } = await supabase
+            .from('user_roadmap_progress')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('roadmap_id', roadmapId)
+            .maybeSingle();
+
+        if (fetchError && fetchError.code === '42P01') {
+             throw new Error("Table 'user_roadmap_progress' does not exist. Please check README.md for SQL setup.");
+        }
+
+        let completedIndices = existing?.completed_milestone_indices || [];
+        if (!completedIndices.includes(milestoneIndex)) {
+            completedIndices.push(milestoneIndex);
+        }
+
+        const { error } = await supabase.from('user_roadmap_progress').upsert({
+            user_id: userId,
+            roadmap_id: roadmapId,
+            completed_milestone_indices: completedIndices
+        }, { onConflict: 'user_id,roadmap_id' });
+
+        if (error) throw error;
+    } catch (error: any) {
+        console.error("Error updating progress:", error.message || error);
+        throw error;
+    }
+};
+
+export const updateUserSkillLevel = async (userId: string, newLevel: string) => {
+    const { error } = await supabase.from('users').update({ skill_level: newLevel }).eq('uid', userId);
     if (error) throw error;
 };
 

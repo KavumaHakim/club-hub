@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 
 // Robustly retrieve API Key checking all common build tool conventions
@@ -255,5 +256,79 @@ export const generateLearningRoadmap = async (topic: string, skillLevel: string)
     } catch (error) {
         console.error("Roadmap Generation Error:", error);
         throw new Error("Failed to generate roadmap.");
+    }
+};
+
+export interface RoadmapQuestion {
+    question: string;
+    options: string[];
+    correctIndex: number;
+}
+
+export const generateMilestoneQuestion = async (milestoneTitle: string, milestoneDescription: string): Promise<RoadmapQuestion> => {
+    if (!ai) throw new Error("API Key Missing");
+
+    const model = "gemini-2.5-flash";
+    const prompt = `
+        Generate one multiple-choice quiz question to test a student's understanding of:
+        Topic: ${milestoneTitle}
+        Details: ${milestoneDescription}
+        
+        Return JSON:
+        {
+            "question": "The question text",
+            "options": ["Option A", "Option B", "Option C", "Option D"],
+            "correctIndex": 0 // The index (0-3) of the correct answer
+        }
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model,
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        question: { type: Type.STRING },
+                        options: {
+                            type: Type.ARRAY,
+                            items: { type: Type.STRING }
+                        },
+                        correctIndex: { type: Type.INTEGER }
+                    },
+                    required: ["question", "options", "correctIndex"]
+                }
+            }
+        });
+
+        const text = cleanJSON(response.text || "");
+        if (!text) throw new Error("No response");
+        return JSON.parse(text);
+    } catch (error) {
+        console.error("Quiz Generation Error:", error);
+        throw new Error("Failed to generate quiz.");
+    }
+};
+
+export const evaluateMilestoneAnswer = async (question: string, userAnswer: string, isCorrect: boolean) => {
+    if (!ai) throw new Error("API Key Missing");
+    
+    // If we already know it's correct (from multiple choice index), we just ask for positive reinforcement.
+    // If incorrect, we ask for an explanation.
+    
+    const prompt = isCorrect 
+        ? `The student answered the question "${question}" correctly with "${userAnswer}". Give a very short (1 sentence) enthusiastic congratulation.`
+        : `The student answered the question "${question}" incorrectly with "${userAnswer}". Explain briefly (2 sentences) why that is wrong and what the concept is.`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: prompt,
+        });
+        return response.text || (isCorrect ? "Correct! Great job." : "Incorrect. Try again.");
+    } catch (error) {
+        return isCorrect ? "Correct!" : "Incorrect.";
     }
 };

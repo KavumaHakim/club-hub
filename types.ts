@@ -221,3 +221,10 @@ export interface Roadmap {
   milestones: Milestone[];
   updatedAt?: string;
 }
+
+export interface RoadmapProgress {
+  id: string;
+  userId: string;
+  roadmapId: string;
+  completedMilestoneIndices: number[];
+}

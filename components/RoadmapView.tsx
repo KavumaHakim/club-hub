@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { User, Roadmap, Milestone } from '../types';
 import { useData } from '../DataContext';
 import * as api from '../services/apiService';
-import { generateLearningRoadmap } from '../services/geminiService';
+import { generateLearningRoadmap, generateMilestoneQuestion, RoadmapQuestion } from '../services/geminiService';
 import { MapIcon } from './icons/MapIcon';
 import { PlusCircleIcon } from './icons/PlusCircleIcon';
 import { XIcon } from './icons/XIcon';
@@ -10,7 +11,11 @@ import { TrashIcon } from './icons/TrashIcon';
 import { BookOpenIcon } from './icons/BookOpenIcon';
 import { VideoCameraIcon } from './icons/VideoCameraIcon';
 import { CodeIcon } from './icons/CodeIcon';
+import { LockClosedIcon } from './icons/LockClosedIcon';
+import { CheckCircleIcon } from './icons/CheckCircleIcon';
+import { TrophyIcon } from './icons/TrophyIcon';
 import ConfirmationModal from './ConfirmationModal';
+import RoadmapQuizModal from './RoadmapQuizModal';
 
 interface RoadmapViewProps {
     currentUser: User;
@@ -152,34 +157,54 @@ const CreateRoadmapModal: React.FC<{
     );
 };
 
-const MilestoneCard: React.FC<{ milestone: Milestone, index: number, isLast: boolean }> = ({ milestone, index, isLast }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
+interface MilestoneCardProps {
+    milestone: Milestone;
+    index: number;
+    isLast: boolean;
+    isLocked: boolean;
+    isCompleted: boolean;
+    onTakeQuiz: () => void;
+    isPatron: boolean;
+}
+
+const MilestoneCard: React.FC<MilestoneCardProps> = ({ milestone, index, isLast, isLocked, isCompleted, onTakeQuiz, isPatron }) => {
+    const [isExpanded, setIsExpanded] = useState(!isLocked);
 
     return (
-        <div className="relative pl-8 sm:pl-10 pb-8">
+        <div className={`relative pl-8 sm:pl-10 pb-8 ${isLocked ? 'opacity-60 grayscale' : ''}`}>
             {/* Connecting Line */}
             {!isLast && (
-                <div className="absolute left-[11px] sm:left-[15px] top-8 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700"></div>
+                <div className={`absolute left-[11px] sm:left-[15px] top-8 bottom-0 w-0.5 ${isCompleted ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
             )}
             
             {/* Node */}
             <div 
-                className={`absolute left-0 top-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full border-4 border-white dark:border-gray-900 flex items-center justify-center cursor-pointer transition-colors ${isExpanded ? 'bg-pink-500 shadow-lg shadow-pink-500/30' : 'bg-gray-300 dark:bg-gray-600 hover:bg-pink-400'}`}
-                onClick={() => setIsExpanded(!isExpanded)}
+                className={`absolute left-0 top-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full border-4 flex items-center justify-center cursor-pointer transition-all z-10 
+                ${isCompleted 
+                    ? 'bg-green-500 border-green-500 text-white' 
+                    : isLocked 
+                        ? 'bg-gray-300 border-gray-300 dark:bg-gray-700 dark:border-gray-700 text-gray-500'
+                        : 'bg-pink-500 border-white dark:border-gray-900 text-white shadow-lg shadow-pink-500/30'
+                }`}
+                onClick={() => !isLocked && setIsExpanded(!isExpanded)}
             >
-                <span className="text-[10px] sm:text-xs font-bold text-white">{index + 1}</span>
+                {isCompleted ? <CheckCircleIcon className="w-4 h-4" /> : isLocked ? <LockClosedIcon className="w-3 h-3" /> : <span className="text-[10px] sm:text-xs font-bold">{index + 1}</span>}
             </div>
 
             {/* Content */}
             <div 
-                className={`bg-white dark:bg-gray-800 rounded-xl border transition-all duration-300 overflow-hidden ${isExpanded ? 'border-pink-500 shadow-md ring-1 ring-pink-500/20' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'}`}
+                className={`bg-white dark:bg-gray-800 rounded-xl border transition-all duration-300 overflow-hidden 
+                ${!isLocked && isExpanded ? 'border-pink-500 shadow-md ring-1 ring-pink-500/20' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'}`}
             >
                 <div 
-                    className="p-4 cursor-pointer flex justify-between items-center"
-                    onClick={() => setIsExpanded(!isExpanded)}
+                    className={`p-4 cursor-pointer flex justify-between items-center ${isLocked ? 'cursor-not-allowed' : ''}`}
+                    onClick={() => !isLocked && setIsExpanded(!isExpanded)}
                 >
                     <div>
-                        <h4 className="font-bold text-gray-900 dark:text-white text-base sm:text-lg">{milestone.title}</h4>
+                        <h4 className="font-bold text-gray-900 dark:text-white text-base sm:text-lg flex items-center gap-2">
+                            {milestone.title}
+                            {isLocked && <span className="text-xs font-normal bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded text-gray-500">Locked</span>}
+                        </h4>
                         <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">{milestone.duration}</p>
                     </div>
                     <div className={`transform transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
@@ -188,12 +213,12 @@ const MilestoneCard: React.FC<{ milestone: Milestone, index: number, isLast: boo
                 </div>
 
                 {/* Expanded Details */}
-                <div className={`transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+                <div className={`transition-all duration-300 ease-in-out ${!isLocked && isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
                     <div className="px-4 pb-4 border-t border-gray-100 dark:border-gray-700 pt-3">
                         <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">{milestone.description}</p>
                         
                         <h5 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Recommended Resources</h5>
-                        <div className="space-y-2">
+                        <div className="space-y-2 mb-4">
                             {milestone.resources.map((res, idx) => (
                                 <a 
                                     key={idx} 
@@ -212,6 +237,21 @@ const MilestoneCard: React.FC<{ milestone: Milestone, index: number, isLast: boo
                                 </a>
                             ))}
                         </div>
+
+                        {/* Action Button for Student */}
+                        {!isPatron && !isCompleted && (
+                            <button 
+                                onClick={onTakeQuiz}
+                                className="w-full py-2 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white font-bold rounded-lg shadow-md transition-all flex items-center justify-center gap-2 animate-pulse-slow"
+                            >
+                                <CheckCircleIcon className="w-4 h-4" /> Take Quiz to Complete
+                            </button>
+                        )}
+                        {isCompleted && (
+                            <div className="flex items-center justify-center gap-2 py-2 text-green-600 bg-green-50 dark:bg-green-900/20 rounded-lg font-bold text-sm">
+                                <CheckCircleIcon className="w-4 h-4" /> Learned
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -220,9 +260,19 @@ const MilestoneCard: React.FC<{ milestone: Milestone, index: number, isLast: boo
 };
 
 const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
-    const { roadmaps, isLoadingRoadmaps, roadmapsError, fetchRoadmaps, showToast } = useData();
+    const { roadmaps, isLoadingRoadmaps, roadmapsError, fetchRoadmaps, showToast, updateUserSkillLevel } = useData();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [deleteId, setDeleteId] = useState<string | null>(null);
+    
+    // Quiz State
+    const [quizModalOpen, setQuizModalOpen] = useState(false);
+    const [quizQuestion, setQuizQuestion] = useState<RoadmapQuestion | null>(null);
+    const [activeMilestoneIndex, setActiveMilestoneIndex] = useState<number | null>(null);
+    const [activeRoadmapId, setActiveRoadmapId] = useState<string | null>(null);
+    const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
+
+    // Progress State (Map roadmapId -> array of completed indices)
+    const [progress, setProgress] = useState<Record<string, number[]>>({});
 
     const isPatron = currentUser.role === 'PATRON';
 
@@ -230,6 +280,26 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
     const visibleRoadmaps = isPatron 
         ? roadmaps 
         : roadmaps.filter(r => r.skillLevel === currentUser.skillLevel);
+
+    useEffect(() => {
+        if (!isPatron && visibleRoadmaps.length > 0) {
+            const loadProgress = async () => {
+                const newProgress: Record<string, number[]> = {};
+                for (const r of visibleRoadmaps) {
+                    if (r.id) {
+                        const p = await api.getUserRoadmapProgress(currentUser.uid, r.id);
+                        if (p) {
+                            newProgress[r.id] = p.completedMilestoneIndices;
+                        } else {
+                            newProgress[r.id] = [];
+                        }
+                    }
+                }
+                setProgress(newProgress);
+            };
+            loadProgress();
+        }
+    }, [visibleRoadmaps, isPatron, currentUser.uid]);
 
     const handleCreate = async (roadmap: Roadmap) => {
         try {
@@ -256,6 +326,60 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
         }
     };
 
+    const handleTakeQuiz = async (roadmapId: string, milestoneIndex: number, milestone: Milestone) => {
+        setIsGeneratingQuiz(true);
+        try {
+            const question = await generateMilestoneQuestion(milestone.title, milestone.description);
+            setQuizQuestion(question);
+            setActiveRoadmapId(roadmapId);
+            setActiveMilestoneIndex(milestoneIndex);
+            setQuizModalOpen(true);
+        } catch (error) {
+            console.error("Quiz Gen Error:", error);
+            showToast("Failed to generate quiz. Please try again.", "error");
+        } finally {
+            setIsGeneratingQuiz(false);
+        }
+    };
+
+    const handleQuizPass = async () => {
+        if (activeRoadmapId && activeMilestoneIndex !== null) {
+            try {
+                await api.updateMilestoneProgress(currentUser.uid, activeRoadmapId, activeMilestoneIndex);
+                
+                // Update local state immediately
+                setProgress(prev => ({
+                    ...prev,
+                    [activeRoadmapId]: [...(prev[activeRoadmapId] || []), activeMilestoneIndex]
+                }));
+
+                showToast("Milestone completed!", "success");
+
+                // Check for promotion
+                const roadmap = roadmaps.find(r => r.id === activeRoadmapId);
+                if (roadmap) {
+                    const completedCount = (progress[activeRoadmapId]?.length || 0) + 1; // +1 for current
+                    if (completedCount === roadmap.milestones.length) {
+                        // Level Up Logic
+                        const nextLevel = 
+                            roadmap.skillLevel === 'BEGINNER' ? 'INTERMEDIATE' : 
+                            roadmap.skillLevel === 'INTERMEDIATE' ? 'ADVANCED' : null;
+                        
+                        if (nextLevel) {
+                            await updateUserSkillLevel(nextLevel);
+                        } else {
+                            showToast("You have mastered the Advanced level! Amazing work!", "success");
+                        }
+                    }
+                }
+
+            } catch (error) {
+                console.error("Progress Update Error:", error);
+                showToast("Failed to save progress.", "error");
+            }
+        }
+    };
+
     if (isLoadingRoadmaps) {
         return (
             <div className="flex flex-col items-center justify-center h-64 text-gray-500 gap-4">
@@ -270,7 +394,16 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
     }
 
     return (
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-5xl mx-auto relative">
+            {isGeneratingQuiz && (
+                <div className="fixed inset-0 bg-white/50 dark:bg-black/50 backdrop-blur-sm z-[70] flex items-center justify-center">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-2xl flex flex-col items-center">
+                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-pink-500 mb-3"></div>
+                        <p className="font-bold text-gray-800 dark:text-white">Generating Assessment...</p>
+                    </div>
+                </div>
+            )}
+
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
                 <div>
                     <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight mb-2">
@@ -279,7 +412,7 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
                     <p className="text-lg text-gray-600 dark:text-gray-400">
                         {isPatron 
                             ? "Design curriculum paths for different skill levels." 
-                            : `Your personalized path to mastering ${currentUser.skillLevel.toLowerCase()} skills.`}
+                            : `Your personalized path to mastering ${currentUser.skillLevel?.toLowerCase()} skills.`}
                     </p>
                 </div>
                 {isPatron && (
@@ -304,49 +437,63 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
                 </div>
             ) : (
                 <div className="grid gap-12">
-                    {visibleRoadmaps.map(roadmap => (
-                        <div key={roadmap.id} className="relative">
-                            <div className="flex justify-between items-center mb-6">
-                                <div>
-                                    <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-3">
-                                        {roadmap.topic}
-                                        {isPatron && (
-                                            <span className={`text-xs px-2 py-1 rounded font-bold uppercase tracking-wide border ${
-                                                roadmap.skillLevel === 'BEGINNER' ? 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800' :
-                                                roadmap.skillLevel === 'INTERMEDIATE' ? 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800' :
-                                                'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800'
-                                            }`}>
-                                                {roadmap.skillLevel}
-                                            </span>
-                                        )}
-                                    </h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                        {roadmap.milestones.length} Milestones • Approx. {roadmap.milestones.length} Weeks
-                                    </p>
+                    {visibleRoadmaps.map(roadmap => {
+                        const userCompletedIndices = progress[roadmap.id!] || [];
+                        
+                        return (
+                            <div key={roadmap.id} className="relative">
+                                <div className="flex justify-between items-center mb-6">
+                                    <div>
+                                        <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-3">
+                                            {roadmap.topic}
+                                            {isPatron && (
+                                                <span className={`text-xs px-2 py-1 rounded font-bold uppercase tracking-wide border ${
+                                                    roadmap.skillLevel === 'BEGINNER' ? 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800' :
+                                                    roadmap.skillLevel === 'INTERMEDIATE' ? 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800' :
+                                                    'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800'
+                                                }`}>
+                                                    {roadmap.skillLevel}
+                                                </span>
+                                            )}
+                                        </h3>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                            {roadmap.milestones.length} Milestones • {userCompletedIndices.length} Completed
+                                        </p>
+                                    </div>
+                                    {isPatron && (
+                                        <button 
+                                            onClick={() => setDeleteId(roadmap.id!)}
+                                            className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                                            title="Delete Roadmap"
+                                        >
+                                            <TrashIcon />
+                                        </button>
+                                    )}
                                 </div>
-                                {isPatron && (
-                                    <button 
-                                        onClick={() => setDeleteId(roadmap.id!)}
-                                        className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-                                        title="Delete Roadmap"
-                                    >
-                                        <TrashIcon />
-                                    </button>
-                                )}
-                            </div>
 
-                            <div className="relative">
-                                {roadmap.milestones.map((ms, idx) => (
-                                    <MilestoneCard 
-                                        key={idx} 
-                                        milestone={ms} 
-                                        index={idx} 
-                                        isLast={idx === roadmap.milestones.length - 1} 
-                                    />
-                                ))}
+                                <div className="relative">
+                                    {roadmap.milestones.map((ms, idx) => {
+                                        const isCompleted = userCompletedIndices.includes(idx);
+                                        // A milestone is locked if the previous one isn't completed (unless it's the first one)
+                                        const isLocked = idx > 0 && !userCompletedIndices.includes(idx - 1) && !isPatron;
+                                        
+                                        return (
+                                            <MilestoneCard 
+                                                key={idx} 
+                                                milestone={ms} 
+                                                index={idx} 
+                                                isLast={idx === roadmap.milestones.length - 1} 
+                                                isLocked={isLocked}
+                                                isCompleted={isCompleted}
+                                                isPatron={isPatron}
+                                                onTakeQuiz={() => handleTakeQuiz(roadmap.id!, idx, ms)}
+                                            />
+                                        );
+                                    })}
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
 
@@ -364,6 +511,13 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
                 message="Are you sure? This will remove the learning path for all students."
                 confirmText="Delete"
                 isDangerous
+            />
+
+            <RoadmapQuizModal 
+                isOpen={quizModalOpen}
+                onClose={() => setQuizModalOpen(false)}
+                questionData={quizQuestion}
+                onPass={handleQuizPass}
             />
         </div>
     );

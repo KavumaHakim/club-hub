@@ -73,13 +73,15 @@ interface IDataContext {
   fetchSuggestions: () => Promise<void>;
   fetchChallenges: () => Promise<void>;
   fetchRoadmaps: () => Promise<void>;
+  updateUserSkillLevel: (newLevel: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED') => Promise<void>;
 }
 
 // Create the context with a default value
 const DataContext = createContext<IDataContext | undefined>(undefined);
 
 // Create a provider component
-export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> = ({ children, currentUser }) => {
+export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> = ({ children, currentUser: initialUser }) => {
+  const [currentUser, setCurrentUser] = useState(initialUser);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
@@ -124,6 +126,11 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
   const [suggestionsError, setSuggestionsError] = useState<string | null>(null);
   const [challengesError, setChallengesError] = useState<string | null>(null);
   const [roadmapsError, setRoadmapsError] = useState<string | null>(null);
+
+  // Sync initialUser prop to state if it changes (e.g. re-login)
+  useEffect(() => {
+      setCurrentUser(initialUser);
+  }, [initialUser]);
 
   const showToast = useCallback((message: string, type: ToastType = 'info') => {
     const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
@@ -317,6 +324,17 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
     });
   }, []);
 
+  const updateUserSkillLevel = useCallback(async (newLevel: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED') => {
+      try {
+          await api.updateUserSkillLevel(currentUser.uid, newLevel);
+          setCurrentUser(prev => ({ ...prev, skillLevel: newLevel }));
+          showToast(`Congratulations! You've been promoted to ${newLevel}.`, 'success');
+      } catch (e: any) {
+          console.error("Failed to update skill level", e);
+          showToast("Failed to update skill level.", "error");
+      }
+  }, [currentUser.uid, showToast]);
+
   // Effect to perform the client-side join for resources
   useEffect(() => {
     if (isLoadingUsers || resourcesError) { 
@@ -507,6 +525,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
     fetchSuggestions,
     fetchChallenges,
     fetchRoadmaps,
+    updateUserSkillLevel,
     
     // New Toast exports
     toasts,
