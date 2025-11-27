@@ -100,7 +100,7 @@ export const generateClubActivityIdea = async (): Promise<ActivityIdea> => {
   }
 };
 
-export const getAIChatResponse = async (history: { role: 'user' | 'model', parts: [{ text: string }] }[], message: string) => {
+export const getAIChatResponse = async (history: { role: 'user' | 'model', parts: { text: string }[] }[], message: string) => {
     if (!ai) {
         return "I'm sorry, but I can't chat right now because my AI configuration is missing. Please contact the administrator to set the VITE_API_KEY.";
     }
@@ -122,7 +122,7 @@ export const getAIChatResponse = async (history: { role: 'user' | 'model', parts
     }
 };
 
-export const getAiTutorResponse = async (history: { role: 'user' | 'model', parts: [{ text: string }] }[], message: string) => {
+export const getAiTutorResponse = async (history: { role: 'user' | 'model', parts: { text: string }[] }[], message: string) => {
     if (!ai) {
         return "I'm offline right now (API Key Missing).";
     }

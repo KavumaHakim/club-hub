@@ -5,6 +5,7 @@ import { XIcon } from './icons/XIcon';
 import { SendIcon } from './icons/SendIcon';
 import * as geminiService from '../services/geminiService';
 import { User } from '../types';
+import { FormattedMessage } from './FormattedMessage';
 
 interface AiTutorProps {
     currentUser: User;
@@ -91,30 +92,30 @@ const AiTutor: React.FC<AiTutorProps> = ({ currentUser }) => {
                     </div>
 
                     {/* Messages Area */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 dark:bg-gray-900 custom-scrollbar">
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900 custom-scrollbar">
                         {messages.map((msg, idx) => (
                             <div 
                                 key={idx} 
                                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                             >
                                 <div 
-                                    className={`max-w-[85%] p-3 rounded-2xl text-sm leading-relaxed shadow-sm whitespace-pre-wrap ${
+                                    className={`max-w-[90%] p-3 rounded-2xl shadow-sm ${
                                         msg.role === 'user' 
                                         ? 'bg-teal-600 text-white rounded-tr-none' 
-                                        : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-tl-none border border-gray-100 dark:border-gray-600'
+                                        : 'bg-white dark:bg-gray-800 rounded-tl-none border border-gray-100 dark:border-gray-700'
                                     }`}
                                 >
-                                    {msg.text}
+                                    <FormattedMessage text={msg.text} isUser={msg.role === 'user'} />
                                 </div>
                             </div>
                         ))}
                         {isLoading && (
                             <div className="flex justify-start">
-                                <div className="bg-white dark:bg-gray-700 p-3 rounded-2xl rounded-tl-none border border-gray-100 dark:border-gray-600">
-                                    <div className="flex space-x-1">
-                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></div>
-                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></div>
+                                <div className="bg-white dark:bg-gray-800 p-3 rounded-2xl rounded-tl-none border border-gray-100 dark:border-gray-700">
+                                    <div className="flex space-x-1.5">
+                                        <div className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-bounce"></div>
+                                        <div className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-bounce delay-100"></div>
+                                        <div className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-bounce delay-200"></div>
                                     </div>
                                 </div>
                             </div>
