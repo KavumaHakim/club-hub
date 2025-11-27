@@ -1,4 +1,6 @@
 
+
+
 import { GoogleGenAI, Type } from "@google/genai";
 
 // Robustly retrieve API Key checking all common build tool conventions
@@ -199,12 +201,14 @@ export const generateLearningRoadmap = async (topic: string, skillLevel: string)
 
     const model = "gemini-2.5-flash";
     const prompt = `
-        Create a 4-milestone learning roadmap for "${topic}" suitable for a "${skillLevel}" student in an ICT Club.
+        Create a short, modular 3-milestone learning roadmap for "${topic}" suitable for a "${skillLevel}" student in an ICT Club.
+        Focus on specific, bite-sized concepts rather than broad overviews.
+        The goal is practical, hands-on learning.
         
         For each milestone, provide:
         - title: A clear step name.
-        - description: What they will learn.
-        - duration: Estimated time (e.g., "1 week").
+        - description: What they will learn (keep it concise).
+        - duration: Estimated time (e.g., "3 days").
         - resources: An array of 2-3 specific learning resources (Tutorials, Docs, or Video titles).
           - type: 'VIDEO' | 'ARTICLE' | 'DOCS' | 'PRACTICE'
           - title: Name of the resource.

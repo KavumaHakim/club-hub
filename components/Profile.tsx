@@ -1,4 +1,6 @@
 
+
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { User, AttendanceRecord, AttendanceStatus } from '../types';
 import * as api from '../services/apiService';
@@ -10,6 +12,7 @@ import { EyeIcon } from './icons/EyeIcon';
 import { EyeOffIcon } from './icons/EyeOffIcon';
 import { CameraIcon } from './icons/CameraIcon';
 import { BadgeCheckIcon } from './icons/BadgeCheckIcon';
+import { AcademicCapIcon } from './icons/AcademicCapIcon';
 import { predefinedAvatars } from '../constants';
 import { useData } from '../DataContext';
 import { CursorVariant } from './CustomCursor';
@@ -417,9 +420,16 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
                                 <div className="text-center sm:text-left">
                                     <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{currentUser.name}</h1>
                                     <p className="text-md text-gray-500 dark:text-gray-400 mt-1">@{currentUser.username}</p>
-                                    <span className={`mt-3 inline-block px-3 py-1 text-sm font-semibold rounded-full ${currentUser.role === 'PATRON' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300'}`}>
-                                        {currentUser.role}
-                                    </span>
+                                    <div className="mt-3 flex flex-wrap gap-2 justify-center sm:justify-start">
+                                        <span className={`inline-block px-3 py-1 text-sm font-semibold rounded-full ${currentUser.role === 'PATRON' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300'}`}>
+                                            {currentUser.role}
+                                        </span>
+                                        {currentUser.skillLevel && (
+                                            <span className="inline-flex items-center gap-1 px-3 py-1 text-sm font-semibold rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300">
+                                                <AcademicCapIcon className="w-4 h-4" /> {currentUser.skillLevel}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
