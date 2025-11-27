@@ -1,7 +1,4 @@
 
-
-
-
 import { supabase } from './supabaseClient';
 import { User, Activity, AttendanceRecord, FeedItem, ProjectData, ProjectTask, Resource, Notification, Room, Message, ShowcaseItem, Suggestion, Challenge, ChallengeSubmission, FeedComment, SuggestionType, SuggestionStatus, SubmissionStatus, ActivityCategory, FeedItemType, TaskPriority, ResourceCategory, ResourceType, Tab, Roadmap } from '../types';
 
@@ -36,7 +33,6 @@ export const signUp = async (userData: Omit<User, 'uid' | 'role' | 'status' | 'a
   if (error) throw error;
   
   if (data.user) {
-      // Use 'uid' instead of 'id' for the users table insert as per schema
       const { error: profileError } = await supabase.from('users').insert({
           uid: data.user.id,
           email: userData.email,
@@ -48,7 +44,7 @@ export const signUp = async (userData: Omit<User, 'uid' | 'role' | 'status' | 'a
           status: 'PENDING'
       }).select().single();
       
-      if (profileError && profileError.code !== '23505') { // Ignore unique violation if trigger exists
+      if (profileError && profileError.code !== '23505') { 
           console.error("Error creating user profile:", profileError);
       }
   }
@@ -71,7 +67,6 @@ export const signUpAsPatron = async (userData: Omit<User, 'uid' | 'role' | 'stat
     if (error) throw error;
 
     if (data.user) {
-        // Use 'uid' instead of 'id' for the users table insert as per schema
         const { error: profileError } = await supabase.from('users').insert({
             uid: data.user.id,
             email: userData.email,
@@ -89,7 +84,6 @@ export const signUpAsPatron = async (userData: Omit<User, 'uid' | 'role' | 'stat
 };
 
 export const getUserProfile = async (userId: string): Promise<User | null> => {
-  // Query using 'uid' as primary key
   const { data, error } = await supabase.from('users').select('*').eq('uid', userId).maybeSingle();
   if (error) {
       console.error("Error fetching user profile:", error);
@@ -141,7 +135,6 @@ export const updateUser = async (uid: string, data: Partial<User>) => {
     if (data.badges) updates.badges = data.badges;
     if (data.lastLogin) updates.last_login = data.lastLogin;
 
-    // Update where 'uid' matches
     const { error } = await supabase.from('users').update(updates).eq('uid', uid);
     if (error) throw error;
 };
@@ -176,7 +169,6 @@ export const resetPasswordWithOtp = async (email: string, otp: string, newPasswo
 // --- Activities ---
 
 export const getActivities = async (): Promise<Activity[]> => {
-    // Join with activity_rsvps to get user IDs
     const { data, error } = await supabase
         .from('activities')
         .select(`
@@ -216,7 +208,6 @@ export const toggleRSVP = async (activityId: string, userId: string, isJoining: 
             activity_id: activityId,
             user_uid: userId
         });
-        // Ignore duplicate key error if user clicks rapidly
         if (error && error.code !== '23505') throw error; 
     } else {
         const { error } = await supabase.from('activity_rsvps').delete().match({
@@ -230,7 +221,6 @@ export const toggleRSVP = async (activityId: string, userId: string, isJoining: 
 // --- Attendance ---
 
 export const getAttendance = async (userId: string): Promise<AttendanceRecord[]> => {
-    // Schema uses user_uid (text) and joins with activities via activity_id (bigint)
     const { data, error } = await supabase
         .from('attendance')
         .select(`
@@ -258,7 +248,6 @@ export const getAttendance = async (userId: string): Promise<AttendanceRecord[]>
 };
 
 export const addAttendance = async (userId: string, record: Omit<AttendanceRecord, 'id' | 'userId'>) => {
-    // Schema: user_uid (text), activity_id (bigint), status (text)
     const { error } = await supabase.from('attendance').insert({
         user_uid: userId,
         activity_id: record.activityId,
@@ -269,12 +258,10 @@ export const addAttendance = async (userId: string, record: Omit<AttendanceRecor
 
 export const markAttendanceOnLogin = async (userId: string) => {
     const today = new Date().toISOString().split('T')[0];
-    // This implies an activities table exists with a 'date' column (YYYY-MM-DD or date type)
     const { data: activities } = await supabase.from('activities').select('*').eq('date', today);
     
     if (activities && activities.length > 0) {
         for (const activity of activities) {
-            // Check if already recorded. Use maybeSingle to avoid error if not found.
             const { data: existing } = await supabase.from('attendance')
                 .select('*')
                 .eq('user_uid', userId)
@@ -295,7 +282,6 @@ export const markAttendanceOnLogin = async (userId: string) => {
 // --- Feed ---
 
 export const getFeedItems = async (): Promise<FeedItem[]> => {
-    // Join with users table and count comments
     const { data, error } = await supabase
         .from('feed_items')
         .select(`
@@ -324,7 +310,6 @@ export const getFeedItems = async (): Promise<FeedItem[]> => {
 
 
 export const addFeedItem = async (item: { title: string, message: string, type: FeedItemType }, userId: string) => {
-    // Insert uses 'message' and 'author_uid'
     const { error } = await supabase.from('feed_items').insert({
         type: item.type,
         title: item.title,
@@ -340,8 +325,6 @@ export const deleteFeedItem = async (id: string) => {
 };
 
 export const getFeedComments = async (feedItemId: string): Promise<FeedComment[]> => {
-    // user_uid in feed_comments refs auth.users, so direct join to public.users might not be automatic
-    // We fetch comments first, then fetch user details manually or assume public.users has same uid.
     const { data: comments, error } = await supabase
         .from('feed_comments')
         .select('*')
@@ -350,7 +333,6 @@ export const getFeedComments = async (feedItemId: string): Promise<FeedComment[]
     
     if (error) throw error;
 
-    // Fetch user details for these comments from public.users
     const userIds = [...new Set(comments.map((c: any) => c.user_uid))];
     let usersMap: Record<string, any> = {};
     
@@ -375,7 +357,6 @@ export const getFeedComments = async (feedItemId: string): Promise<FeedComment[]
 };
 
 export const addFeedComment = async (feedItemId: string, userId: string, content: string): Promise<FeedComment> => {
-    // Fetch user details locally for optimistic update
     const { data: user } = await supabase.from('users').select('name, avatar_url').eq('uid', userId).maybeSingle();
     
     const { data, error } = await supabase.from('feed_comments').insert({
@@ -400,26 +381,15 @@ export const addFeedComment = async (feedItemId: string, userId: string, content
 // --- Projects ---
 
 export const getProjectData = async (): Promise<ProjectData | null> => {
-    // Fetch columns, tasks, and assignments in separate queries for robustness.
     const { data: columns, error: colError } = await supabase.from('project_columns').select('*').order('column_order');
-    if (colError) {
-        console.error("Failed to get project columns:", colError);
-        throw colError;
-    }
+    if (colError) throw colError;
 
     const { data: tasks, error: taskError } = await supabase.from('project_tasks').select('*').order('created_at', { ascending: true });
-    if (taskError) {
-        console.error("Failed to get project tasks:", taskError);
-        throw taskError;
-    }
+    if (taskError) throw taskError;
 
     const { data: assignments, error: assignError } = await supabase.from('project_task_assignees').select('*, grade');
-    if (assignError) {
-        console.error("Failed to get task assignments:", assignError);
-        throw assignError;
-    }
+    if (assignError) throw assignError;
 
-    // Create maps for assignees and submissions
     const assignmentsMap = new Map<string, string[]>();
     const submissionsMap = new Map<string, { [userId: string]: { filePath: string; submittedAt: string, grade?: number | null } }>();
 
@@ -489,7 +459,6 @@ export const gradeSubmission = async (taskId: string, userId: string, grade: num
 };
 
 export const addProjectTask = async (taskData: { content: string, priority: TaskPriority, dueDate?: string, tags: string[], assigneeIds: string[] }, userId: string, columnId: string) => {
-    // 1. Insert the task and get its ID
     const { data: newTask, error: taskInsertError } = await supabase.from('project_tasks').insert({
         content: taskData.content,
         priority: taskData.priority,
@@ -503,7 +472,6 @@ export const addProjectTask = async (taskData: { content: string, priority: Task
 
     const newTaskId = newTask.id;
 
-    // 2. If there are assignees, add them to the join table
     if (taskData.assigneeIds && taskData.assigneeIds.length > 0) {
         const assignmentRecords = taskData.assigneeIds.map(assigneeId => ({
             task_id: newTaskId,
@@ -513,7 +481,6 @@ export const addProjectTask = async (taskData: { content: string, priority: Task
         const { error: assignmentError } = await supabase.from('project_task_assignees').insert(assignmentRecords);
         if (assignmentError) throw assignmentError;
 
-        // 3. Send notifications
         const { data: assigner } = await supabase.from('users').select('name').eq('uid', userId).single();
         if (!assigner) return;
 
@@ -549,7 +516,6 @@ export const updateProjectTask = async (taskId: string, data: Partial<ProjectTas
 };
 
 export const deleteProjectTask = async (taskId: string, columnId: string) => {
-    // With `ON DELETE CASCADE` in the schema, deleting a task will auto-delete its assignments.
     const { error } = await supabase.from('project_tasks').delete().eq('id', taskId);
     if (error) throw error;
 };
@@ -560,7 +526,6 @@ export const moveProjectTask = async (taskId: string, destinationColumnId: strin
 };
 
 export const updateTaskAssignees = async (taskId: string, newAssigneeIds: string[], assigner: { uid: string, name: string }) => {
-    // 1. Fetch old assignees and task content for notification logic
     const { data: taskData, error: taskFetchError } = await supabase
         .from('project_tasks')
         .select('content')
@@ -571,11 +536,9 @@ export const updateTaskAssignees = async (taskId: string, newAssigneeIds: string
     const { data: oldAssignments } = await supabase.from('project_task_assignees').select('user_uid').eq('task_id', taskId);
     const oldAssigneeIds = oldAssignments?.map(a => a.user_uid) || [];
 
-    // 2. "Delete and replace" strategy for simplicity and correctness
     const { error: deleteError } = await supabase.from('project_task_assignees').delete().eq('task_id', taskId);
     if (deleteError) throw deleteError;
     
-    // 3. Insert new assignments if any are provided
     if (newAssigneeIds.length > 0) {
         const newAssignmentRecords = newAssigneeIds.map(userId => ({
             task_id: taskId,
@@ -585,7 +548,6 @@ export const updateTaskAssignees = async (taskId: string, newAssigneeIds: string
         if (insertError) throw insertError;
     }
     
-    // 4. Send notifications to newly added assignees
     const newlyAddedIds = newAssigneeIds.filter(id => !oldAssigneeIds.includes(id) && id !== assigner.uid);
 
     if (newlyAddedIds.length > 0) {
@@ -656,7 +618,6 @@ export const uploadTaskSubmission = async (taskId: string, file: File, userId: s
     .match({ task_id: taskId, user_uid: userId });
 
   if (updateError) {
-    // If DB update fails, try to clean up the uploaded file
     await supabase.storage.from('resource_uploads').remove([filePath]);
     throw updateError;
   }
@@ -749,7 +710,6 @@ export const deleteResource = async (resource: Resource) => {
 // --- Notifications ---
 
 export const getNotifications = async (userId: string): Promise<Notification[]> => {
-    // Using 'user_uid' as per schema patterns
     const { data, error } = await supabase.from('notifications').select('*').eq('user_uid', userId).order('created_at', { ascending: false });
     if (error) throw error;
     return data.map((n: any) => ({
@@ -775,7 +735,6 @@ export const markAllNotificationsAsRead = async (userId: string) => {
 // --- Chat ---
 
 export const getRooms = async (userId: string): Promise<Room[]> => {
-    // Use metadata containment check for participants, as there is no participant_ids column in the provided schema
     const { data, error } = await supabase
         .from('rooms')
         .select('*')
@@ -787,7 +746,6 @@ export const getRooms = async (userId: string): Promise<Room[]> => {
         title: r.title,
         createdAt: r.created_at,
         updatedAt: r.updated_at,
-        // Extract participants from metadata
         participantIds: r.metadata?.participants || [],
         createdBy: r.created_by,
     }));
@@ -796,9 +754,8 @@ export const getRooms = async (userId: string): Promise<Room[]> => {
 export const createRoom = async (title: string | null, participantIds: string[]): Promise<string> => {
     const { data, error } = await supabase.from('rooms').insert({
         title,
-        // Store participants in metadata JSONB
         metadata: { participants: participantIds },
-        created_by: participantIds[0] // Assuming first user is creator, schema has created_by column
+        created_by: participantIds[0] 
     }).select().single();
     if (error) throw error;
     return data.id;
@@ -895,8 +852,6 @@ export const getShowcaseItems = async (): Promise<ShowcaseItem[]> => {
     if (error) throw error;
     
     return Promise.all(data.map(async (item: any) => {
-        // Fetch user details from public.users table using user_uid
-        // Use maybeSingle to prevent failure if user is missing
         const { data: user } = await supabase.from('users').select('name, avatar_url').eq('uid', item.user_uid).maybeSingle();
         
         return {
@@ -914,7 +869,6 @@ export const getShowcaseItems = async (): Promise<ShowcaseItem[]> => {
 };
 
 export const addShowcaseItem = async (userId: string, title: string, description: string, codeContent: string) => {
-    // Schema: user_uid (uuid), title (text), description (text), code_content (text), likes (text[])
     const { error } = await supabase.from('showcase_items').insert({
         user_uid: userId,
         title,
@@ -946,7 +900,6 @@ export const getSuggestions = async (): Promise<Suggestion[]> => {
         const userId = s.user_uid || s.user_id;
         
         if (userId) {
-             // Use 'uid' to find user, matching the 'users' table schema
              const { data: u } = await supabase.from('users').select('name, avatar_url').eq('uid', userId).maybeSingle();
              if (u) {
                  userName = u.name;
@@ -1035,9 +988,7 @@ export const getSubmissions = async (challengeId: string): Promise<ChallengeSubm
         let userName = 'Unknown';
         let userAvatarUrl = undefined;
         
-        // Use user_uid as per schema
         if (s.user_uid) {
-             // Use 'uid' to find user
              const { data: u } = await supabase.from('users').select('name, avatar_url').eq('uid', s.user_uid).maybeSingle();
              if (u) {
                  userName = u.name;
@@ -1047,18 +998,17 @@ export const getSubmissions = async (challengeId: string): Promise<ChallengeSubm
         return {
             id: s.id,
             challengeId: s.challenge_id,
-            userId: s.user_uid, // mapped from user_uid
+            userId: s.user_uid, 
             userName,
             userAvatarUrl,
             content: s.content,
             status: s.status,
-            submittedAt: s.created_at // mapped from created_at
+            submittedAt: s.created_at
         };
     }));
 };
 
 export const submitChallenge = async (challengeId: string, userId: string, content: string) => {
-    // 1. Submit the challenge
     const { error } = await supabase.from('challenge_submissions').insert({
         challenge_id: challengeId,
         user_uid: userId,
@@ -1067,15 +1017,9 @@ export const submitChallenge = async (challengeId: string, userId: string, conte
     });
     if (error) throw error;
 
-    // 2. Notify Patrons
     try {
-        // Get Challenge Title
         const { data: challenge } = await supabase.from('challenges').select('title').eq('id', challengeId).single();
-        
-        // Get User Name
         const { data: user } = await supabase.from('users').select('name').eq('uid', userId).single();
-
-        // Get Patrons
         const { data: patrons } = await supabase.from('users').select('uid').eq('role', 'PATRON');
 
         if (challenge && user && patrons && patrons.length > 0) {
@@ -1084,14 +1028,13 @@ export const submitChallenge = async (challengeId: string, userId: string, conte
                 message: `New submission for "${challenge.title}" by ${user.name}`,
                 is_read: false,
                 link_to: 'challenges',
-                created_at: new Date().toISOString() // Optional if DB handles default
+                created_at: new Date().toISOString()
             }));
 
             await supabase.from('notifications').insert(notifications);
         }
     } catch (notifyError) {
         console.error("Failed to notify patrons:", notifyError);
-        // Don't fail the submission if notification fails
     }
 };
 
@@ -1100,7 +1043,6 @@ export const reviewSubmission = async (submissionId: string, status: string, cha
     if (error) throw error;
 
     if (status === 'APPROVED') {
-        // Use 'uid' to find and update user
         const { data: user } = await supabase.from('users').select('badges').eq('uid', userId).single();
         if (user) {
             const badges = user.badges || [];
@@ -1114,24 +1056,29 @@ export const reviewSubmission = async (submissionId: string, status: string, cha
 // --- Roadmaps ---
 
 export const getRoadmaps = async (): Promise<Roadmap[]> => {
-    const { data, error } = await supabase.from('roadmaps').select('*').order('created_at', { ascending: false });
+    // Use updated_at instead of created_at, as defined in the schema
+    const { data, error } = await supabase.from('roadmaps').select('*').order('updated_at', { ascending: false });
     if (error) throw error;
     
     return data.map((r: any) => ({
         id: r.id,
         skillLevel: r.skill_level,
         topic: r.topic,
-        milestones: r.milestones || [],
-        updatedAt: r.created_at
+        milestones: r.content,
+        updatedAt: r.updated_at // Mapped from 'updated_at'
     }));
 };
 
 export const addRoadmap = async (roadmap: Roadmap) => {
-    const { error } = await supabase.from('roadmaps').insert({
+    // Use upsert to handle updates for existing skill_level/topic combo if uniqueness is constrained
+    // The schema has UNIQUE(skill_level) constraint.
+    const { error } = await supabase.from('roadmaps').upsert({
         skill_level: roadmap.skillLevel,
         topic: roadmap.topic,
-        milestones: roadmap.milestones
-    });
+        content: roadmap.milestones,
+        updated_at: new Date().toISOString()
+    }, { onConflict: 'skill_level' });
+    
     if (error) throw error;
 };
 

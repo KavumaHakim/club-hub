@@ -1,6 +1,4 @@
 
-
-
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode, useRef } from 'react';
 import { Activity, AttendanceRecord, FeedItem, ProjectData, User, Resource, Notification, Room, ShowcaseItem, Suggestion, Challenge, ChallengeSubmission, Toast, ToastType, Roadmap } from './types';
 import * as api from './services/apiService';
@@ -136,7 +134,13 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
   }, []);
 
-  // ... (keep existing fetch functions: fetchActivities, fetchAttendance, fetchFeedItems, etc.)
+  // Helper to extract error messages safely
+  const getErrorMessage = (error: any) => {
+      if (typeof error === 'string') return error;
+      if (error && typeof error.message === 'string') return error.message;
+      return JSON.stringify(error);
+  };
+
   const fetchActivities = useCallback(async () => {
     setIsLoadingActivities(true);
     setActivitiesError(null);
@@ -145,7 +149,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
       setActivities(data);
     } catch (e: any) {
       console.error("Failed to fetch activities", e);
-      setActivitiesError(e.message || 'An unknown error occurred.');
+      setActivitiesError(getErrorMessage(e));
     } finally {
       setIsLoadingActivities(false);
     }
@@ -159,7 +163,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
       setAttendance(data);
     } catch (e: any) {
       console.error("Failed to fetch attendance", e);
-      setAttendanceError(e.message || 'An unknown error occurred.');
+      setAttendanceError(getErrorMessage(e));
     } finally {
       setIsLoadingAttendance(false);
     }
@@ -173,7 +177,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
       setFeedItems(data);
     } catch (e: any) {
       console.error("Failed to fetch feed items", e);
-      setFeedItemsError(e.message || 'An unknown error occurred.');
+      setFeedItemsError(getErrorMessage(e));
     } finally {
       setIsLoadingFeed(false);
     }
@@ -187,7 +191,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
       setProjectData(data);
     } catch (e: any) {
       console.error("Failed to fetch project data", e);
-      setProjectDataError(e.message || 'An unknown error occurred.');
+      setProjectDataError(getErrorMessage(e));
     } finally {
       setIsLoadingProjects(false);
     }
@@ -201,7 +205,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
       setAllUsers(data);
     } catch (e: any) {
       console.error("Failed to fetch users", e);
-      setAllUsersError(e.message || 'An unknown error occurred.');
+      setAllUsersError(getErrorMessage(e));
     } finally {
       setIsLoadingUsers(false);
     }
@@ -215,7 +219,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
       setRawResources(data);
     } catch (e: any) {
       console.error("Failed to fetch resources", e);
-      setResourcesError(e.message || 'An unknown error occurred.');
+      setResourcesError(getErrorMessage(e));
       setIsLoadingResources(false); 
     }
   }, []);
@@ -228,7 +232,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
         setNotifications(data);
     } catch (e: any) {
         console.error("Failed to fetch notifications", e);
-        setNotificationsError(e.message || 'An unknown error occurred.');
+        setNotificationsError(getErrorMessage(e));
     } finally {
         setIsLoadingNotifications(false);
     }
@@ -242,7 +246,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
         setRooms(data);
     } catch (e: any) {
         console.error("Failed to fetch rooms", e);
-        setRoomsError(e.message || 'An unknown error occurred.');
+        setRoomsError(getErrorMessage(e));
     } finally {
         setIsLoadingRooms(false);
     }
@@ -256,7 +260,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
         setShowcaseItems(data);
     } catch (e: any) {
         console.error("Failed to fetch showcase items", e);
-        setShowcaseError(e.message || 'An unknown error occurred.');
+        setShowcaseError(getErrorMessage(e));
     } finally {
         setIsLoadingShowcase(false);
     }
@@ -270,7 +274,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
         setSuggestions(data);
     } catch (e: any) {
         console.error("Failed to fetch suggestions", e);
-        setSuggestionsError(e.message || 'An unknown error occurred.');
+        setSuggestionsError(getErrorMessage(e));
     } finally {
         setIsLoadingSuggestions(false);
     }
@@ -284,7 +288,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
         setChallenges(data);
     } catch (e: any) {
         console.error("Failed to fetch challenges", e);
-        setChallengesError(e.message || 'An unknown error occurred.');
+        setChallengesError(getErrorMessage(e));
     } finally {
         setIsLoadingChallenges(false);
     }
@@ -298,7 +302,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
         setRoadmaps(data);
     } catch (e: any) {
         console.error("Failed to fetch roadmaps", e);
-        setRoadmapsError(e.message || 'An unknown error occurred.');
+        setRoadmapsError(getErrorMessage(e));
     } finally {
         setIsLoadingRoadmaps(false);
     }

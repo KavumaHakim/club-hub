@@ -46,6 +46,12 @@ export interface ActivityIdea {
   location: string;
 }
 
+// Helper to clean markdown code blocks from JSON strings
+const cleanJSON = (text: string) => {
+  if (!text) return "";
+  return text.replace(/^```(json)?\s*/, '').replace(/\s*```$/, '').trim();
+};
+
 export const generateClubActivityIdea = async (): Promise<ActivityIdea> => {
   if (!ai) {
       throw new Error("AI Service Unavailable: API Key not configured.");
@@ -82,15 +88,8 @@ export const generateClubActivityIdea = async (): Promise<ActivityIdea> => {
         },
       });
 
-      let text = response.text;
-      if (!text) {
-        throw new Error("No response from AI");
-      }
-
-      // Cleanup: Remove markdown code blocks if present (e.g. ```json ... ```)
-      if (text.startsWith('```')) {
-          text = text.replace(/^```(json)?\s*/, '').replace(/\s*```$/, '');
-      }
+      const text = cleanJSON(response.text || "");
+      if (!text) throw new Error("No response from AI");
 
       return JSON.parse(text) as ActivityIdea;
   } catch (error) {
@@ -250,7 +249,7 @@ export const generateLearningRoadmap = async (topic: string, skillLevel: string)
             }
         });
 
-        const text = response.text;
+        const text = cleanJSON(response.text || "");
         if (!text) throw new Error("No response");
         return JSON.parse(text).milestones;
     } catch (error) {

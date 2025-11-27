@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { User, Roadmap, Milestone } from '../types';
 import { useData } from '../DataContext';
@@ -8,7 +7,6 @@ import { MapIcon } from './icons/MapIcon';
 import { PlusCircleIcon } from './icons/PlusCircleIcon';
 import { XIcon } from './icons/XIcon';
 import { TrashIcon } from './icons/TrashIcon';
-import { CheckCircleIcon } from './icons/CheckCircleIcon';
 import { BookOpenIcon } from './icons/BookOpenIcon';
 import { VideoCameraIcon } from './icons/VideoCameraIcon';
 import { CodeIcon } from './icons/CodeIcon';
