@@ -389,29 +389,38 @@ export const getProjectData = async (): Promise<ProjectData | null> => {
     if (taskError) throw taskError;
 
     const { data: assignments, error: assignError } = await supabase.from('project_task_assignees').select('*, grade');
-    if (assignError) throw assignError;
+    if (assignError) {
+        // If column doesn't exist, this might fail differently depending on Supabase version, but usually ignored in select unless specific
+        if (assignError.code === 'PGRST204' && assignError.message.includes('grade')) {
+             console.warn("Grade column missing in project_task_assignees. Please run schema update.");
+        } else {
+             throw assignError;
+        }
+    }
 
     const assignmentsMap = new Map<string, string[]>();
     const submissionsMap = new Map<string, { [userId: string]: { filePath: string; submittedAt: string, grade?: number | null } }>();
 
-    assignments.forEach(a => {
-        const taskIdStr = String(a.task_id);
-        if (!assignmentsMap.has(taskIdStr)) {
-            assignmentsMap.set(taskIdStr, []);
-        }
-        assignmentsMap.get(taskIdStr)!.push(a.user_uid);
-
-        if (a.submission_file_path && a.submitted_at) {
-            if (!submissionsMap.has(taskIdStr)) {
-                submissionsMap.set(taskIdStr, {});
+    if (assignments) {
+        assignments.forEach(a => {
+            const taskIdStr = String(a.task_id);
+            if (!assignmentsMap.has(taskIdStr)) {
+                assignmentsMap.set(taskIdStr, []);
             }
-            submissionsMap.get(taskIdStr)![a.user_uid] = {
-                filePath: a.submission_file_path,
-                submittedAt: a.submitted_at,
-                grade: a.grade
-            };
-        }
-    });
+            assignmentsMap.get(taskIdStr)!.push(a.user_uid);
+
+            if (a.submission_file_path && a.submitted_at) {
+                if (!submissionsMap.has(taskIdStr)) {
+                    submissionsMap.set(taskIdStr, {});
+                }
+                submissionsMap.get(taskIdStr)![a.user_uid] = {
+                    filePath: a.submission_file_path,
+                    submittedAt: a.submitted_at,
+                    grade: a.grade
+                };
+            }
+        });
+    }
 
     const projectData: ProjectData = {
         tasks: {},
@@ -456,7 +465,12 @@ export const gradeSubmission = async (taskId: string, userId: string, grade: num
         .update({ grade: grade })
         .match({ task_id: taskId, user_uid: userId });
 
-    if (error) throw error;
+    if (error) {
+        if (error.code === 'PGRST204') {
+             throw new Error("Database schema outdated. Please run the 'Project Submissions Schema' SQL from README.md.");
+        }
+        throw error;
+    }
 };
 
 export const addProjectTask = async (taskData: { content: string, priority: TaskPriority, dueDate?: string, tags: string[], assigneeIds: string[] }, userId: string, columnId: string) => {
@@ -624,7 +638,12 @@ export const uploadTaskSubmission = async (taskId: string, file: File, userId: s
     .match({ task_id: taskId, user_uid: userId });
 
   if (updateError) {
+    // If update fails, clean up the uploaded file
     await supabase.storage.from('resource_uploads').remove([filePath]);
+    
+    if (updateError.code === 'PGRST204') {
+         throw new Error("Database schema outdated. Please run the 'Project Submissions Schema' SQL from README.md.");
+    }
     throw updateError;
   }
 
