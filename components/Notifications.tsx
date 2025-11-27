@@ -15,6 +15,9 @@ const Notifications: React.FC<NotificationsProps> = ({ currentUser, setActiveTab
     const { notifications, fetchNotifications, isLoadingNotifications } = useData();
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const [permission, setPermission] = useState(
+        typeof Notification !== 'undefined' ? Notification.permission : 'default'
+    );
 
     const unreadCount = useMemo(() => notifications.filter(n => !n.isRead).length, [notifications]);
 
@@ -50,6 +53,18 @@ const Notifications: React.FC<NotificationsProps> = ({ currentUser, setActiveTab
         await fetchNotifications();
     }, [currentUser.uid, unreadCount, fetchNotifications]);
 
+    const requestPermission = useCallback(async () => {
+        if (!('Notification' in window)) return;
+        const result = await Notification.requestPermission();
+        setPermission(result);
+        if (result === 'granted') {
+            new Notification('Notifications Enabled', { 
+                body: 'You will now receive alerts for club activities.',
+                icon: '/favicon.svg'
+            });
+        }
+    }, []);
+
     return (
         <div className="relative" ref={dropdownRef}>
             <button
@@ -75,11 +90,21 @@ const Notifications: React.FC<NotificationsProps> = ({ currentUser, setActiveTab
                 >
                     <div className="p-3 flex justify-between items-center border-b border-gray-200 dark:border-gray-700">
                         <h4 className="font-semibold text-gray-800 dark:text-gray-200">Notifications</h4>
-                        {unreadCount > 0 && (
-                            <button onClick={handleMarkAllRead} className="text-xs text-pink-600 hover:underline dark:text-pink-400">
-                                Mark all as read
-                            </button>
-                        )}
+                        <div className="flex gap-2 items-center">
+                            {permission === 'default' && (
+                                <button 
+                                    onClick={requestPermission} 
+                                    className="text-[10px] font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 px-2 py-1 rounded hover:bg-blue-200 transition-colors"
+                                >
+                                    Enable Push
+                                </button>
+                            )}
+                            {unreadCount > 0 && (
+                                <button onClick={handleMarkAllRead} className="text-xs text-pink-600 hover:underline dark:text-pink-400">
+                                    Mark all read
+                                </button>
+                            )}
+                        </div>
                     </div>
                     <div className="max-h-80 overflow-y-auto custom-scrollbar">
                         {isLoadingNotifications ? (
