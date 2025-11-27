@@ -1,11 +1,12 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { RobotIcon } from './icons/RobotIcon';
 import { XIcon } from './icons/XIcon';
 import { SendIcon } from './icons/SendIcon';
 import * as geminiService from '../services/geminiService';
 import { User } from '../types';
 import { FormattedMessage } from './FormattedMessage';
+import { useData } from '../DataContext';
 
 interface AiTutorProps {
     currentUser: User;
@@ -19,12 +20,45 @@ interface Message {
 const AiTutor: React.FC<AiTutorProps> = ({ currentUser }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<Message[]>([
-        { role: 'model', text: `Hi ${currentUser.name.split(' ')[0]}! I'm your AI Tutor. I can help you learn coding concepts or debug issues, but I won't write the code for you! What are you working on?` }
+        { role: 'model', text: `Hi ${currentUser.name.split(' ')[0]}! I'm your AI Tutor. I can help you learn coding concepts or debug issues, but I won't write the code for you! I also know what's happening in the club. What are you working on?` }
     ]);
     const [inputText, setInputText] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+    
+    // Get real-time club data
+    const { activities, challenges, feedItems } = useData();
+
+    // Memoize the context string so it updates when data changes
+    const clubContext = useMemo(() => {
+        const upcomingActivities = activities
+            .filter(a => new Date(a.date) >= new Date())
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+            .map(a => `- ${a.title} on ${a.date} at ${a.location} (${a.category})`)
+            .join('\n');
+
+        const activeChallenges = challenges
+            .filter(c => c.status === 'ACTIVE')
+            .map(c => `- ${c.title} (Due: ${c.deadline}): ${c.description}`)
+            .join('\n');
+            
+        const latestAnnouncements = feedItems
+            .slice(0, 3)
+            .map(f => `- ${f.title || 'Post'}: ${f.message} (by ${f.author})`)
+            .join('\n');
+
+        return `
+        UPCOMING ACTIVITIES:
+        ${upcomingActivities || 'None scheduled.'}
+
+        ACTIVE CHALLENGES:
+        ${activeChallenges || 'None active.'}
+
+        LATEST ANNOUNCEMENTS:
+        ${latestAnnouncements || 'None.'}
+        `;
+    }, [activities, challenges, feedItems]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -54,7 +88,7 @@ const AiTutor: React.FC<AiTutorProps> = ({ currentUser }) => {
                 parts: [{ text: m.text }]
             }));
 
-            const responseText = await geminiService.getAiTutorResponse(history, userMessage);
+            const responseText = await geminiService.getAiTutorResponse(history, userMessage, clubContext);
             
             if (responseText) {
                 setMessages(prev => [...prev, { role: 'model', text: responseText }]);

@@ -122,7 +122,11 @@ export const getAIChatResponse = async (history: { role: 'user' | 'model', parts
     }
 };
 
-export const getAiTutorResponse = async (history: { role: 'user' | 'model', parts: { text: string }[] }[], message: string) => {
+export const getAiTutorResponse = async (
+    history: { role: 'user' | 'model', parts: { text: string }[] }[], 
+    message: string,
+    clubContext: string = ''
+) => {
     if (!ai) {
         return "I'm offline right now (API Key Missing).";
     }
@@ -134,6 +138,9 @@ export const getAiTutorResponse = async (history: { role: 'user' | 'model', part
                 systemInstruction: `You are a friendly, patient, and wise AI Tutor for a high school ICT Club. 
                 Your goal is to TEACH, not to do the work for the students.
                 
+                REAL-TIME CLUB INFORMATION (Use this to answer questions about the club schedule, challenges, or news):
+                ${clubContext}
+                
                 CRITICAL RULES:
                 1. DO NOT write complete, functional code solutions for the user's specific problem.
                 2. If the user asks for code (e.g., "Write a calculator"), refuse politely and offer to explain the *logic*, *algorithm*, or provide *pseudocode* or *flowchart descriptions*.
@@ -141,7 +148,8 @@ export const getAiTutorResponse = async (history: { role: 'user' | 'model', part
                 4. Guide the user with hints, questions, and debugging tips. Ask them Socratic questions to lead them to the answer.
                 5. If the user presents code that is broken, explain *why* it is broken and hint at the fix, do not just rewrite it fixed.
                 6. Be encouraging and fun. Use emojis occasionally.
-                7. Keep responses concise and easy to read.`
+                7. Keep responses concise and easy to read.
+                8. If asked about club activities, challenges, or news, use the REAL-TIME CLUB INFORMATION provided above.`
             },
             history: history
         });
