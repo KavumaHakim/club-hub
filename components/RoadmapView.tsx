@@ -374,7 +374,7 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
                 const roadmap = roadmaps.find(r => r.id === activeRoadmapId);
                 if (roadmap) {
                     const completedCount = (progress[activeRoadmapId]?.length || 0) + 1; // +1 for current
-                    if (completedCount === roadmap.milestones.length) {
+                    if (completedCount === (roadmap.milestones || []).length) {
                         // Level Up Logic
                         const nextLevel = 
                             roadmap.skillLevel === 'BEGINNER' ? 'INTERMEDIATE' : 
@@ -472,6 +472,7 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
                 <div className="grid gap-12">
                     {visibleRoadmaps.map(roadmap => {
                         const userCompletedIndices = progress[roadmap.id!] || [];
+                        const milestones = roadmap.milestones || [];
                         
                         return (
                             <div key={roadmap.id} className="relative">
@@ -490,7 +491,7 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
                                             )}
                                         </h3>
                                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                            {roadmap.milestones.length} Milestones • {userCompletedIndices.length} Completed
+                                            {milestones.length} Milestones • {userCompletedIndices.length} Completed
                                         </p>
                                     </div>
                                     {isPatron && (
@@ -505,7 +506,7 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
                                 </div>
 
                                 <div className="relative">
-                                    {roadmap.milestones.map((ms, idx) => {
+                                    {milestones.map((ms, idx) => {
                                         const isCompleted = userCompletedIndices.includes(idx);
                                         // A milestone is locked if the previous one isn't completed (unless it's the first one)
                                         const isLocked = idx > 0 && !userCompletedIndices.includes(idx - 1) && !isPatron;
@@ -515,7 +516,7 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
                                                 key={idx} 
                                                 milestone={ms} 
                                                 index={idx} 
-                                                isLast={idx === roadmap.milestones.length - 1} 
+                                                isLast={idx === milestones.length - 1} 
                                                 isLocked={isLocked}
                                                 isCompleted={isCompleted}
                                                 isPatron={isPatron}

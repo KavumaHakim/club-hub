@@ -1,6 +1,4 @@
 
-
-
 import React, { useState, useCallback, useMemo } from 'react';
 import { User, ShowcaseItem, Tab } from '../types';
 import { useData } from '../DataContext';

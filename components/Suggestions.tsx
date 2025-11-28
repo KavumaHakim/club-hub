@@ -1,6 +1,4 @@
 
-
-
 import React, { useState, useMemo, useCallback } from 'react';
 import { User, Suggestion, SuggestionType, SuggestionStatus } from '../types';
 import { useData } from '../DataContext';
