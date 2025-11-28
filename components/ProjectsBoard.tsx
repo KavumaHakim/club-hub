@@ -1,4 +1,6 @@
 
+
+
 import React, { useState, useCallback } from 'react';
 import { User, ProjectData, ProjectTask, TaskPriority } from '../types';
 import * as api from '../services/apiService';
@@ -224,18 +226,21 @@ const ProjectsBoard: React.FC<ProjectsBoardProps> = ({ currentUser }) => {
     }
   };
 
-  const handleGradeSubmission = useCallback(async (taskId: string, userId: string, grade: number) => {
+  const handleGradeSubmission = useCallback(async (taskId: string, userId: string, grade: number, feedback?: string) => {
       try {
-          await api.gradeSubmission(taskId, userId, grade);
+          await api.gradeSubmission(taskId, userId, grade, feedback);
           // Optimistic update
           if (data) {
               const newData = JSON.parse(JSON.stringify(data));
               if (newData.tasks[taskId]?.submissions?.[userId]) {
                   newData.tasks[taskId].submissions[userId].grade = grade;
+                  if (feedback !== undefined) {
+                      newData.tasks[taskId].submissions[userId].feedback = feedback;
+                  }
                   setProjectData(newData);
               }
           }
-          showToast("Grade saved!", "success");
+          showToast("Feedback saved!", "success");
       } catch (error: any) {
           console.error("Failed to grade submission:", error);
           showToast(`Could not save grade: ${error.message}`, "error");

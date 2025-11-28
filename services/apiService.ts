@@ -1,6 +1,8 @@
 
+
+
 import { supabase } from './supabaseClient';
-import { User, Activity, AttendanceRecord, FeedItem, ProjectData, ProjectTask, Resource, AppNotification, Room, Message, ShowcaseItem, Suggestion, Challenge, ChallengeSubmission, FeedComment, SuggestionType, SuggestionStatus, SubmissionStatus, ActivityCategory, FeedItemType, TaskPriority, ResourceCategory, ResourceType, Tab, Roadmap, RoadmapProgress } from '../types';
+import { User, Activity, AttendanceRecord, FeedItem, ProjectData, ProjectTask, Resource, AppNotification, Room, Message, ShowcaseItem, Suggestion, Challenge, ChallengeSubmission, FeedComment, SuggestionType, SuggestionStatus, SubmissionStatus, ActivityCategory, FeedItemType, TaskPriority, ResourceCategory, ResourceType, Tab, Roadmap, RoadmapProgress, ShowcaseComment } from '../types';
 
 // --- Auth & User ---
 
@@ -411,7 +413,7 @@ export const getProjectData = async (): Promise<ProjectData | null> => {
         }
 
         const assignmentsMap = new Map<string, string[]>();
-        const submissionsMap = new Map<string, { [userId: string]: { filePath: string; submittedAt: string, grade?: number | null } }>();
+        const submissionsMap = new Map<string, { [userId: string]: { filePath: string; submittedAt: string, grade?: number | null, feedback?: string | null } }>();
 
         if (assignments) {
             assignments.forEach(a => {
@@ -429,7 +431,8 @@ export const getProjectData = async (): Promise<ProjectData | null> => {
                     submissionsMap.get(taskIdStr)![a.user_uid] = {
                         filePath: a.submission_file_path,
                         submittedAt: a.submitted_at,
-                        grade: a.grade // might be undefined if column doesn't exist
+                        grade: a.grade, // might be undefined if column doesn't exist
+                        feedback: a.feedback
                     };
                 }
             });
@@ -476,10 +479,15 @@ export const getProjectData = async (): Promise<ProjectData | null> => {
     }
 };
 
-export const gradeSubmission = async (taskId: string, userId: string, grade: number) => {
+export const gradeSubmission = async (taskId: string, userId: string, grade: number, feedback?: string) => {
+    const updateData: any = { grade };
+    if (feedback !== undefined) {
+        updateData.feedback = feedback;
+    }
+
     const { error } = await supabase
         .from('project_task_assignees')
-        .update({ grade: grade })
+        .update(updateData)
         .match({ task_id: taskId, user_uid: userId });
 
     if (error) {
@@ -926,8 +934,11 @@ export const uploadChatFile = async (file: File, roomId: string, userId: string)
 export const getShowcaseItems = async (): Promise<ShowcaseItem[]> => {
     try {
         const { data, error } = await supabase
-            .from('showcase_items') // Updated to match user table definition
-            .select('*')
+            .from('showcase_items') 
+            .select(`
+                *,
+                showcase_comments ( count )
+            `)
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -939,7 +950,7 @@ export const getShowcaseItems = async (): Promise<ShowcaseItem[]> => {
             throw error;
         }
 
-        // Manual join for users to handle auth.users reference cleanly
+        // Manual join for users
         const userIds = [...new Set(data.map((item: any) => item.user_uid))];
         
         let userMap = new Map();
@@ -965,7 +976,8 @@ export const getShowcaseItems = async (): Promise<ShowcaseItem[]> => {
                 title: item.title,
                 description: item.description,
                 codeContent: item.code_content,
-                likes: item.likes || [] 
+                likes: item.likes || [],
+                commentCount: item.showcase_comments[0]?.count || 0
             };
         });
     } catch (error) {
@@ -994,6 +1006,63 @@ export const toggleShowcaseLike = async (itemId: string, userId: string, current
     }
     const { error } = await supabase.from('showcase_items').update({ likes: newLikes }).eq('id', itemId);
     if (error) throw error;
+};
+
+export const getShowcaseComments = async (showcaseItemId: string): Promise<ShowcaseComment[]> => {
+    const { data: comments, error } = await supabase
+        .from('showcase_comments')
+        .select('*')
+        .eq('showcase_item_id', showcaseItemId)
+        .order('created_at', { ascending: true });
+    
+    if (error) {
+        if (error.code === '42P01') return []; // Table missing gracefully
+        throw error;
+    }
+
+    const userIds = [...new Set(comments.map((c: any) => c.user_uid))];
+    let usersMap: Record<string, any> = {};
+    
+    if (userIds.length > 0) {
+        const { data: users } = await supabase.from('users').select('uid, name, avatar_url').in('uid', userIds);
+        if (users) {
+            users.forEach((u: any) => {
+                usersMap[u.uid] = u;
+            });
+        }
+    }
+
+    return comments.map((c: any) => ({
+        id: String(c.id),
+        showcaseItemId: String(c.showcase_item_id),
+        userId: c.user_uid,
+        userName: usersMap[c.user_uid]?.name || 'Unknown',
+        userAvatarUrl: usersMap[c.user_uid]?.avatar_url,
+        content: c.content,
+        createdAt: new Date(c.created_at).toLocaleString()
+    }));
+};
+
+export const addShowcaseComment = async (showcaseItemId: string, userId: string, content: string): Promise<ShowcaseComment> => {
+    const { data: user } = await supabase.from('users').select('name, avatar_url').eq('uid', userId).maybeSingle();
+    
+    const { data, error } = await supabase.from('showcase_comments').insert({
+        showcase_item_id: showcaseItemId,
+        user_uid: userId,
+        content: content
+    }).select().single();
+    
+    if (error) throw error;
+
+    return {
+        id: String(data.id),
+        showcaseItemId: String(data.showcase_item_id),
+        userId: data.user_uid,
+        userName: user?.name || 'Unknown',
+        userAvatarUrl: user?.avatar_url,
+        content: data.content,
+        createdAt: new Date(data.created_at).toLocaleString()
+    };
 };
 
 // --- Suggestions ---

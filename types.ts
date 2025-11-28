@@ -1,6 +1,7 @@
 
 
 
+
 export type Tab = 'feed' | 'activities' | 'attendance' | 'projects' | 'profile' | 'members' | 'playground' | 'resources' | 'chat' | 'showcase' | 'suggestions' | 'challenges' | 'roadmap';
 
 export interface User {
@@ -75,7 +76,14 @@ export interface ProjectTask {
   priority: TaskPriority;
   dueDate?: string;
   tags?: string[];
-  submissions?: { [userId: string]: { filePath: string; submittedAt: string; grade?: number | null } };
+  submissions?: { 
+    [userId: string]: { 
+      filePath: string; 
+      submittedAt: string; 
+      grade?: number | null;
+      feedback?: string | null;
+    } 
+  };
 }
 
 export interface ProjectColumn {
@@ -149,6 +157,17 @@ export interface ShowcaseItem {
   description: string;
   codeContent: string;
   likes?: string[]; // Array of user IDs who liked the post
+  commentCount?: number;
+}
+
+export interface ShowcaseComment {
+  id: string;
+  showcaseItemId: string;
+  userId: string;
+  userName: string;
+  userAvatarUrl?: string;
+  content: string;
+  createdAt: string;
 }
 
 // Suggestions Types

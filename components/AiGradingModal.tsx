@@ -1,4 +1,6 @@
 
+
+
 import React, { useState, useEffect } from 'react';
 import { SparklesIcon } from './icons/SparklesIcon';
 import { XIcon } from './icons/XIcon';
@@ -10,7 +12,7 @@ interface AiGradingModalProps {
     onClose: () => void;
     taskContent: string;
     submissionCode: string;
-    onApplyGrade: (grade: number) => void;
+    onApplyGrade: (grade: number, feedback: string) => void;
 }
 
 const AiGradingModal: React.FC<AiGradingModalProps> = ({ isOpen, onClose, taskContent, submissionCode, onApplyGrade }) => {
@@ -117,7 +119,7 @@ const AiGradingModal: React.FC<AiGradingModalProps> = ({ isOpen, onClose, taskCo
                             Cancel
                         </button>
                         <button 
-                            onClick={() => onApplyGrade(result.grade)}
+                            onClick={() => onApplyGrade(result.grade, result.feedback)}
                             className="flex-1 py-2.5 bg-gradient-to-r from-pink-600 to-purple-600 text-white rounded-xl font-bold hover:shadow-lg transition-all transform active:scale-95"
                         >
                             Apply Grade

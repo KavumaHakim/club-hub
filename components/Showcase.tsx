@@ -1,12 +1,16 @@
 
-import React, { useState, useCallback, useMemo } from 'react';
-import { User, ShowcaseItem, Tab } from '../types';
+
+
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { User, ShowcaseItem, Tab, ShowcaseComment } from '../types';
 import { useData } from '../DataContext';
 import * as api from '../services/apiService';
 import { HeartIcon } from './icons/HeartIcon';
 import { CodeIcon } from './icons/CodeIcon';
 import { CopyIcon } from './icons/CopyIcon';
 import { PlayIcon } from './icons/PlayIcon';
+import { ChatBubbleIcon } from './icons/ChatBubbleIcon';
+import { SendIcon } from './icons/SendIcon';
 import CodeRunnerModal from './CodeRunnerModal';
 
 interface ShowcaseProps {
@@ -40,9 +44,54 @@ const ShowcaseCard: React.FC<{
     onClone: (code: string) => void,
     onRun: (code: string, title: string) => void
 }> = ({ item, currentUser, onLike, onClone, onRun }) => {
-    // Ensure likes is an array
-    const likes = item.likes || [];
+    const [likes, setLikes] = useState(item.likes || []);
+    const [showComments, setShowComments] = useState(false);
+    const [comments, setComments] = useState<ShowcaseComment[]>([]);
+    const [commentCount, setCommentCount] = useState(item.commentCount || 0);
+    const [isLoadingComments, setIsLoadingComments] = useState(false);
+    const [newComment, setNewComment] = useState('');
+    const [isPosting, setIsPosting] = useState(false);
+
     const isLiked = likes.includes(currentUser.uid);
+
+    useEffect(() => {
+        setLikes(item.likes || []);
+        setCommentCount(item.commentCount || 0);
+    }, [item]);
+
+    const handleToggleComments = async () => {
+        if (!showComments) {
+            setIsLoadingComments(true);
+            try {
+                const fetchedComments = await api.getShowcaseComments(item.id);
+                setComments(fetchedComments);
+                setCommentCount(fetchedComments.length);
+            } catch (error) {
+                console.error("Failed to load comments", error);
+            } finally {
+                setIsLoadingComments(false);
+            }
+        }
+        setShowComments(!showComments);
+    };
+
+    const handlePostComment = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newComment.trim()) return;
+
+        setIsPosting(true);
+        try {
+            const comment = await api.addShowcaseComment(item.id, currentUser.uid, newComment);
+            setComments([...comments, comment]);
+            setCommentCount(prev => prev + 1);
+            setNewComment('');
+        } catch (error) {
+            console.error("Failed to post comment", error);
+            alert("Failed to post comment.");
+        } finally {
+            setIsPosting(false);
+        }
+    };
     
     return (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col transition-all duration-300 hover:shadow-lg">
@@ -81,7 +130,7 @@ const ShowcaseCard: React.FC<{
             </div>
 
             <div className="px-5 py-3 bg-gray-50 dark:bg-gray-750 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                     <button 
                         onClick={() => onLike(item.id, likes)}
                         className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors ${isLiked ? 'text-pink-500 bg-pink-50 dark:bg-pink-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
@@ -89,24 +138,75 @@ const ShowcaseCard: React.FC<{
                         <HeartIcon className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
                         <span className="text-xs font-medium">{likes.length}</span>
                     </button>
-                    <button
-                        onClick={() => onRun(item.codeContent, item.title)}
-                        className="flex items-center gap-1 px-2 py-1 rounded-md transition-colors text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
-                        title="Run Code"
+                    <button 
+                        onClick={handleToggleComments}
+                        className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors ${showComments ? 'text-purple-500 bg-purple-50 dark:bg-purple-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
                     >
-                        <PlayIcon className="h-4 w-4" />
-                        <span className="text-xs font-medium hidden sm:inline">Run</span>
+                        <ChatBubbleIcon className="h-4 w-4" />
+                        <span className="text-xs font-medium">{commentCount}</span>
                     </button>
                 </div>
                 
-                <button 
-                    onClick={() => onClone(item.codeContent)}
-                    className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 px-3 py-1.5 rounded-lg transition-colors shadow-sm"
-                >
-                    <CopyIcon className="h-3.5 w-3.5" />
-                    <span>Clone</span>
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => onRun(item.codeContent, item.title)}
+                        className="p-1.5 rounded-md transition-colors text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+                        title="Run Code"
+                    >
+                        <PlayIcon className="h-4 w-4" />
+                    </button>
+                    <button 
+                        onClick={() => onClone(item.codeContent)}
+                        className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 px-3 py-1.5 rounded-lg transition-colors shadow-sm"
+                    >
+                        <CopyIcon className="h-3.5 w-3.5" />
+                        <span className="hidden sm:inline">Clone</span>
+                    </button>
+                </div>
             </div>
+
+            {/* Comments Section */}
+            {showComments && (
+                <div className="bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-700 p-4 animate-fade-in-down">
+                    <div className="space-y-4 mb-4 max-h-60 overflow-y-auto custom-scrollbar">
+                        {isLoadingComments ? (
+                            <p className="text-center text-xs text-gray-500">Loading comments...</p>
+                        ) : comments.length === 0 ? (
+                            <p className="text-center text-xs text-gray-400 italic">No comments yet. Start the discussion!</p>
+                        ) : (
+                            comments.map(comment => (
+                                <div key={comment.id} className="flex gap-3 text-sm">
+                                    <img src={comment.userAvatarUrl || `https://i.pravatar.cc/24?u=${comment.userId}`} alt={comment.userName} className="w-6 h-6 rounded-full object-cover flex-shrink-0 mt-1" />
+                                    <div>
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="font-bold text-gray-900 dark:text-white text-xs">{comment.userName}</span>
+                                            <span className="text-[10px] text-gray-400">{comment.createdAt}</span>
+                                        </div>
+                                        <p className="text-gray-700 dark:text-gray-300 text-xs mt-0.5">{comment.content}</p>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+                    <form onSubmit={handlePostComment} className="flex gap-2 items-center">
+                        <input 
+                            type="text" 
+                            value={newComment}
+                            onChange={(e) => setNewComment(e.target.value)}
+                            placeholder="Add a comment..." 
+                            className="flex-1 pl-3 pr-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-xs focus:ring-1 focus:ring-purple-500 dark:text-white placeholder-gray-500 outline-none"
+                        />
+                        <button 
+                            type="submit"
+                            disabled={!newComment.trim() || isPosting}
+                            className="p-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                            <SendIcon className="w-3 h-3 transform rotate-90" />
+                        </button>
+                    </form>
+                </div>
+            )}
         </div>
     );
 };

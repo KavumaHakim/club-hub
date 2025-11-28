@@ -1,4 +1,6 @@
 
+
+
 import React, { memo, useState, useEffect, useRef } from 'react';
 import { ProjectTask, User } from '../types';
 import { TrashIcon } from './icons/TrashIcon';
@@ -221,6 +223,14 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = (props) => {
                             </button>
                         )}
                     </div>
+                    
+                    {/* Feedback Display */}
+                    {submission.feedback && (
+                        <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-100 dark:border-yellow-900/30 rounded-lg">
+                            <p className="text-xs font-bold text-yellow-700 dark:text-yellow-500 mb-1">Feedback:</p>
+                            <p className="text-xs text-gray-700 dark:text-gray-300 italic">{submission.feedback}</p>
+                        </div>
+                    )}
                 </div>
              ) : canSubmit ? (
                 <div onClick={e => e.stopPropagation()}>
