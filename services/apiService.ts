@@ -1193,7 +1193,7 @@ export const getRoadmaps = async (): Promise<Roadmap[]> => {
             id: String(r.id),
             skillLevel: r.skill_level,
             topic: r.topic,
-            milestones: r.milestones, // JSON
+            milestones: r.content,
             updatedAt: r.updated_at
         }));
     } catch (error) {
@@ -1205,7 +1205,7 @@ export const addRoadmap = async (roadmap: Roadmap) => {
     const { error } = await supabase.from('roadmaps').insert({
         skill_level: roadmap.skillLevel,
         topic: roadmap.topic,
-        milestones: roadmap.milestones
+        content: roadmap.milestones
     });
     if (error) throw error;
 };
@@ -1218,9 +1218,9 @@ export const deleteRoadmap = async (id: string) => {
 export const getUserRoadmapProgress = async (userId: string, roadmapId: string): Promise<RoadmapProgress | null> => {
     try {
         const { data, error } = await supabase
-            .from('roadmap_progress')
+            .from('user_roadmap_progress')
             .select('*')
-            .eq('user_uid', userId)
+            .eq('user_id', userId)
             .eq('roadmap_id', roadmapId)
             .maybeSingle();
         
@@ -1232,9 +1232,9 @@ export const getUserRoadmapProgress = async (userId: string, roadmapId: string):
 
         return {
             id: String(data.id),
-            userId: data.user_uid,
+            userId: data.user_id,
             roadmapId: String(data.roadmap_id),
-            completedMilestoneIndices: data.completed_indices || []
+            completedMilestoneIndices: data.completed_milestone_indices || []
         };
     } catch (error) {
         return null;
@@ -1243,27 +1243,27 @@ export const getUserRoadmapProgress = async (userId: string, roadmapId: string):
 
 export const updateMilestoneProgress = async (userId: string, roadmapId: string, milestoneIndex: number) => {
     const { data: existing, error: fetchError } = await supabase
-        .from('roadmap_progress')
+        .from('user_roadmap_progress')
         .select('*')
-        .eq('user_uid', userId)
+        .eq('user_id', userId)
         .eq('roadmap_id', roadmapId)
         .maybeSingle();
     
-    if (fetchError && fetchError.code !== 'PGRST116') throw fetchError; // PGRST116 is no rows returned
+    if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
 
     if (existing) {
-        const indices = new Set(existing.completed_indices || []);
+        const indices = new Set(existing.completed_milestone_indices || []);
         indices.add(milestoneIndex);
         const { error } = await supabase
-            .from('roadmap_progress')
-            .update({ completed_indices: Array.from(indices) })
+            .from('user_roadmap_progress')
+            .update({ completed_milestone_indices: Array.from(indices) })
             .eq('id', existing.id);
         if (error) throw error;
     } else {
-        const { error } = await supabase.from('roadmap_progress').insert({
-            user_uid: userId,
+        const { error } = await supabase.from('user_roadmap_progress').insert({
+            user_id: userId,
             roadmap_id: roadmapId,
-            completed_indices: [milestoneIndex]
+            completed_milestone_indices: [milestoneIndex]
         });
         if (error) throw error;
     }

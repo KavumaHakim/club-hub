@@ -1,5 +1,4 @@
 
-
 # 🚀 ICT Club Hub (Naggalama)
 
 ![Banner](https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=EC4899,8B5CF6,6366f1&height=250&section=header&text=ICT%20Club%20Hub&fontSize=80&fontColor=ffffff&desc=Connect.%20Code.%20Create.&descSize=20&fontAlignY=40)
