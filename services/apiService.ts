@@ -1,3 +1,4 @@
+
 import { supabase } from './supabaseClient';
 import { User, Activity, AttendanceRecord, FeedItem, ProjectData, ProjectTask, Resource, AppNotification, Room, Message, ShowcaseItem, Suggestion, Challenge, ChallengeSubmission, FeedComment, SuggestionType, SuggestionStatus, SubmissionStatus, ActivityCategory, FeedItemType, TaskPriority, ResourceCategory, ResourceType, Tab, Roadmap, RoadmapProgress } from '../types';
 
@@ -166,6 +167,11 @@ export const resetPasswordWithOtp = async (email: string, otp: string, newPasswo
     if (updateError) throw updateError;
 };
 
+export const updateUserSkillLevel = async (userId: string, newLevel: string) => {
+    const { error } = await supabase.from('users').update({ skill_level: newLevel }).eq('uid', userId);
+    if (error) throw error;
+};
+
 // --- Activities ---
 
 export const getActivities = async (): Promise<Activity[]> => {
@@ -199,11 +205,6 @@ export const addActivity = async (activity: Omit<Activity, 'id' | 'rsvpUserIds'>
         location: activity.location,
         category: activity.category
     });
-    if (error) throw error;
-};
-
-export const deleteActivity = async (activityId: string) => {
-    const { error } = await supabase.from('activities').delete().eq('id', activityId);
     if (error) throw error;
 };
 
@@ -313,7 +314,6 @@ export const getFeedItems = async (): Promise<FeedItem[]> => {
     }));
 };
 
-
 export const addFeedItem = async (item: { title: string, message: string, type: FeedItemType }, userId: string) => {
     const { error } = await supabase.from('feed_items').insert({
         type: item.type,
@@ -386,81 +386,89 @@ export const addFeedComment = async (feedItemId: string, userId: string, content
 // --- Projects ---
 
 export const getProjectData = async (): Promise<ProjectData | null> => {
-    const { data: columns, error: colError } = await supabase.from('project_columns').select('*').order('column_order');
-    if (colError) throw colError;
+    try {
+        const { data: columns, error: colError } = await supabase.from('project_columns').select('*').order('column_order');
+        if (colError) throw colError;
 
-    const { data: tasks, error: taskError } = await supabase.from('project_tasks').select('*').order('created_at', { ascending: true });
-    if (taskError) throw taskError;
+        const { data: tasks, error: taskError } = await supabase.from('project_tasks').select('*').order('created_at', { ascending: true });
+        if (taskError) throw taskError;
 
-    const { data: assignments, error: assignError } = await supabase.from('project_task_assignees').select('*, grade');
-    if (assignError) {
-        // If column doesn't exist, this might fail differently depending on Supabase version, but usually ignored in select unless specific
-        if (assignError.code === 'PGRST204' && assignError.message.includes('grade')) {
-             console.warn("Grade column missing in project_task_assignees. Please run schema update.");
-        } else {
+        // Try to select assignments, handle missing grade/submission columns
+        const { data: assignments, error: assignError } = await supabase.from('project_task_assignees').select('*');
+        
+        if (assignError) {
+             // If table missing, return minimal struct
+             if (assignError.code === '42P01') {
+                 console.warn("Project tasks table missing");
+                 return null;
+             }
              throw assignError;
         }
-    }
 
-    const assignmentsMap = new Map<string, string[]>();
-    const submissionsMap = new Map<string, { [userId: string]: { filePath: string; submittedAt: string, grade?: number | null } }>();
+        const assignmentsMap = new Map<string, string[]>();
+        const submissionsMap = new Map<string, { [userId: string]: { filePath: string; submittedAt: string, grade?: number | null } }>();
 
-    if (assignments) {
-        assignments.forEach(a => {
-            const taskIdStr = String(a.task_id);
-            if (!assignmentsMap.has(taskIdStr)) {
-                assignmentsMap.set(taskIdStr, []);
-            }
-            assignmentsMap.get(taskIdStr)!.push(a.user_uid);
-
-            if (a.submission_file_path && a.submitted_at) {
-                if (!submissionsMap.has(taskIdStr)) {
-                    submissionsMap.set(taskIdStr, {});
+        if (assignments) {
+            assignments.forEach(a => {
+                const taskIdStr = String(a.task_id);
+                if (!assignmentsMap.has(taskIdStr)) {
+                    assignmentsMap.set(taskIdStr, []);
                 }
-                submissionsMap.get(taskIdStr)![a.user_uid] = {
-                    filePath: a.submission_file_path,
-                    submittedAt: a.submitted_at,
-                    grade: a.grade
-                };
-            }
-        });
-    }
+                assignmentsMap.get(taskIdStr)!.push(a.user_uid);
 
-    const projectData: ProjectData = {
-        tasks: {},
-        columns: {},
-        columnOrder: []
-    };
+                // Check if new columns exist in the returned data object
+                if (a.submission_file_path && a.submitted_at) {
+                    if (!submissionsMap.has(taskIdStr)) {
+                        submissionsMap.set(taskIdStr, {});
+                    }
+                    submissionsMap.get(taskIdStr)![a.user_uid] = {
+                        filePath: a.submission_file_path,
+                        submittedAt: a.submitted_at,
+                        grade: a.grade // might be undefined if column doesn't exist
+                    };
+                }
+            });
+        }
 
-    tasks.forEach((t: any) => {
-        const taskIdStr = String(t.id);
-        projectData.tasks[taskIdStr] = {
-            id: taskIdStr,
-            content: t.content,
-            column_id: String(t.column_id),
-            assigneeIds: assignmentsMap.get(taskIdStr) || [],
-            isCompleted: t.is_completed,
-            priority: t.priority,
-            dueDate: t.due_date,
-            tags: t.tags || [],
-            submissions: submissionsMap.get(taskIdStr)
-        } as any; // Type assertion due to camelCase mapping
-    });
-
-    columns.forEach((c: any) => {
-        const colIdStr = String(c.id);
-        const colTasks = tasks.filter((t: any) => String(t.column_id) === colIdStr);
-        const taskIds = colTasks.map((t: any) => String(t.id));
-
-        projectData.columns[colIdStr] = {
-            id: colIdStr,
-            title: c.title,
-            taskIds: taskIds 
+        const projectData: ProjectData = {
+            tasks: {},
+            columns: {},
+            columnOrder: []
         };
-        projectData.columnOrder.push(colIdStr);
-    });
 
-    return projectData;
+        tasks.forEach((t: any) => {
+            const taskIdStr = String(t.id);
+            projectData.tasks[taskIdStr] = {
+                id: taskIdStr,
+                content: t.content,
+                column_id: String(t.column_id),
+                assigneeIds: assignmentsMap.get(taskIdStr) || [],
+                isCompleted: t.is_completed,
+                priority: t.priority,
+                dueDate: t.due_date,
+                tags: t.tags || [],
+                submissions: submissionsMap.get(taskIdStr)
+            } as any; 
+        });
+
+        columns.forEach((c: any) => {
+            const colIdStr = String(c.id);
+            const colTasks = tasks.filter((t: any) => String(t.column_id) === colIdStr);
+            const taskIds = colTasks.map((t: any) => String(t.id));
+
+            projectData.columns[colIdStr] = {
+                id: colIdStr,
+                title: c.title,
+                taskIds: taskIds 
+            };
+            projectData.columnOrder.push(colIdStr);
+        });
+
+        return projectData;
+    } catch (e) {
+        console.error("Error fetching project data:", e);
+        return null; // Fail gracefully
+    }
 };
 
 export const gradeSubmission = async (taskId: string, userId: string, grade: number) => {
@@ -470,7 +478,7 @@ export const gradeSubmission = async (taskId: string, userId: string, grade: num
         .match({ task_id: taskId, user_uid: userId });
 
     if (error) {
-        if (error.code === 'PGRST204') {
+        if (error.code === 'PGRST204' || error.code === '42703') {
              throw new Error("Database schema outdated. Please run the 'Project Submissions Schema' SQL from README.md.");
         }
         throw error;
@@ -645,7 +653,7 @@ export const uploadTaskSubmission = async (taskId: string, file: File, userId: s
     // If update fails, clean up the uploaded file
     await supabase.storage.from('resource_uploads').remove([filePath]);
     
-    if (updateError.code === 'PGRST204') {
+    if (updateError.code === 'PGRST204' || updateError.code === '42703') {
          throw new Error("Database schema outdated. Please run the 'Project Submissions Schema' SQL from README.md.");
     }
     throw updateError;
@@ -688,45 +696,30 @@ export const getResources = async (): Promise<Omit<Resource, 'uploaderName' | 'u
         description: r.description,
         type: r.type,
         category: r.category,
-        topic: r.topic,
         url: r.url,
         filePath: r.file_path,
         uploaderUid: r.uploader_uid,
+        topic: r.topic
     }));
 };
 
 export const uploadResourceFile = async (file: File, userId: string) => {
     const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-    const filePath = `${userId}/${fileName}`;
+    const fileName = `${userId}/${Date.now()}.${fileExt}`;
+    
+    const { error: uploadError } = await supabase.storage.from('resource_uploads').upload(fileName, file);
+    if (uploadError) throw uploadError;
 
-    const { error: uploadError } = await supabase.storage.from('resource_files').upload(filePath, file);
-    if (uploadError) {
-        if (uploadError.message.includes("row-level security")) {
-            throw new Error("Storage not configured. Please run the SQL commands in README.md");
-        }
-        throw uploadError;
-    }
-
-    const { data } = supabase.storage.from('resource_files').getPublicUrl(filePath);
-    return { url: data.publicUrl, path: filePath };
+    const { data } = supabase.storage.from('resource_uploads').getPublicUrl(fileName);
+    return { url: data.publicUrl, path: fileName };
 };
 
-export const addResource = async (resource: {
-    title: string;
-    description: string;
-    category: ResourceCategory;
-    type: ResourceType;
-    url?: string;
-    filePath?: string;
-    uploaderUid: string;
-    topic?: string | null;
-}) => {
+export const addResource = async (resource: Omit<Resource, 'id' | 'createdAt' | 'uploaderName' | 'uploaderAvatarUrl'>) => {
     const { error } = await supabase.from('resources').insert({
         title: resource.title,
         description: resource.description,
-        category: resource.category,
         type: resource.type,
+        category: resource.category,
         url: resource.url,
         file_path: resource.filePath,
         uploader_uid: resource.uploaderUid,
@@ -737,7 +730,7 @@ export const addResource = async (resource: {
 
 export const deleteResource = async (resource: Resource) => {
     if (resource.filePath) {
-        await supabase.storage.from('resource_files').remove([resource.filePath]);
+        await supabase.storage.from('resource_uploads').remove([resource.filePath]);
     }
     const { error } = await supabase.from('resources').delete().eq('id', resource.id);
     if (error) throw error;
@@ -746,10 +739,16 @@ export const deleteResource = async (resource: Resource) => {
 // --- Notifications ---
 
 export const getNotifications = async (userId: string): Promise<AppNotification[]> => {
-    const { data, error } = await supabase.from('notifications').select('*').eq('user_uid', userId).order('created_at', { ascending: false });
+    const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_uid', userId)
+        .order('created_at', { ascending: false });
+    
     if (error) throw error;
+
     return data.map((n: any) => ({
-        id: n.id,
+        id: String(n.id),
         message: n.message,
         isRead: n.is_read,
         createdAt: new Date(n.created_at).toLocaleString(),
@@ -771,98 +770,134 @@ export const markAllNotificationsAsRead = async (userId: string) => {
 // --- Chat ---
 
 export const getRooms = async (userId: string): Promise<Room[]> => {
-    const { data, error } = await supabase
-        .from('rooms')
-        .select('*')
-        .contains('metadata', { participants: [userId] });
+    // Rooms where user is a participant.
+    // Participants are stored in 'metadata->participants' JSONB array.
+    try {
+        const { data, error } = await supabase
+            .from('rooms')
+            .select('*')
+            .contains('metadata', { participants: [userId] })
+            .order('updated_at', { ascending: false });
 
-    if (error) throw error;
-    return data.map((r: any) => ({
-        id: r.id,
-        title: r.title,
-        createdAt: r.created_at,
-        updatedAt: r.updated_at,
-        participantIds: r.metadata?.participants || [],
-        createdBy: r.created_by,
-    }));
+        if (error) {
+            // Handle missing table or column
+            if (error.code === '42P01' || error.code === '42703') {
+                console.warn("Rooms table or column missing:", error.message);
+                return [];
+            }
+            throw error;
+        }
+
+        return (data || []).map((r: any) => ({
+            id: String(r.id),
+            title: r.title,
+            createdAt: r.created_at,
+            updatedAt: r.updated_at,
+            participantIds: r.metadata?.participants || [],
+            createdBy: r.created_by
+        }));
+    } catch (error) {
+        console.error("Error fetching rooms:", error);
+        return [];
+    }
 };
 
 export const createRoom = async (title: string | null, participantIds: string[]): Promise<string> => {
+    // Store participantIds in metadata JSONB column
     const { data, error } = await supabase.from('rooms').insert({
-        title,
+        title: title,
         metadata: { participants: participantIds },
-        created_by: participantIds[0] 
-    }).select().single();
-    if (error) throw error;
-    return data.id;
-};
+        created_by: participantIds[0] // Assuming first is creator or passed in logic
+    }).select('id').single();
 
-export const updateRoomTitle = async (roomId: string, newTitle: string) => {
-    const { error } = await supabase.from('rooms').update({ title: newTitle }).eq('id', roomId);
     if (error) throw error;
+    return String(data.id);
 };
 
 export const deleteRoom = async (roomId: string) => {
-    await supabase.from('messages').delete().eq('room_id', roomId);
     const { error } = await supabase.from('rooms').delete().eq('id', roomId);
     if (error) throw error;
 };
 
-export const addRoomMembers = async (roomId: string, userIds: string[]) => {
-    const { data: room } = await supabase.from('rooms').select('metadata').eq('id', roomId).single();
-    if (room) {
-        const currentParticipants = room.metadata?.participants || [];
-        const newParticipants = [...new Set([...currentParticipants, ...userIds])];
-        await supabase.from('rooms').update({ 
-            metadata: { ...room.metadata, participants: newParticipants } 
-        }).eq('id', roomId);
-    }
+export const updateRoomTitle = async (roomId: string, title: string) => {
+    const { error } = await supabase.from('rooms').update({ title }).eq('id', roomId);
+    if (error) throw error;
+};
+
+export const addRoomMembers = async (roomId: string, newMemberIds: string[]) => {
+    const { data: room, error: fetchError } = await supabase.from('rooms').select('metadata').eq('id', roomId).single();
+    if (fetchError) throw fetchError;
+    
+    const currentParticipants = room.metadata?.participants || [];
+    const updatedIds = [...new Set([...currentParticipants, ...newMemberIds])];
+    
+    const { error } = await supabase.from('rooms').update({ 
+        metadata: { ...room.metadata, participants: updatedIds } 
+    }).eq('id', roomId);
+    if (error) throw error;
 };
 
 export const removeGroupMember = async (roomId: string, userId: string) => {
-    const { data: room } = await supabase.from('rooms').select('metadata').eq('id', roomId).single();
-    if (room) {
-        const currentParticipants = room.metadata?.participants || [];
-        const newParticipants = currentParticipants.filter((id: string) => id !== userId);
-        await supabase.from('rooms').update({ 
-            metadata: { ...room.metadata, participants: newParticipants } 
-        }).eq('id', roomId);
-    }
+    const { data: room, error: fetchError } = await supabase.from('rooms').select('metadata').eq('id', roomId).single();
+    if (fetchError) throw fetchError;
+
+    const currentParticipants = room.metadata?.participants || [];
+    const updatedIds = currentParticipants.filter((id: string) => id !== userId);
+    
+    const { error } = await supabase.from('rooms').update({ 
+        metadata: { ...room.metadata, participants: updatedIds }
+    }).eq('id', roomId);
+    if (error) throw error;
 };
 
 export const getRoomMessages = async (roomId: string): Promise<Message[]> => {
-    const { data, error } = await supabase.from('messages').select('*').eq('room_id', roomId).order('created_at', { ascending: true });
-    if (error) throw error;
-    return data.map((m: any) => ({
-        id: m.id,
-        roomId: m.room_id,
-        senderId: m.sender_id,
-        content: m.content,
-        createdAt: m.created_at,
-        metadata: m.metadata
-    }));
+    try {
+        const { data, error } = await supabase
+            .from('messages')
+            .select('*')
+            .eq('room_id', roomId)
+            .order('created_at', { ascending: true });
+
+        if (error) {
+             if (error.code === '42P01') return [];
+             throw error;
+        }
+
+        return (data || []).map((m: any) => ({
+            id: String(m.id),
+            roomId: String(m.room_id),
+            senderId: m.sender_id,
+            content: m.content || "", // Safely default to empty string if DB content is null
+            createdAt: m.created_at,
+            metadata: m.metadata
+        }));
+    } catch (error) {
+        console.error("Error fetching messages:", error);
+        return [];
+    }
 };
 
 export const sendMessage = async (roomId: string, senderId: string, content: string, metadata?: any): Promise<Message> => {
     const { data, error } = await supabase.from('messages').insert({
         room_id: roomId,
         sender_id: senderId,
-        content,
-        metadata
+        content: content,
+        metadata: metadata
     }).select().single();
-    
+
     if (error) throw error;
-    
+
+    // Update room updated_at
     await supabase.from('rooms').update({ updated_at: new Date().toISOString() }).eq('id', roomId);
 
     return {
-        id: data.id,
-        roomId: data.room_id,
-        senderId: data.sender_id,
-        content: data.content,
+        id: String(data.id),
+        roomId: String(data.room_id),
+        sender_id: data.sender_id,
+        content: data.content || "",
         createdAt: data.created_at,
         metadata: data.metadata
-    };
+    } as unknown as Message; // Casting due to potential field mismatch if any
 };
 
 export const deleteMessage = async (messageId: string) => {
@@ -872,59 +907,86 @@ export const deleteMessage = async (messageId: string) => {
 
 export const uploadChatFile = async (file: File, roomId: string, userId: string) => {
     const fileExt = file.name.split('.').pop();
-    const fileName = `${roomId}/${userId}/${Date.now()}.${fileExt}`;
+    const fileName = `chat/${roomId}/${userId}/${Date.now()}.${fileExt}`;
     
-    const { error: uploadError } = await supabase.storage.from('chat_files').upload(fileName, file);
-    if (uploadError) {
-        if (uploadError.message.includes("row-level security")) {
-            throw new Error("Storage not configured. Please run the SQL commands in README.md");
-        }
-        throw uploadError;
-    }
+    const { error } = await supabase.storage.from('chat_uploads').upload(fileName, file);
+    if (error) throw error;
 
-    const { data } = supabase.storage.from('chat_files').getPublicUrl(fileName);
+    const { data } = supabase.storage.from('chat_uploads').getPublicUrl(fileName);
     return data.publicUrl;
 };
 
 // --- Showcase ---
 
 export const getShowcaseItems = async (): Promise<ShowcaseItem[]> => {
-    const { data, error } = await supabase.from('showcase_items').select('*').order('created_at', { ascending: false });
-    if (error) throw error;
-    
-    return Promise.all(data.map(async (item: any) => {
-        const { data: user } = await supabase.from('users').select('name, avatar_url').eq('uid', item.user_uid).maybeSingle();
+    try {
+        const { data, error } = await supabase
+            .from('showcase_items') // Updated to match user table definition
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            // Handle missing table
+            if (error.code === '42P01' || error.code === 'PGRST205') {
+                console.warn("Showcase table missing.");
+                return [];
+            }
+            throw error;
+        }
+
+        // Manual join for users to handle auth.users reference cleanly
+        const userIds = [...new Set(data.map((item: any) => item.user_uid))];
         
-        return {
-            id: item.id,
-            createdAt: new Date(item.created_at).toLocaleDateString(),
-            userUid: item.user_uid,
-            userName: user?.name || 'Unknown Member',
-            userAvatarUrl: user?.avatar_url,
-            title: item.title,
-            description: item.description,
-            codeContent: item.code_content,
-            likes: item.likes || []
-        };
-    }));
+        let userMap = new Map();
+        if (userIds.length > 0) {
+            const { data: users, error: userError } = await supabase
+                .from('users')
+                .select('uid, name, avatar_url')
+                .in('uid', userIds);
+            
+            if (!userError && users) {
+                userMap = new Map(users.map((u: any) => [u.uid, u]));
+            }
+        }
+
+        return (data || []).map((item: any) => {
+            const user = userMap.get(item.user_uid);
+            return {
+                id: String(item.id),
+                createdAt: new Date(item.created_at).toLocaleDateString(),
+                userUid: item.user_uid,
+                userName: user?.name || 'Unknown',
+                userAvatarUrl: user?.avatar_url,
+                title: item.title,
+                description: item.description,
+                codeContent: item.code_content,
+                likes: item.likes || [] 
+            };
+        });
+    } catch (error) {
+        console.error("Error fetching showcase:", error);
+        return [];
+    }
 };
 
-export const addShowcaseItem = async (userId: string, title: string, description: string, codeContent: string) => {
+export const addShowcaseItem = async (userId: string, title: string, description: string, code: string) => {
     const { error } = await supabase.from('showcase_items').insert({
         user_uid: userId,
         title,
         description,
-        code_content: codeContent,
+        code_content: code,
         likes: []
     });
     if (error) throw error;
 };
 
 export const toggleShowcaseLike = async (itemId: string, userId: string, currentLikes: string[]) => {
-    let newLikes = currentLikes.includes(userId) 
-        ? currentLikes.filter(id => id !== userId)
-        : [...currentLikes, userId];
-        
+    let newLikes = [...currentLikes];
+    if (newLikes.includes(userId)) {
+        newLikes = newLikes.filter(id => id !== userId);
+    } else {
+        newLikes.push(userId);
+    }
     const { error } = await supabase.from('showcase_items').update({ likes: newLikes }).eq('id', itemId);
     if (error) throw error;
 };
@@ -932,35 +994,35 @@ export const toggleShowcaseLike = async (itemId: string, userId: string, current
 // --- Suggestions ---
 
 export const getSuggestions = async (): Promise<Suggestion[]> => {
-    const { data, error } = await supabase.from('suggestions').select('*').order('created_at', { ascending: false });
-    if (error) throw error;
-    
-    return Promise.all(data.map(async (s: any) => {
-        let userName = 'Unknown';
-        let userAvatarUrl = undefined;
-        const userId = s.user_uid || s.user_id;
-        
-        if (userId) {
-             const { data: u } = await supabase.from('users').select('name, avatar_url').eq('uid', userId).maybeSingle();
-             if (u) {
-                 userName = u.name;
-                 userAvatarUrl = u.avatar_url;
-             }
+    try {
+        const { data, error } = await supabase
+            .from('suggestions')
+            .select(`
+                *,
+                users ( name, avatar_url )
+            `)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+             if (error.code === '42P01' || error.code === 'PGRST205') return [];
+             throw error;
         }
 
-        return {
-            id: s.id,
+        return (data || []).map((s: any) => ({
+            id: String(s.id),
             type: s.type,
             title: s.title,
             description: s.description,
-            userId: userId,
-            userName: userName,
-            userAvatarUrl: userAvatarUrl,
+            userId: s.user_uid,
+            userName: s.users?.name || 'Unknown',
+            userAvatarUrl: s.users?.avatar_url,
             status: s.status,
-            createdAt: new Date(s.created_at).toLocaleDateString(),
+            createdAt: s.created_at,
             upvotes: s.upvotes || []
-        };
-    }));
+        }));
+    } catch (error) {
+        return [];
+    }
 };
 
 export const addSuggestion = async (suggestion: { type: SuggestionType, title: string, description: string, userId: string }) => {
@@ -968,46 +1030,56 @@ export const addSuggestion = async (suggestion: { type: SuggestionType, title: s
         type: suggestion.type,
         title: suggestion.title,
         description: suggestion.description,
-        user_uid: suggestion.userId, 
+        user_uid: suggestion.userId,
         status: 'PENDING',
         upvotes: []
     });
     if (error) throw error;
 };
 
-export const toggleSuggestionUpvote = async (suggestionId: string, userId: string, currentUpvotes: string[]) => {
-    let newUpvotes = currentUpvotes.includes(userId)
-        ? currentUpvotes.filter(id => id !== userId)
-        : [...currentUpvotes, userId];
-    
-    const { error } = await supabase.from('suggestions').update({ upvotes: newUpvotes }).eq('id', suggestionId);
+export const toggleSuggestionUpvote = async (id: string, userId: string, currentUpvotes: string[]) => {
+    let newUpvotes = [...currentUpvotes];
+    if (newUpvotes.includes(userId)) {
+        newUpvotes = newUpvotes.filter(uid => uid !== userId);
+    } else {
+        newUpvotes.push(userId);
+    }
+    const { error } = await supabase.from('suggestions').update({ upvotes: newUpvotes }).eq('id', id);
     if (error) throw error;
 };
 
-export const deleteSuggestion = async (suggestionId: string) => {
-    const { error } = await supabase.from('suggestions').delete().eq('id', suggestionId);
+export const deleteSuggestion = async (id: string) => {
+    const { error } = await supabase.from('suggestions').delete().eq('id', id);
     if (error) throw error;
 };
 
-export const updateSuggestionStatus = async (suggestionId: string, status: string, userId: string) => {
-    const { error } = await supabase.from('suggestions').update({ status }).eq('id', suggestionId);
+export const updateSuggestionStatus = async (id: string, status: SuggestionStatus, userId: string) => { 
+    const { error } = await supabase.from('suggestions').update({ status }).eq('id', id);
     if (error) throw error;
 };
 
 // --- Challenges ---
 
 export const getChallenges = async (): Promise<Challenge[]> => {
-    const { data, error } = await supabase.from('challenges').select('*').order('created_at', { ascending: false });
-    if (error) throw error;
-    return data.map((c: any) => ({
-        id: c.id,
-        title: c.title,
-        description: c.description,
-        deadline: c.deadline,
-        createdBy: c.created_by,
-        createdAt: c.created_at,
-        status: c.status
-    }));
+    try {
+        const { data, error } = await supabase.from('challenges').select('*').order('deadline', { ascending: true });
+        if (error) {
+            if (error.code === '42P01' || error.code === 'PGRST205') return [];
+            throw error;
+        }
+
+        return (data || []).map((c: any) => ({
+            id: String(c.id),
+            title: c.title,
+            description: c.description,
+            deadline: c.deadline,
+            createdBy: c.created_by,
+            createdAt: c.created_at,
+            status: c.status
+        }));
+    } catch (error) {
+        return [];
+    }
 };
 
 export const addChallenge = async (challenge: { title: string, description: string, deadline: string, createdBy: string }) => {
@@ -1021,203 +1093,178 @@ export const addChallenge = async (challenge: { title: string, description: stri
     if (error) throw error;
 };
 
-export const getSubmissions = async (challengeId: string): Promise<ChallengeSubmission[]> => {
-    const { data, error } = await supabase.from('challenge_submissions').select('*').eq('challenge_id', challengeId);
-    if (error) throw error;
-    
-    return Promise.all(data.map(async (s: any) => {
-        let userName = 'Unknown';
-        let userAvatarUrl = undefined;
-        
-        if (s.user_uid) {
-             const { data: u } = await supabase.from('users').select('name, avatar_url').eq('uid', s.user_uid).maybeSingle();
-             if (u) {
-                 userName = u.name;
-                 userAvatarUrl = u.avatar_url;
-             }
-        }
-        return {
-            id: s.id,
-            challengeId: s.challenge_id,
-            userId: s.user_uid, 
-            userName,
-            userAvatarUrl,
-            content: s.content,
-            status: s.status,
-            submittedAt: s.created_at
-        };
-    }));
-};
-
 export const submitChallenge = async (challengeId: string, userId: string, content: string) => {
     const { error } = await supabase.from('challenge_submissions').insert({
         challenge_id: challengeId,
         user_uid: userId,
-        content,
+        content: content,
         status: 'PENDING'
     });
     if (error) throw error;
+};
 
+export const getSubmissions = async (challengeId: string): Promise<ChallengeSubmission[]> => {
     try {
-        const { data: challenge } = await supabase.from('challenges').select('title').eq('id', challengeId).single();
-        const { data: user } = await supabase.from('users').select('name').eq('uid', userId).single();
-        const { data: patrons } = await supabase.from('users').select('uid').eq('role', 'PATRON');
+        const { data, error } = await supabase
+            .from('challenge_submissions')
+            .select(`
+                *,
+                users ( name, avatar_url )
+            `)
+            .eq('challenge_id', challengeId);
 
-        if (challenge && user && patrons && patrons.length > 0) {
-            const notifications = patrons.map((p: any) => ({
-                user_uid: p.uid,
-                message: `New submission for "${challenge.title}" by ${user.name}`,
-                is_read: false,
-                link_to: 'challenges',
-                created_at: new Date().toISOString()
-            }));
+        if (error) throw error;
 
-            await supabase.from('notifications').insert(notifications);
-        }
-    } catch (notifyError) {
-        console.error("Failed to notify patrons:", notifyError);
+        return (data || []).map((s: any) => ({
+            id: String(s.id),
+            challengeId: String(s.challenge_id),
+            userId: s.user_uid,
+            userName: s.users?.name || 'Unknown',
+            userAvatarUrl: s.users?.avatar_url,
+            content: s.content,
+            status: s.status,
+            submittedAt: s.created_at
+        }));
+    } catch (error) {
+        return [];
     }
 };
 
-export const reviewSubmission = async (submissionId: string, status: string, challengeTitle: string, userId: string) => {
+export const reviewSubmission = async (submissionId: string, status: 'APPROVED' | 'REJECTED', challengeTitle: string, userId: string) => {
     const { error } = await supabase.from('challenge_submissions').update({ status }).eq('id', submissionId);
     if (error) throw error;
 
     if (status === 'APPROVED') {
+        // Award badge
         const { data: user } = await supabase.from('users').select('badges').eq('uid', userId).single();
         if (user) {
-            const badges = user.badges || [];
-            if (!badges.includes(challengeTitle)) {
-                await supabase.from('users').update({ badges: [...badges, challengeTitle] }).eq('uid', userId);
+            const currentBadges = user.badges || [];
+            if (!currentBadges.includes(challengeTitle)) {
+                await supabase.from('users').update({ badges: [...currentBadges, challengeTitle] }).eq('uid', userId);
             }
         }
     }
 };
 
-// --- Roadmaps ---
-
-export const getRoadmaps = async (): Promise<Roadmap[]> => {
-    const { data, error } = await supabase.from('roadmaps').select('*').order('updated_at', { ascending: false });
-    if (error) throw error;
-    
-    return data.map((r: any) => ({
-        id: r.id,
-        skillLevel: r.skill_level,
-        topic: r.topic,
-        milestones: r.content,
-        updatedAt: r.updated_at
-    }));
-};
-
-export const addRoadmap = async (roadmap: Roadmap) => {
-    const { error } = await supabase.from('roadmaps').upsert({
-        skill_level: roadmap.skillLevel,
-        topic: roadmap.topic,
-        content: roadmap.milestones,
-        updated_at: new Date().toISOString()
-    }, { onConflict: 'skill_level' });
-    
-    if (error) throw error;
-};
-
-export const deleteRoadmap = async (roadmapId: string) => {
-    const { error } = await supabase.from('roadmaps').delete().eq('id', roadmapId);
-    if (error) throw error;
-};
-
-export const getUserRoadmapProgress = async (userId: string, roadmapId: string): Promise<RoadmapProgress | null> => {
-    const { data, error } = await supabase
-        .from('user_roadmap_progress')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('roadmap_id', roadmapId)
-        .maybeSingle();
-        
-    if (error && error.code !== 'PGRST116') { // Ignore not found error
-        // 42P01 means table does not exist
-        if (error.code === '42P01') {
-            console.warn("Table 'user_roadmap_progress' does not exist yet. Please run migration.");
-            return null;
-        }
-        console.error("Error fetching roadmap progress:", error.message || error);
-        return null;
-    }
-    
-    if (!data) return null;
-
-    return {
-        id: data.id,
-        userId: data.user_id,
-        roadmapId: data.roadmap_id,
-        completedMilestoneIndices: data.completed_milestone_indices || []
-    };
-};
-
-export const updateMilestoneProgress = async (userId: string, roadmapId: string, milestoneIndex: number) => {
-    try {
-        // First get existing progress
-        const { data: existing, error: fetchError } = await supabase
-            .from('user_roadmap_progress')
-            .select('*')
-            .eq('user_id', userId)
-            .eq('roadmap_id', roadmapId)
-            .maybeSingle();
-
-        if (fetchError && fetchError.code === '42P01') {
-             throw new Error("Table 'user_roadmap_progress' does not exist. Please check README.md for SQL setup.");
-        }
-
-        let completedIndices = existing?.completed_milestone_indices || [];
-        if (!completedIndices.includes(milestoneIndex)) {
-            completedIndices.push(milestoneIndex);
-        }
-
-        const { error } = await supabase.from('user_roadmap_progress').upsert({
-            user_id: userId,
-            roadmap_id: roadmapId,
-            completed_milestone_indices: completedIndices
-        }, { onConflict: 'user_id,roadmap_id' });
-
-        if (error) throw error;
-    } catch (error: any) {
-        console.error("Error updating progress:", error.message || error);
-        throw error;
-    }
-};
-
-export const updateUserSkillLevel = async (userId: string, newLevel: string) => {
-    const { error } = await supabase.from('users').update({ skill_level: newLevel }).eq('uid', userId);
-    if (error) throw error;
-};
-
 // --- User Scripts (Playground) ---
 
-export const listUserScripts = async (userId: string) => {
+export const listUserScripts = async (userId: string): Promise<{ name: string, id: string, lastModified: string, size: number }[]> => {
     const { data, error } = await supabase.storage.from('user_scripts').list(userId);
     if (error) throw error;
-    return data.map(f => ({
-        name: f.name,
-        id: f.id,
-        lastModified: new Date(f.updated_at || f.created_at).toLocaleString(),
-        size: f.metadata.size
+    
+    return data.map((file) => ({
+        name: file.name,
+        id: file.id,
+        lastModified: new Date(file.updated_at || file.created_at).toLocaleString(),
+        size: file.metadata?.size || 0
     }));
 };
 
-export const saveUserScript = async (userId: string, name: string, content: string) => {
-    const path = `${userId}/${name}`;
-    const { error } = await supabase.storage.from('user_scripts').upload(path, content, { upsert: true });
+export const saveUserScript = async (userId: string, fileName: string, content: string) => {
+    const { error } = await supabase.storage.from('user_scripts').upload(`${userId}/${fileName}`, content, {
+        upsert: true,
+        contentType: 'text/x-python'
+    });
     if (error) throw error;
 };
 
-export const downloadUserScript = async (userId: string, name: string) => {
-    const path = `${userId}/${name}`;
-    const { data, error } = await supabase.storage.from('user_scripts').download(path);
+export const downloadUserScript = async (userId: string, fileName: string): Promise<string> => {
+    const { data, error } = await supabase.storage.from('user_scripts').download(`${userId}/${fileName}`);
     if (error) throw error;
     return await data.text();
 };
 
-export const deleteUserScript = async (userId: string, name: string) => {
-    const path = `${userId}/${name}`;
-    const { error } = await supabase.storage.from('user_scripts').remove([path]);
+export const deleteUserScript = async (userId: string, fileName: string) => {
+    const { error } = await supabase.storage.from('user_scripts').remove([`${userId}/${fileName}`]);
     if (error) throw error;
+};
+
+// --- Roadmap ---
+
+export const getRoadmaps = async (): Promise<Roadmap[]> => {
+    try {
+        const { data, error } = await supabase.from('roadmaps').select('*');
+        if (error) {
+             if (error.code === '42P01') return [];
+             throw error;
+        }
+
+        return (data || []).map((r: any) => ({
+            id: String(r.id),
+            skillLevel: r.skill_level,
+            topic: r.topic,
+            milestones: r.milestones, // JSON
+            updatedAt: r.updated_at
+        }));
+    } catch (error) {
+        return [];
+    }
+};
+
+export const addRoadmap = async (roadmap: Roadmap) => {
+    const { error } = await supabase.from('roadmaps').insert({
+        skill_level: roadmap.skillLevel,
+        topic: roadmap.topic,
+        milestones: roadmap.milestones
+    });
+    if (error) throw error;
+};
+
+export const deleteRoadmap = async (id: string) => {
+    const { error } = await supabase.from('roadmaps').delete().eq('id', id);
+    if (error) throw error;
+};
+
+export const getUserRoadmapProgress = async (userId: string, roadmapId: string): Promise<RoadmapProgress | null> => {
+    try {
+        const { data, error } = await supabase
+            .from('roadmap_progress')
+            .select('*')
+            .eq('user_uid', userId)
+            .eq('roadmap_id', roadmapId)
+            .maybeSingle();
+        
+        if (error) {
+             if (error.code === '42P01') return null;
+             throw error;
+        }
+        if (!data) return null;
+
+        return {
+            id: String(data.id),
+            userId: data.user_uid,
+            roadmapId: String(data.roadmap_id),
+            completedMilestoneIndices: data.completed_indices || []
+        };
+    } catch (error) {
+        return null;
+    }
+};
+
+export const updateMilestoneProgress = async (userId: string, roadmapId: string, milestoneIndex: number) => {
+    const { data: existing, error: fetchError } = await supabase
+        .from('roadmap_progress')
+        .select('*')
+        .eq('user_uid', userId)
+        .eq('roadmap_id', roadmapId)
+        .maybeSingle();
+    
+    if (fetchError && fetchError.code !== 'PGRST116') throw fetchError; // PGRST116 is no rows returned
+
+    if (existing) {
+        const indices = new Set(existing.completed_indices || []);
+        indices.add(milestoneIndex);
+        const { error } = await supabase
+            .from('roadmap_progress')
+            .update({ completed_indices: Array.from(indices) })
+            .eq('id', existing.id);
+        if (error) throw error;
+    } else {
+        const { error } = await supabase.from('roadmap_progress').insert({
+            user_uid: userId,
+            roadmap_id: roadmapId,
+            completed_indices: [milestoneIndex]
+        });
+        if (error) throw error;
+    }
 };

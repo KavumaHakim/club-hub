@@ -209,24 +209,15 @@ export const analyzeChallengeSubmission = async (challengeTitle: string, code: s
     }
 };
 
-export const generateLearningRoadmap = async (topic: string, skillLevel: string, requiredConcepts?: string) => {
+export const generateLearningRoadmap = async (topic: string, skillLevel: string) => {
     if (!ai) throw new Error("API Key Missing");
 
     const model = "gemini-2.5-flash";
-    let prompt = `
+    const prompt = `
         Create a short, modular 3-milestone learning roadmap for "${topic}" suitable for a "${skillLevel}" student in an ICT Club.
         Focus on specific, bite-sized concepts rather than broad overviews.
         The goal is practical, hands-on learning.
-    `;
-
-    if (requiredConcepts) {
-        prompt += `
-        IMPORTANT: You MUST include the following concepts/topics in the roadmap: ${requiredConcepts}.
-        Fill in the rest of the roadmap with relevant steps to make it complete, structured and logical.
-        `;
-    }
-
-    prompt += `
+        
         For each milestone, provide:
         - title: A clear step name.
         - description: What they will learn (keep it concise).

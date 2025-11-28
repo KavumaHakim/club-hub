@@ -1,6 +1,8 @@
 
 
 
+
+
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { User, Message, Room, Tab } from '../types';
 import { useData } from '../DataContext';
@@ -108,7 +110,9 @@ const CodeBlock: React.FC<{ code: string, language?: string }> = ({ code, langua
 const getRoomName = (room: Room, allUsers: User[], currentUserId: string) => {
     if (room.title) return room.title;
     
-    const others = room.participantIds
+    const participants = room.participantIds || []; // Safety check
+    
+    const others = participants
         .filter(uid => uid !== currentUserId)
         .map(uid => allUsers.find(u => u.uid === uid)?.name || 'Unknown');
         
@@ -117,7 +121,9 @@ const getRoomName = (room: Room, allUsers: User[], currentUserId: string) => {
 };
 
 const getRoomAvatar = (room: Room, allUsers: User[], currentUserId: string) => {
-     const others = room.participantIds
+     const participants = room.participantIds || []; // Safety check
+
+     const others = participants
         .filter(uid => uid !== currentUserId)
         .map(uid => allUsers.find(u => u.uid === uid));
     
@@ -247,11 +253,11 @@ const RoomDetailsModal: React.FC<{
 
     if (!isOpen) return null;
 
-    const participants = room.participantIds.map(uid => allUsers.find(u => u.uid === uid)).filter(Boolean) as User[];
+    const participants = (room.participantIds || []).map(uid => allUsers.find(u => u.uid === uid)).filter(Boolean) as User[];
     const isCreator = room.createdBy === currentUser.uid;
 
     const availableUsers = allUsers.filter(u => 
-        !room.participantIds.includes(u.uid) && 
+        !(room.participantIds || []).includes(u.uid) && 
         u.status === 'APPROVED' &&
         u.name.toLowerCase().includes(userSearchTerm.toLowerCase())
     );
@@ -486,9 +492,12 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
     const getHeaderStatus = () => {
         if (!activeRoom) return null;
         
+        // Safety check for participantIds
+        const participants = activeRoom.participantIds || [];
+
         // DM Check
-        if (!activeRoom.title && activeRoom.participantIds.length === 2) {
-            const otherId = activeRoom.participantIds.find(id => id !== currentUser.uid);
+        if (!activeRoom.title && participants.length === 2) {
+            const otherId = participants.find(id => id !== currentUser.uid);
             if (otherId && onlineUsers.includes(otherId)) {
                 return { text: 'Online', color: 'bg-green-500' };
             }
@@ -496,7 +505,7 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
         }
     
         // Group Check
-        const onlineCount = activeRoom.participantIds.filter(id => onlineUsers.includes(id)).length;
+        const onlineCount = participants.filter(id => onlineUsers.includes(id)).length;
         return { text: `${onlineCount} online`, color: onlineCount > 0 ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600' };
     };
 
@@ -764,8 +773,8 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
             if (participantIds.length === 1) {
                 const targetId = participantIds[0];
                 const existingRoom = rooms.find(r => 
-                    r.participantIds.length === 2 && 
-                    r.participantIds.includes(targetId) && 
+                    (r.participantIds || []).length === 2 && 
+                    (r.participantIds || []).includes(targetId) && 
                     !r.title 
                 );
                 if (existingRoom) {
@@ -1008,10 +1017,11 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
                             const roomName = getRoomName(room, allUsers, currentUser.uid);
                             const avatar = getRoomAvatar(room, allUsers, currentUser.uid);
                             const unreadCount = unreadMessageCounts[room.id] || 0;
+                            const participants = room.participantIds || [];
                             
                             let isOnline = false;
-                            if (!room.title && room.participantIds.length === 2) {
-                                const otherId = room.participantIds.find(id => id !== currentUser.uid);
+                            if (!room.title && participants.length === 2) {
+                                const otherId = participants.find(id => id !== currentUser.uid);
                                 if (otherId) isOnline = isUserOnline(otherId);
                             }
 

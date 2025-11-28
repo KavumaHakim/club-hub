@@ -146,7 +146,11 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
   const getErrorMessage = (error: any) => {
       if (typeof error === 'string') return error;
       if (error && typeof error.message === 'string') return error.message;
-      return JSON.stringify(error);
+      try {
+          return JSON.stringify(error);
+      } catch (e) {
+          return "An unknown error occurred";
+      }
   };
 
   const fetchActivities = useCallback(async () => {

@@ -10,7 +10,6 @@ import { CalendarIcon } from './icons/CalendarIcon';
 import { ViewListIcon } from './icons/ViewListIcon';
 import { UsersIcon } from './icons/UsersIcon';
 import { XIcon } from './icons/XIcon';
-import { TrashIcon } from './icons/TrashIcon';
 import ConfirmationModal from './ConfirmationModal';
 
 interface ActivitiesProps {
@@ -112,9 +111,6 @@ const Activities: React.FC<ActivitiesProps> = ({ currentUser }) => {
       activityId: null
   });
 
-  // Delete Activity Confirmation State
-  const [activityToDelete, setActivityToDelete] = useState<{ id: string, title: string } | null>(null);
-
   useEffect(() => {
       const handleClickOutside = () => {
           setContextMenu(null);
@@ -134,30 +130,6 @@ const Activities: React.FC<ActivitiesProps> = ({ currentUser }) => {
   const handleOpenAttendees = () => {
       if (contextMenu) {
           setViewAttendeesState({ isOpen: true, activityId: contextMenu.activityId });
-          setContextMenu(null);
-      }
-  };
-
-  const handleDeleteActivity = async () => {
-      if (!activityToDelete) return;
-      try {
-          await api.deleteActivity(activityToDelete.id);
-          await fetchActivities();
-          showToast("Activity deleted successfully.", "success");
-      } catch (error) {
-          console.error("Failed to delete activity", error);
-          showToast("Failed to delete activity.", "error");
-      } finally {
-          setActivityToDelete(null);
-      }
-  };
-
-  const confirmDeleteActivity = () => {
-      if (contextMenu) {
-          const activity = activities.find(a => a.id === contextMenu.activityId);
-          if (activity) {
-              setActivityToDelete({ id: activity.id, title: activity.title });
-          }
           setContextMenu(null);
       }
   };
@@ -338,16 +310,6 @@ const Activities: React.FC<ActivitiesProps> = ({ currentUser }) => {
             isDangerous={!rsvpState.isJoining}
         />
 
-        <ConfirmationModal
-            isOpen={!!activityToDelete}
-            onClose={() => setActivityToDelete(null)}
-            onConfirm={handleDeleteActivity}
-            title="Delete Activity"
-            message={`Are you sure you want to delete "${activityToDelete?.title}"? This action cannot be undone.`}
-            confirmText="Delete"
-            isDangerous
-        />
-
         {/* Context Menu */}
         {contextMenu && (
             <div 
@@ -357,17 +319,10 @@ const Activities: React.FC<ActivitiesProps> = ({ currentUser }) => {
             >
                 <button 
                     onClick={handleOpenAttendees}
-                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 transition-colors border-b border-gray-100 dark:border-gray-700"
+                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 transition-colors"
                 >
                     <UsersIcon className="w-4 h-4 text-purple-500" />
                     <span className="font-medium">View Attendees</span>
-                </button>
-                <button 
-                    onClick={confirmDeleteActivity}
-                    className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center gap-2 transition-colors"
-                >
-                    <TrashIcon className="w-4 h-4" /> 
-                    <span className="font-medium">Delete Activity</span>
                 </button>
             </div>
         )}

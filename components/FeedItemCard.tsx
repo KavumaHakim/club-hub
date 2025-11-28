@@ -43,10 +43,8 @@ const FeedItemCard: React.FC<FeedItemCardProps> = ({ item, currentUser, onDelete
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [isPosting, setIsPosting] = useState(false);
-  // Optimistic comment count: starts with DB value, increments locally on post
   const [commentCount, setCommentCount] = useState(item.commentCount || 0);
   
-  // Context Menu State
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -89,7 +87,6 @@ const FeedItemCard: React.FC<FeedItemCardProps> = ({ item, currentUser, onDelete
           try {
               const fetchedComments = await api.getFeedComments(item.id);
               setComments(fetchedComments);
-              // Update local count to match fetched data
               setCommentCount(fetchedComments.length);
           } catch (error) {
               console.error("Failed to load comments", error);
@@ -173,6 +170,7 @@ const FeedItemCard: React.FC<FeedItemCardProps> = ({ item, currentUser, onDelete
                         {item.title}
                     </h3>
                 )}
+
                 <div className="prose prose-sm dark:prose-invert max-w-none">
                     {renderMessageContent(item.message)}
                 </div>

@@ -1,4 +1,6 @@
 
+
+
 import React, { useState, useMemo, useCallback } from 'react';
 import { User, Suggestion, SuggestionType, SuggestionStatus } from '../types';
 import { useData } from '../DataContext';
@@ -126,7 +128,8 @@ const SuggestionCard: React.FC<{
 }> = ({ suggestion, currentUser, onVote, onDelete, onStatusChange }) => {
     const isPatron = currentUser.role === 'PATRON';
     const isAuthor = currentUser.uid === suggestion.userId;
-    const hasVoted = suggestion.upvotes.includes(currentUser.uid);
+    const upvotes = suggestion.upvotes || [];
+    const hasVoted = upvotes.includes(currentUser.uid);
 
     // Fallback avatar if URL is missing
     const avatarSrc = suggestion.userAvatarUrl || (suggestion.userId ? `https://i.pravatar.cc/24?u=${suggestion.userId}` : undefined);
@@ -191,11 +194,11 @@ const SuggestionCard: React.FC<{
                     )}
                     
                     <button 
-                        onClick={() => onVote(suggestion.id, suggestion.upvotes)}
+                        onClick={() => onVote(suggestion.id, upvotes)}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium text-sm transition-all ${hasVoted ? 'bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400 ring-1 ring-pink-200 dark:ring-pink-800' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
                     >
                         <ArrowUpCircleIcon />
-                        <span>{suggestion.upvotes.length}</span>
+                        <span>{upvotes.length}</span>
                     </button>
                 </div>
             </div>

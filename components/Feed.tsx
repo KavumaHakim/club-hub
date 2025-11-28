@@ -12,22 +12,29 @@ interface FeedProps {
 }
 
 const Feed: React.FC<FeedProps> = ({ currentUser }) => {
-  const { feedItems: items, isLoadingFeed, feedItemsError, fetchFeedItems } = useData();
+  const { feedItems: items, isLoadingFeed, feedItemsError, fetchFeedItems, showToast } = useData();
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   
   const handleAddAnnouncement = useCallback(async (data: { title: string, message: string, type: FeedItemType }) => {
-    await api.addFeedItem({ ...data }, currentUser.uid);
-    await fetchFeedItems();
-  }, [fetchFeedItems, currentUser.uid]);
+    try {
+        await api.addFeedItem({ title: data.title, message: data.message, type: data.type }, currentUser.uid);
+        await fetchFeedItems();
+        showToast("Announcement posted successfully!", "success");
+    } catch (error) {
+        console.error("Failed to post announcement", error);
+        showToast("Failed to create post.", "error");
+    }
+  }, [fetchFeedItems, currentUser.uid, showToast]);
 
   const handleDeletePost = async () => {
       if (!itemToDelete) return;
       try {
           await api.deleteFeedItem(itemToDelete);
           await fetchFeedItems();
+          showToast("Post deleted.", "info");
       } catch (error) {
           console.error("Failed to delete item:", error);
-          alert("Failed to delete post.");
+          showToast("Failed to delete post.", "error");
       } finally {
           setItemToDelete(null);
       }
@@ -89,7 +96,6 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
       </div>
 
       <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6">
-        {/* Restored Header Alignment */}
         <header className="mb-8 pt-4">
             <h2 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
               Club Feed

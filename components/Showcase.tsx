@@ -1,4 +1,6 @@
 
+
+
 import React, { useState, useCallback, useMemo } from 'react';
 import { User, ShowcaseItem, Tab } from '../types';
 import { useData } from '../DataContext';
@@ -40,7 +42,9 @@ const ShowcaseCard: React.FC<{
     onClone: (code: string) => void,
     onRun: (code: string, title: string) => void
 }> = ({ item, currentUser, onLike, onClone, onRun }) => {
-    const isLiked = item.likes.includes(currentUser.uid);
+    // Ensure likes is an array
+    const likes = item.likes || [];
+    const isLiked = likes.includes(currentUser.uid);
     
     return (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col transition-all duration-300 hover:shadow-lg">
@@ -81,11 +85,11 @@ const ShowcaseCard: React.FC<{
             <div className="px-5 py-3 bg-gray-50 dark:bg-gray-750 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <button 
-                        onClick={() => onLike(item.id, item.likes)}
+                        onClick={() => onLike(item.id, likes)}
                         className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors ${isLiked ? 'text-pink-500 bg-pink-50 dark:bg-pink-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
                     >
                         <HeartIcon className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
-                        <span className="text-xs font-medium">{item.likes.length}</span>
+                        <span className="text-xs font-medium">{likes.length}</span>
                     </button>
                     <button
                         onClick={() => onRun(item.codeContent, item.title)}
@@ -113,8 +117,9 @@ const Leaderboard: React.FC<{ items: ShowcaseItem[], allUsers: User[] }> = ({ it
     const rankings = useMemo(() => {
         const userLikes: Record<string, number> = {};
         items.forEach(item => {
-            if (item.likes.length > 0) {
-                userLikes[item.userUid] = (userLikes[item.userUid] || 0) + item.likes.length;
+            const likes = item.likes || [];
+            if (likes.length > 0) {
+                userLikes[item.userUid] = (userLikes[item.userUid] || 0) + likes.length;
             }
         });
 
