@@ -44,7 +44,27 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // 1. Supabase API Requests (Activities, Feed, etc.)
+  // 1. Pyodide Assets (Large, versioned, immutable)
+  // Strategy: Cache First
+  // We prioritize this for Pyodide to avoid downloading large WASM files on every load
+  if (url.href.includes('pyodide')) {
+     event.respondWith(
+      caches.match(event.request).then((cachedResponse) => {
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        return fetch(event.request).then((networkResponse) => {
+          return caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, networkResponse.clone());
+            return networkResponse;
+          });
+        });
+      })
+    );
+    return;
+  }
+
+  // 2. Supabase API Requests (Activities, Feed, etc.)
   // Strategy: Network First, Fallback to Cache
   if (url.hostname.includes('supabase.co') && event.request.method === 'GET') {
     event.respondWith(
@@ -67,7 +87,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 2. Static CDN Assets (React, Tailwind, etc.)
+  // 3. Static CDN Assets (React, Tailwind, etc.)
   // Strategy: Stale While Revalidate (Return cache fast, update in background)
   if (STATIC_DOMAINS.some(domain => url.hostname.includes(domain))) {
     event.respondWith(
@@ -84,7 +104,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 3. App Shell / Local Assets
+  // 4. App Shell / Local Assets
   // Strategy: Cache First, Fallback to Network
   event.respondWith(
     caches.match(event.request).then((response) => {
