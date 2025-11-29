@@ -1,9 +1,14 @@
-const CACHE_NAME = 'ict-club-hub-v1';
-const DATA_CACHE_NAME = 'ict-club-data-v1';
+// ============================
+// Service Worker: sw.js
+// ============================
+
+const CACHE_NAME = 'ict-club-hub-v3';
+const DATA_CACHE_NAME = 'ict-club-data-v3';
 
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
+  '/manifest.json',
   '/favicon.svg'
 ];
 
@@ -14,6 +19,9 @@ const STATIC_DOMAINS = [
   'cdn.jsdelivr.net'
 ];
 
+// ----------------------------
+// Install: Precache assets
+// ----------------------------
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(PRECACHE_ASSETS))
@@ -21,6 +29,9 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
+// ----------------------------
+// Activate: Cleanup old caches
+// ----------------------------
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then(cacheNames =>
@@ -36,6 +47,9 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+// ----------------------------
+// Fetch: Handle all requests
+// ----------------------------
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
@@ -45,11 +59,13 @@ self.addEventListener('fetch', (event) => {
       caches.match(event.request).then(cachedResponse => {
         if (cachedResponse) return cachedResponse;
 
-        return fetch(event.request).then(networkResponse => {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseToCache));
-          return networkResponse;
-        });
+        return fetch(event.request)
+          .then(networkResponse => {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
+            return networkResponse;
+          })
+          .catch(() => caches.match(event.request));
       })
     );
     return;
@@ -75,19 +91,32 @@ self.addEventListener('fetch', (event) => {
   if (STATIC_DOMAINS.some(domain => url.hostname.includes(domain))) {
     event.respondWith(
       caches.match(event.request).then(cachedResponse => {
-        const fetchAndCache = fetch(event.request).then(networkResponse => {
-          const responseClone = networkResponse.clone(); // clone immediately
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
-          return networkResponse;
-        });
+        const fetchAndCache = fetch(event.request)
+          .then(networkResponse => {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
+            return networkResponse;
+          })
+          .catch(() => cachedResponse); // fallback if offline
         return cachedResponse || fetchAndCache;
       })
     );
     return;
   }
 
-  // --- 4. App Shell / Local Assets (Cache First) ---
+  // --- 4. App Shell / Local Assets (Cache First with Offline Fallback) ---
   event.respondWith(
-    caches.match(event.request).then(response => response || fetch(event.request))
+    caches.match(event.request).then(response => {
+      if (response) return response;
+
+      return fetch(event.request).catch(() => {
+        // Navigation requests fallback to index.html for SPA
+        if (event.request.mode === 'navigate') {
+          return caches.match('/index.html');
+        }
+        // Non-essential requests: return empty response offline
+        return new Response('', { status: 503, statusText: 'Offline' });
+      });
+    })
   );
 });
