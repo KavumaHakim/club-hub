@@ -2,8 +2,8 @@
 // Service Worker: sw.js
 // ============================
 
-const CACHE_NAME = 'ict-club-hub-v3';
-const DATA_CACHE_NAME = 'ict-club-data-v3';
+const CACHE_NAME = 'ict-club-hub-v4';
+const DATA_CACHE_NAME = 'ict-club-data-v4';
 
 const PRECACHE_ASSETS = [
   '/',
@@ -97,24 +97,48 @@ self.addEventListener('fetch', (event) => {
             caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
             return networkResponse;
           })
-          .catch(() => cachedResponse); // fallback if offline
+          .catch(() => cachedResponse);
         return cachedResponse || fetchAndCache;
       })
     );
     return;
   }
 
-  // --- 4. App Shell / Local Assets (Cache First with Offline Fallback) ---
+  // --- 4. Dynamic caching for build assets (/assets/) ---
+  if (url.pathname.startsWith('/assets/')) {
+    event.respondWith(
+      caches.match(event.request).then(cachedResponse => {
+        if (cachedResponse) return cachedResponse;
+
+        return fetch(event.request)
+          .then(networkResponse => {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
+            return networkResponse;
+          })
+          .catch(() => {
+            // Return empty JS/CSS if offline to prevent errors
+            if (event.request.destination === 'script' || event.request.destination === 'style') {
+              return new Response('', { status: 503, statusText: 'Offline' });
+            }
+            return caches.match('/index.html'); // fallback for SPA navigation
+          });
+      })
+    );
+    return;
+  }
+
+  // --- 5. App Shell / Local Assets (Cache First with Offline Fallback) ---
   event.respondWith(
     caches.match(event.request).then(response => {
       if (response) return response;
 
       return fetch(event.request).catch(() => {
-        // Navigation requests fallback to index.html for SPA
+        // Navigation fallback to index.html
         if (event.request.mode === 'navigate') {
           return caches.match('/index.html');
         }
-        // Non-essential requests: return empty response offline
+        // Non-essential requests return empty response
         return new Response('', { status: 503, statusText: 'Offline' });
       });
     })
