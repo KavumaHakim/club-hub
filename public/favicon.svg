@@ -9,30 +9,24 @@
 
   <g font-family="monospace, sans-serif" font-size="28" font-weight="bold" fill="white" dominant-baseline="central" text-anchor="middle">
     <!-- Letter I -->
-    <g>
-      <animateTransform attributeName="transform" type="translate"
-        values="-40 0; 0 0; 0 0; 40 0" keyTimes="0; 0.25; 0.75; 1"
-        dur="3s" repeatCount="indefinite" />
-      <animate attributeName="opacity" values="0; 1; 1; 0" dur="3s" repeatCount="indefinite" />
-      <text x="19" y="33">I</text>
-    </g>
+    <text x="19" y="33">
+      I
+      <animate attributeName="x" from="-20" to="19" dur="0.8s" begin="0s; 2s" fill="freeze" keyTimes="0; 1" values="-20; 19" calcMode="spline" keySplines="0.25 0.1 0.25 1"/>
+      <animate attributeName="x" from="19" to="84" dur="0.8s" begin="1.2s; 3.2s" fill="freeze" keyTimes="0; 1" values="19; 84" calcMode="spline" keySplines="0.75 0 0.75 0.9"/>
+    </text>
     
     <!-- Letter C -->
-    <g>
-      <animateTransform attributeName="transform" type="translate"
-        values="0 -40; 0 0; 0 0; 0 40" keyTimes="0; 0.25; 0.75; 1"
-        dur="3s" repeatCount="indefinite" begin="0.1s" />
-      <animate attributeName="opacity" values="0; 1; 1; 0" dur="3s" repeatCount="indefinite" begin="0.1s" />
-      <text x="32" y="33">C</text>
-    </g>
+    <text x="32" y="33">
+      C
+      <animate attributeName="y" from="-20" to="33" dur="0.8s" begin="0.1s; 2.1s" fill="freeze" keyTimes="0; 1" values="-20; 33" calcMode="spline" keySplines="0.25 0.1 0.25 1"/>
+      <animate attributeName="y" from="33" to="84" dur="0.8s" begin="1.3s; 3.3s" fill="freeze" keyTimes="0; 1" values="33; 84" calcMode="spline" keySplines="0.75 0 0.75 0.9"/>
+    </text>
     
     <!-- Letter H -->
-    <g>
-      <animateTransform attributeName="transform" type="translate"
-        values="40 0; 0 0; 0 0; -40 0" keyTimes="0; 0.25; 0.75; 1"
-        dur="3s" repeatCount="indefinite" begin="0.2s" />
-      <animate attributeName="opacity" values="0; 1; 1; 0" dur="3s" repeatCount="indefinite" begin="0.2s" />
-      <text x="45" y="33">H</text>
-    </g>
+    <text x="45" y="33">
+      H
+      <animate attributeName="x" from="84" to="45" dur="0.8s" begin="0.2s; 2.2s" fill="freeze" keyTimes="0; 1" values="84; 45" calcMode="spline" keySplines="0.25 0.1 0.25 1"/>
+      <animate attributeName="x" from="45" to="-20" dur="0.8s" begin="1.4s; 3.4s" fill="freeze" keyTimes="0; 1" values="45; -20" calcMode="spline" keySplines="0.75 0 0.75 0.9"/>
+    </text>
   </g>
 </svg>
