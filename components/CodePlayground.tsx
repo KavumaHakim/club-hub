@@ -62,7 +62,8 @@ const SyntaxHighlightedText: React.FC<{ text: string }> = ({ text }) => {
     );
 };
 
-// Standard Python Keywords for Autocomplete
+// --- IntelliSense Definitions ---
+
 const PYTHON_KEYWORDS = [
     'False', 'None', 'True', 'and', 'as', 'assert', 'async', 'await', 'break', 
     'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 
@@ -70,7 +71,6 @@ const PYTHON_KEYWORDS = [
     'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield'
 ];
 
-// Standard Python Built-ins for Autocomplete
 const PYTHON_BUILTINS = [
     'abs', 'all', 'any', 'ascii', 'bin', 'bool', 'bytearray', 'bytes', 'callable', 
     'chr', 'classmethod', 'compile', 'complex', 'delattr', 'dict', 'dir', 'divmod', 
@@ -81,6 +81,34 @@ const PYTHON_BUILTINS = [
     'range', 'repr', 'reversed', 'round', 'set', 'setattr', 'slice', 'sorted', 
     'staticmethod', 'str', 'sum', 'super', 'tuple', 'type', 'vars', 'zip'
 ];
+
+const PYTHON_METHODS = [
+    // String Methods
+    { label: 'upper', insertText: 'upper()', documentation: 'Return a copy of the string with all the cased characters converted to uppercase.', detail: 'str method' },
+    { label: 'lower', insertText: 'lower()', documentation: 'Return a copy of the string with all the cased characters converted to lowercase.', detail: 'str method' },
+    { label: 'strip', insertText: 'strip()', documentation: 'Return a copy of the string with leading and trailing whitespace removed.', detail: 'str method' },
+    { label: 'split', insertText: 'split(${1:sep})', documentation: 'Return a list of the words in the string, using sep as the delimiter string.', detail: 'str method' },
+    { label: 'join', insertText: 'join(${1:iterable})', documentation: 'Concatenate any number of strings.', detail: 'str method' },
+    { label: 'replace', insertText: 'replace(${1:old}, ${2:new})', documentation: 'Return a copy with all occurrences of substring old replaced by new.', detail: 'str method' },
+    // List Methods
+    { label: 'append', insertText: 'append(${1:item})', documentation: 'Appends an object to the end of the list.', detail: 'list method' },
+    { label: 'extend', insertText: 'extend(${1:iterable})', documentation: 'Extend the list by appending all the items from the iterable.', detail: 'list method' },
+    { label: 'insert', insertText: 'insert(${1:index}, ${2:item})', documentation: 'Insert an item at a given position.', detail: 'list method' },
+    { label: 'remove', insertText: 'remove(${1:item})', documentation: 'Remove the first item from the list whose value is equal to x.', detail: 'list method' },
+    { label: 'pop', insertText: 'pop(${1:index})', documentation: 'Remove and return the item at the given position in the list.', detail: 'list method' },
+    { label: 'sort', insertText: 'sort()', documentation: 'Sort the items of the list in place.', detail: 'list method' },
+    { label: 'reverse', insertText: 'reverse()', documentation: 'Reverse the elements of the list in place.', detail: 'list method' },
+    // Dictionary Methods
+    { label: 'keys', insertText: 'keys()', documentation: 'Return a new view of the dictionary\'s keys.', detail: 'dict method' },
+    { label: 'values', insertText: 'values()', documentation: 'Return a new view of the dictionary\'s values.', detail: 'dict method' },
+    { label: 'items', insertText: 'items()', documentation: 'Return a new view of the dictionary\'s items (key, value pairs).', detail: 'dict method' },
+    { label: 'get', insertText: 'get(${1:key}, ${2:default})', documentation: 'Return the value for key if key is in the dictionary, else default.', detail: 'dict method' },
+    // Set Methods
+    { label: 'add', insertText: 'add(${1:elem})', documentation: 'Add an element to a set.', detail: 'set method' },
+    { label: 'union', insertText: 'union(${1:other})', documentation: 'Return a new set with elements from the set and all others.', detail: 'set method' },
+    { label: 'intersection', insertText: 'intersection(${1:other})', documentation: 'Return a new set with elements common to the set and all others.', detail: 'set method' },
+];
+
 
 const PublishModal: React.FC<{ isOpen: boolean, onClose: () => void, onPublish: (title: string, desc: string) => Promise<void> }> = ({ isOpen, onClose, onPublish }) => {
     const [title, setTitle] = useState('');
@@ -195,119 +223,85 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
       localStorage.setItem('playground_code', code);
       codeRef.current = code;
   }, [code]);
-
-  const handleEditorDidMount = (editor: any, monaco: any) => {
-    // 1. Configure Editor Behavior
-    editor.updateOptions({
-        minimap: { enabled: false },
-        fontSize: 14,
-        padding: { top: 16 },
-        scrollBeyondLastLine: false,
-        automaticLayout: true,
-        tabCompletion: "on",
-        wordBasedSuggestions: true,
-        suggestOnTriggerCharacters: true,
-        acceptSuggestionOnEnter: "on",
-        bracketPairColorization: { enabled: true },
-        guides: { bracketPairs: true, indentation: true },
-        formatOnType: true,
-        formatOnPaste: true,
-    });
-
-    // 2. Register Python IntelliSense (Completion Provider)
-    // Check global flag to prevent duplicate registration on re-renders
-    if (!(window as any).monacoPythonCompletionRegistered) {
-        (window as any).monacoPythonCompletionRegistered = true;
-
-        monaco.languages.registerCompletionItemProvider('python', {
-            provideCompletionItems: (model: any, position: any) => {
-                const word = model.getWordUntilPosition(position);
-                const range = {
-                    startLineNumber: position.lineNumber,
-                    endLineNumber: position.lineNumber,
-                    startColumn: word.startColumn,
-                    endColumn: word.endColumn
-                };
-
-                const suggestions = [
-                    // Keywords
-                    ...PYTHON_KEYWORDS.map(k => ({
-                        label: k,
-                        kind: monaco.languages.CompletionItemKind.Keyword,
-                        insertText: k,
-                        range: range,
-                        detail: 'Keyword'
-                    })),
-                    // Built-ins
-                    ...PYTHON_BUILTINS.map(b => ({
-                        label: b,
-                        kind: monaco.languages.CompletionItemKind.Function,
-                        insertText: b,
-                        range: range,
-                        detail: 'Built-in'
-                    })),
-                    // Snippets
-                    {
-                        label: 'def',
-                        kind: monaco.languages.CompletionItemKind.Snippet,
-                        insertText: 'def ${1:function_name}(${2:args}):\n\t${3:pass}',
-                        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-                        documentation: 'Define a function',
-                        range: range,
-                        detail: 'Snippet'
-                    },
-                    {
-                        label: 'if',
-                        kind: monaco.languages.CompletionItemKind.Snippet,
-                        insertText: 'if ${1:condition}:\n\t${2:pass}',
-                        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-                        documentation: 'If statement',
-                        range: range,
-                        detail: 'Snippet'
-                    },
-                    {
-                        label: 'for',
-                        kind: monaco.languages.CompletionItemKind.Snippet,
-                        insertText: 'for ${1:item} in ${2:iterable}:\n\t${3:pass}',
-                        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-                        documentation: 'For loop',
-                        range: range,
-                        detail: 'Snippet'
-                    },
-                    {
-                        label: 'try',
-                        kind: monaco.languages.CompletionItemKind.Snippet,
-                        insertText: 'try:\n\t${1:pass}\nexcept ${2:Exception} as ${3:e}:\n\t${4:print(e)}',
-                        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-                        documentation: 'Try/Except block',
-                        range: range,
-                        detail: 'Snippet'
-                    },
-                    {
-                        label: 'ifmain',
-                        kind: monaco.languages.CompletionItemKind.Snippet,
-                        insertText: 'if __name__ == "__main__":\n\t${1:main()}',
-                        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-                        documentation: 'Main guard',
-                        range: range,
-                        detail: 'Snippet'
-                    },
-                    {
-                        label: 'print',
-                        kind: monaco.languages.CompletionItemKind.Snippet,
-                        insertText: 'print(${1:object})',
-                        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-                        documentation: 'Print to console',
-                        range: range,
-                        detail: 'Snippet'
-                    }
-                ];
-                return { suggestions: suggestions };
-            }
-        });
-    }
-  };
   
+  const handleEditorDidMount = (editor: any, monaco: any) => {
+      editor.updateOptions({
+          minimap: { enabled: false },
+          fontSize: 14,
+          padding: { top: 16 },
+          scrollBeyondLastLine: false,
+          automaticLayout: true,
+          tabCompletion: "on",
+          wordBasedSuggestions: true,
+          suggestOnTriggerCharacters: true,
+          acceptSuggestionOnEnter: "on",
+          bracketPairColorization: { enabled: true },
+          guides: { bracketPairs: true, indentation: true },
+          formatOnType: true,
+          formatOnPaste: true,
+      });
+
+      if (!(window as any).monacoPythonCompletionRegistered) {
+          (window as any).monacoPythonCompletionRegistered = true;
+
+          monaco.languages.registerCompletionItemProvider('python', {
+              triggerCharacters: ['.'],
+              provideCompletionItems: (model: any, position: any) => {
+                  const textUntilPosition = model.getValueInRange({
+                      startLineNumber: position.lineNumber,
+                      startColumn: 1,
+                      endLineNumber: position.lineNumber,
+                      endColumn: position.column
+                  });
+
+                  const word = model.getWordUntilPosition(position);
+                  const range = {
+                      startLineNumber: position.lineNumber,
+                      endLineNumber: position.lineNumber,
+                      startColumn: word.startColumn,
+                      endColumn: word.endColumn
+                  };
+                  
+                  // Method suggestions on dot
+                  if (textUntilPosition.endsWith('.')) {
+                      return { 
+                          suggestions: PYTHON_METHODS.map(m => ({
+                              ...m,
+                              kind: monaco.languages.CompletionItemKind.Method,
+                              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                              range: range,
+                          }))
+                      };
+                  }
+
+                  const suggestions = [
+                      ...PYTHON_KEYWORDS.map(k => ({
+                          label: k,
+                          kind: monaco.languages.CompletionItemKind.Keyword,
+                          insertText: k,
+                          range: range,
+                          detail: 'Keyword'
+                      })),
+                      ...PYTHON_BUILTINS.map(b => ({
+                          label: b,
+                          kind: monaco.languages.CompletionItemKind.Function,
+                          insertText: b,
+                          range: range,
+                          detail: 'Built-in'
+                      })),
+                      { label: 'def', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'def ${1:function_name}(${2:args}):\n\t${3:pass}', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, documentation: 'Define a function', range: range, detail: 'Snippet' },
+                      { label: 'if', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'if ${1:condition}:\n\t${2:pass}', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, documentation: 'If statement', range: range, detail: 'Snippet' },
+                      { label: 'for', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'for ${1:item} in ${2:iterable}:\n\t${3:pass}', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, documentation: 'For loop', range: range, detail: 'Snippet' },
+                      { label: 'try', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'try:\n\t${1:pass}\nexcept ${2:Exception} as ${3:e}:\n\t${4:print(e)}', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, documentation: 'Try/Except block', range: range, detail: 'Snippet' },
+                      { label: 'ifmain', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'if __name__ == "__main__":\n\t${1:main()}', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, documentation: 'Main guard', range: range, detail: 'Snippet' },
+                      { label: 'print', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'print(${1:object})', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, documentation: 'Print to console', range: range, detail: 'Snippet' }
+                  ];
+                  return { suggestions: suggestions };
+              }
+          });
+      }
+  };
+
   const handleImportCode = (importedCode: string) => {
       const currentCode = codeRef.current;
       
@@ -369,7 +363,6 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
           e.preventDefault();
           const val = consoleInput;
           
-          // Add the full line (prompt + input) to history so it looks like a real console session
           const fullLine = `${inputPrompt}${val}\n`;
           setOutput(prev => [...prev, { type: 'log', content: fullLine }]);
           
@@ -493,7 +486,6 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
           await api.addShowcaseItem(currentUser.uid, title, desc, code);
           setIsPublishModalOpen(false);
           
-          // Fetch latest items to update the showcase page
           await fetchShowcaseItems();
 
           if (setActiveTab) {
@@ -518,14 +510,12 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
         return;
     }
 
-    // Helper to communicate with React for Input
     (window as any).playgroundAskForInput = (prompt: string) => {
         return new Promise((resolve) => {
             setInputPrompt(prompt);
             setIsWaitingForInput(true);
             inputResolverRef.current = resolve;
             
-            // Automatically switch to output and focus input
             setActiveTabState('output');
             setTimeout(() => {
                 if (consoleInputRef.current) {
@@ -536,12 +526,10 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
         });
     };
 
-    // Helper to communicate with React for Printing
     (window as any).playgroundPrint = (text: string, type: 'log' | 'error') => {
         if (text) {
             setOutput(prev => {
                 const lastOutput = prev[prev.length - 1];
-                // Append to last line if types match, otherwise new line
                 if (lastOutput && lastOutput.type === type) {
                     const newOutput = [...prev];
                     newOutput[newOutput.length - 1] = { ...lastOutput, content: lastOutput.content + text };
@@ -571,7 +559,6 @@ sys.stdout = Writer('log')
 sys.stderr = Writer('error')
 
 async def custom_input_async(prompt_text=""):
-    # Pass prompt to JS to display inline with input field
     val = await js.playgroundAskForInput(prompt_text)
     return val
 
@@ -582,7 +569,6 @@ builtins.input = custom_input_async
         await pyodide.loadPackagesFromImports(code);
         await pyodide.runPythonAsync(setupCode);
         
-        // Regex to replace standard input() calls with await input() to handle async JS interaction
         const asyncCode = code.replace(/\binput\s*\(/g, 'await input(');
         
         const result = await pyodide.runPythonAsync(asyncCode);
@@ -600,7 +586,7 @@ builtins.input = custom_input_async
         (window as any).playgroundPrint(error.message, 'error');
     } finally {
         setIsExecuting(false);
-        setIsWaitingForInput(false); // Ensure input state is cleared if script crashes
+        setIsWaitingForInput(false);
         scrollToBottom();
     }
   };
@@ -785,7 +771,6 @@ builtins.input = custom_input_async
                     ))
                 )}
                 
-                {/* Inline Input Field */}
                 {isWaitingForInput && (
                     <div className="flex items-center text-gray-300 leading-relaxed mt-1">
                         <span className="whitespace-pre-wrap">{inputPrompt}</span>
@@ -802,7 +787,6 @@ builtins.input = custom_input_async
                     </div>
                 )}
                 
-                {/* Blinking Cursor when running but not waiting for input */}
                 {isExecuting && !isWaitingForInput && <div className="animate-pulse mt-1 text-green-500">_</div>}
             </div>
         </div>
