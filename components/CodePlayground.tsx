@@ -200,86 +200,84 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
           formatOnPaste: true,
       });
 
-      if (!(window as any).monacoPythonCompletionRegistered) {
-          (window as any).monacoPythonCompletionRegistered = true;
-          
-          const staticProvider = {
-              triggerCharacters: ['.'],
-              provideCompletionItems: (model: any, position: any) => {
-                  const word = model.getWordUntilPosition(position);
-                  const range = {
-                      startLineNumber: position.lineNumber,
-                      endLineNumber: position.lineNumber,
-                      startColumn: word.startColumn,
-                      endColumn: word.endColumn
-                  };
-                  
-                  const suggestions = [
-                      ...PYTHON_KEYWORDS.map(k => ({ label: k, kind: monaco.languages.CompletionItemKind.Keyword, insertText: k, range: range, detail: 'Keyword' })),
-                      ...PYTHON_BUILTINS.map(b => ({ label: b, kind: monaco.languages.CompletionItemKind.Function, insertText: b, range: range, detail: 'Built-in' })),
-                      { label: 'def', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'def ${1:function_name}(${2:args}):\n\t${3:pass}', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, documentation: 'Define a function', range: range, detail: 'Snippet' },
-                      { label: 'if', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'if ${1:condition}:\n\t${2:pass}', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, documentation: 'If statement', range: range, detail: 'Snippet' },
-                      { label: 'for', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'for ${1:item} in ${2:iterable}:\n\t${3:pass}', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, documentation: 'For loop', range: range, detail: 'Snippet' },
-                  ];
-                  return { suggestions: suggestions };
-              }
-          };
-          
-          monaco.languages.registerCompletionItemProvider('python', staticProvider);
+      if ((window as any).monacoPythonCompletionRegistered) return;
+      (window as any).monacoPythonCompletionRegistered = true;
 
-          // Load Jedi for advanced completions
-          if ((window as any).pyodide) {
-              const py = (window as any).pyodide;
-              py.runPythonAsync(`
-                  import jedi
-              `).then(() => {
-                  monaco.languages.registerCompletionItemProvider('python', {
-                      provideCompletionItems: async (model: any, position: any) => {
-                           const py = (window as any).pyodide;
-                           if (!py) return { suggestions: [] };
-                           
-                           const code = model.getValue();
-                           py.globals.set("jedi_code", code);
-                           py.globals.set("jedi_line", position.lineNumber);
-                           py.globals.set("jedi_column", position.column);
-
-                           const completionsResult = await py.runPythonAsync(`
-                               import jedi
-                               script = jedi.Script(jedi_code)
-                               completions = script.complete(line=jedi_line, column=jedi_column)
-                               [{
-                                   "name": c.name, 
-                                   "type": c.type,
-                                   "docstring": c.docstring(),
-                               } for c in completions]
-                           `);
-                           
-                           const jediCompletions = completionsResult.toJs();
-                           completionsResult.destroy();
-                           
-                           const word = model.getWordUntilPosition(position);
-                           const range = {
-                               startLineNumber: position.lineNumber,
-                               endLineNumber: position.lineNumber,
-                               startColumn: word.startColumn,
-                               endColumn: word.endColumn
-                           };
-                           
-                           return {
-                               suggestions: jediCompletions.map((c: any) => ({
-                                   label: c.name,
-                                   kind: monaco.languages.CompletionItemKind.Text, // Map jedi types to monaco kinds later
-                                   insertText: c.name,
-                                   documentation: c.docstring,
-                                   detail: c.type,
-                                   range: range,
-                               }))
-                           };
-                      }
-                  });
-              }).catch((e: any) => console.error("Jedi load failed", e));
+      // 1. Static provider for immediate feedback
+      const staticProvider = {
+          triggerCharacters: ['.'],
+          provideCompletionItems: (model: any, position: any) => {
+              const word = model.getWordUntilPosition(position);
+              const range = {
+                  startLineNumber: position.lineNumber,
+                  endLineNumber: position.lineNumber,
+                  startColumn: word.startColumn,
+                  endColumn: word.endColumn
+              };
+              
+              const suggestions = [
+                  ...PYTHON_KEYWORDS.map(k => ({ label: k, kind: monaco.languages.CompletionItemKind.Keyword, insertText: k, range: range, detail: 'Keyword' })),
+                  ...PYTHON_BUILTINS.map(b => ({ label: b, kind: monaco.languages.CompletionItemKind.Function, insertText: b, range: range, detail: 'Built-in' })),
+                  { label: 'def', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'def ${1:function_name}(${2:args}):\n\t${3:pass}', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, documentation: 'Define a function', range: range, detail: 'Snippet' },
+                  { label: 'if', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'if ${1:condition}:\n\t${2:pass}', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, documentation: 'If statement', range: range, detail: 'Snippet' },
+                  { label: 'for', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'for ${1:item} in ${2:iterable}:\n\t${3:pass}', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, documentation: 'For loop', range: range, detail: 'Snippet' },
+              ];
+              return { suggestions: suggestions };
           }
-      }
+      };
+      
+      monaco.languages.registerCompletionItemProvider('python', staticProvider);
+
+      // 2. Dynamic Jedi provider that activates when ready
+      monaco.languages.registerCompletionItemProvider('python', {
+          provideCompletionItems: async (model: any, position: any) => {
+              if (!pyodide) return { suggestions: [] };
+               
+               const py = pyodide;
+               const code = model.getValue();
+               py.globals.set("jedi_code", code);
+               py.globals.set("jedi_line", position.lineNumber);
+               py.globals.set("jedi_column", position.column);
+
+               try {
+                    const completionsResult = await py.runPythonAsync(`
+                        import jedi
+                        script = jedi.Script(jedi_code)
+                        completions = script.complete(line=jedi_line, column=jedi_column)
+                        [{
+                            "name": c.name, 
+                            "type": c.type,
+                            "docstring": c.docstring(),
+                        } for c in completions]
+                    `);
+                    
+                    const jediCompletions = completionsResult.toJs();
+                    completionsResult.destroy();
+                    
+                    const word = model.getWordUntilPosition(position);
+                    const range = {
+                        startLineNumber: position.lineNumber,
+                        endLineNumber: position.lineNumber,
+                        startColumn: word.startColumn,
+                        endColumn: word.endColumn
+                    };
+                    
+                    return {
+                        suggestions: jediCompletions.map((c: any) => ({
+                            label: c.name,
+                            kind: monaco.languages.CompletionItemKind.Text, // Basic kind
+                            insertText: c.name,
+                            documentation: c.docstring,
+                            detail: c.type,
+                            range: range,
+                        }))
+                    };
+                } catch (e) {
+                    console.error("Jedi completion error:", e);
+                    return { suggestions: [] };
+                }
+          }
+      });
   };
 
 
@@ -309,6 +307,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
         const pyodideInstance = await window.loadPyodide({
           indexURL: "https://cdn.jsdelivr.net/pyodide/v0.29.0/full/"
         });
+        await pyodideInstance.loadPackage("jedi");
         (window as any).pyodide = pyodideInstance; // Make it globally accessible for editor
         setPyodide(pyodideInstance);
         setIsPyodideReady(true);

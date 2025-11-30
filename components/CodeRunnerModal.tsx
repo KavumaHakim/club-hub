@@ -105,9 +105,10 @@ const CodeRunnerModal: React.FC<CodeRunnerModalProps> = ({ isOpen, onClose, code
                 const pyodideInstance = await window.loadPyodide({
                     indexURL: "https://cdn.jsdelivr.net/pyodide/v0.29.0/full/"
                 });
+                await pyodideInstance.loadPackage("jedi");
                 setPyodide(pyodideInstance);
             } catch (error) {
-                console.error("Failed to load Pyodide:", error);
+                console.error("Failed to initialize Python environment:", error);
                 setOutput([{ type: 'error', content: "Failed to initialize Python environment." }]);
             } finally {
                 setIsLoadingPyodide(false);
@@ -144,11 +145,7 @@ const CodeRunnerModal: React.FC<CodeRunnerModalProps> = ({ isOpen, onClose, code
           formatOnPaste: true,
       });
 
-      if (!(window as any).monacoPythonCompletionRegistered) {
-          (window as any).monacoPythonCompletionRegistered = true;
-      }
-      
-      // Always register for this instance. The global flag is a weak guard against duplicates.
+      // Static provider as a fallback
       monaco.languages.registerCompletionItemProvider('python', {
           triggerCharacters: ['.'],
           provideCompletionItems: (model: any, position: any) => {
@@ -167,7 +164,6 @@ const CodeRunnerModal: React.FC<CodeRunnerModalProps> = ({ isOpen, onClose, code
                   endColumn: word.endColumn,
               };
 
-              // Method suggestions on dot
               if (textUntilPosition.endsWith('.')) {
                   return {
                       suggestions: PYTHON_METHODS.map(m => ({
@@ -187,6 +183,58 @@ const CodeRunnerModal: React.FC<CodeRunnerModalProps> = ({ isOpen, onClose, code
               ];
               return { suggestions: suggestions };
           },
+      });
+
+      // Dynamic Jedi provider
+      monaco.languages.registerCompletionItemProvider('python', {
+          provideCompletionItems: async (model: any, position: any) => {
+              if (!pyodide) {
+                  return { suggestions: [] };
+              }
+              const py = pyodide;
+              const code = model.getValue();
+              py.globals.set("jedi_code", code);
+              py.globals.set("jedi_line", position.lineNumber);
+              py.globals.set("jedi_column", position.column);
+
+              try {
+                  const completionsResult = await py.runPythonAsync(`
+                      import jedi
+                      script = jedi.Script(jedi_code)
+                      completions = script.complete(line=jedi_line, column=jedi_column)
+                      [{
+                          "name": c.name, 
+                          "type": c.type,
+                          "docstring": c.docstring(),
+                      } for c in completions]
+                  `);
+                  
+                  const jediCompletions = completionsResult.toJs();
+                  completionsResult.destroy();
+                  
+                  const word = model.getWordUntilPosition(position);
+                  const range = {
+                      startLineNumber: position.lineNumber,
+                      endLineNumber: position.lineNumber,
+                      startColumn: word.startColumn,
+                      endColumn: word.endColumn
+                  };
+                  
+                  return {
+                      suggestions: jediCompletions.map((c: any) => ({
+                          label: c.name,
+                          kind: monaco.languages.CompletionItemKind.Text,
+                          insertText: c.name,
+                          documentation: c.docstring,
+                          detail: c.type,
+                          range: range,
+                      }))
+                  };
+              } catch (e) {
+                  console.error("Jedi completion error:", e);
+                  return { suggestions: [] };
+              }
+          }
       });
   };
 
