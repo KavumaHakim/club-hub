@@ -1,0 +1,17 @@
+name: Daily Send Reminders
+on:
+  schedule:
+    - cron: '0 9 * * *' # daily at 09:00 UTC — change as needed
+  workflow_dispatch:
+
+jobs:
+  call-send-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: POST to send-reminders
+        run: |
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -d '{"run_at":"'"$(date --utc +%Y-%m-%dT%H:%M:%SZ)"'"}' \
+            "https://project-ref.supabase.co/functions/v1/send-reminders"
