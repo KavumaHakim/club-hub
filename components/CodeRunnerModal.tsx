@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { XIcon } from './icons/XIcon';
 import { PlayIcon } from './icons/PlayIcon';
@@ -53,33 +54,6 @@ const PYTHON_BUILTINS = [
     'staticmethod', 'str', 'sum', 'super', 'tuple', 'type', 'vars', 'zip'
 ];
 
-const PYTHON_METHODS = [
-    // String Methods
-    { label: 'upper', insertText: 'upper()', documentation: 'Return a copy of the string with all the cased characters converted to uppercase.', detail: 'str method' },
-    { label: 'lower', insertText: 'lower()', documentation: 'Return a copy of the string with all the cased characters converted to lowercase.', detail: 'str method' },
-    { label: 'strip', insertText: 'strip()', documentation: 'Return a copy of the string with leading and trailing whitespace removed.', detail: 'str method' },
-    { label: 'split', insertText: 'split(${1:sep})', documentation: 'Return a list of the words in the string, using sep as the delimiter string.', detail: 'str method' },
-    { label: 'join', insertText: 'join(${1:iterable})', documentation: 'Concatenate any number of strings.', detail: 'str method' },
-    { label: 'replace', insertText: 'replace(${1:old}, ${2:new})', documentation: 'Return a copy with all occurrences of substring old replaced by new.', detail: 'str method' },
-    // List Methods
-    { label: 'append', insertText: 'append(${1:item})', documentation: 'Appends an object to the end of the list.', detail: 'list method' },
-    { label: 'extend', insertText: 'extend(${1:iterable})', documentation: 'Extend the list by appending all the items from the iterable.', detail: 'list method' },
-    { label: 'insert', insertText: 'insert(${1:index}, ${2:item})', documentation: 'Insert an item at a given position.', detail: 'list method' },
-    { label: 'remove', insertText: 'remove(${1:item})', documentation: 'Remove the first item from the list whose value is equal to x.', detail: 'list method' },
-    { label: 'pop', insertText: 'pop(${1:index})', documentation: 'Remove and return the item at the given position in the list.', detail: 'list method' },
-    { label: 'sort', insertText: 'sort()', documentation: 'Sort the items of the list in place.', detail: 'list method' },
-    { label: 'reverse', insertText: 'reverse()', documentation: 'Reverse the elements of the list in place.', detail: 'list method' },
-    // Dictionary Methods
-    { label: 'keys', insertText: 'keys()', documentation: 'Return a new view of the dictionary\'s keys.', detail: 'dict method' },
-    { label: 'values', insertText: 'values()', documentation: 'Return a new view of the dictionary\'s values.', detail: 'dict method' },
-    { label: 'items', insertText: 'items()', documentation: 'Return a new view of the dictionary\'s items (key, value pairs).', detail: 'dict method' },
-    { label: 'get', insertText: 'get(${1:key}, ${2:default})', documentation: 'Return the value for key if key is in the dictionary, else default.', detail: 'dict method' },
-    // Set Methods
-    { label: 'add', insertText: 'add(${1:elem})', documentation: 'Add an element to a set.', detail: 'set method' },
-    { label: 'union', insertText: 'union(${1:other})', documentation: 'Return a new set with elements from the set and all others.', detail: 'set method' },
-    { label: 'intersection', insertText: 'intersection(${1:other})', documentation: 'Return a new set with elements common to the set and all others.', detail: 'set method' },
-];
-
 const CodeRunnerModal: React.FC<CodeRunnerModalProps> = ({ isOpen, onClose, code, title }) => {
   const [output, setOutput] = useState<OutputLine[]>([]);
   const [isExecuting, setIsExecuting] = useState(false);
@@ -95,29 +69,29 @@ const CodeRunnerModal: React.FC<CodeRunnerModalProps> = ({ isOpen, onClose, code
   const [consoleInput, setConsoleInput] = useState('');
   const inputResolverRef = useRef<((value: string) => void) | null>(null);
   const consoleInputRef = useRef<HTMLInputElement>(null);
+  const completionProvidersRef = useRef<any[]>([]);
 
   useEffect(() => {
-    if (isOpen && !pyodideRef.current) {
-        const loadPyodide = async () => {
-            setIsLoadingPyodide(true);
-            try {
-                // @ts-ignore
-                const pyodideInstance = await window.loadPyodide({
-                    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.29.0/full/"
-                });
-                await pyodideInstance.loadPackage("jedi");
-                pyodideRef.current = pyodideInstance;
-            } catch (error) {
-                console.error("Failed to initialize Python environment:", error);
-                setOutput([{ type: 'error', content: "Failed to initialize Python environment." }]);
-            } finally {
-                setIsLoadingPyodide(false);
-            }
-        };
-        loadPyodide();
-    }
-    
     if (isOpen) {
+        if (!pyodideRef.current) {
+            const loadPyodide = async () => {
+                setIsLoadingPyodide(true);
+                try {
+                    // @ts-ignore
+                    const pyodideInstance = await window.loadPyodide({
+                        indexURL: "https://cdn.jsdelivr.net/pyodide/v0.29.0/full/"
+                    });
+                    pyodideRef.current = pyodideInstance;
+                } catch (error) {
+                    console.error("Failed to initialize Python environment:", error);
+                    setOutput([{ type: 'error', content: "Failed to initialize Python environment." }]);
+                } finally {
+                    setIsLoadingPyodide(false);
+                }
+            };
+            loadPyodide();
+        }
+        
         setOutput([]);
         setIsWaitingForInput(false);
         setConsoleInput('');
@@ -126,7 +100,19 @@ const CodeRunnerModal: React.FC<CodeRunnerModalProps> = ({ isOpen, onClose, code
         const isDark = document.documentElement.classList.contains('dark');
         setEditorTheme(isDark ? 'vs-dark' : 'light');
     }
-  }, [isOpen, code]);
+
+    return () => {
+        completionProvidersRef.current.forEach(p => p.dispose());
+        completionProvidersRef.current = [];
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    // Separate effect for cleanup on final unmount if needed
+    return () => {
+        completionProvidersRef.current.forEach(p => p.dispose());
+    };
+  }, []);
 
   const handleEditorDidMount = (editor: any, monaco: any) => {
       editor.updateOptions({
@@ -144,98 +130,21 @@ const CodeRunnerModal: React.FC<CodeRunnerModalProps> = ({ isOpen, onClose, code
           formatOnType: true,
           formatOnPaste: true,
       });
+      
+      completionProvidersRef.current.forEach(provider => provider.dispose());
+      completionProvidersRef.current = [];
 
-      // Static provider as a fallback
-      monaco.languages.registerCompletionItemProvider('python', {
-          triggerCharacters: ['.'],
+      // Static provider
+      completionProvidersRef.current.push(monaco.languages.registerCompletionItemProvider('python', {
           provideCompletionItems: (model: any, position: any) => {
-              const textUntilPosition = model.getValueInRange({
-                  startLineNumber: position.lineNumber,
-                  startColumn: 1,
-                  endLineNumber: position.lineNumber,
-                  endColumn: position.column,
-              });
-              
               const word = model.getWordUntilPosition(position);
-              const range = {
-                  startLineNumber: position.lineNumber,
-                  endLineNumber: position.lineNumber,
-                  startColumn: word.startColumn,
-                  endColumn: word.endColumn,
-              };
-
-              if (textUntilPosition.endsWith('.')) {
-                  return {
-                      suggestions: PYTHON_METHODS.map(m => ({
-                          ...m,
-                          kind: monaco.languages.CompletionItemKind.Method,
-                          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-                          range: range,
-                      })),
-                  };
-              }
-
-              const suggestions = [
-                  ...PYTHON_KEYWORDS.map(k => ({ label: k, kind: monaco.languages.CompletionItemKind.Keyword, insertText: k, range: range, detail: 'Keyword' })),
-                  ...PYTHON_BUILTINS.map(b => ({ label: b, kind: monaco.languages.CompletionItemKind.Function, insertText: b, range: range, detail: 'Built-in' })),
-                  { label: 'def', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'def ${1:function_name}(${2:args}):\n\t${3:pass}', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, documentation: 'Define a function', range: range, detail: 'Snippet' },
-                  { label: 'print', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'print(${1:object})', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, documentation: 'Print to console', range: range, detail: 'Snippet' },
-              ];
-              return { suggestions: suggestions };
-          },
-      });
-
-      // Dynamic Jedi provider
-      monaco.languages.registerCompletionItemProvider('python', {
-          provideCompletionItems: async (model: any, position: any) => {
-              if (!pyodideRef.current) {
-                  return { suggestions: [] };
-              }
-              const py = pyodideRef.current;
-              const currentCode = model.getValue();
-              py.globals.set("jedi_code", currentCode);
-              py.globals.set("jedi_line", position.lineNumber);
-              py.globals.set("jedi_column", position.column);
-
-              try {
-                  const completionsResult = await py.runPythonAsync(`
-                      import jedi
-                      script = jedi.Script(jedi_code)
-                      completions = script.complete(line=jedi_line, column=jedi_column)
-                      [{
-                          "name": c.name, 
-                          "type": c.type,
-                          "docstring": c.docstring(),
-                      } for c in completions]
-                  `);
-                  
-                  const jediCompletions = completionsResult.toJs();
-                  completionsResult.destroy();
-                  
-                  const word = model.getWordUntilPosition(position);
-                  const range = {
-                      startLineNumber: position.lineNumber,
-                      endLineNumber: position.lineNumber,
-                      startColumn: word.startColumn,
-                      endColumn: word.endColumn
-                  };
-                  
-                  return {
-                      suggestions: jediCompletions.map((c: any) => ({
-                          label: c.name,
-                          kind: monaco.languages.CompletionItemKind.Text,
-                          insertText: c.name,
-                          documentation: c.docstring,
-                          detail: c.type,
-                          range: range,
-                      }))
-                  };
-              } catch (e) {
-                  console.error("Jedi completion error:", e);
-                  return { suggestions: [] };
-              }
+              const range = { startLineNumber: position.lineNumber, endLineNumber: position.lineNumber, startColumn: word.startColumn, endColumn: word.endColumn };
+              return { suggestions: [
+                  ...PYTHON_KEYWORDS.map(k => ({ label: k, kind: monaco.languages.CompletionItemKind.Keyword, insertText: k, range, detail: 'Keyword' })),
+                  ...PYTHON_BUILTINS.map(b => ({ label: b, kind: monaco.languages.CompletionItemKind.Function, insertText: b, range, detail: 'Built-in' })),
+              ]};
           }
-      });
+      }));
   };
 
   const scrollToBottom = () => {

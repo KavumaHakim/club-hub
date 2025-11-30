@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useRef } from 'react';
 import { PlayIcon } from './icons/PlayIcon';
 import { TrashIcon } from './icons/TrashIcon';
@@ -105,7 +104,6 @@ const PublishModal: React.FC<{ isOpen: boolean, onClose: () => void, onPublish: 
     );
 };
 
-// FIX: Added missing constants for Monaco editor autocompletion.
 const PYTHON_KEYWORDS = [
     'False', 'None', 'True', 'and', 'as', 'assert', 'async', 'await', 'break', 
     'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 
@@ -140,7 +138,6 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
   const [activeTab, setActiveTabState] = useState<'editor' | 'output'>('editor');
   const [isGettingHint, setIsGettingHint] = useState(false);
   
-  // Cloud Save/Load State
   const [isCloudModalOpen, setIsCloudModalOpen] = useState(false);
   const [cloudScripts, setCloudScripts] = useState<ScriptFile[]>([]);
   const [isLoadingScripts, setIsLoadingScripts] = useState(false);
@@ -148,26 +145,19 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
   const [isSaving, setIsSaving] = useState(false);
   const [cloudMessage, setCloudMessage] = useState<{text: string, type: 'success'|'error'} | null>(null);
 
-  // Overwrite Confirmation State
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [pendingCode, setPendingCode] = useState<string | null>(null);
   
-  // Delete Confirmation State
   const [scriptToDelete, setScriptToDelete] = useState<string | null>(null);
 
-  // Publish State
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
 
-  // Share State
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
-  // Submit to Challenge State
   const [isSubmitChallengeModalOpen, setIsSubmitChallengeModalOpen] = useState(false);
 
-  // Copy Feedback
   const [copyFeedback, setCopyFeedback] = useState(false);
 
-  // Inline Console Input State
   const [isWaitingForInput, setIsWaitingForInput] = useState(false);
   const [inputPrompt, setInputPrompt] = useState('');
   const [consoleInput, setConsoleInput] = useState('');
@@ -177,12 +167,20 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
   const outputContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const codeRef = useRef(code);
+  const completionProvidersRef = useRef<any[]>([]);
 
   useEffect(() => {
       localStorage.setItem('playground_code', code);
       codeRef.current = code;
   }, [code]);
   
+  useEffect(() => {
+    return () => {
+        completionProvidersRef.current.forEach(provider => provider.dispose());
+        completionProvidersRef.current = [];
+    };
+  }, []);
+
   const handleEditorDidMount = (editor: any, monaco: any) => {
       editor.updateOptions({
           minimap: { enabled: false },
@@ -200,84 +198,24 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
           formatOnPaste: true,
       });
 
-      if ((window as any).monacoPythonCompletionRegistered) return;
-      (window as any).monacoPythonCompletionRegistered = true;
+      completionProvidersRef.current.forEach(provider => provider.dispose());
+      completionProvidersRef.current = [];
 
-      // 1. Static provider for immediate feedback
+      // Static provider for keywords/snippets
       const staticProvider = {
-          triggerCharacters: ['.'],
           provideCompletionItems: (model: any, position: any) => {
               const word = model.getWordUntilPosition(position);
-              const range = {
-                  startLineNumber: position.lineNumber,
-                  endLineNumber: position.lineNumber,
-                  startColumn: word.startColumn,
-                  endColumn: word.endColumn
-              };
-              
+              const range = { startLineNumber: position.lineNumber, endLineNumber: position.lineNumber, startColumn: word.startColumn, endColumn: word.endColumn };
               const suggestions = [
-                  ...PYTHON_KEYWORDS.map(k => ({ label: k, kind: monaco.languages.CompletionItemKind.Keyword, insertText: k, range: range, detail: 'Keyword' })),
-                  ...PYTHON_BUILTINS.map(b => ({ label: b, kind: monaco.languages.CompletionItemKind.Function, insertText: b, range: range, detail: 'Built-in' })),
-                  { label: 'def', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'def ${1:function_name}(${2:args}):\n\t${3:pass}', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, documentation: 'Define a function', range: range, detail: 'Snippet' },
-                  { label: 'if', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'if ${1:condition}:\n\t${2:pass}', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, documentation: 'If statement', range: range, detail: 'Snippet' },
-                  { label: 'for', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'for ${1:item} in ${2:iterable}:\n\t${3:pass}', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, documentation: 'For loop', range: range, detail: 'Snippet' },
+                  ...PYTHON_KEYWORDS.map(k => ({ label: k, kind: monaco.languages.CompletionItemKind.Keyword, insertText: k, range, detail: 'Keyword' })),
+                  ...PYTHON_BUILTINS.map(b => ({ label: b, kind: monaco.languages.CompletionItemKind.Function, insertText: b, range, detail: 'Built-in' })),
+                  { label: 'def', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'def ${1:name}(${2:args}):\n\t${3:pass}', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, range, detail: 'Snippet' },
+                  { label: 'if', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'if ${1:condition}:\n\t${2:pass}', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, range, detail: 'Snippet' },
               ];
-              return { suggestions: suggestions };
+              return { suggestions };
           }
       };
-      
-      monaco.languages.registerCompletionItemProvider('python', staticProvider);
-
-      // 2. Dynamic Jedi provider that activates when ready
-      monaco.languages.registerCompletionItemProvider('python', {
-          provideCompletionItems: async (model: any, position: any) => {
-              if (!pyodideRef.current) return { suggestions: [] };
-               
-               const py = pyodideRef.current;
-               const currentCode = model.getValue();
-               py.globals.set("jedi_code", currentCode);
-               py.globals.set("jedi_line", position.lineNumber);
-               py.globals.set("jedi_column", position.column);
-
-               try {
-                    const completionsResult = await py.runPythonAsync(`
-                        import jedi
-                        script = jedi.Script(jedi_code)
-                        completions = script.complete(line=jedi_line, column=jedi_column)
-                        [{
-                            "name": c.name, 
-                            "type": c.type,
-                            "docstring": c.docstring(),
-                        } for c in completions]
-                    `);
-                    
-                    const jediCompletions = completionsResult.toJs();
-                    completionsResult.destroy();
-                    
-                    const word = model.getWordUntilPosition(position);
-                    const range = {
-                        startLineNumber: position.lineNumber,
-                        endLineNumber: position.lineNumber,
-                        startColumn: word.startColumn,
-                        endColumn: word.endColumn
-                    };
-                    
-                    return {
-                        suggestions: jediCompletions.map((c: any) => ({
-                            label: c.name,
-                            kind: monaco.languages.CompletionItemKind.Text, // Basic kind
-                            insertText: c.name,
-                            documentation: c.docstring,
-                            detail: c.type,
-                            range: range,
-                        }))
-                    };
-                } catch (e) {
-                    console.error("Jedi completion error:", e);
-                    return { suggestions: [] };
-                }
-          }
-      });
+      completionProvidersRef.current.push(monaco.languages.registerCompletionItemProvider('python', staticProvider));
   };
 
 
@@ -307,13 +245,12 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
         const pyodideInstance = await window.loadPyodide({
           indexURL: "https://cdn.jsdelivr.net/pyodide/v0.29.0/full/"
         });
-        await pyodideInstance.loadPackage("jedi");
-        (window as any).pyodide = pyodideInstance; // Make it globally accessible for editor
+        (window as any).pyodide = pyodideInstance;
         pyodideRef.current = pyodideInstance;
         setIsPyodideReady(true);
       } catch (error) {
         console.error("Failed to load Pyodide:", error);
-        setOutput([{ type: 'error', content: "Error: Could not load the local Python interpreter. Please try refreshing." }]);
+        setOutput([{ type: 'error', content: "Error: Could not load the Python execution engine. Please refresh." }]);
       }
     };
     setupPyodide();
