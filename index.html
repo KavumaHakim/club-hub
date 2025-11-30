@@ -99,6 +99,36 @@
         opacity: 1;
         transform: translateY(0);
       }
+      
+      /* PENDING MODAL ANIMATIONS */
+      @keyframes gradient-pan {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+      }
+      @keyframes float {
+        0% { transform: translate(0, 0); }
+        50% { transform: translate(10px, -10px); }
+        100% { transform: translate(0, 0); }
+      }
+      @keyframes arrange-letter {
+        from {
+          opacity: 0;
+          transform: translate(var(--tx, 0), var(--ty, 0)) scale(0.5) rotate(var(--r, 0));
+        }
+        to {
+          opacity: 1;
+          transform: translate(0, 0) scale(1) rotate(0);
+        }
+      }
+      @keyframes sand-flow-top {
+        0% { transform: scaleY(1); transform-origin: top; }
+        100% { transform: scaleY(0); transform-origin: top; }
+      }
+      @keyframes sand-flow-bottom {
+        0% { transform: scaleY(0); transform-origin: bottom; }
+        100% { transform: scaleY(1); transform-origin: bottom; }
+      }
     </style>
   </head>
   <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 antialiased selection:bg-pink-500 selection:text-white">

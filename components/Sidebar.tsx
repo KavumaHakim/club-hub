@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { User, Tab } from '../types';
 import { CalendarIcon } from './icons/CalendarIcon';
@@ -81,8 +82,8 @@ const ClubHubLogo = () => (
   <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-9 w-9 flex-shrink-0 filter drop-shadow-sm">
     <defs>
       <linearGradient id="sidebar_logo_grad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#22D3EE" />
-        <stop offset="100%" stopColor="#A78BFA" />
+        <stop offset="0%" stopColor="#EC4899" />
+        <stop offset="100%" stopColor="#8B5CF6" />
       </linearGradient>
     </defs>
     <circle cx="32" cy="32" r="30" fill="url(#sidebar_logo_grad)"/>

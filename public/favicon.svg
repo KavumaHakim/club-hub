@@ -1,12 +1,38 @@
 <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="favicon_grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#22D3EE" /> <!-- Cyan-400 -->
-      <stop offset="100%" style="stop-color:#A78BFA" /> <!-- Violet-400 -->
+      <stop offset="0%" stop-color="#EC4899" /> <!-- Pink-500 -->
+      <stop offset="100%" stop-color="#8B5CF6" /> <!-- Purple-600 -->
     </linearGradient>
   </defs>
   <circle cx="32" cy="32" r="30" fill="url(#favicon_grad)"/>
-  <text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-family="monospace, sans-serif" font-size="28" font-weight="bold" fill="white" letter-spacing="-1">
-    ICH
-  </text>
+
+  <g font-family="monospace, sans-serif" font-size="28" font-weight="bold" fill="white" dominant-baseline="central" text-anchor="middle">
+    <!-- Letter I -->
+    <g>
+      <animateTransform attributeName="transform" type="translate"
+        values="-40 0; 0 0; 0 0; 40 0" keyTimes="0; 0.25; 0.75; 1"
+        dur="3s" repeatCount="indefinite" />
+      <animate attributeName="opacity" values="0; 1; 1; 0" dur="3s" repeatCount="indefinite" />
+      <text x="19" y="33">I</text>
+    </g>
+    
+    <!-- Letter C -->
+    <g>
+      <animateTransform attributeName="transform" type="translate"
+        values="0 -40; 0 0; 0 0; 0 40" keyTimes="0; 0.25; 0.75; 1"
+        dur="3s" repeatCount="indefinite" begin="0.1s" />
+      <animate attributeName="opacity" values="0; 1; 1; 0" dur="3s" repeatCount="indefinite" begin="0.1s" />
+      <text x="32" y="33">C</text>
+    </g>
+    
+    <!-- Letter H -->
+    <g>
+      <animateTransform attributeName="transform" type="translate"
+        values="40 0; 0 0; 0 0; -40 0" keyTimes="0; 0.25; 0.75; 1"
+        dur="3s" repeatCount="indefinite" begin="0.2s" />
+      <animate attributeName="opacity" values="0; 1; 1; 0" dur="3s" repeatCount="indefinite" begin="0.2s" />
+      <text x="45" y="33">H</text>
+    </g>
+  </g>
 </svg>
