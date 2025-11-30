@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect, useRef } from 'react';
 import { PlayIcon } from './icons/PlayIcon';
 import { TrashIcon } from './icons/TrashIcon';
@@ -9,13 +11,16 @@ import { CopyIcon } from './icons/CopyIcon';
 import { GlobeIcon } from './icons/GlobeIcon'; 
 import { ShareIcon } from './icons/ShareIcon';
 import { TrophyIcon } from './icons/TrophyIcon';
+import { LightBulbIcon } from './icons/LightBulbIcon';
 import Editor from '@monaco-editor/react';
 import { User, Tab } from '../types';
 import * as api from '../services/apiService';
+import * as geminiService from '../services/geminiService';
 import ConfirmationModal from './ConfirmationModal';
 import ShareCodeModal from './ShareCodeModal';
 import SubmitToChallengeModal from './SubmitToChallengeModal';
 import { useData } from '../DataContext';
+import { FormattedMessage } from './FormattedMessage';
 
 interface CodePlaygroundProps {
     theme: 'light' | 'dark';
@@ -24,7 +29,7 @@ interface CodePlaygroundProps {
 }
 
 interface OutputLine {
-    type: 'log' | 'error';
+    type: 'log' | 'error' | 'hint';
     content: string;
 }
 
@@ -43,72 +48,6 @@ print(f"Nice to meet you, {name}!")
 # The return value of the last expression is also displayed
 import math
 math.pi`;
-
-const SYNTAX_REGEX = /("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|\b\d+(?:\.\d+)?\b|\b(?:True|False|None|and|or|not|def|class|return|import|from|if|else|elif|for|while|print)\b|[\[\]\{\}\(\),:])/g;
-
-const SyntaxHighlightedText: React.FC<{ text: string }> = ({ text }) => {
-    const parts = text.split(SYNTAX_REGEX);
-    return (
-        <>
-            {parts.map((part, i) => {
-                if (!part) return null;
-                if (/^".*"$/.test(part) || /^'.*'$/.test(part)) return <span key={i} className="text-green-600 dark:text-green-400">{part}</span>;
-                if (/^\d+(\.\d+)?$/.test(part)) return <span key={i} className="text-blue-600 dark:text-blue-400 font-semibold">{part}</span>;
-                if (/^(True|False|None|and|or|not|def|class|return|import|from|if|else|elif|for|while|print)$/.test(part)) return <span key={i} className="text-purple-600 dark:text-purple-400 font-bold">{part}</span>;
-                if (/^[\[\]\{\}\(\),:]$/.test(part)) return <span key={i} className="text-gray-500 dark:text-gray-500 font-bold">{part}</span>;
-                return <span key={i}>{part}</span>;
-            })}
-        </>
-    );
-};
-
-// --- IntelliSense Definitions ---
-
-const PYTHON_KEYWORDS = [
-    'False', 'None', 'True', 'and', 'as', 'assert', 'async', 'await', 'break', 
-    'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 
-    'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'nonlocal', 
-    'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield'
-];
-
-const PYTHON_BUILTINS = [
-    'abs', 'all', 'any', 'ascii', 'bin', 'bool', 'bytearray', 'bytes', 'callable', 
-    'chr', 'classmethod', 'compile', 'complex', 'delattr', 'dict', 'dir', 'divmod', 
-    'enumerate', 'eval', 'exec', 'filter', 'float', 'format', 'frozenset', 'getattr', 
-    'globals', 'hasattr', 'hash', 'help', 'hex', 'id', 'input', 'int', 'isinstance', 
-    'issubclass', 'iter', 'len', 'list', 'locals', 'map', 'max', 'memoryview', 
-    'min', 'next', 'object', 'oct', 'open', 'ord', 'pow', 'print', 'property', 
-    'range', 'repr', 'reversed', 'round', 'set', 'setattr', 'slice', 'sorted', 
-    'staticmethod', 'str', 'sum', 'super', 'tuple', 'type', 'vars', 'zip'
-];
-
-const PYTHON_METHODS = [
-    // String Methods
-    { label: 'upper', insertText: 'upper()', documentation: 'Return a copy of the string with all the cased characters converted to uppercase.', detail: 'str method' },
-    { label: 'lower', insertText: 'lower()', documentation: 'Return a copy of the string with all the cased characters converted to lowercase.', detail: 'str method' },
-    { label: 'strip', insertText: 'strip()', documentation: 'Return a copy of the string with leading and trailing whitespace removed.', detail: 'str method' },
-    { label: 'split', insertText: 'split(${1:sep})', documentation: 'Return a list of the words in the string, using sep as the delimiter string.', detail: 'str method' },
-    { label: 'join', insertText: 'join(${1:iterable})', documentation: 'Concatenate any number of strings.', detail: 'str method' },
-    { label: 'replace', insertText: 'replace(${1:old}, ${2:new})', documentation: 'Return a copy with all occurrences of substring old replaced by new.', detail: 'str method' },
-    // List Methods
-    { label: 'append', insertText: 'append(${1:item})', documentation: 'Appends an object to the end of the list.', detail: 'list method' },
-    { label: 'extend', insertText: 'extend(${1:iterable})', documentation: 'Extend the list by appending all the items from the iterable.', detail: 'list method' },
-    { label: 'insert', insertText: 'insert(${1:index}, ${2:item})', documentation: 'Insert an item at a given position.', detail: 'list method' },
-    { label: 'remove', insertText: 'remove(${1:item})', documentation: 'Remove the first item from the list whose value is equal to x.', detail: 'list method' },
-    { label: 'pop', insertText: 'pop(${1:index})', documentation: 'Remove and return the item at the given position in the list.', detail: 'list method' },
-    { label: 'sort', insertText: 'sort()', documentation: 'Sort the items of the list in place.', detail: 'list method' },
-    { label: 'reverse', insertText: 'reverse()', documentation: 'Reverse the elements of the list in place.', detail: 'list method' },
-    // Dictionary Methods
-    { label: 'keys', insertText: 'keys()', documentation: 'Return a new view of the dictionary\'s keys.', detail: 'dict method' },
-    { label: 'values', insertText: 'values()', documentation: 'Return a new view of the dictionary\'s values.', detail: 'dict method' },
-    { label: 'items', insertText: 'items()', documentation: 'Return a new view of the dictionary\'s items (key, value pairs).', detail: 'dict method' },
-    { label: 'get', insertText: 'get(${1:key}, ${2:default})', documentation: 'Return the value for key if key is in the dictionary, else default.', detail: 'dict method' },
-    // Set Methods
-    { label: 'add', insertText: 'add(${1:elem})', documentation: 'Add an element to a set.', detail: 'set method' },
-    { label: 'union', insertText: 'union(${1:other})', documentation: 'Return a new set with elements from the set and all others.', detail: 'set method' },
-    { label: 'intersection', insertText: 'intersection(${1:other})', documentation: 'Return a new set with elements common to the set and all others.', detail: 'set method' },
-];
-
 
 const PublishModal: React.FC<{ isOpen: boolean, onClose: () => void, onPublish: (title: string, desc: string) => Promise<void> }> = ({ isOpen, onClose, onPublish }) => {
     const [title, setTitle] = useState('');
@@ -166,6 +105,25 @@ const PublishModal: React.FC<{ isOpen: boolean, onClose: () => void, onPublish: 
     );
 };
 
+// FIX: Added missing constants for Monaco editor autocompletion.
+const PYTHON_KEYWORDS = [
+    'False', 'None', 'True', 'and', 'as', 'assert', 'async', 'await', 'break', 
+    'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 
+    'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'nonlocal', 
+    'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield'
+];
+
+const PYTHON_BUILTINS = [
+    'abs', 'all', 'any', 'ascii', 'bin', 'bool', 'bytearray', 'bytes', 'callable', 
+    'chr', 'classmethod', 'compile', 'complex', 'delattr', 'dict', 'dir', 'divmod', 
+    'enumerate', 'eval', 'exec', 'filter', 'float', 'format', 'frozenset', 'getattr', 
+    'globals', 'hasattr', 'hash', 'help', 'hex', 'id', 'input', 'int', 'isinstance', 
+    'issubclass', 'iter', 'len', 'list', 'locals', 'map', 'max', 'memoryview', 
+    'min', 'next', 'object', 'oct', 'open', 'ord', 'pow', 'print', 'property', 
+    'range', 'repr', 'reversed', 'round', 'set', 'setattr', 'slice', 'sorted', 
+    'staticmethod', 'str', 'sum', 'super', 'tuple', 'type', 'vars', 'zip'
+];
+
 const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, setActiveTab }) => {
   const { fetchShowcaseItems, showToast } = useData();
   const [code, setCode] = useState<string>(() => {
@@ -180,6 +138,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
   const [pyodide, setPyodide] = useState<any | null>(null);
   const [isPyodideReady, setIsPyodideReady] = useState(false);
   const [activeTab, setActiveTabState] = useState<'editor' | 'output'>('editor');
+  const [isGettingHint, setIsGettingHint] = useState(false);
   
   // Cloud Save/Load State
   const [isCloudModalOpen, setIsCloudModalOpen] = useState(false);
@@ -243,17 +202,10 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
 
       if (!(window as any).monacoPythonCompletionRegistered) {
           (window as any).monacoPythonCompletionRegistered = true;
-
-          monaco.languages.registerCompletionItemProvider('python', {
+          
+          const staticProvider = {
               triggerCharacters: ['.'],
               provideCompletionItems: (model: any, position: any) => {
-                  const textUntilPosition = model.getValueInRange({
-                      startLineNumber: position.lineNumber,
-                      startColumn: 1,
-                      endLineNumber: position.lineNumber,
-                      endColumn: position.column
-                  });
-
                   const word = model.getWordUntilPosition(position);
                   const range = {
                       startLineNumber: position.lineNumber,
@@ -262,45 +214,74 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                       endColumn: word.endColumn
                   };
                   
-                  // Method suggestions on dot
-                  if (textUntilPosition.endsWith('.')) {
-                      return { 
-                          suggestions: PYTHON_METHODS.map(m => ({
-                              ...m,
-                              kind: monaco.languages.CompletionItemKind.Method,
-                              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-                              range: range,
-                          }))
-                      };
-                  }
-
                   const suggestions = [
-                      ...PYTHON_KEYWORDS.map(k => ({
-                          label: k,
-                          kind: monaco.languages.CompletionItemKind.Keyword,
-                          insertText: k,
-                          range: range,
-                          detail: 'Keyword'
-                      })),
-                      ...PYTHON_BUILTINS.map(b => ({
-                          label: b,
-                          kind: monaco.languages.CompletionItemKind.Function,
-                          insertText: b,
-                          range: range,
-                          detail: 'Built-in'
-                      })),
+                      ...PYTHON_KEYWORDS.map(k => ({ label: k, kind: monaco.languages.CompletionItemKind.Keyword, insertText: k, range: range, detail: 'Keyword' })),
+                      ...PYTHON_BUILTINS.map(b => ({ label: b, kind: monaco.languages.CompletionItemKind.Function, insertText: b, range: range, detail: 'Built-in' })),
                       { label: 'def', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'def ${1:function_name}(${2:args}):\n\t${3:pass}', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, documentation: 'Define a function', range: range, detail: 'Snippet' },
                       { label: 'if', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'if ${1:condition}:\n\t${2:pass}', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, documentation: 'If statement', range: range, detail: 'Snippet' },
                       { label: 'for', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'for ${1:item} in ${2:iterable}:\n\t${3:pass}', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, documentation: 'For loop', range: range, detail: 'Snippet' },
-                      { label: 'try', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'try:\n\t${1:pass}\nexcept ${2:Exception} as ${3:e}:\n\t${4:print(e)}', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, documentation: 'Try/Except block', range: range, detail: 'Snippet' },
-                      { label: 'ifmain', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'if __name__ == "__main__":\n\t${1:main()}', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, documentation: 'Main guard', range: range, detail: 'Snippet' },
-                      { label: 'print', kind: monaco.languages.CompletionItemKind.Snippet, insertText: 'print(${1:object})', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, documentation: 'Print to console', range: range, detail: 'Snippet' }
                   ];
                   return { suggestions: suggestions };
               }
-          });
+          };
+          
+          monaco.languages.registerCompletionItemProvider('python', staticProvider);
+
+          // Load Jedi for advanced completions
+          if ((window as any).pyodide) {
+              const py = (window as any).pyodide;
+              py.runPythonAsync(`
+                  import jedi
+              `).then(() => {
+                  monaco.languages.registerCompletionItemProvider('python', {
+                      provideCompletionItems: async (model: any, position: any) => {
+                           const py = (window as any).pyodide;
+                           if (!py) return { suggestions: [] };
+                           
+                           const code = model.getValue();
+                           py.globals.set("jedi_code", code);
+                           py.globals.set("jedi_line", position.lineNumber);
+                           py.globals.set("jedi_column", position.column);
+
+                           const completionsResult = await py.runPythonAsync(`
+                               import jedi
+                               script = jedi.Script(jedi_code)
+                               completions = script.complete(line=jedi_line, column=jedi_column)
+                               [{
+                                   "name": c.name, 
+                                   "type": c.type,
+                                   "docstring": c.docstring(),
+                               } for c in completions]
+                           `);
+                           
+                           const jediCompletions = completionsResult.toJs();
+                           completionsResult.destroy();
+                           
+                           const word = model.getWordUntilPosition(position);
+                           const range = {
+                               startLineNumber: position.lineNumber,
+                               endLineNumber: position.lineNumber,
+                               startColumn: word.startColumn,
+                               endColumn: word.endColumn
+                           };
+                           
+                           return {
+                               suggestions: jediCompletions.map((c: any) => ({
+                                   label: c.name,
+                                   kind: monaco.languages.CompletionItemKind.Text, // Map jedi types to monaco kinds later
+                                   insertText: c.name,
+                                   documentation: c.docstring,
+                                   detail: c.type,
+                                   range: range,
+                               }))
+                           };
+                      }
+                  });
+              }).catch((e: any) => console.error("Jedi load failed", e));
+          }
       }
   };
+
 
   const handleImportCode = (importedCode: string) => {
       const currentCode = codeRef.current;
@@ -328,6 +309,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
         const pyodideInstance = await window.loadPyodide({
           indexURL: "https://cdn.jsdelivr.net/pyodide/v0.29.0/full/"
         });
+        (window as any).pyodide = pyodideInstance; // Make it globally accessible for editor
         setPyodide(pyodideInstance);
         setIsPyodideReady(true);
       } catch (error) {
@@ -497,6 +479,22 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
           showToast("Failed to publish code: " + error.message, "error");
       }
   };
+  
+  const handleGetHint = async () => {
+      setIsGettingHint(true);
+      setActiveTabState('output');
+      setOutput(prev => [...prev, { type: 'log', content: '🤖 AI Tutor is thinking...' }]);
+      scrollToBottom();
+      try {
+          const hint = await geminiService.getAIPlaygroundHint(code);
+          setOutput(prev => [...prev.filter(l => l.content !== '🤖 AI Tutor is thinking...'), { type: 'hint', content: hint }]);
+      } catch (err: any) {
+          setOutput(prev => [...prev.filter(l => l.content !== '🤖 AI Tutor is thinking...'), { type: 'error', content: err.message || 'Failed to get hint.' }]);
+      } finally {
+          setIsGettingHint(false);
+          scrollToBottom();
+      }
+  };
 
   const handleRunCode = async () => {
     setIsExecuting(true);
@@ -624,57 +622,18 @@ builtins.input = custom_input_async
         </div>
         <div className="flex items-center flex-wrap justify-end gap-2 sm:gap-4">
             <button
-                onClick={triggerFileUpload}
-                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors shadow-sm"
-                title="Upload Python file"
+                onClick={handleGetHint}
+                disabled={isExecuting || !isPyodideReady || isWaitingForInput || isGettingHint}
+                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-yellow-700 bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-700/50 rounded-lg hover:bg-yellow-200/60 dark:hover:bg-yellow-900/50 transition-colors shadow-sm disabled:opacity-50"
+                title="Get an AI Hint"
             >
-                <UploadIcon />
-                <span className="hidden sm:inline">Upload</span>
-            </button>
-            <button
-                onClick={handleDownloadCode}
-                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors shadow-sm"
-                title="Download as .py"
-            >
-                <DownloadIcon />
-                <span className="hidden sm:inline">Download</span>
-            </button>
-             <button
-                onClick={handleOpenCloudModal}
-                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white dark:bg-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors shadow-sm"
-                title="Save/Load from Cloud"
-            >
-                <CloudIcon />
-                <span className="hidden sm:inline">Cloud Save</span>
-            </button>
-            <button
-                onClick={() => setIsShareModalOpen(true)}
-                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm"
-                title="Share Code"
-            >
-                <ShareIcon />
-                <span className="hidden sm:inline">Share</span>
-            </button>
-            <button
-                onClick={() => setIsPublishModalOpen(true)}
-                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-sm"
-                title="Publish to Showcase"
-            >
-                <GlobeIcon />
-                <span className="hidden sm:inline">Publish</span>
-            </button>
-            <button
-                onClick={() => setIsSubmitChallengeModalOpen(true)}
-                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-yellow-500 hover:bg-yellow-600 rounded-lg transition-colors shadow-sm"
-                title="Submit to Challenge"
-            >
-                <TrophyIcon />
-                <span className="hidden sm:inline">Submit</span>
+                <LightBulbIcon />
+                <span className="hidden sm:inline">{isGettingHint ? 'Thinking...' : 'AI Hint'}</span>
             </button>
             <div className="h-6 w-px bg-gray-300 dark:bg-gray-600 mx-2 hidden sm:block"></div>
             <button
                 onClick={handleRunCode}
-                disabled={isExecuting || !isPyodideReady || isWaitingForInput}
+                disabled={isExecuting || !isPyodideReady || isWaitingForInput || isGettingHint}
                 className="relative flex items-center space-x-2 px-5 py-3 font-semibold text-white bg-gradient-to-r from-pink-500 to-purple-600 rounded-lg shadow-md hover:from-pink-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 aria-label="Run Code"
                 title={!isPyodideReady ? 'Local interpreter is initializing...' : isWaitingForInput ? 'Waiting for input...' : 'Run code'}
@@ -710,8 +669,16 @@ builtins.input = custom_input_async
       <div className="flex-1 bg-white dark:bg-gray-800 shadow-md border-x border-b border-gray-200 dark:border-gray-700 rounded-b-lg relative overflow-hidden">
         <div className={`w-full h-full flex flex-col ${activeTab === 'editor' ? '' : 'hidden'}`}>
             <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
-                <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">main.py</span>
-                <span className="text-xs text-gray-400 italic">Auto-saved to browser</span>
+                <div className="flex gap-4">
+                  <button onClick={triggerFileUpload} className="text-xs font-medium text-gray-500 hover:text-pink-600 flex items-center gap-1"><UploadIcon className="w-4 h-4" /> Upload</button>
+                  <button onClick={handleDownloadCode} className="text-xs font-medium text-gray-500 hover:text-pink-600 flex items-center gap-1"><DownloadIcon /> Download</button>
+                  <button onClick={handleOpenCloudModal} className="text-xs font-medium text-gray-500 hover:text-pink-600 flex items-center gap-1"><CloudIcon className="w-4 h-4" /> Cloud</button>
+                </div>
+                <div className="flex gap-4">
+                   <button onClick={() => setIsShareModalOpen(true)} className="text-xs font-medium text-gray-500 hover:text-pink-600 flex items-center gap-1"><ShareIcon className="w-4 h-4" /> Share</button>
+                   <button onClick={() => setIsPublishModalOpen(true)} className="text-xs font-medium text-gray-500 hover:text-pink-600 flex items-center gap-1"><GlobeIcon className="w-4 h-4" /> Publish</button>
+                   <button onClick={() => setIsSubmitChallengeModalOpen(true)} className="text-xs font-medium text-gray-500 hover:text-pink-600 flex items-center gap-1"><TrophyIcon className="w-4 h-4" /> Submit</button>
+                </div>
             </div>
             <div className="flex-1 w-full h-full relative">
                 <Editor
@@ -761,9 +728,18 @@ builtins.input = custom_input_async
                     <span className="text-gray-500 italic select-none">No output</span>
                 ) : (
                     output.map((line, index) => (
-                        <div key={index} className="leading-relaxed">
+                       <div key={index} className="leading-relaxed">
                             {line.type === 'log' ? (
-                                <SyntaxHighlightedText text={line.content} />
+                                <span className="text-gray-300">{line.content}</span>
+                            ) : line.type === 'hint' ? (
+                                <div className="leading-relaxed bg-yellow-900/10 p-3 rounded-lg border border-yellow-800/30 my-2 flex gap-3 font-sans">
+                                    <div className="text-yellow-500 mt-1 flex-shrink-0">
+                                        <LightBulbIcon />
+                                    </div>
+                                    <div className="flex-1">
+                                        <FormattedMessage text={line.content} isUser={false} />
+                                    </div>
+                                </div>
                             ) : (
                                 <span className="text-red-400 font-medium">{line.content}</span>
                             )}

@@ -490,3 +490,40 @@ export const gradeProjectSubmission = async (taskDescription: string, code: stri
         throw new Error("Failed to auto-grade submission.");
     }
 };
+
+export const getAIPlaygroundHint = async (code: string): Promise<string> => {
+    if (!ai) {
+        throw new Error("AI Service Unavailable: API Key not configured.");
+    }
+    
+    const model = "gemini-2.5-flash";
+    const prompt = `
+        You are a helpful and patient Python tutor for a high school student using an online code playground.
+        The student has requested a hint for the following code.
+
+        Student's Code:
+        \`\`\`python
+        ${code}
+        \`\`\`
+
+        CRITICAL RULES:
+        1. **DO NOT** provide the full, corrected code or a complete solution.
+        2. Your goal is to guide the student to discover the solution themselves.
+        3. Provide **ONE** concise hint, a guiding question, or an explanation of a single concept they might be missing.
+        4. If you spot a syntax error, explain what the error means and where to look, but don't just give the corrected line.
+        5. If the code is good, give a small compliment and suggest a simple next step or a related concept to explore.
+        6. Keep the tone encouraging and friendly. Use simple language.
+        7. Format your response in simple Markdown. You can use **bold** text and \`inline code\`.
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model,
+            contents: prompt,
+        });
+        return response.text || "I'm not sure how to help with that. Could you try explaining what you're stuck on?";
+    } catch (error) {
+        console.error("Gemini Hint Error:", error);
+        throw new Error("Failed to generate a hint from the AI.");
+    }
+};
