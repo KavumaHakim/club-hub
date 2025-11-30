@@ -117,11 +117,10 @@ self.addEventListener('fetch', (event) => {
             return networkResponse;
           })
           .catch(() => {
-            // Return empty JS/CSS if offline to prevent errors
-            if (event.request.destination === 'script' || event.request.destination === 'style') {
-              return new Response('', { status: 503, statusText: 'Offline' });
-            }
-            return caches.match('/index.html'); // fallback for SPA navigation
+            // Serve previously cached version if available
+            return caches.match(event.request) || 
+                   // fallback to index.html for SPA navigation
+                   (event.request.mode === 'navigate' ? caches.match('/index.html') : new Response('', { status: 503, statusText: 'Offline' }));
           });
       })
     );
