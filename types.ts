@@ -1,4 +1,5 @@
 
+
 export type Tab = 'feed' | 'activities' | 'attendance' | 'projects' | 'profile' | 'members' | 'playground' | 'resources' | 'chat' | 'showcase' | 'suggestions' | 'challenges' | 'roadmap';
 
 export interface User {
@@ -109,6 +110,7 @@ export interface Resource {
   topic?: string;
   url?: string; // For LINK and VIDEO types
   filePath?: string; // Path in storage bucket
+  thumbnailUrl?: string; // URL for the generated thumbnail
   uploaderUid: string;
   uploaderName: string;
   uploaderAvatarUrl?: string;

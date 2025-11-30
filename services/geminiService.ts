@@ -41,6 +41,19 @@ if (!apiKey) {
 // Initialize client only if key exists to prevent immediate instantiation errors
 const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
+// Helper function to convert a File to a GenAI Part
+const fileToGenerativePart = async (file: File) => {
+  const base64EncodedDataPromise = new Promise<string>((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+    reader.readAsDataURL(file);
+  });
+  return {
+    inlineData: { data: await base64EncodedDataPromise, mimeType: file.type },
+  };
+};
+
+
 export interface ActivityIdea {
   title: string;
   description: string;
@@ -278,6 +291,38 @@ export const generateLearningRoadmap = async (topic: string, skillLevel: string,
         throw new Error("Failed to generate roadmap.");
     }
 };
+
+export const generateDocumentSummary = async (file: File): Promise<string> => {
+    if (!ai) {
+      throw new Error("AI Service Unavailable: API Key not configured.");
+    }
+    if (!file) {
+      throw new Error("No file provided for summary.");
+    }
+  
+    // Check if the file type is supported for this specific AI function
+    const supportedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
+    if (!supportedTypes.includes(file.type)) {
+        throw new Error(`File type ${file.type} is not supported for AI summary. Please use PDF, DOCX, or TXT.`);
+    }
+  
+    const model = "gemini-2.5-flash"; // Multimodal model
+    const prompt = "Summarize this document in a concise, engaging paragraph (2-4 sentences) suitable for a resource library. Capture the main purpose and key topics.";
+  
+    try {
+      const filePart = await fileToGenerativePart(file);
+      const response = await ai.models.generateContent({
+          model,
+          contents: { parts: [filePart, { text: prompt }] },
+      });
+      
+      return response.text || "Could not generate a summary from the document.";
+  
+    } catch (error) {
+      console.error("Gemini Summary Error:", error);
+      throw new Error("Failed to generate document summary with AI.");
+    }
+  };
 
 export type QuizQuestionType = 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'SHORT_ANSWER';
 

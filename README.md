@@ -1,4 +1,3 @@
-
 # 🚀 ICT Club Hub (Naggalama)
 
 ![Banner](https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=EC4899,8B5CF6,6366f1&height=250&section=header&text=ICT%20Club%20Hub&fontSize=80&fontColor=ffffff&desc=Connect.%20Code.%20Create.&descSize=20&fontAlignY=40)
@@ -74,6 +73,16 @@ CREATE TABLE IF NOT EXISTS challenge_submissions (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 ```
+
+### 4. Add Resource Thumbnails (Optional but Recommended)
+To enable thumbnails for uploaded documents and code files, add the `thumbnail_url` column to your resources table.
+
+```sql
+ALTER TABLE resources ADD COLUMN IF NOT EXISTS thumbnail_url TEXT;
+```
+
+Also, ensure your storage policies for the `resource_uploads` bucket allow `image/svg+xml` content types. The provided policies are generally permissive and should work.
+
 
 ---
 

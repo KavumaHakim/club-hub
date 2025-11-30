@@ -1,6 +1,5 @@
 
 
-
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { User, AttendanceRecord, AttendanceStatus } from '../types';
 import * as api from '../services/apiService';
@@ -16,7 +15,6 @@ import { AcademicCapIcon } from './icons/AcademicCapIcon';
 import { predefinedAvatars } from '../constants';
 import { useData } from '../DataContext';
 import { CursorVariant } from './CustomCursor';
-
 
 const AvatarSelectionModal: React.FC<{
   isOpen: boolean;

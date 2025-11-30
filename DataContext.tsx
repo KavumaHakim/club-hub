@@ -444,23 +444,6 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
                 
                 // Trigger Toast for new notification
                 showToast(newNotif.message, 'info');
-
-                // Trigger Browser Notification (Push)
-                if ('Notification' in window && Notification.permission === 'granted') {
-                    try {
-                        const n = new Notification('ICT Club Hub', {
-                            body: newNotif.message,
-                            icon: '/favicon.svg',
-                            tag: 'ict-club-notification'
-                        });
-                        n.onclick = () => {
-                            window.focus();
-                            n.close();
-                        };
-                    } catch (e) {
-                        console.error("Push notification error:", e);
-                    }
-                }
             }
         )
         .subscribe();
