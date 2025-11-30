@@ -1,9 +1,4 @@
 
-
-
-
-
-
 export type Tab = 'feed' | 'activities' | 'attendance' | 'projects' | 'profile' | 'members' | 'playground' | 'resources' | 'chat' | 'showcase' | 'suggestions' | 'challenges' | 'roadmap';
 
 export interface User {
@@ -100,7 +95,7 @@ export interface ProjectData {
   columnOrder: string[];
 }
 
-export type ResourceType = 'LINK' | 'VIDEO' | 'PYTHON';
+export type ResourceType = 'LINK' | 'VIDEO' | 'PYTHON' | 'DOCUMENT';
 
 export type ResourceCategory = 'Documentation' | 'Tutorial' | 'Tool' | 'Article' | 'Other';
 

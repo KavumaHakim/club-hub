@@ -5,6 +5,7 @@ import { LinkIcon } from './icons/LinkIcon';
 import { VideoCameraIcon } from './icons/VideoCameraIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import { CodeIcon } from './icons/CodeIcon';
+import { DocumentTextIcon } from './icons/DocumentTextIcon';
 
 interface ResourceCardProps {
   resource: Resource;
@@ -21,6 +22,8 @@ const getResourceIcon = (type: Resource['type']) => {
       return <VideoCameraIcon />;
     case 'PYTHON':
         return <CodeIcon />;
+    case 'DOCUMENT':
+        return <DocumentTextIcon />;
     default:
       return null;
   }
@@ -75,6 +78,7 @@ const ResourceCard: React.FC<ResourceCardProps> = ({ resource, currentUser, onDe
 
     const getActionText = () => {
         if (resource.type === 'PYTHON') return isLoading ? 'Loading...' : 'Open in Playground';
+        if (resource.type === 'DOCUMENT') return 'View Document';
         return 'View Resource';
     };
     

@@ -45,12 +45,12 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
             return;
         }
 
-        if (type === 'PYTHON' && !selectedFile) {
-             setError("Please select a Python file to upload.");
+        if ((type === 'PYTHON' || type === 'DOCUMENT') && !selectedFile) {
+             setError(`Please select a ${type === 'PYTHON' ? 'Python' : 'Document'} file to upload.`);
              return;
         }
 
-        if (type !== 'PYTHON' && !url) {
+        if (type !== 'PYTHON' && type !== 'DOCUMENT' && !url) {
              setError("Please enter a valid URL.");
              return;
         }
@@ -62,7 +62,7 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
             let resourceUrl = url;
             let resourceFilePath = undefined;
 
-            if (type === 'PYTHON' && selectedFile) {
+            if ((type === 'PYTHON' || type === 'DOCUMENT') && selectedFile) {
                 // Upload file first, passing userId to organize by folder
                 const uploadResult = await api.uploadResourceFile(selectedFile, currentUser.uid);
                 resourceUrl = uploadResult.url;
@@ -193,18 +193,19 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
                                     <option value="LINK">Link</option>
                                     <option value="VIDEO">Video</option>
                                     <option value="PYTHON">Python File</option>
+                                    <option value="DOCUMENT">Document</option>
                                 </select>
                             </div>
                             <div>
                                 <label htmlFor="resource-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    {type === 'PYTHON' ? 'Upload File (.py)' : 'URL'}
+                                    {(type === 'PYTHON' || type === 'DOCUMENT') ? `Upload File (${type === 'PYTHON' ? '.py' : '.pdf, .doc, .txt'})` : 'URL'}
                                 </label>
-                                {type === 'PYTHON' ? (
+                                {(type === 'PYTHON' || type === 'DOCUMENT') ? (
                                     <div className="relative">
                                          <input 
                                             id="file-input" 
                                             type="file" 
-                                            accept=".py"
+                                            accept={type === 'PYTHON' ? ".py" : ".pdf,.doc,.docx,.txt"}
                                             onChange={handleFileChange}
                                             className="hidden" 
                                         />
