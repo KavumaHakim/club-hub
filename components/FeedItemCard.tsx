@@ -1,9 +1,11 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { FeedItem, FeedItemType, User, FeedComment } from '../types';
+
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { FeedItem, FeedItemType, User, FeedComment, PollOption } from '../types';
 import { ChatBubbleIcon } from './icons/ChatBubbleIcon';
 import { SendIcon } from './icons/SendIcon';
 import { TrashIcon } from './icons/TrashIcon';
+import { ChartBarIcon } from './icons/ChartBarIcon';
 import * as api from '../services/apiService';
 import LinkPreview from './LinkPreview';
 
@@ -27,6 +29,11 @@ const badgeConfig: { [key in FeedItemType]: {
     bgClass: 'bg-blue-100 dark:bg-blue-500/20',
     textClass: 'text-blue-700 dark:text-blue-300',
   },
+  POLL: {
+    text: 'Poll',
+    bgClass: 'bg-yellow-100 dark:bg-yellow-500/20',
+    textClass: 'text-yellow-700 dark:text-yellow-300',
+  },
 };
 
 interface FeedItemCardProps {
@@ -44,6 +51,10 @@ const FeedItemCard: React.FC<FeedItemCardProps> = ({ item, currentUser, onDelete
   const [newComment, setNewComment] = useState('');
   const [isPosting, setIsPosting] = useState(false);
   const [commentCount, setCommentCount] = useState(item.commentCount || 0);
+  
+  // Poll State
+  const [pollOptions, setPollOptions] = useState<PollOption[]>(item.pollOptions || []);
+  const [isVoting, setIsVoting] = useState(false);
   
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -115,6 +126,39 @@ const FeedItemCard: React.FC<FeedItemCardProps> = ({ item, currentUser, onDelete
       }
   };
 
+  const handleVote = async (optionId: string) => {
+      if (isVoting) return;
+      setIsVoting(true);
+      
+      try {
+          await api.votePoll(item.id, optionId, currentUser.uid);
+          
+          // Optimistic update
+          setPollOptions(prev => {
+              // Reset previous vote
+              const reset = prev.map(opt => ({
+                  ...opt,
+                  votes: opt.isVoted ? opt.votes - 1 : opt.votes,
+                  isVoted: false
+              }));
+              
+              // Apply new vote
+              return reset.map(opt => ({
+                  ...opt,
+                  votes: opt.id === optionId ? opt.votes + 1 : opt.votes,
+                  isVoted: opt.id === optionId
+              }));
+          });
+      } catch (error) {
+          console.error("Failed to vote", error);
+          alert("Failed to record vote.");
+      } finally {
+          setIsVoting(false);
+      }
+  };
+
+  const totalVotes = useMemo(() => pollOptions.reduce((acc, curr) => acc + curr.votes, 0), [pollOptions]);
+
   const renderMessageContent = (content: string) => {
       const urlRegex = /(https?:\/\/[^\s]+)/g;
       if (urlRegex.test(content)) {
@@ -165,15 +209,60 @@ const FeedItemCard: React.FC<FeedItemCardProps> = ({ item, currentUser, onDelete
 
             {/* Content */}
             <div className="mb-6 relative z-10">
-                {item.title && (
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-3 leading-tight">
-                        {item.title}
+                {item.type === 'POLL' ? (
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4 leading-tight flex items-start gap-2">
+                        <ChartBarIcon className="w-6 h-6 text-yellow-500 flex-shrink-0 mt-0.5" />
+                        {item.message}
                     </h3>
+                ) : (
+                    <>
+                        {item.title && (
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-3 leading-tight">
+                                {item.title}
+                            </h3>
+                        )}
+                        <div className="prose prose-sm dark:prose-invert max-w-none">
+                            {renderMessageContent(item.message)}
+                        </div>
+                    </>
                 )}
 
-                <div className="prose prose-sm dark:prose-invert max-w-none">
-                    {renderMessageContent(item.message)}
-                </div>
+                {/* Poll Options */}
+                {item.type === 'POLL' && pollOptions.length > 0 && (
+                    <div className="space-y-3 mt-4">
+                        {pollOptions.map(option => {
+                            const percent = totalVotes > 0 ? Math.round((option.votes / totalVotes) * 100) : 0;
+                            return (
+                                <div key={option.id} className="relative group/poll">
+                                    <div 
+                                        className={`relative z-10 flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                                            option.isVoted 
+                                            ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/10' 
+                                            : 'border-gray-100 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800'
+                                        }`}
+                                        onClick={() => handleVote(option.id)}
+                                    >
+                                        <span className={`text-sm font-medium ${option.isVoted ? 'text-pink-700 dark:text-pink-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                                            {option.text}
+                                        </span>
+                                        {option.isVoted && <span className="text-pink-500 text-xs font-bold">Voted</span>}
+                                    </div>
+                                    {/* Progress Bar Background */}
+                                    <div 
+                                        className="absolute top-0 left-0 h-full bg-gray-100 dark:bg-gray-700 rounded-xl transition-all duration-500 ease-out -z-0 opacity-50"
+                                        style={{ width: `${percent}%` }}
+                                    ></div>
+                                    <div className="absolute right-3 top-3.5 text-xs font-bold text-gray-400 dark:text-gray-500">
+                                        {percent}%
+                                    </div>
+                                </div>
+                            );
+                        })}
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 text-right">
+                            {totalVotes} vote{totalVotes !== 1 ? 's' : ''} total
+                        </p>
+                    </div>
+                )}
             </div>
 
             {/* Footer / Interactive Area */}

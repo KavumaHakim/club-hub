@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient';
-import { User, Activity, AttendanceRecord, FeedItem, ProjectData, ProjectTask, Resource, AppNotification, Room, Message, ShowcaseItem, Suggestion, Challenge, ChallengeSubmission, FeedComment, SuggestionType, SuggestionStatus, SubmissionStatus, ActivityCategory, FeedItemType, TaskPriority, ResourceCategory, ResourceType, Tab, Roadmap, RoadmapProgress, ShowcaseComment } from '../types';
+import { User, Activity, AttendanceRecord, FeedItem, ProjectData, ProjectTask, Resource, AppNotification, Room, ShowcaseItem, Suggestion, Challenge, ChallengeSubmission, FeedComment, SuggestionType, SuggestionStatus, SubmissionStatus, ActivityCategory, FeedItemType, TaskPriority, ResourceCategory, ResourceType, Tab, Roadmap, RoadmapProgress, ShowcaseComment, Message } from '../types';
 
 // --- Helper for Notifications ---
 const notifyAllUsers = async (message: string, linkTo: Tab, excludeUid?: string) => {
@@ -312,6 +312,8 @@ export const markAttendanceOnLogin = async (userId: string) => {
 // --- Feed ---
 
 export const getFeedItems = async (): Promise<FeedItem[]> => {
+    // We want to fetch poll data if it exists. 
+    // This query structure tries to fetch nested poll options and their votes.
     const { data, error } = await supabase
         .from('feed_items')
         .select(`
@@ -320,12 +322,21 @@ export const getFeedItems = async (): Promise<FeedItem[]> => {
                 name,
                 avatar_url
             ),
-            feed_comments ( count )
+            feed_comments ( count ),
+            poll_options (
+                id,
+                text,
+                poll_votes ( user_uid )
+            )
         `)
         .order('created_at', { ascending: false });
 
     if (error) throw error;
     
+    // Get current user for voting status check
+    const { data: { session } } = await supabase.auth.getSession();
+    const currentUserId = session?.user?.id;
+
     return data.map((item: any) => ({
         id: String(item.id),
         type: item.type,
@@ -334,22 +345,61 @@ export const getFeedItems = async (): Promise<FeedItem[]> => {
         timestamp: new Date(item.created_at).toLocaleString(),
         title: item.title,
         message: item.message,
-        commentCount: item.feed_comments[0]?.count || 0
+        commentCount: item.feed_comments[0]?.count || 0,
+        pollOptions: item.poll_options ? item.poll_options.map((opt: any) => ({
+            id: opt.id,
+            text: opt.text,
+            votes: opt.poll_votes ? opt.poll_votes.length : 0,
+            isVoted: currentUserId ? opt.poll_votes?.some((v: any) => v.user_uid === currentUserId) : false
+        })) : []
     }));
 };
 
-export const addFeedItem = async (item: { title: string, message: string, type: FeedItemType }, userId: string) => {
-    const { error } = await supabase.from('feed_items').insert({
+export const addFeedItem = async (item: { title: string, message: string, type: FeedItemType, pollOptions?: string[] }, userId: string) => {
+    const { data: newItem, error } = await supabase.from('feed_items').insert({
         type: item.type,
         title: item.title,
         message: item.message,
         author_uid: userId,
-    });
+    }).select().single();
+    
     if (error) throw error;
+
+    if (item.type === 'POLL' && item.pollOptions && item.pollOptions.length > 0) {
+        const optionsToInsert = item.pollOptions.map(opt => ({
+            feed_item_id: newItem.id,
+            text: opt
+        }));
+        const { error: pollError } = await supabase.from('poll_options').insert(optionsToInsert);
+        if (pollError) throw pollError;
+    }
 };
 
 export const deleteFeedItem = async (id: string) => {
     const { error } = await supabase.from('feed_items').delete().eq('id', id);
+    if (error) throw error;
+};
+
+export const votePoll = async (feedItemId: string, optionId: string, userId: string) => {
+    // 1. Get all option IDs for this feed item to enforce "one vote per poll"
+    const { data: options } = await supabase.from('poll_options').select('id').eq('feed_item_id', feedItemId);
+    
+    if (options && options.length > 0) {
+        const optionIds = options.map(o => o.id);
+        
+        // 2. Remove any existing vote by this user for ANY option in this poll
+        await supabase.from('poll_votes')
+            .delete()
+            .in('poll_option_id', optionIds)
+            .eq('user_uid', userId);
+    }
+
+    // 3. Insert new vote
+    const { error } = await supabase.from('poll_votes').insert({
+        poll_option_id: optionId,
+        user_uid: userId
+    });
+
     if (error) throw error;
 };
 

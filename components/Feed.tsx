@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { FeedItem, User, FeedItemType } from '../types';
 import * as api from '../services/apiService';
@@ -15,9 +16,9 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
   const { feedItems: items, isLoadingFeed, feedItemsError, fetchFeedItems, showToast } = useData();
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   
-  const handleAddAnnouncement = useCallback(async (data: { title: string, message: string, type: FeedItemType }) => {
+  const handleAddAnnouncement = useCallback(async (data: { title: string, message: string, type: FeedItemType, pollOptions?: string[] }) => {
     try {
-        await api.addFeedItem({ title: data.title, message: data.message, type: data.type }, currentUser.uid);
+        await api.addFeedItem(data, currentUser.uid);
         await fetchFeedItems();
         showToast("Announcement posted successfully!", "success");
     } catch (error) {

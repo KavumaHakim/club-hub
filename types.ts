@@ -39,7 +39,14 @@ export interface AttendanceRecord {
   userId: string;
 }
 
-export type FeedItemType = 'EVENT_ANNOUNCEMENT' | 'MEMBER_POST' | 'NEWS_UPDATE';
+export type FeedItemType = 'EVENT_ANNOUNCEMENT' | 'MEMBER_POST' | 'NEWS_UPDATE' | 'POLL';
+
+export interface PollOption {
+  id: string;
+  text: string;
+  votes: number;
+  isVoted: boolean; // Computed on frontend based on current user
+}
 
 export interface FeedItem {
   id: string; // Use Firestore document ID
@@ -48,8 +55,9 @@ export interface FeedItem {
   authorAvatarUrl: string;
   timestamp: string; // This will be handled by Supabase server timestamps
   title?: string;
-  message: string;
+  message: string; // For Polls, this is the Question
   commentCount?: number;
+  pollOptions?: PollOption[];
 }
 
 export interface FeedComment {
