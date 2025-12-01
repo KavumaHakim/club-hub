@@ -41,11 +41,18 @@ export interface AttendanceRecord {
 
 export type FeedItemType = 'EVENT_ANNOUNCEMENT' | 'MEMBER_POST' | 'NEWS_UPDATE' | 'POLL';
 
+export interface PollVoter {
+  uid: string;
+  name: string;
+  avatarUrl?: string;
+}
+
 export interface PollOption {
   id: string;
   text: string;
   votes: number;
   isVoted: boolean; // Computed on frontend based on current user
+  voters?: PollVoter[]; // List of voters (visible to patrons)
 }
 
 export interface FeedItem {

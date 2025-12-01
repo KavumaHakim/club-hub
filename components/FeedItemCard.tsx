@@ -1,6 +1,7 @@
 
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { FeedItem, FeedItemType, User, FeedComment, PollOption } from '../types';
+import { FeedItem, FeedItemType, User, FeedComment, PollOption, PollVoter } from '../types';
 import { ChatBubbleIcon } from './icons/ChatBubbleIcon';
 import { SendIcon } from './icons/SendIcon';
 import { TrashIcon } from './icons/TrashIcon';
@@ -8,6 +9,8 @@ import { ChartBarIcon } from './icons/ChartBarIcon';
 import { CheckIcon } from './icons/CheckIcon';
 import { BookmarkIcon } from './icons/BookmarkIcon';
 import { ShareIcon } from './icons/ShareIcon';
+import { UsersIcon } from './icons/UsersIcon';
+import { XIcon } from './icons/XIcon';
 import * as api from '../services/apiService';
 import LinkPreview from './LinkPreview';
 
@@ -61,6 +64,56 @@ const getRelativeTime = (dateString: string) => {
     return "Just now";
 };
 
+// Modal Component for Viewing Voters
+const PollVotersModal: React.FC<{ isOpen: boolean; onClose: () => void; options: PollOption[] }> = ({ isOpen, onClose, options }) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 relative border border-gray-200 dark:border-gray-700 flex flex-col max-h-[80vh] animate-fade-in-up">
+                <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-1 rounded-full transition-colors">
+                    <XIcon className="h-6 w-6" />
+                </button>
+                
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                    <ChartBarIcon className="h-6 w-6 text-yellow-500" />
+                    Poll Results
+                </h3>
+
+                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-6 pr-2">
+                    {options.map(option => (
+                        <div key={option.id}>
+                            <div className="flex justify-between items-center mb-2">
+                                <h4 className="font-semibold text-gray-800 dark:text-gray-200 text-sm">{option.text}</h4>
+                                <span className="text-xs font-bold bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full text-gray-600 dark:text-gray-300">
+                                    {option.votes} vote{option.votes !== 1 ? 's' : ''}
+                                </span>
+                            </div>
+                            
+                            <div className="space-y-1 ml-1">
+                                {option.voters && option.voters.length > 0 ? (
+                                    option.voters.map(voter => (
+                                        <div key={voter.uid} className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                            <img 
+                                                src={voter.avatarUrl || `https://i.pravatar.cc/40?u=${voter.name}`} 
+                                                alt={voter.name} 
+                                                className="w-6 h-6 rounded-full object-cover border border-gray-200 dark:border-gray-600"
+                                            />
+                                            <span className="text-xs text-gray-700 dark:text-gray-300 font-medium truncate">{voter.name}</span>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="text-xs text-gray-400 italic pl-1">No votes yet.</p>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 interface FeedItemCardProps {
   item: FeedItem;
   currentUser: User;
@@ -84,6 +137,7 @@ const FeedItemCard: React.FC<FeedItemCardProps> = ({ item, currentUser, onDelete
   // Poll State
   const [pollOptions, setPollOptions] = useState<PollOption[]>(item.pollOptions || []);
   const [isVoting, setIsVoting] = useState(false);
+  const [showVotersModal, setShowVotersModal] = useState(false);
   
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -194,15 +248,22 @@ const FeedItemCard: React.FC<FeedItemCardProps> = ({ item, currentUser, onDelete
               const reset = prev.map(opt => ({
                   ...opt,
                   votes: opt.isVoted ? opt.votes - 1 : opt.votes,
-                  isVoted: false
+                  isVoted: false,
+                  voters: opt.isVoted ? (opt.voters || []).filter(v => v.uid !== currentUser.uid) : opt.voters
               }));
               
               // Apply new vote
-              return reset.map(opt => ({
-                  ...opt,
-                  votes: opt.id === optionId ? opt.votes + 1 : opt.votes,
-                  isVoted: opt.id === optionId
-              }));
+              return reset.map(opt => {
+                  if (opt.id === optionId) {
+                      return {
+                          ...opt,
+                          votes: opt.votes + 1,
+                          isVoted: true,
+                          voters: [...(opt.voters || []), { uid: currentUser.uid, name: currentUser.name, avatarUrl: currentUser.avatarUrl }]
+                      };
+                  }
+                  return opt;
+              });
           });
       } catch (error) {
           console.error("Failed to vote", error);
@@ -370,6 +431,18 @@ const FeedItemCard: React.FC<FeedItemCardProps> = ({ item, currentUser, onDelete
                         {isCopied && <span className="text-xs text-blue-600 animate-fade-in">Copied!</span>}
                     </button>
                 </div>
+
+                {/* View Voters Button for Patrons */}
+                {item.type === 'POLL' && currentUser.role === 'PATRON' && (
+                    <button
+                        onClick={() => setShowVotersModal(true)}
+                        className="flex items-center gap-1.5 text-gray-500 hover:text-yellow-600 dark:hover:text-yellow-400 transition-colors bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded-lg"
+                        title="View Voters"
+                    >
+                        <UsersIcon className="w-4 h-4" />
+                        <span className="text-xs font-medium">Voters</span>
+                    </button>
+                )}
             </div>
         </div>
 
@@ -437,6 +510,13 @@ const FeedItemCard: React.FC<FeedItemCardProps> = ({ item, currentUser, onDelete
                 </button>
             </div>
         )}
+
+        {/* Voters Modal */}
+        <PollVotersModal 
+            isOpen={showVotersModal} 
+            onClose={() => setShowVotersModal(false)} 
+            options={pollOptions} 
+        />
     </div>
   );
 };

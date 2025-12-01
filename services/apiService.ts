@@ -313,7 +313,7 @@ export const markAttendanceOnLogin = async (userId: string) => {
 
 export const getFeedItems = async (): Promise<FeedItem[]> => {
     // We want to fetch poll data if it exists. 
-    // This query structure tries to fetch nested poll options and their votes.
+    // This query structure fetches nested poll options and their votes, including user info for patrons.
     const { data, error } = await supabase
         .from('feed_items')
         .select(`
@@ -326,7 +326,10 @@ export const getFeedItems = async (): Promise<FeedItem[]> => {
             poll_options (
                 id,
                 text,
-                poll_votes ( user_uid )
+                poll_votes ( 
+                    user_uid,
+                    users ( name, avatar_url )
+                )
             )
         `)
         .order('created_at', { ascending: false });
@@ -350,7 +353,12 @@ export const getFeedItems = async (): Promise<FeedItem[]> => {
             id: opt.id,
             text: opt.text,
             votes: opt.poll_votes ? opt.poll_votes.length : 0,
-            isVoted: currentUserId ? opt.poll_votes?.some((v: any) => v.user_uid === currentUserId) : false
+            isVoted: currentUserId ? opt.poll_votes?.some((v: any) => v.user_uid === currentUserId) : false,
+            voters: opt.poll_votes ? opt.poll_votes.map((v: any) => ({
+                uid: v.user_uid,
+                name: v.users?.name || 'Unknown',
+                avatarUrl: v.users?.avatar_url
+            })) : []
         })) : []
     }));
 };
