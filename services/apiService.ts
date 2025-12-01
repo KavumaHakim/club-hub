@@ -3,6 +3,25 @@
 import { supabase } from './supabaseClient';
 import { User, Activity, AttendanceRecord, FeedItem, ProjectData, ProjectTask, Resource, AppNotification, Room, Message, ShowcaseItem, Suggestion, Challenge, ChallengeSubmission, FeedComment, SuggestionType, SuggestionStatus, SubmissionStatus, ActivityCategory, FeedItemType, TaskPriority, ResourceCategory, ResourceType, Tab, Roadmap, RoadmapProgress, ShowcaseComment } from '../types';
 
+// --- Helper for Notifications ---
+const notifyAllUsers = async (message: string, linkTo: Tab, excludeUid?: string) => {
+    const { data: users } = await supabase.from('users').select('uid');
+    if (!users) return;
+
+    const notifications = users
+        .filter(u => u.uid !== excludeUid)
+        .map(u => ({
+            user_uid: u.uid,
+            message,
+            is_read: false,
+            link_to: linkTo
+        }));
+
+    if (notifications.length > 0) {
+        await supabase.from('notifications').insert(notifications);
+    }
+};
+
 // --- Auth & User ---
 
 export const login = async (email: string, password?: string) => {
@@ -198,7 +217,7 @@ export const getActivities = async (): Promise<Activity[]> => {
     }));
 };
 
-export const addActivity = async (activity: Omit<Activity, 'id' | 'rsvpUserIds'>) => {
+export const addActivity = async (activity: Omit<Activity, 'id' | 'rsvpUserIds'>, creatorUid?: string) => {
     const { error } = await supabase.from('activities').insert({
         title: activity.title,
         date: activity.date,
@@ -207,6 +226,7 @@ export const addActivity = async (activity: Omit<Activity, 'id' | 'rsvpUserIds'>
         category: activity.category
     });
     if (error) throw error;
+    await notifyAllUsers(`New Activity: ${activity.title}`, 'activities', creatorUid);
 };
 
 export const deleteActivity = async (activityId: string) => {
@@ -1164,6 +1184,7 @@ export const addChallenge = async (challenge: { title: string, description: stri
         status: 'ACTIVE'
     });
     if (error) throw error;
+    await notifyAllUsers(`New Challenge: ${challenge.title}`, 'challenges', challenge.createdBy);
 };
 
 export const submitChallenge = async (challengeId: string, userId: string, content: string) => {
@@ -1281,6 +1302,7 @@ export const addRoadmap = async (roadmap: Roadmap) => {
         content: roadmap.milestones
     });
     if (error) throw error;
+    await notifyAllUsers(`New Roadmap: ${roadmap.topic}`, 'roadmap');
 };
 
 export const deleteRoadmap = async (id: string) => {

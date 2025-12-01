@@ -1,4 +1,5 @@
 
+
 import React, { useMemo } from 'react';
 import { User, Tab } from '../types';
 import { CalendarIcon } from './icons/CalendarIcon';
@@ -94,11 +95,21 @@ const ClubHubLogo = () => (
 );
 
 const Sidebar: React.FC<SidebarProps> = ({ user, activeTab, setActiveTab, isOpen, onClose, isCollapsed, onToggleCollapse }) => {
-  const { unreadMessageCounts } = useData();
+  const { unreadMessageCounts, notifications } = useData();
   
   const totalUnread = useMemo(() => {
       return Object.values(unreadMessageCounts).reduce((acc: number, count: number) => acc + count, 0);
   }, [unreadMessageCounts]);
+
+  const notificationCounts = useMemo(() => {
+      const counts: Record<string, number> = {};
+      notifications.forEach(n => {
+          if (!n.isRead && n.linkTo) {
+              counts[n.linkTo] = (counts[n.linkTo] || 0) + 1;
+          }
+      });
+      return counts;
+  }, [notifications]);
 
   const handleNavClick = (tab: Tab) => {
     setActiveTab(tab);
@@ -115,22 +126,22 @@ const Sidebar: React.FC<SidebarProps> = ({ user, activeTab, setActiveTab, isOpen
           items: [
               { tab: 'feed' as Tab, label: 'Feed', icon: <HomeIcon /> },
               { tab: 'chat' as Tab, label: 'Messages', icon: <ChatBubbleIcon />, badge: totalUnread },
-              { tab: 'challenges' as Tab, label: 'Challenges', icon: <TrophyIcon /> },
+              { tab: 'challenges' as Tab, label: 'Challenges', icon: <TrophyIcon />, badge: notificationCounts['challenges'] },
               { tab: 'suggestions' as Tab, label: 'Suggestions', icon: <LightBulbIcon /> },
           ]
       },
       {
           title: "Manage",
           items: [
-              { tab: 'activities' as Tab, label: 'Activities', icon: <CalendarIcon /> },
-              { tab: 'projects' as Tab, label: 'Projects', icon: <ClipboardListIcon /> },
+              { tab: 'activities' as Tab, label: 'Activities', icon: <CalendarIcon />, badge: notificationCounts['activities'] },
+              { tab: 'projects' as Tab, label: 'Projects', icon: <ClipboardListIcon />, badge: notificationCounts['projects'] },
               { tab: 'attendance' as Tab, label: 'Attendance', icon: <CheckCircleIcon /> },
           ]
       },
       {
           title: "Learn & Share",
           items: [
-              { tab: 'roadmap' as Tab, label: 'Roadmap', icon: <MapIcon /> },
+              { tab: 'roadmap' as Tab, label: 'Roadmap', icon: <MapIcon />, badge: notificationCounts['roadmap'] },
               { tab: 'resources' as Tab, label: 'Resources', icon: <BookOpenIcon /> },
               { tab: 'playground' as Tab, label: 'Playground', icon: <CodeIcon /> },
               { tab: 'showcase' as Tab, label: 'Showcase', icon: <GlobeIcon /> },

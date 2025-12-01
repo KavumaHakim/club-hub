@@ -1,4 +1,5 @@
 
+
 import React, { useCallback, useState, useMemo, useEffect } from 'react';
 import { Activity, User } from '../types';
 import * as api from '../services/apiService';
@@ -163,10 +164,10 @@ const Activities: React.FC<ActivitiesProps> = ({ currentUser }) => {
   };
 
   const handleAddActivity = useCallback(async (newActivity: Omit<Activity, 'id' | 'rsvpUserIds'>) => {
-    await api.addActivity(newActivity);
+    await api.addActivity(newActivity, currentUser.uid);
     await fetchActivities(); // Refetch from context
     showToast("Activity added successfully!", "success");
-  }, [fetchActivities, showToast]);
+  }, [fetchActivities, showToast, currentUser.uid]);
 
   const initiateRSVP = useCallback((activityId: string, isJoining: boolean) => {
       const activity = activities.find(a => a.id === activityId);
