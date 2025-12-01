@@ -1,12 +1,15 @@
 // ============================
-// Service Worker: sw.js (fixed)
+// Service Worker: sw.js
 // ============================
 
-const CACHE_NAME = 'ict-club-hub-v6';
-const DATA_CACHE_NAME = 'ict-club-data-v6';
+// Versioned caches
+const CACHE_VERSION = 'v7'; // Increment this on each deploy
+const CACHE_NAME = `ict-club-hub-cache-${CACHE_VERSION}`;
+const DATA_CACHE_NAME = `ict-club-data-${CACHE_VERSION}`;
 
+// Assets to pre-cache
 const PRECACHE_ASSETS = [
-  '/', 
+  '/',
   '/index.html',
   '/manifest.json',
   '/favicon.svg'
@@ -20,123 +23,129 @@ const STATIC_DOMAINS = [
 ];
 
 // ----------------------------
-// Install: Safe precache
+// Install: Precache assets
 // ----------------------------
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    (async () => {
-      const cache = await caches.open(CACHE_NAME);
-      for (const asset of PRECACHE_ASSETS) {
-        try {
-          await cache.add(asset);
-        } catch (err) {
-          console.warn('Failed to precache:', asset);
-        }
-      }
-    })()
+    caches.open(CACHE_NAME).then(cache =>
+      Promise.allSettled(PRECACHE_ASSETS.map(asset => cache.add(asset)))
+    )
   );
   self.skipWaiting();
 });
 
 // ----------------------------
-// Activate: Cleanup old caches
+// Activate: Cleanup old caches & notify clients
 // ----------------------------
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then(names =>
-      Promise.all(
-        names
-          .filter(name => name !== CACHE_NAME && name !== DATA_CACHE_NAME)
-          .map(name => caches.delete(name))
-      )
-    )
+    (async () => {
+      // Remove old caches
+      const keys = await caches.keys();
+      await Promise.all(
+        keys.map(key => {
+          if (key !== CACHE_NAME && key !== DATA_CACHE_NAME) {
+            return caches.delete(key);
+          }
+        })
+      );
+
+      // Claim clients immediately
+      await self.clients.claim();
+
+      // Notify all clients that a new version is available
+      const allClients = await self.clients.matchAll({ includeUncontrolled: true });
+      for (const client of allClients) {
+        client.postMessage({ type: 'NEW_VERSION_AVAILABLE' });
+      }
+    })()
   );
-  self.clients.claim();
 });
 
 // ----------------------------
-// Fetch: Smart caching logic
+// Fetch: Handle all requests
 // ----------------------------
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
+
+  // Only handle HTTP(S) requests
   const isHttp = url.protocol.startsWith('http');
+  if (!isHttp) return;
 
-  // 1. Pyodide (cache-first)
-  if (isHttp && url.href.includes('pyodide')) {
-    event.respondWith(cacheFirst(event.request, CACHE_NAME));
+  // --- 1. Network-first for HTML/navigation ---
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          return response;
+        })
+        .catch(() => caches.match('/index.html'))
+    );
     return;
   }
 
-  // 2. Supabase GET (network-first)
-  if (isHttp && url.hostname.includes('supabase.co') && event.request.method === 'GET') {
-    event.respondWith(networkFirst(event.request, DATA_CACHE_NAME));
+  // --- 2. Cache-first for pre-cached static assets ---
+  if (PRECACHE_ASSETS.includes(url.pathname)) {
+    event.respondWith(
+      caches.match(event.request).then(cached => cached || fetch(event.request))
+    );
     return;
   }
 
-  // 3. CDN static files (stale-while-revalidate)
-  if (isHttp && STATIC_DOMAINS.some(d => url.hostname.includes(d))) {
-    event.respondWith(staleWhileRevalidate(event.request, CACHE_NAME));
+  // --- 3. Static CDN Assets (Stale-While-Revalidate) ---
+  if (STATIC_DOMAINS.some(domain => url.hostname.includes(domain))) {
+    event.respondWith(
+      caches.match(event.request).then(cachedResponse => {
+        const fetchAndCache = fetch(event.request)
+          .then(networkResponse => {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+            return networkResponse;
+          })
+          .catch(() => cachedResponse);
+        return cachedResponse || fetchAndCache;
+      })
+    );
     return;
   }
 
-  // 4. Build assets (/assets/) use NETWORK-FIRST to fix update issues
-  if (isHttp && url.pathname.startsWith('/assets/')) {
-    event.respondWith(networkFirst(event.request, CACHE_NAME));
+  // --- 4. API/Data requests (Network-first) ---
+  if (url.hostname.includes('supabase.co') && event.request.method === 'GET') {
+    event.respondWith(
+      fetch(event.request)
+        .then(networkResponse => {
+          if (networkResponse.ok) {
+            const clone = networkResponse.clone();
+            caches.open(DATA_CACHE_NAME).then(cache => cache.put(event.request, clone));
+          }
+          return networkResponse;
+        })
+        .catch(() => caches.match(event.request))
+    );
     return;
   }
 
-  // 5. Default (cache-first)
-  if (isHttp) {
+  // --- 5. Dynamic caching for /assets/ (Cache-first with fallback) ---
+  if (url.pathname.startsWith('/assets/')) {
     event.respondWith(
       caches.match(event.request).then(cached => {
         if (cached) return cached;
-        return fetch(event.request).catch(() => {
-          if (event.request.mode === 'navigate') {
-            return caches.match('/index.html');
-          }
-          return new Response('', { status: 503, statusText: 'Offline' });
-        });
+        return fetch(event.request)
+          .then(networkResponse => {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+            return networkResponse;
+          })
+          .catch(() => new Response('', { status: 503, statusText: 'Offline' }));
       })
     );
+    return;
   }
+
+  // --- 6. Fallback for other requests ---
+  event.respondWith(
+    fetch(event.request).catch(() => caches.match(event.request))
+  );
 });
-
-// ======================================================
-// CACHE HELPERS
-// ======================================================
-
-async function cacheFirst(req, cacheName) {
-  const cache = await caches.open(cacheName);
-  const cached = await cache.match(req);
-  if (cached) return cached;
-
-  const res = await fetch(req);
-  cache.put(req, res.clone());
-  return res;
-}
-
-async function networkFirst(req, cacheName) {
-  try {
-    const res = await fetch(req);
-    const cache = await caches.open(cacheName);
-    cache.put(req, res.clone());
-    return res;
-  } catch {
-    const cache = await caches.open(cacheName);
-    return await cache.match(req);
-  }
-}
-
-async function staleWhileRevalidate(req, cacheName) {
-  const cache = await caches.open(cacheName);
-  const cached = await cache.match(req);
-
-  const fetchPromise = fetch(req)
-    .then(res => {
-      cache.put(req, res.clone());
-      return res;
-    })
-    .catch(() => cached);
-
-  return cached || fetchPromise;
-}
