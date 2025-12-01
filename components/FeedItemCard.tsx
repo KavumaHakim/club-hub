@@ -6,6 +6,7 @@ import { ChatBubbleIcon } from './icons/ChatBubbleIcon';
 import { SendIcon } from './icons/SendIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import { ChartBarIcon } from './icons/ChartBarIcon';
+import { CheckIcon } from './icons/CheckIcon';
 import * as api from '../services/apiService';
 import LinkPreview from './LinkPreview';
 
@@ -227,40 +228,68 @@ const FeedItemCard: React.FC<FeedItemCardProps> = ({ item, currentUser, onDelete
                     </>
                 )}
 
-                {/* Poll Options */}
+                {/* Poll Options (Discord Style) */}
                 {item.type === 'POLL' && pollOptions.length > 0 && (
-                    <div className="space-y-3 mt-4">
+                    <div className="space-y-2 mt-4">
                         {pollOptions.map(option => {
                             const percent = totalVotes > 0 ? Math.round((option.votes / totalVotes) * 100) : 0;
+                            const isWinner = totalVotes > 0 && option.votes === Math.max(...pollOptions.map(o => o.votes));
+                            
                             return (
-                                <div key={option.id} className="relative group/poll">
-                                    <div 
-                                        className={`relative z-10 flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition-all ${
-                                            option.isVoted 
-                                            ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/10' 
-                                            : 'border-gray-100 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800'
+                                <div 
+                                    key={option.id} 
+                                    className={`relative overflow-hidden rounded-lg border cursor-pointer transition-all duration-200 group/poll ${
+                                        option.isVoted 
+                                        ? 'border-purple-500 dark:border-purple-400 ring-1 ring-purple-500/20' 
+                                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                                    }`}
+                                    onClick={() => handleVote(option.id)}
+                                >
+                                    {/* Progress Bar Layer */}
+                                    <div
+                                        className={`absolute top-0 left-0 h-full transition-all duration-500 ease-out ${
+                                            option.isVoted
+                                            ? 'bg-purple-100/80 dark:bg-purple-900/30' 
+                                            : isWinner && totalVotes > 0
+                                                ? 'bg-gray-100/80 dark:bg-gray-700/50'
+                                                : 'bg-gray-50/80 dark:bg-gray-800/50' 
                                         }`}
-                                        onClick={() => handleVote(option.id)}
-                                    >
-                                        <span className={`text-sm font-medium ${option.isVoted ? 'text-pink-700 dark:text-pink-400' : 'text-gray-700 dark:text-gray-300'}`}>
-                                            {option.text}
-                                        </span>
-                                        {option.isVoted && <span className="text-pink-500 text-xs font-bold">Voted</span>}
-                                    </div>
-                                    {/* Progress Bar Background */}
-                                    <div 
-                                        className="absolute top-0 left-0 h-full bg-gray-100 dark:bg-gray-700 rounded-xl transition-all duration-500 ease-out -z-0 opacity-50"
                                         style={{ width: `${percent}%` }}
-                                    ></div>
-                                    <div className="absolute right-3 top-3.5 text-xs font-bold text-gray-400 dark:text-gray-500">
-                                        {percent}%
+                                    />
+
+                                    {/* Content Layer */}
+                                    <div className="relative z-10 flex items-center justify-between p-3">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            {/* Check Circle */}
+                                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                                                option.isVoted
+                                                ? 'border-purple-500 bg-purple-500 text-white'
+                                                : 'border-gray-300 dark:border-gray-500 group-hover/poll:border-purple-400'
+                                            }`}>
+                                                {option.isVoted && <CheckIcon className="w-3 h-3" />}
+                                            </div>
+                                            
+                                            {/* Text */}
+                                            <span className={`text-sm font-medium truncate ${
+                                                option.isVoted ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'
+                                            }`}>
+                                                {option.text}
+                                            </span>
+                                        </div>
+                                        
+                                        {/* Percentage */}
+                                        <span className="text-xs font-bold text-gray-500 dark:text-gray-400 ml-3">
+                                            {percent}%
+                                        </span>
                                     </div>
                                 </div>
                             );
                         })}
-                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 text-right">
-                            {totalVotes} vote{totalVotes !== 1 ? 's' : ''} total
-                        </p>
+                        <div className="flex justify-between items-center mt-2 px-1">
+                             <p className="text-xs text-gray-400 dark:text-gray-500">
+                                {totalVotes} vote{totalVotes !== 1 ? 's' : ''}
+                            </p>
+                        </div>
                     </div>
                 )}
             </div>
