@@ -186,7 +186,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
           minimap: { enabled: false },
           fontSize: 14,
           padding: { top: 16 },
-          scrollBeyondLastLine: false,
+          scrollBeyondLastLine: true, // Allow scrolling past the end
           automaticLayout: true,
           tabCompletion: "on",
           wordBasedSuggestions: true,
@@ -196,6 +196,13 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
           guides: { bracketPairs: true, indentation: true },
           formatOnType: true,
           formatOnPaste: true,
+          scrollbar: {
+            vertical: 'visible',
+            horizontal: 'auto',
+            verticalScrollbarSize: 12,
+            horizontalScrollbarSize: 12,
+            useShadows: true,
+          }
       });
 
       completionProvidersRef.current.forEach(provider => provider.dispose());
