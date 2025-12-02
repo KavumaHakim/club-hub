@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" class="h-full">
   <head>
@@ -147,7 +148,7 @@
 
           // Listen for messages from the service worker
           navigator.serviceWorker.addEventListener('message', (event) => {
-            if (event.data && event.data.type === 'NEW_VERSION_AVAILABLE') {
+            if (event.data && event.data.type === 'SW_UPDATED') {
               const toast = document.createElement('div');
               // Tailwind classes for the toast
               toast.className = "fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-indigo-600 text-white px-6 py-3 rounded-xl shadow-2xl cursor-pointer z-[9999] flex items-center gap-3 transition-all duration-300 hover:bg-indigo-700 animate-bounce ring-2 ring-white/20";
@@ -162,6 +163,13 @@
               `;
               
               toast.onclick = () => {
+                // Tell SW to skip waiting and activate new version
+                navigator.serviceWorker.ready.then(registration => {
+                   if (registration.waiting) {
+                       registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+                   }
+                });
+                // Reload page (SW will claim clients on activation)
                 window.location.reload();
               };
               

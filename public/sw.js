@@ -1,46 +1,28 @@
-// ============================
-// Service Worker: sw.js
-// ============================
 
-// Versioned caches
-const CACHE_VERSION = 'v7'; // Increment this on each deploy
-const CACHE_NAME = `ict-club-hub-cache-${CACHE_VERSION}`;
-const DATA_CACHE_NAME = `ict-club-data-${CACHE_VERSION}`;
+const CACHE_NAME = 'ict-club-hub-v7';
+const DATA_CACHE_NAME = 'ict-club-data-v7';
 
-// Assets to pre-cache
+// Core assets to cache (app shell)
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/favicon.svg'
+  '/favicon.svg',
+  // Add other static assets if necessary, e.g. logos
 ];
 
-const STATIC_DOMAINS = [
-  'cdn.tailwindcss.com',
-  'aistudiocdn.com',
-  'esm.sh',
-  'cdn.jsdelivr.net'
-];
-
-// ----------------------------
-// Install: Precache assets
-// ----------------------------
-self.addEventListener('install', (event) => {
+// Install: pre-cache app shell
+self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache =>
-      Promise.allSettled(PRECACHE_ASSETS.map(asset => cache.add(asset)))
-    )
+    caches.open(CACHE_NAME).then(cache => cache.addAll(PRECACHE_ASSETS))
   );
   self.skipWaiting();
 });
 
-// ----------------------------
-// Activate: Cleanup old caches & notify clients
-// ----------------------------
-self.addEventListener('activate', (event) => {
+// Activate: cleanup old caches and notify clients if new SW
+self.addEventListener('activate', event => {
   event.waitUntil(
     (async () => {
-      // Remove old caches
       const keys = await caches.keys();
       await Promise.all(
         keys.map(key => {
@@ -53,99 +35,58 @@ self.addEventListener('activate', (event) => {
       // Claim clients immediately
       await self.clients.claim();
 
-      // Notify all clients that a new version is available
-      const allClients = await self.clients.matchAll({ includeUncontrolled: true });
+      // Notify all clients about the new service worker
+      const allClients = await self.clients.matchAll();
       for (const client of allClients) {
-        client.postMessage({ type: 'NEW_VERSION_AVAILABLE' });
+        client.postMessage({ type: 'SW_UPDATED' });
       }
     })()
   );
 });
 
-// ----------------------------
-// Fetch: Handle all requests
-// ----------------------------
-self.addEventListener('fetch', (event) => {
+// Fetch: handle navigation, API caching, and offline login persistence
+self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // Only handle HTTP(S) requests
-  const isHttp = url.protocol.startsWith('http');
-  if (!isHttp) return;
-
-  // --- 1. Network-first for HTML/navigation ---
+  // 1. Page navigation fallback (Network First -> Cache Fallback)
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request)
-        .then(response => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-          return response;
-        })
-        .catch(() => caches.match('/index.html'))
+      fetch(event.request).catch(() => caches.match('/index.html'))
     );
     return;
   }
 
-  // --- 2. Cache-first for pre-cached static assets ---
-  if (PRECACHE_ASSETS.includes(url.pathname)) {
+  // 2. API caching (user data, etc.) - Network First, then Cache
+  // We check for '/api/' OR 'supabase.co' to cover both local and Supabase requests
+  if (url.pathname.includes('/api/') || url.hostname.includes('supabase.co')) {
     event.respondWith(
-      caches.match(event.request).then(cached => cached || fetch(event.request))
-    );
-    return;
-  }
-
-  // --- 3. Static CDN Assets (Stale-While-Revalidate) ---
-  if (STATIC_DOMAINS.some(domain => url.hostname.includes(domain))) {
-    event.respondWith(
-      caches.match(event.request).then(cachedResponse => {
-        const fetchAndCache = fetch(event.request)
-          .then(networkResponse => {
-            const clone = networkResponse.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-            return networkResponse;
+      caches.open(DATA_CACHE_NAME).then(cache =>
+        fetch(event.request)
+          .then(response => {
+            // Clone the response before reading it, as it can only be consumed once
+            if (response.ok) {
+              cache.put(event.request, response.clone());
+            }
+            return response;
           })
-          .catch(() => cachedResponse);
-        return cachedResponse || fetchAndCache;
-      })
-    );
-    return;
-  }
-
-  // --- 4. API/Data requests (Network-first) ---
-  if (url.hostname.includes('supabase.co') && event.request.method === 'GET') {
-    event.respondWith(
-      fetch(event.request)
-        .then(networkResponse => {
-          if (networkResponse.ok) {
-            const clone = networkResponse.clone();
-            caches.open(DATA_CACHE_NAME).then(cache => cache.put(event.request, clone));
-          }
-          return networkResponse;
-        })
-        .catch(() => caches.match(event.request))
-    );
-    return;
-  }
-
-  // --- 5. Dynamic caching for /assets/ (Cache-first with fallback) ---
-  if (url.pathname.startsWith('/assets/')) {
-    event.respondWith(
-      caches.match(event.request).then(cached => {
-        if (cached) return cached;
-        return fetch(event.request)
-          .then(networkResponse => {
-            const clone = networkResponse.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-            return networkResponse;
+          .catch(() => {
+            // If network fails, try to return the cached response
+            return caches.match(event.request);
           })
-          .catch(() => new Response('', { status: 503, statusText: 'Offline' }));
-      })
+      )
     );
     return;
   }
 
-  // --- 6. Fallback for other requests ---
+  // 3. Static Assets / Fallback: Cache First, then Network
   event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request))
+    caches.match(event.request).then(response => response || fetch(event.request))
   );
+});
+
+// Optional: listen for messages from clients (frontend)
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting(); // allow frontend to trigger immediate activation
+  }
 });
