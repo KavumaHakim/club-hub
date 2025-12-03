@@ -3,9 +3,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { CalendarIcon } from './icons/CalendarIcon';
 import { ClipboardListIcon } from './icons/ClipboardListIcon';
 import { ChatBubbleIcon } from './icons/ChatBubbleIcon';
-import { CodeIcon } from './icons/CodeIcon';
-import { GlobeIcon } from './icons/GlobeIcon';
-import { TrophyIcon } from './icons/TrophyIcon';
+import ThreeBackground from './ThreeBackground';
 
 interface WelcomeProps {
   onNavigateToLogin: () => void;
@@ -66,31 +64,10 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToSignUp
   return (
     <div className="bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen flex flex-col font-sans selection:bg-pink-500 selection:text-white overflow-x-hidden">
       <style>{`
-        @keyframes gradient-x {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
         @keyframes gradient-fast {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
-        }
-        @keyframes move-grid {
-            0% { transform: translateY(0); }
-            100% { transform: translateY(40px); }
-        }
-        @keyframes locomotion-fly {
-            0% { transform: translate(-10vw, 10vh) rotate(0deg); opacity: 0; }
-            10% { opacity: 0.4; }
-            90% { opacity: 0.4; }
-            100% { transform: translate(110vw, -20vh) rotate(360deg); opacity: 0; }
-        }
-        @keyframes locomotion-fly-reverse {
-            0% { transform: translate(110vw, 20vh) rotate(0deg); opacity: 0; }
-            10% { opacity: 0.4; }
-            90% { opacity: 0.4; }
-            100% { transform: translate(-10vw, -10vh) rotate(-360deg); opacity: 0; }
         }
         @keyframes float {
             0% { transform: translateY(0px); }
@@ -101,25 +78,9 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToSignUp
             0% { opacity: 0; transform: translateY(20px); }
             100% { opacity: 1; transform: translateY(0); }
         }
-        .animate-gradient-x {
-            background-size: 200% 200%;
-            animation: gradient-x 4s ease infinite;
-        }
         .animate-gradient-fast {
             background-size: 300% 300%;
             animation: gradient-fast 2s linear infinite;
-        }
-        .animate-move-grid {
-            animation: move-grid 1s linear infinite;
-        }
-        .animate-fly {
-            animation: locomotion-fly 15s linear infinite;
-        }
-        .animate-fly-fast {
-            animation: locomotion-fly 10s linear infinite;
-        }
-        .animate-fly-reverse {
-            animation: locomotion-fly-reverse 18s linear infinite;
         }
         .animate-float {
             animation: float 6s ease-in-out infinite;
@@ -151,34 +112,17 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToSignUp
       {/* Hero Section */}
       <header className="min-h-[100dvh] flex flex-col items-center justify-center relative overflow-hidden p-6 bg-gray-50 dark:bg-gray-950">
         
-        {/* Constant Locomoting Background Grid */}
-        <div className="absolute inset-0 z-0 opacity-10 dark:opacity-20 overflow-hidden">
-             <div className="absolute inset-0 animate-move-grid" 
+        {/* 3D Background */}
+        <ThreeBackground />
+        
+        {/* Constant Moving Grid (Optional, keep for retro feel overlaying the 3D) */}
+        <div className="absolute inset-0 z-0 opacity-5 dark:opacity-10 pointer-events-none">
+             <div className="absolute inset-0" 
                 style={{ 
                     backgroundImage: 'linear-gradient(rgba(128, 128, 128, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(128, 128, 128, 0.2) 1px, transparent 1px)', 
                     backgroundSize: '40px 40px',
-                    height: '200%' // Taller to allow seamless looping
+                    height: '100%'
                 }}>
-            </div>
-        </div>
-        
-        {/* Flying Elements (Locomotion) */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-            {/* Flying Icons */}
-            <div className="absolute top-[10%] left-0 animate-fly" style={{ animationDelay: '0s' }}>
-                <CodeIcon className="w-12 h-12 text-pink-500/40" />
-            </div>
-            <div className="absolute top-[30%] left-0 animate-fly-reverse" style={{ animationDelay: '2s' }}>
-                <GlobeIcon className="w-16 h-16 text-purple-500/40" />
-            </div>
-            <div className="absolute top-[60%] left-0 animate-fly-fast" style={{ animationDelay: '5s' }}>
-                <TrophyIcon className="w-10 h-10 text-yellow-500/40" />
-            </div>
-            <div className="absolute top-[80%] left-0 animate-fly" style={{ animationDelay: '10s' }}>
-                <ChatBubbleIcon className="w-14 h-14 text-blue-500/40" />
-            </div>
-             <div className="absolute top-[20%] left-0 animate-fly-reverse" style={{ animationDelay: '12s' }}>
-                <CalendarIcon className="w-12 h-12 text-green-500/40" />
             </div>
         </div>
 
@@ -192,7 +136,7 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToSignUp
           </div>
 
           {/* Main Heading with Hacker Effect and Constant Motion Gradient */}
-          <h1 className="text-6xl sm:text-8xl md:text-9xl font-black tracking-tighter drop-shadow-sm pb-4 leading-[1.1]">
+          <h1 className="text-6xl sm:text-8xl md:text-9xl font-black tracking-tighter drop-shadow-2xl pb-4 leading-[1.1]">
             <div className="flex flex-col items-center">
                 <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 bg-clip-text text-transparent animate-gradient-fast">
                     <HackerText text="ICT CLUB" />
@@ -207,7 +151,7 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToSignUp
           <div className="mt-6 flex flex-col sm:flex-row items-center gap-4 w-full justify-center animate-fade-in-up opacity-0" style={{ animationDelay: '0.3s', animationFillMode: 'forwards' }}>
               <button
                 onClick={onNavigateToLogin}
-                className="w-full sm:w-40 px-8 py-4 text-lg font-bold text-gray-700 bg-white/90 backdrop-blur-sm border border-gray-200 dark:text-white dark:bg-gray-800/90 dark:border-gray-700 rounded-xl shadow-lg hover:scale-105 transition-all hover:shadow-xl"
+                className="w-full sm:w-40 px-8 py-4 text-lg font-bold text-gray-700 bg-white/90 backdrop-blur-sm border border-gray-200 dark:text-white dark:bg-gray-800/90 dark:border-gray-700 rounded-xl shadow-lg hover:scale-105 transition-all hover:shadow-xl hover:border-pink-500/50"
               >
                 Login
               </button>
@@ -225,15 +169,15 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToSignUp
           <div className="mt-6 animate-fade-in-up opacity-0" style={{ animationDelay: '0.5s', animationFillMode: 'forwards' }}>
              <button
                 onClick={onNavigateToPatronLogin}
-                className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors underline decoration-dotted underline-offset-4"
+                className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors underline decoration-dotted underline-offset-4 bg-white/50 dark:bg-black/50 px-3 py-1 rounded-full backdrop-blur-sm"
               >
                 Are you a Patron? Access here
               </button>
           </div>
           
-          <p className="mt-8 text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto animate-fade-in-up opacity-0 leading-relaxed font-light bg-white/20 dark:bg-black/20 p-4 rounded-xl backdrop-blur-sm" style={{ animationDelay: '0.7s', animationFillMode: 'forwards' }}>
+          <p className="mt-8 text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto animate-fade-in-up opacity-0 leading-relaxed font-light bg-white/30 dark:bg-black/40 p-4 rounded-xl backdrop-blur-md border border-white/20 dark:border-gray-800/50" style={{ animationDelay: '0.7s', animationFillMode: 'forwards' }}>
             Connect. Code. Create. <br/>
-            <span className="text-sm font-mono text-pink-500 mt-2 block">System.Status: LOCOMOTING...</span>
+            <span className="text-sm font-mono text-pink-500 mt-2 block">System.Status: ONLINE</span>
           </p>
           
         </div>
