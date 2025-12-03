@@ -1,9 +1,7 @@
-
-
-
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useState, useEffect } from 'react';
 import { User, Tab } from '../types';
 import AiTutor from './AiTutor';
+import PythonTipModal from './PythonTipModal';
 
 const Feed = lazy(() => import('./Feed'));
 const Activities = lazy(() => import('./Activities'));
@@ -45,6 +43,23 @@ const TabPanel: React.FC<{ active: boolean; children: React.ReactNode; className
 
 
 const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile, activeTab, setActiveTab, theme }) => {
+  const [showTipModal, setShowTipModal] = useState(false);
+
+  useEffect(() => {
+      // Check if we have shown the tip today
+      const lastTipDate = localStorage.getItem('last_python_tip_date');
+      const today = new Date().toDateString();
+
+      if (lastTipDate !== today) {
+          // Add a small delay so it doesn't pop up instantly over the UI rendering
+          const timer = setTimeout(() => {
+              setShowTipModal(true);
+              localStorage.setItem('last_python_tip_date', today);
+          }, 1500);
+          return () => clearTimeout(timer);
+      }
+  }, []);
+
   return (
     <div className={(activeTab === 'chat' || activeTab === 'playground') ? 'h-full' : ''}>
       <Suspense fallback={<LoadingIndicator />}>
@@ -93,6 +108,9 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile,
       
       {/* Floating AI Tutor Widget */}
       <AiTutor currentUser={currentUser} />
+
+      {/* Daily Python Tip Modal */}
+      <PythonTipModal isOpen={showTipModal} onClose={() => setShowTipModal(false)} />
     </div>
   );
 };

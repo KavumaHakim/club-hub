@@ -538,3 +538,55 @@ export const getAIPlaygroundHint = async (code: string): Promise<string> => {
         throw new Error("Failed to generate a hint from the AI.");
     }
 };
+
+export interface PythonTip {
+    title: string;
+    explanation: string;
+    codeSnippet: string;
+}
+
+export const generatePythonTip = async (): Promise<PythonTip> => {
+    if (!ai) throw new Error("API Key Missing");
+
+    const model = "gemini-2.5-flash";
+    const prompt = `
+        Generate an interesting, intermediate-level Python programming tip, idiom, or "cool trick".
+        It should be something that helps write more "Pythonic" code (e.g., list comprehensions, zip, enumerate, collections module, context managers, unpacking).
+        
+        Return a JSON object with:
+        - title: A short catchy title (e.g., "Mastering Enumerate").
+        - explanation: A brief (2-3 sentences) explanation of why it is useful.
+        - codeSnippet: A short, executable Python code example demonstrating the concept.
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model,
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        title: { type: Type.STRING },
+                        explanation: { type: Type.STRING },
+                        codeSnippet: { type: Type.STRING }
+                    },
+                    required: ["title", "explanation", "codeSnippet"]
+                }
+            }
+        });
+
+        const text = cleanJSON(response.text || "");
+        if (!text) throw new Error("No response");
+        return JSON.parse(text) as PythonTip;
+    } catch (error) {
+        console.error("Python Tip Error:", error);
+        // Fallback tip in case of API failure
+        return {
+            title: "Pythonic Swapping",
+            explanation: "Did you know you can swap variables in Python without a temporary variable? It's readable and efficient!",
+            codeSnippet: "a = 5\nb = 10\n\n# The Pythonic Way\na, b = b, a\n\nprint(f'a: {a}, b: {b}')"
+        };
+    }
+};
