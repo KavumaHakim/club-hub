@@ -19,6 +19,7 @@ import { SunIcon } from './components/icons/SunIcon';
 import { MoonIcon } from './components/icons/MoonIcon';
 import { LogoutIcon } from './components/icons/LogoutIcon';
 import ToastContainer from './components/Toast';
+import OfflineIndicator from './components/OfflineIndicator';
 
 type View = 'welcome' | 'login' | 'signup' | 'dashboard' | 'patronLogin' | 'patronSignUp';
 type Theme = 'light' | 'dark';
@@ -50,6 +51,12 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showPendingModal, setShowPendingModal] = useState(false);
   const [showTourModal, setShowTourModal] = useState(false);
+  const [isOnline, setIsOnline] = useState(() => {
+    if (typeof window !== 'undefined') {
+        return navigator.onLine;
+    }
+    return true;
+  });
   
   // Initialize activeTab from localStorage or default to 'feed'
   const [activeTab, setActiveTab] = useState<Tab>(() => {
@@ -83,6 +90,20 @@ const App: React.FC = () => {
       };
       window.addEventListener('font-change' as any, handleFontChange);
       return () => window.removeEventListener('font-change' as any, handleFontChange);
+  }, []);
+
+  // Listen for Online/Offline status
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+    };
   }, []);
 
   // Centralized session handler to avoid code duplication
@@ -361,6 +382,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-full text-gray-800 dark:text-gray-200 relative" style={{ fontFamily: font }}>
+      {!isOnline && <OfflineIndicator />}
       <CustomCursor />
       <div className="relative z-10">
         {renderContent()}

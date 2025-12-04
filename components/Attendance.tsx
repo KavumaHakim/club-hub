@@ -9,7 +9,6 @@ import { useData } from '../DataContext';
 
 interface AttendanceProps {
   currentUser: User;
-  visible?: boolean;
 }
 
 const statusColors: { [key in AttendanceStatus]: string } = {
@@ -71,7 +70,7 @@ const useScrollAnimation = (delay = 0) => {
     return ref;
 };
 
-const Attendance: React.FC<AttendanceProps> = ({ currentUser, visible = true }) => {
+const Attendance: React.FC<AttendanceProps> = ({ currentUser }) => {
   const { 
     attendance: attendanceRecords, 
     activities, 
@@ -86,26 +85,12 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, visible = true }) 
   const [selectedActivityId, setSelectedActivityId] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<AttendanceStatus>('Present');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [shouldRenderChart, setShouldRenderChart] = useState(false);
 
   // Animation Refs
   const formRef = useScrollAnimation();
   const logRef = useScrollAnimation(100);
   const summaryRef = useScrollAnimation(200);
   const trendRef = useScrollAnimation(100);
-
-  // Delay chart rendering slightly to allow layout to compute dimensions
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout>;
-    if (visible) {
-        timer = setTimeout(() => {
-            setShouldRenderChart(true);
-        }, 300); 
-    } else {
-        setShouldRenderChart(false);
-    }
-    return () => clearTimeout(timer);
-  }, [visible]);
 
   const unrecordedActivities = useMemo(() => 
     activities.filter(activity => 
@@ -348,36 +333,34 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, visible = true }) 
         </div>
         <div ref={summaryRef} className="scroll-animate bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
           <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4 text-center">Summary</h2>
-          <div style={{ width: '100%', height: 300 }}>
-            {shouldRenderChart ? (
-                <ResponsiveContainer width="99%" height="100%">
-                <PieChart>
-                    <Pie
-                    data={pieChartData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) => `${name} ${(Number(percent || 0) * 100).toFixed(0)}%`}
-                    >
-                    {pieChartData.map((entry) => (
-                        <Cell key={`cell-${entry.name}`} fill={chartColors[entry.name as AttendanceStatus]} />
-                    ))}
-                    </Pie>
-                    <Tooltip 
-                    contentStyle={{ 
-                        backgroundColor: 'rgba(31, 41, 55, 0.8)',
-                        borderColor: '#4B5563'
-                    }}
-                    itemStyle={{ color: '#D1D5DB' }}
-                    />
-                    <Legend wrapperStyle={{color: '#9CA3AF'}}/>
-                </PieChart>
+          <div className="relative w-full h-[300px]">
+            <div className="absolute inset-0">
+                <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                        <Pie
+                        data={pieChartData}
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                        label={({ name, percent }) => `${name} ${(Number(percent || 0) * 100).toFixed(0)}%`}
+                        >
+                        {pieChartData.map((entry) => (
+                            <Cell key={`cell-${entry.name}`} fill={chartColors[entry.name as AttendanceStatus]} />
+                        ))}
+                        </Pie>
+                        <Tooltip 
+                        contentStyle={{ 
+                            backgroundColor: 'rgba(31, 41, 55, 0.8)',
+                            borderColor: '#4B5563'
+                        }}
+                        itemStyle={{ color: '#D1D5DB' }}
+                        />
+                        <Legend wrapperStyle={{color: '#9CA3AF'}}/>
+                    </PieChart>
                 </ResponsiveContainer>
-            ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-400">Loading Chart...</div>
-            )}
+            </div>
           </div>
         </div>
       </div>
@@ -385,9 +368,9 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, visible = true }) 
       <div ref={trendRef} className="scroll-animate bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
           <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">Attendance Trend</h2>
            {lineChartData.length > 1 ? (
-            <div className="h-80 w-full">
-                {shouldRenderChart ? (
-                    <ResponsiveContainer width="99%" height="100%">
+            <div className="relative w-full h-80">
+              <div className="absolute inset-0">
+                    <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={lineChartData} margin={{ top: 5, right: 20, left: -10, bottom: 50 }}>
                             <defs>
                                 <linearGradient id="line-color-gradient" x1="0" y1="0" x2="1" y2="0">
@@ -412,9 +395,7 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, visible = true }) 
                             />
                         </LineChart>
                     </ResponsiveContainer>
-                ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400">Loading Chart...</div>
-                )}
+                </div>
             </div>
            ) : (
               <p className="text-center text-gray-500 dark:text-gray-400 py-4">More attendance records are needed to show a trend.</p>
