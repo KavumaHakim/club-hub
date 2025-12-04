@@ -554,6 +554,7 @@ export const generatePythonTip = async (): Promise<PythonTip> => {
         It should be something that helps write more "Pythonic" code (e.g., list comprehensions, zip, enumerate, collections module, context managers, unpacking, datastructures, standard library classes etc).
         It can also be on built-in syntax features and tricks that **do not require imports**.
         Examples: List/Dict/Set comprehensions, advanced slicing, zip, enumerate, argument unpacking (*args/**kwargs), f-strings, lambda functions, any/all, walrus operator, or generator expressions.
+        Keep the example code snippet concise.
         
         Return a JSON object with:
         - title: A short catchy title (e.g., "Mastering Enumerate").
