@@ -1,118 +1,129 @@
+const CACHE_NAME = 'ict-club-hub-v10';
+const DATA_CACHE_NAME = 'ict-club-data-v10';
 
-const CACHE_NAME = 'ict-club-hub-v8';
-const DATA_CACHE_NAME = 'ict-club-data-v8';
-
-const PRECACHE_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/favicon.svg',
-];
-
-// Install: pre-cache the app shell
+// Install: Cache HTML and dynamic asset files
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(PRECACHE_ASSETS))
+    (async () => {
+      const cache = await caches.open(CACHE_NAME);
+
+      // Always cache the root page
+      await cache.add('/');
+
+      // Fetch and parse index.html to detect hashed assets
+      const resp = await fetch('/index.html');
+      const html = await resp.text();
+
+      // Match Vercel/Vite assets like /assets/index-xxxx.js
+      const assetRegex = /\/assets\/[a-zA-Z0-9_\-]+\.(?:js|css|png|svg|jpg|jpeg|webp)/g;
+      const assets = html.match(assetRegex) || [];
+
+      console.log('Dynamic assets cached:', assets);
+
+      // Cache all discovered assets
+      await cache.addAll(assets);
+    })()
   );
+
   self.skipWaiting();
 });
 
-// Activate: delete old caches and notify clients
+// Activate: cleanup old caches + notify update
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(
         keys.map(key => {
           if (key !== CACHE_NAME && key !== DATA_CACHE_NAME) {
             return caches.delete(key);
           }
         })
-      )
-    )
+      );
+    })()
   );
 
-  // Tell the UI that a new SW is active
+  // Let clients know a new SW is ready
   self.clients.matchAll().then(clients => {
-    clients.forEach(c => c.postMessage({ type: 'SW_UPDATED' }));
+    clients.forEach(client => {
+      client.postMessage({ type: 'SW_UPDATED' });
+    });
   });
 
   self.clients.claim();
 });
 
-// Main fetch handler
+// Fetch handler
 self.addEventListener('fetch', event => {
-  const url = event.request.url;
-  const method = event.request.method;
+  const req = event.request;
 
-  // 1. SPA NAVIGATION: Always try network first for index.html
-  // This ensures users get the latest version immediately upon refresh
-  if (event.request.mode === 'navigate') {
+  // Handle navigation: network first, fallback to cached HTML
+  if (req.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request)
-        .then(response => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put('/index.html', copy));
-          return response;
+      fetch(req)
+        .then(resp => {
+          // Cache fresh index.html for future offline loads
+          const copy = resp.clone();
+          caches.open(CACHE_NAME).then(c => c.put('/index.html', copy));
+          return resp;
         })
         .catch(() => caches.match('/index.html'))
     );
     return;
   }
 
-  // 2. API ROUTES (only cache GET to avoid PATCH/POST errors)
-  // Checking both local /api/ and Supabase to ensure app data works
-  if (url.includes('/api/') || url.includes('supabase.co')) {
-    if (method !== 'GET') {
-      // Don't cache mutations (PATCH/POST/PUT/DELETE)
-      event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
+  // Handle API requests safely (only GET can be cached)
+  if (req.url.includes('/api/')) {
+    if (req.method !== 'GET') {
+      // Never cache POST, PUT, PATCH, DELETE
+      event.respondWith(fetch(req).catch(() => new Response(null)));
       return;
     }
 
-    // Network First for API data
     event.respondWith(
-      caches.open(DATA_CACHE_NAME).then(cache =>
-        fetch(event.request)
-          .then(response => {
-            // Clone and cache successful GET responses
-            if (response.ok) {
-              cache.put(event.request, response.clone());
-            }
-            return response;
-          })
-          .catch(() => caches.match(event.request))
-      )
+      caches.open(DATA_CACHE_NAME).then(async cache => {
+        try {
+          const fresh = await fetch(req);
+          cache.put(req, fresh.clone());
+          return fresh;
+        } catch {
+          return cache.match(req);
+        }
+      })
     );
     return;
   }
 
-  // 3. VITE FINGERPRINTED ASSETS & STATIC FILES
-  if (url.includes('/assets/') || PRECACHE_ASSETS.some(asset => url.endsWith(asset))) {
+  // Cache assets under /assets/
+  if (req.url.includes('/assets/')) {
     event.respondWith(
-      caches.match(event.request).then(cached => {
+      caches.match(req).then(cached => {
         return (
           cached ||
-          fetch(event.request).then(response => {
-            if (response.status === 200) {
-              const copy = response.clone();
-              caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
-            }
-            return response;
-          })
+          fetch(req)
+            .then(resp => {
+              if (resp.status === 200) {
+                const copy = resp.clone();
+                caches.open(CACHE_NAME).then(c => c.put(req, copy));
+              }
+              return resp;
+            })
+            .catch(() => cached)
         );
       })
     );
     return;
   }
 
-  // 4. FALLBACK -> cache first, then network
+  // Default: cache-first fallback
   event.respondWith(
-    caches.match(event.request).then(cached => cached || fetch(event.request))
+    caches.match(req).then(cached => cached || fetch(req))
   );
 });
 
-// Allow the UI to request immediate activation
+// Listen for skip-waiting command
 self.addEventListener('message', event => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
+  if (event.data?.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
 });
