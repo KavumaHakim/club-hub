@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { PlayIcon } from './icons/PlayIcon';
 import { TrashIcon } from './icons/TrashIcon';
@@ -49,7 +50,7 @@ print("\\nThis progress bar uses carriage return (\\r):")
 for i in range(21):
     percent = i * 5
     bar = '[' + '=' * i + '>' + ' ' * (20 - i) + ']'
-    print(f"Loading: {bar} {percent}%", end='\\r')
+    print(f"\\rLoading: {bar} {percent}%", end='\\r')
     time.sleep(0.1)
 
 print("\\n\\nI will now sleep for 2 seconds...")
