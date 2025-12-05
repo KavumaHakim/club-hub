@@ -45,7 +45,14 @@ print("Hello from the ICT Club Hub Playground!")
 name = input("What is your name? ").strip()
 print(f"Nice to meet you, {name}!")
 
-print("I will now sleep for 2 seconds...")
+print("\\nThis progress bar uses carriage return (\\r):")
+for i in range(21):
+    percent = i * 5
+    bar = '[' + '=' * i + '>' + ' ' * (20 - i) + ']'
+    print(f"Loading: {bar} {percent}%", end='\\r')
+    time.sleep(0.1)
+
+print("\\n\\nI will now sleep for 2 seconds...")
 time.sleep(2)
 print("I'm awake!")
 
@@ -175,6 +182,22 @@ const wrapAsyncCalls = (code: string, functionNames: string[]): string => {
         newCode = tempCode;
     }
     return newCode;
+};
+
+// Helper to correctly process carriage returns for line overwrites
+const processCarriageReturns = (text: string) => {
+    const lines = text.split('\n');
+    return lines.map(line => {
+        const parts = line.split('\r');
+        if (parts.length === 1) return line;
+
+        let result = parts[0];
+        for (let i = 1; i < parts.length; i++) {
+            const part = parts[i];
+            result = part + result.substring(part.length);
+        }
+        return result;
+    }).join('\n');
 };
 
 const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, setActiveTab }) => {
@@ -523,19 +546,42 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
     };
 
     (window as any).playgroundPrint = (text: string, type: 'log' | 'error') => {
-        if (text) {
-            setOutput(prev => {
-                const lastOutput = prev[prev.length - 1];
-                if (lastOutput && lastOutput.type === type) {
-                    const newOutput = [...prev];
-                    newOutput[newOutput.length - 1] = { ...lastOutput, content: lastOutput.content + text };
-                    return newOutput;
-                } else {
-                    return [...prev, { type, content: text }];
-                }
-            });
+        if (typeof text !== 'string') return;
+
+        // Don't process special characters for errors.
+        if (type === 'error') {
+            setOutput(prev => [...prev, { type: 'error', content: text }]);
             scrollToBottom();
+            return;
         }
+
+        const parts = text.split('\n');
+        
+        setOutput(prev => {
+            let newOutput = [...prev];
+            
+            // Get the last line from state to append to, if it exists and isn't finished.
+            let lastLine = newOutput.length > 0 ? newOutput[newOutput.length-1] : null;
+
+            // The first part of the new text appends to the last existing line.
+            if (lastLine && lastLine.type === type) {
+                lastLine.content += parts[0];
+                newOutput[newOutput.length-1] = { ...lastLine, content: processCarriageReturns(lastLine.content) };
+            } else {
+                newOutput.push({ type, content: processCarriageReturns(parts[0]) });
+            }
+
+            // Any subsequent parts are entirely new lines.
+            if (parts.length > 1) {
+                for (let i = 1; i < parts.length; i++) {
+                    newOutput.push({ type, content: parts[i] });
+                }
+            }
+            
+            return newOutput;
+        });
+
+        scrollToBottom();
     };
 
     const setupCode = `
