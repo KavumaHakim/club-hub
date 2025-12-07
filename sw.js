@@ -2,7 +2,7 @@
 // Service Worker: sw.js
 // ============================
 
-const CACHE_VERSION = 'v12'; // Increment this on each deploy
+const CACHE_VERSION = 'v13'; // Increment this on each deploy
 const CACHE_NAME = `ict-club-hub-cache-${CACHE_VERSION}`;
 const DATA_CACHE_NAME = `ict-club-data-${CACHE_VERSION}`;
 
@@ -14,7 +14,7 @@ const PRECACHE_ASSETS = [
   '/favicon.svg'
 ];
 
-// Domains for CDN assets (stale-while-revalidate)
+// Domains for CDN assets
 const STATIC_DOMAINS = [
   'aistudiocdn.com',
   'esm.sh',
@@ -31,7 +31,6 @@ const STATIC_DOMAINS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      // Use Promise.allSettled to ensure installation completes even if one asset fails.
       return Promise.allSettled(
         PRECACHE_ASSETS.map(asset => cache.add(asset).catch(err => console.warn(`Failed to cache ${asset}:`, err)))
       );
@@ -46,7 +45,6 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
-      // Remove any caches that are not the current ones
       const keys = await caches.keys();
       await Promise.all(
         keys.map(key => {
@@ -55,11 +53,7 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-
-      // Take control of all open clients
       await self.clients.claim();
-
-      // Notify clients that a new version is available for refresh
       const allClients = await self.clients.matchAll({ includeUncontrolled: true });
       for (const client of allClients) {
         client.postMessage({ type: 'SW_UPDATED' });
@@ -75,41 +69,31 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
 
-  // Only handle HTTP(S) requests
-  if (!url.protocol.startsWith('http')) {
-    return;
-  }
+  if (!url.protocol.startsWith('http')) return;
 
-  // --- 1. Navigation: Network-first, fallback to cache ---
+  // 1. Navigation: Network-first, fallback to /index.html from cache
   if (req.mode === 'navigate') {
     event.respondWith(
       fetch(req)
         .then(response => {
-          // If successful, cache the new page and return it
           const copy = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(req, copy));
           return response;
         })
-        .catch(() => {
-          // If network fails, return the cached index.html
-          return caches.match('/');
-        })
+        .catch(() => caches.match('/index.html'))
     );
     return;
   }
 
-  // --- 2. API Data (Supabase): Network-first, fallback to cache (for GET) ---
+  // 2. API Data (Supabase): Network-first, fallback to cache (for GET)
   if (url.hostname.includes('supabase.co')) {
-    // For mutations, always go to network. Don't cache.
     if (req.method !== 'GET') {
       event.respondWith(fetch(req));
       return;
     }
-
     event.respondWith(
       fetch(req)
         .then(networkResponse => {
-          // If successful, update the data cache
           if (networkResponse.ok) {
             const clone = networkResponse.clone();
             caches.open(DATA_CACHE_NAME).then(cache => cache.put(req, clone));
@@ -117,41 +101,41 @@ self.addEventListener('fetch', (event) => {
           return networkResponse;
         })
         .catch(async () => {
-          // If network fails, serve from data cache
-          const cachedResponse = await caches.match(req, { cacheName: DATA_CACHE_NAME });
+          // **FIXED**: Correctly open the data cache first, then match.
+          const dataCache = await caches.open(DATA_CACHE_NAME);
+          const cachedResponse = await dataCache.match(req);
           return cachedResponse;
         })
     );
     return;
   }
 
-  // --- 3. Static CDN Assets: Stale-While-Revalidate ---
+  // 3. Static CDN Assets: Cache-first, network fallback for robustness
   if (STATIC_DOMAINS.some(domain => url.hostname.includes(domain))) {
     event.respondWith(
       caches.open(CACHE_NAME).then(cache => {
         return cache.match(req).then(cachedResponse => {
-          const fetchPromise = fetch(req).then(networkResponse => {
+          // Return from cache if found
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          // Otherwise, fetch from network, cache it, and return response
+          return fetch(req).then(networkResponse => {
             if (networkResponse.ok) {
               cache.put(req, networkResponse.clone());
             }
             return networkResponse;
           });
-          // Return cached response immediately, then update in the background.
-          return cachedResponse || fetchPromise;
         });
       })
     );
     return;
   }
 
-  // --- 4. Other assets (pre-cached or dynamically cached): Cache-first ---
+  // 4. Other assets: Cache-first fallback
   event.respondWith(
     caches.match(req).then(cachedResponse => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      // If not in cache, fetch, cache, and return
-      return fetch(req).then(networkResponse => {
+      return cachedResponse || fetch(req).then(networkResponse => {
         if (req.method === 'GET' && networkResponse.ok) {
           const clone = networkResponse.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(req, clone));
