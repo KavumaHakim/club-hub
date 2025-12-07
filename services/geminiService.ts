@@ -30,7 +30,7 @@ if (!apiKey) {
 }
 
 // New model and endpoint as requested
-const MODEL_NAME = "openai/gpt-oss-120b:novita";
+const MODEL_NAME = "openai/gpt-oss-20b";
 const API_ENDPOINT = `https://router.huggingface.co/v1/chat/completions`;
 
 // Helper to clean regular text responses
@@ -146,7 +146,7 @@ export const getAIChatResponse = async (history: { role: 'user' | 'model', parts
         }));
 
         const messages: any[] = [
-            { role: "system", content: "You are the helpful AI Assistant for the ICT Club. You help members with coding questions, project ideas, and club logistics. Be concise, encouraging, and tech-savvy." },
+            { role: "system", content: "You are the helpful AI Assistant for the ICT Club. You help members with coding questions, project ideas, and club logistics. Be concise and clear, encouraging, and tech-savvy." },
             ...chatMessages,
             { role: "user", content: message }
         ];
@@ -173,7 +173,7 @@ export const getAiTutorResponse = async (
         }));
 
         const systemPrompt = `You are a friendly, patient, and wise AI Tutor for a high school ICT Club. 
-        Your goal is to TEACH, not to do the work for the students.
+        Your goal is to TEACH, not to do the work for the students. Keep your explanations concise and easy to understand.
         
         REAL-TIME CLUB INFORMATION:
         ${clubContext}
