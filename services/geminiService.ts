@@ -1,59 +1,112 @@
 
-import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
-
-// Robustly retrieve API Key checking all common build tool conventions
+// Robustly retrieve API Key
 const getApiKey = (): string => {
   let key = '';
-
-  // 1. Try Vite's import.meta.env (Standard for Vercel + Vite)
   try {
     // @ts-ignore
     if (typeof import.meta !== 'undefined' && import.meta.env) {
       // @ts-ignore
       key = import.meta.env.VITE_API_KEY || import.meta.env.API_KEY || '';
     }
-  } catch (e) {
-    // Ignore reference errors
-  }
+  } catch (e) {}
 
   if (key) return key;
 
-  // 2. Try standard process.env (Node/Webpack/CRA/Next.js/Vercel System Env)
   try {
     // @ts-ignore
     if (typeof process !== 'undefined' && process.env) {
       // @ts-ignore
       key = process.env.VITE_API_KEY || process.env.API_KEY || process.env.REACT_APP_API_KEY || '';
     }
-  } catch (e) {
-    // Ignore reference errors
-  }
+  } catch (e) {}
 
   return key;
 };
 
-
 const apiKey = getApiKey();
 
 if (!apiKey) {
-    console.warn("Gemini API Key is missing. AI features will be disabled. Ensure VITE_API_KEY is set in your Vercel Environment Variables.");
+    console.warn("AI API Key is missing. Features will be disabled. Ensure VITE_API_KEY is set.");
 }
 
-// Initialize client only if key exists to prevent immediate instantiation errors
-const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
+// DeepSeek R1 model on HF Inference API
+const MODEL_NAME = "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B";
+// Direct model endpoint is often more reliable for CORS than the generic v1 router
+const API_ENDPOINT = `https://api-inference.huggingface.co/models/${MODEL_NAME}/v1/chat/completions`;
 
-// Helper function to convert a File to a GenAI Part
-const fileToGenerativePart = async (file: File) => {
-  const base64EncodedDataPromise = new Promise<string>((resolve) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
-    reader.readAsDataURL(file);
-  });
-  return {
-    inlineData: { data: await base64EncodedDataPromise, mimeType: file.type },
-  };
+// Helper: DeepSeek R1 often includes <think> tags. We need to strip them to get the clean response.
+const cleanResponse = (text: string): string => {
+    if (!text) return "";
+    // Remove <think>...</think> blocks
+    let cleaned = text.replace(/<think>[\s\S]*?<\/think>/g, '');
+    // Remove markdown code blocks if present (often used for JSON outputs)
+    cleaned = cleaned.replace(/^```(json)?\s*/, '').replace(/\s*```$/, '');
+    return cleaned.trim();
 };
 
+// Helper: Parse JSON from AI response, handling potential markdown wrapping
+const parseJSONResponse = (text: string) => {
+    const cleaned = cleanResponse(text);
+    try {
+        return JSON.parse(cleaned);
+    } catch (e) {
+        console.error("Failed to parse JSON from AI:", cleaned);
+        // Fallback: try to find JSON object if it's surrounded by other text
+        const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            try { return JSON.parse(jsonMatch[0]); } catch(e2) {}
+        }
+        throw new Error("AI returned invalid JSON format.");
+    }
+};
+
+// --- Helper to convert File to Text ---
+const fileToText = async (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve((e.target?.result as string) || "");
+        reader.onerror = (e) => reject(e);
+        reader.readAsText(file);
+    });
+};
+
+// --- Core API Call Helper ---
+const callDeepSeek = async (messages: any[], jsonMode = false): Promise<string> => {
+    if (!apiKey) throw new Error("AI Service Unavailable: API Key not configured.");
+
+    try {
+        const response = await fetch(API_ENDPOINT, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                model: MODEL_NAME,
+                messages: messages,
+                temperature: 0.6,
+                max_tokens: 4000,
+                stream: false,
+                // Some HF endpoints support response_format for JSON, but it's hit or miss.
+                // We rely on the system prompt for JSON structure.
+            })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            if (response.status === 503) {
+                throw new Error("Model is loading (503). Please try again in a few seconds.");
+            }
+            throw new Error(`DeepSeek API Error: ${response.status} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        return data.choices?.[0]?.message?.content || "";
+    } catch (error: any) {
+        console.error("DeepSeek Call Failed:", error);
+        throw new Error("Connection error.");
+    }
+};
 
 export interface ActivityIdea {
   title: string;
@@ -62,67 +115,50 @@ export interface ActivityIdea {
 }
 
 export const generateClubActivityIdea = async (): Promise<ActivityIdea> => {
-  if (!ai) {
-      throw new Error("AI Service Unavailable: API Key not configured.");
-  }
-
-  const model = "gemini-2.5-flash";
   const prompt = `
     You are an enthusiastic and creative patron for a high school ICT Club. 
     Generate ONE detailed and exciting activity idea for the club.
     It should be feasible for a school setting, educational, and engaging.
-    Topics can include coding, hardware, robotics, design, career talks, or tech trivia.
     
-    Return a JSON object with:
+    Return a VALID JSON object with:
     - title: A catchy name for the event.
     - description: A short, persuasive description of what will happen (2-3 sentences).
-    - location: A suggested typical school location (e.g., "Computer Lab", "School Hall", "Maker Space", "Online").
+    - location: A suggested typical school location.
+    
+    Example output format:
+    { "title": "...", "description": "...", "location": "..." }
   `;
 
   try {
-      const response = await ai.models.generateContent({
-        model,
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              title: { type: Type.STRING },
-              description: { type: Type.STRING },
-              location: { type: Type.STRING },
-            },
-            required: ["title", "description", "location"],
-          },
-        },
-      });
-
-      const text = response.text;
-      if (!text) throw new Error("No response from AI");
-
-      return JSON.parse(text) as ActivityIdea;
+      const text = await callDeepSeek([
+          { role: "system", content: "You are a helpful assistant that outputs strict JSON." }, 
+          { role: "user", content: prompt }
+      ], true);
+      return parseJSONResponse(text) as ActivityIdea;
   } catch (error) {
-      console.error("Gemini API Error:", error);
-      throw new Error("Failed to generate activity idea.");
+      console.error("Activity Gen Error:", error);
+      throw error;
   }
 };
 
 export const getAIChatResponse = async (history: { role: 'user' | 'model', parts: { text: string }[] }[], message: string) => {
-    if (!ai) {
-        return "I'm sorry, but I can't chat right now because my AI configuration is missing. Please contact the administrator to set the VITE_API_KEY.";
-    }
+    if (!apiKey) return "I'm sorry, I can't chat right now because my AI configuration is missing.";
 
     try {
-        const chat = ai.chats.create({
-            model: 'gemini-2.5-flash',
-            config: {
-                systemInstruction: "You are the helpful AI Assistant for the ICT Club. You help members with coding questions, project ideas, and club logistics. Be concise, encouraging, and tech-savvy."
-            },
-            history: history
-        });
+        // Convert format
+        const chatMessages = history.map(h => ({
+            role: h.role === 'model' ? 'assistant' : 'user',
+            content: h.parts[0]?.text || ""
+        }));
 
-        const response: GenerateContentResponse = await chat.sendMessage({ message });
-        return response.text;
+        const messages: any[] = [
+            { role: "system", content: "You are the helpful AI Assistant for the ICT Club. You help members with coding questions, project ideas, and club logistics. Be concise, encouraging, and tech-savvy." },
+            ...chatMessages,
+            { role: "user", content: message }
+        ];
+
+        const rawText = await callDeepSeek(messages);
+        return cleanResponse(rawText);
     } catch (error) {
         console.error("Chat Error:", error);
         return "I'm having trouble connecting to the server right now. Please try again later.";
@@ -134,33 +170,35 @@ export const getAiTutorResponse = async (
     message: string,
     clubContext: string = ''
 ) => {
-    if (!ai) {
-        return "I'm offline right now (API Key Missing).";
-    }
+    if (!apiKey) return "I'm offline right now (API Key Missing).";
 
     try {
-        const chat = ai.chats.create({
-            model: 'gemini-2.5-flash',
-            config: {
-                systemInstruction: `You are a friendly, patient, and wise AI Tutor for a high school ICT Club. 
-                Your goal is to TEACH, not to do the work for the students.
-                
-                REAL-TIME CLUB INFORMATION (Use this to answer questions about the club schedule, challenges, or news):
-                ${clubContext}
-                
-                CRITICAL RULES:
-                1. DO NOT write complete, functional code solutions for the user if they ask for homework help or challenge solutions.
-                2. Instead, provide hints, pseudo-code, explain concepts, or fix syntax errors in *their* code.
-                3. Be encouraging and use emojis.
-                4. If they ask about club activities, use the provided context.
-                5. Format code blocks with \`\`\`python ... \`\`\`.
-                `
-            },
-            history: history
-        });
+        const chatMessages = history.map(h => ({
+            role: h.role === 'model' ? 'assistant' : 'user',
+            content: h.parts[0]?.text || ""
+        }));
 
-        const response: GenerateContentResponse = await chat.sendMessage({ message });
-        return response.text;
+        const systemPrompt = `You are a friendly, patient, and wise AI Tutor for a high school ICT Club. 
+        Your goal is to TEACH, not to do the work for the students.
+        
+        REAL-TIME CLUB INFORMATION:
+        ${clubContext}
+        
+        CRITICAL RULES:
+        1. DO NOT write complete code solutions for homework. Provide hints, pseudo-code, or explain concepts.
+        2. Fix syntax errors in *their* code if asked, but explain the fix.
+        3. Be encouraging and use emojis.
+        4. If asked about club activities, use the provided context.
+        `;
+
+        const messages: any[] = [
+            { role: "system", content: systemPrompt },
+            ...chatMessages,
+            { role: "user", content: message }
+        ];
+
+        const rawText = await callDeepSeek(messages);
+        return cleanResponse(rawText);
     } catch (error) {
         console.error("Tutor Error:", error);
         return "I'm having trouble thinking right now. Ask me again in a moment!";
@@ -168,156 +206,83 @@ export const getAiTutorResponse = async (
 };
 
 export const analyzeChallengeSubmission = async (challengeTitle: string, code: string) => {
-    if (!ai) {
-        throw new Error("API Key Missing");
-    }
-
-    const model = "gemini-2.5-flash";
     const prompt = `
-      You are a friendly but rigorous Code Mentor for a high school ICT Club.
-      Review the following Python submission for the challenge: "${challengeTitle}".
+      You are a friendly but rigorous Code Mentor. Review this Python submission for: "${challengeTitle}".
       
       Student Code:
       \`\`\`python
       ${code}
       \`\`\`
       
-      Provide a structured review in Markdown format:
-      
-      **🧐 Analysis**
-      - State clearly if the code solves the problem (Yes/No/Partial).
-      - Briefly explain the logic used or identify the main bug.
-      
-      **🚀 Style & Efficiency**
-      - Comment on variable naming, readability, or indentation.
-      - Mention time complexity if relevant (keep it simple).
-      - Suggest Pythonic improvements (e.g., "Use a list comprehension here").
-      
-      **💡 Better Approach**
-      - Provide a short, optimized code snippet demonstrating a better way to solve part of the problem.
-      \`\`\`python
-      # Example improvement
-      \`\`\`
-      
-      **🌟 Verdict**
-      - A short, encouraging closing sentence to motivate the student.
-      
-      Keep the tone constructive, helpful, and fun.
+      Provide a structured review in Markdown:
+      **🧐 Analysis**: Does it solve the problem? Logic check.
+      **🚀 Style & Efficiency**: Comments on naming, complexity, pythonic style.
+      **💡 Better Approach**: A short, optimized code snippet example.
+      **🌟 Verdict**: A closing motivating sentence.
     `;
 
     try {
-        const response = await ai.models.generateContent({
-            model,
-            contents: prompt,
-        });
-        return response.text || "Could not analyze submission.";
+        const text = await callDeepSeek([{ role: "user", content: prompt }]);
+        return cleanResponse(text);
     } catch (error) {
         console.error("Analysis Error:", error);
-        throw new Error("Failed to analyze submission.");
+        throw error;
     }
 };
 
 export const generateLearningRoadmap = async (topic: string, skillLevel: string, suggestedTopics?: string) => {
-    if (!ai) throw new Error("API Key Missing");
-
-    const model = "gemini-2.5-flash";
     const prompt = `
-        Create a comprehensive learning roadmap with at least 10 milestones for "${topic}" suitable for a "${skillLevel}" student in an ICT Club.
-        Focus on specific, bite-sized concepts rather than broad overviews.
-        The goal is practical, hands-on learning.
-
-        If provided, try to incorporate these suggested topics where they fit logically:
-        "${suggestedTopics || 'Not provided'}"
+        Create a comprehensive learning roadmap with at least 10 milestones for "${topic}" suitable for a "${skillLevel}" student.
         
-        For each milestone, provide:
-        - title: A clear step name.
-        - description: What they will learn (keep it concise).
-        - duration: Estimated time (e.g., "3 days").
-        - resources: An array of 3-5 specific learning resources (Tutorials, Docs, or Video titles).
-          - type: 'VIDEO' | 'ARTICLE' | 'DOCS' | 'PRACTICE'
-          - title: Name of the resource.
-          - url: A valid-looking URL (e.g. youtube.com/... or docs.python.org/...)
+        If provided, incorporate: "${suggestedTopics || 'Not provided'}".
+        
+        Return a VALID JSON object with a "milestones" array.
+        Each item must have:
+        - title: Step name.
+        - description: Concise learning goal.
+        - duration: e.g. "3 days".
+        - resources: Array of 3-5 items with { type: "VIDEO"|"ARTICLE"|"DOCS"|"PRACTICE", title: "...", url: "valid-looking url" }.
+        
+        JSON Format Example:
+        { "milestones": [ { "title": "...", "description": "...", "duration": "...", "resources": [...] } ] }
     `;
 
     try {
-        const response = await ai.models.generateContent({
-            model,
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        milestones: {
-                            type: Type.ARRAY,
-                            items: {
-                                type: Type.OBJECT,
-                                properties: {
-                                    title: { type: Type.STRING },
-                                    description: { type: Type.STRING },
-                                    duration: { type: Type.STRING },
-                                    resources: {
-                                        type: Type.ARRAY,
-                                        items: {
-                                            type: Type.OBJECT,
-                                            properties: {
-                                                type: { type: Type.STRING },
-                                                title: { type: Type.STRING },
-                                                url: { type: Type.STRING }
-                                            },
-                                            required: ['type', 'title', 'url']
-                                        }
-                                    }
-                                },
-                                required: ['title', 'description', 'duration', 'resources']
-                            }
-                        }
-                    },
-                    required: ['milestones']
-                }
-            }
-        });
-
-        const text = response.text;
-        if (!text) throw new Error("No response");
-        return JSON.parse(text).milestones;
+        const text = await callDeepSeek([
+            { role: "system", content: "You output strict JSON only. Do not include markdown formatting or <think> tags in the final output." }, 
+            { role: "user", content: prompt }
+        ], true);
+        
+        const parsed = parseJSONResponse(text);
+        return parsed.milestones;
     } catch (error) {
-        console.error("Roadmap Generation Error:", error);
-        throw new Error("Failed to generate roadmap.");
+        console.error("Roadmap Error:", error);
+        throw error;
     }
 };
 
 export const generateDocumentSummary = async (file: File): Promise<string> => {
-    if (!ai) {
-      throw new Error("AI Service Unavailable: API Key not configured.");
-    }
-    if (!file) {
-      throw new Error("No file provided for summary.");
-    }
-  
-    // Check if the file type is supported for this specific AI function
-    const supportedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
-    if (!supportedTypes.includes(file.type)) {
-        throw new Error(`File type ${file.type} is not supported for AI summary. Please use PDF, DOCX, or TXT.`);
-    }
-  
-    const model = "gemini-2.5-flash"; // Multimodal model
-    const prompt = "Summarize this document in a concise, engaging paragraph (2-4 sentences) suitable for a resource library. Capture the main purpose and key topics.";
-  
+    // DeepSeek R1 via HF Inference is text-only. We try to read the file as text.
+    let fileContent = "";
     try {
-      const filePart = await fileToGenerativePart(file);
-      const response = await ai.models.generateContent({
-          model,
-          contents: { parts: [filePart, { text: prompt }] },
-      });
-      
-      return response.text || "Could not generate a summary from the document.";
-  
-    } catch (error) {
-      console.error("Gemini Summary Error:", error);
-      throw new Error("Failed to generate document summary with AI.");
+        fileContent = await fileToText(file);
+    } catch (e) {
+        throw new Error("Could not read file. Please ensure it is a text-based file (code, txt, md).");
     }
-  };
+
+    // Truncate if too long (simple safety check)
+    if (fileContent.length > 20000) fileContent = fileContent.substring(0, 20000) + "...[Truncated]";
+
+    const prompt = `Summarize the following document content in a concise, engaging paragraph (2-4 sentences) for a resource library:\n\n${fileContent}`;
+
+    try {
+        const text = await callDeepSeek([{ role: "user", content: prompt }]);
+        return cleanResponse(text);
+    } catch (error) {
+        console.error("Summary Error:", error);
+        throw error;
+    }
+};
 
 export type QuizQuestionType = 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'SHORT_ANSWER';
 
@@ -325,215 +290,110 @@ export interface QuizQuestion {
     id: number;
     type: QuizQuestionType;
     question: string;
-    options?: string[]; // For MC and TF (TF options will be generated by AI or fixed by frontend)
-    correctAnswer: string; // The correct option text or a reference answer for SA
+    options?: string[]; 
+    correctAnswer: string; 
 }
 
 export const generateMilestoneQuiz = async (milestoneTitle: string, milestoneDescription: string): Promise<QuizQuestion[]> => {
-    if (!ai) throw new Error("API Key Missing");
-
-    const model = "gemini-2.5-flash";
     const prompt = `
-        Generate a comprehensive 10-question quiz to test a student's understanding of:
-        Topic: ${milestoneTitle}
-        Details: ${milestoneDescription}
+        Generate a 10-question quiz on: ${milestoneTitle} - ${milestoneDescription}.
+        Mix MULTIPLE_CHOICE, TRUE_FALSE, SHORT_ANSWER.
         
-        The quiz should contain a balanced mix of the following question types:
-        1. "MULTIPLE_CHOICE": A standard multiple choice question with 4 options.
-        2. "TRUE_FALSE": A statement that is either True or False.
-        3. "SHORT_ANSWER": A conceptual question requiring a brief explanation (1-2 sentences).
+        Return VALID JSON with a 'questions' array.
+        Each question:
+        - type: "MULTIPLE_CHOICE" | "TRUE_FALSE" | "SHORT_ANSWER"
+        - question: text
+        - options: string array (for MC/TF)
+        - correctAnswer: string
         
-        Return a JSON object with a 'questions' array containing exactly 10 items.
-        Each question object should have:
-        - type: One of "MULTIPLE_CHOICE", "TRUE_FALSE", "SHORT_ANSWER"
-        - question: The question text.
-        - options: Array of strings (Required for MC, use ["True", "False"] for TF, empty for SA).
-        - correctAnswer: The correct string value from options (for MC/TF) or a brief model answer (for SA).
+        Example JSON:
+        { "questions": [ { "type": "TRUE_FALSE", "question": "...", "options": ["True", "False"], "correctAnswer": "True" } ] }
     `;
 
     try {
-        const response = await ai.models.generateContent({
-            model,
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        questions: {
-                            type: Type.ARRAY,
-                            items: {
-                                type: Type.OBJECT,
-                                properties: {
-                                    type: { type: Type.STRING },
-                                    question: { type: Type.STRING },
-                                    options: {
-                                        type: Type.ARRAY,
-                                        items: { type: Type.STRING }
-                                    },
-                                    correctAnswer: { type: Type.STRING }
-                                },
-                                required: ["type", "question", "options", "correctAnswer"]
-                            }
-                        }
-                    },
-                    required: ["questions"]
-                }
-            }
-        });
+        const text = await callDeepSeek([
+            { role: "system", content: "You output strict JSON only." }, 
+            { role: "user", content: prompt }
+        ], true);
 
-        const text = response.text;
-        if (!text) throw new Error("No response");
-        
-        const parsed = JSON.parse(text);
+        const parsed = parseJSONResponse(text);
         return parsed.questions.map((q: any, index: number) => ({...q, id: index}));
     } catch (error) {
-        console.error("Quiz Generation Error:", error);
-        throw new Error("Failed to generate quiz.");
+        console.error("Quiz Error:", error);
+        throw error;
     }
 };
 
 export const evaluateShortAnswer = async (question: string, userAnswer: string, context: string): Promise<{ correct: boolean, feedback: string }> => {
-    if (!ai) throw new Error("API Key Missing");
-    
     const prompt = `
-        You are a teacher grading a student's answer.
+        Grade this student answer.
         Question: "${question}"
-        Model Answer / Context: "${context}"
+        Context/Correct Answer: "${context}"
         Student Answer: "${userAnswer}"
         
-        Is the student's answer factually correct based on the context? 
         Return JSON:
-        {
-            "correct": boolean,
-            "feedback": "A concise, encouraging 1-sentence explanation."
-        }
+        { "correct": boolean, "feedback": "1 sentence explanation" }
     `;
 
     try {
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        correct: { type: Type.BOOLEAN },
-                        feedback: { type: Type.STRING }
-                    },
-                    required: ["correct", "feedback"]
-                }
-            }
-        });
+        const text = await callDeepSeek([
+            { role: "system", content: "Output strict JSON only." }, 
+            { role: "user", content: prompt }
+        ], true);
         
-        const text = response.text;
-        if (!text) throw new Error("No response");
-        return JSON.parse(text);
+        return parseJSONResponse(text);
     } catch (error) {
-        console.error("Grading error:", error);
-        // Fallback for error
+        console.error("Grading Error:", error);
         return { correct: true, feedback: "Good effort! (Auto-passed due to connection error)" };
     }
 };
 
 export const gradeProjectSubmission = async (taskDescription: string, code: string): Promise<{ grade: number, feedback: string }> => {
-    if (!ai) throw new Error("API Key Missing");
-
     const prompt = `
-        You are an expert Computer Science teacher grading a student's code submission for a project task.
-        
-        Task Description: "${taskDescription}"
-        
-        Student's Python Code:
+        Grade this Python code submission for task: "${taskDescription}".
+        Code:
         \`\`\`python
         ${code}
         \`\`\`
         
-        Please evaluate the code based on:
-        1. Correctness (Does it solve the task?)
-        2. Code Style & Cleanliness
-        3. Efficiency
-        
-        Return a JSON object:
-        {
-            "grade": number, // An integer from 1 to 5 (1=Poor, 5=Excellent)
-            "feedback": "A short paragraph providing constructive feedback and encouraging the student."
-        }
+        Criteria: Correctness, Style, Efficiency.
+        Return JSON:
+        { "grade": number (1-5), "feedback": "Short constructive paragraph." }
     `;
 
     try {
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        grade: { type: Type.INTEGER },
-                        feedback: { type: Type.STRING }
-                    },
-                    required: ["grade", "feedback"]
-                }
-            }
-        });
+        const text = await callDeepSeek([
+            { role: "system", content: "Output strict JSON only." }, 
+            { role: "user", content: prompt }
+        ], true);
 
-        const text = response.text;
-        if (!text) throw new Error("No response");
-        return JSON.parse(text);
+        return parseJSONResponse(text);
     } catch (error) {
-        console.error("Auto-grading error:", error);
-        throw new Error("Failed to auto-grade submission.");
+        console.error("Auto-grading Error:", error);
+        throw error;
     }
 };
 
 export const getAIPlaygroundHint = async (code: string): Promise<string> => {
-    if (!ai) {
-        throw new Error("AI Service Unavailable: API Key not configured.");
-    }
-    
-    const model = "gemini-2.5-flash";
     const prompt = `
-        You are a helpful and patient Python code mentor for a high school student.
-        The student has requested a suggestion to improve their code.
-
-        Student's Code:
+        You are a Python code mentor. Analyze this code and identify ONE specific improvement (logic or pythonic style).
+        Student Code:
         \`\`\`python
         ${code}
         \`\`\`
-
-        YOUR TASK:
-        Analyze the student's code and identify ONE area for improvement. This could be a logic error, an inefficiency, or a non-Pythonic pattern.
-
-        CRITICAL RULES:
-        1.  **DO NOT** provide the full, corrected code. Your goal is to teach, not to do the work.
-        2.  Provide a short explanation of the concept for improvement.
-        3.  Then, provide a **short code snippet** that demonstrates the improved way to write a *part* of their code. This snippet should be a direct replacement for a line or a few lines in their existing code.
-        4.  Your response should focus on one specific improvement.
-        5.  Keep the tone encouraging, friendly, and helpful.
-        6.  Format your response in simple Markdown. The code snippet must be inside a \`\`\`python ... \`\`\` block.
-        7.  Do not just give comments about what to do. Show them a small piece of code.
-
-        Example of a good response:
-        "Great start! A more 'Pythonic' way to build a list is to use a list comprehension. It's more concise. Instead of your for loop, you could write something like this:
-
-        \`\`\`python
-        squares = [i**2 for i in range(10)]
-        \`\`\`
-
-        This does the same thing in one line. See if you can adapt that to your code!"
+        
+        Provide:
+        1. Short explanation.
+        2. A code snippet inside \`\`\`python ... \`\`\` showing the improvement.
+        Keep it encouraging.
     `;
 
     try {
-        const response = await ai.models.generateContent({
-            model,
-            contents: prompt,
-        });
-        return response.text || "I'm not sure how to help with that. Could you try explaining what you're stuck on?";
+        const text = await callDeepSeek([{ role: "user", content: prompt }]);
+        return cleanResponse(text);
     } catch (error) {
-        console.error("Gemini Hint Error:", error);
-        throw new Error("Failed to generate a hint from the AI.");
+        console.error("Hint Error:", error);
+        throw error;
     }
 };
 
@@ -544,50 +404,35 @@ export interface PythonTip {
 }
 
 export const generatePythonTip = async (): Promise<PythonTip> => {
-    if (!ai) throw new Error("API Key Missing");
-
-    const model = "gemini-2.5-flash";
     const prompt = `
-        Generate an interesting, intermediate-level Python programming tip, idiom, or "cool trick".
-        It should be something that helps write more "Pythonic" code.
+        Generate an intermediate Python tip using built-in features (no imports).
+        Focus on: List/Dict comprehensions, slicing, unpacking, f-strings, etc.
         
-        Focus primarily on built-in syntax features and tricks that **do not require imports**.
-        Examples: List/Dict/Set comprehensions, advanced slicing, zip, enumerate, argument unpacking (*args/**kwargs), f-strings, lambda functions, any/all, walrus operator, or generator expressions.
-        
-        Return a JSON object with:
-        - title: A short catchy title (e.g., "Mastering Enumerate").
-        - explanation: A brief (2-3 sentences) explanation of why it is useful.
-        - codeSnippet: A short, executable Python code example demonstrating the concept.
+        Return VALID JSON:
+        { 
+            "title": "Short Title", 
+            "explanation": "2-3 sentences why it's useful.", 
+            "codeSnippet": "Executable python example" 
+        }
     `;
 
     try {
-        const response = await ai.models.generateContent({
-            model,
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        title: { type: Type.STRING },
-                        explanation: { type: Type.STRING },
-                        codeSnippet: { type: Type.STRING }
-                    },
-                    required: ["title", "explanation", "codeSnippet"]
-                }
-            }
-        });
+        const text = await callDeepSeek([
+            { role: "system", content: "Output strict JSON only." }, 
+            { role: "user", content: prompt }
+        ], true);
 
-        const text = response.text;
-        if (!text) throw new Error("No response");
-        return JSON.parse(text) as PythonTip;
+        return parseJSONResponse(text) as PythonTip;
     } catch (error) {
-        console.error("Python Tip Error:", error);
-        // Fallback tip in case of API failure
-        return {
-            title: "Pythonic Swapping",
-            explanation: "Did you know you can swap variables in Python without a temporary variable? It's readable and efficient!",
-            codeSnippet: "a = 5\nb = 10\n\n# The Pythonic Way\na, b = b, a\n\nprint(f'a: {a}, b: {b}')"
-        };
+        console.error("Tip Error:", error);
+        // Provide a fallback but also re-throw the original error for better debugging
+        if (error instanceof Error && error.message === "Connection error.") {
+             return {
+                title: "Pythonic Swapping",
+                explanation: "Did you know you can swap variables in Python without a temporary variable? It's readable and efficient!",
+                codeSnippet: "a = 5\nb = 10\n\n# The Pythonic Way\na, b = b, a\n\nprint(f'a: {a}, b: {b}')"
+            };
+        }
+        throw error;
     }
 };
