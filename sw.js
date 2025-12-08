@@ -1,154 +1,162 @@
 // ============================
-// Service Worker: sw.js
+// Service Worker: sw.js v15 (React + TypeScript Edition)
 // ============================
 
-const CACHE_VERSION = 'v13'; // Increment this on each deploy
-const CACHE_NAME = `ict-club-hub-cache-${CACHE_VERSION}`;
-const DATA_CACHE_NAME = `ict-club-data-${CACHE_VERSION}`;
+const CACHE_VERSION = "v15";
+const CACHE_NAME = `ict-react-cache-${CACHE_VERSION}`;
+const DATA_CACHE_NAME = `ict-data-${CACHE_VERSION}`;
+const FONT_CACHE = `ict-fonts-${CACHE_VERSION}`;
 
-// Core assets to pre-cache (the app shell)
 const PRECACHE_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/favicon.svg'
+  "/",
+  "/index.html",
+  "/manifest.json",
+  "/favicon.svg"
 ];
 
-// Domains for CDN assets
-const STATIC_DOMAINS = [
-  'aistudiocdn.com',
-  'esm.sh',
-  'cdn.tailwindcss.com',
-  'fonts.googleapis.com',
-  'fonts.gstatic.com',
-  'api.dicebear.com',
-  'cdn.jsdelivr.net' // For pyodide
-];
+// Patterns for React build output
+const STATIC_PREFIXES = ["/static/js/", "/static/css/", "/static/media/"];
+const JS_CSS_EXT = /\.(?:js|css|mjs|map)$/i;
+const IMAGE_EXT = /\.(?:png|jpg|jpeg|webp|gif|svg)$/i;
+const FONT_EXT = /\.(?:woff2|woff|otf|ttf)$/i;
 
-// ----------------------------
-// Install: Pre-cache assets
-// ----------------------------
-self.addEventListener('install', (event) => {
+self.addEventListener("install", (event) => {
+  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return Promise.allSettled(
-        PRECACHE_ASSETS.map(asset => cache.add(asset).catch(err => console.warn(`Failed to cache ${asset}:`, err)))
-      );
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(PRECACHE_ASSETS);
     })
   );
-  self.skipWaiting(); // Activate new worker immediately
 });
 
-// ----------------------------
-// Activate: Cleanup old caches & notify clients
-// ----------------------------
-self.addEventListener('activate', (event) => {
+self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
       const keys = await caches.keys();
       await Promise.all(
-        keys.map(key => {
-          if (key !== CACHE_NAME && key !== DATA_CACHE_NAME) {
+        keys.map((key) => {
+          if (![CACHE_NAME, DATA_CACHE_NAME, FONT_CACHE].includes(key)) {
             return caches.delete(key);
           }
         })
       );
       await self.clients.claim();
-      const allClients = await self.clients.matchAll({ includeUncontrolled: true });
-      for (const client of allClients) {
-        client.postMessage({ type: 'SW_UPDATED' });
+      const clients = await self.clients.matchAll({
+        includeUncontrolled: true
+      });
+      for (const c of clients) {
+        c.postMessage({ type: "SW_UPDATED", version: CACHE_VERSION });
       }
     })()
   );
 });
 
-// ----------------------------
-// Fetch: Handle all requests
-// ----------------------------
-self.addEventListener('fetch', (event) => {
+self.addEventListener("fetch", (event) => {
   const req = event.request;
   const url = new URL(req.url);
 
-  if (!url.protocol.startsWith('http')) return;
+  if (!url.protocol.startsWith("http")) return;
 
-  // 1. Navigation: Network-first, fallback to /index.html from cache
-  if (req.mode === 'navigate') {
-    event.respondWith(
-      fetch(req)
-        .then(response => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(req, copy));
-          return response;
-        })
-        .catch(() => caches.match('/index.html'))
-    );
+  if (req.method !== "GET") {
+    event.respondWith(fetch(req));
     return;
   }
 
-  // 2. API Data (Supabase): Network-first, fallback to cache (for GET)
-  if (url.hostname.includes('supabase.co')) {
-    if (req.method !== 'GET') {
-      event.respondWith(fetch(req));
-      return;
-    }
-    event.respondWith(
-      fetch(req)
-        .then(networkResponse => {
-          if (networkResponse.ok) {
-            const clone = networkResponse.clone();
-            caches.open(DATA_CACHE_NAME).then(cache => cache.put(req, clone));
-          }
-          return networkResponse;
-        })
-        .catch(async () => {
-          // **FIXED**: Correctly open the data cache first, then match.
-          const dataCache = await caches.open(DATA_CACHE_NAME);
-          const cachedResponse = await dataCache.match(req);
-          return cachedResponse;
-        })
-    );
+  if (req.mode === "navigate") {
+    event.respondWith(networkFirstNavigation(req));
     return;
   }
 
-  // 3. Static CDN Assets: Cache-first, network fallback for robustness
-  if (STATIC_DOMAINS.some(domain => url.hostname.includes(domain))) {
-    event.respondWith(
-      caches.open(CACHE_NAME).then(cache => {
-        return cache.match(req).then(cachedResponse => {
-          // Return from cache if found
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-          // Otherwise, fetch from network, cache it, and return response
-          return fetch(req).then(networkResponse => {
-            if (networkResponse.ok) {
-              cache.put(req, networkResponse.clone());
-            }
-            return networkResponse;
-          });
-        });
-      })
-    );
+  if (url.hostname.includes("supabase.co")) {
+    event.respondWith(networkFirstData(req));
     return;
   }
 
-  // 4. Other assets: Cache-first fallback
-  event.respondWith(
-    caches.match(req).then(cachedResponse => {
-      return cachedResponse || fetch(req).then(networkResponse => {
-        if (req.method === 'GET' && networkResponse.ok) {
-          const clone = networkResponse.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(req, clone));
-        }
-        return networkResponse;
-      });
-    })
-  );
+  if (url.hostname.includes("fonts.googleapis.com")) {
+    event.respondWith(networkFirst(req, CACHE_NAME));
+    return;
+  }
+
+  if (url.hostname.includes("fonts.gstatic.com") || FONT_EXT.test(url.pathname)) {
+    event.respondWith(cacheFirst(req, FONT_CACHE));
+    return;
+  }
+
+  if (
+    JS_CSS_EXT.test(url.pathname) ||
+    STATIC_PREFIXES.some((p) => url.pathname.startsWith(p))
+  ) {
+    event.respondWith(cacheFirst(req, CACHE_NAME));
+    return;
+  }
+
+  if (IMAGE_EXT.test(url.pathname)) {
+    event.respondWith(staleWhileRevalidate(req, CACHE_NAME));
+    return;
+  }
+
+  event.respondWith(staleWhileRevalidate(req, CACHE_NAME));
 });
 
-// --- 5. Message Listener for client commands ---
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
+// Strategies below
+
+async function networkFirstNavigation(req) {
+  const cache = await caches.open(CACHE_NAME);
+  try {
+    const resp = await fetch(req);
+    if (resp.ok) {
+      cache.put("/index.html", resp.clone());
+    }
+    return resp;
+  } catch {
+    return cache.match("/index.html");
+  }
+}
+
+async function networkFirstData(req) {
+  const cache = await caches.open(DATA_CACHE_NAME);
+  try {
+    const resp = await fetch(req);
+    if (resp.ok) cache.put(req, resp.clone());
+    return resp;
+  } catch {
+    return cache.match(req);
+  }
+}
+
+async function networkFirst(req, cacheName) {
+  const cache = await caches.open(cacheName);
+  try {
+    const resp = await fetch(req);
+    if (resp.ok) cache.put(req, resp.clone());
+    return resp;
+  } catch {
+    return cache.match(req);
+  }
+}
+
+async function cacheFirst(req, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cached = await cache.match(req);
+  if (cached) return cached;
+
+  const resp = await fetch(req);
+  if (resp.ok) cache.put(req, resp.clone());
+  return resp;
+}
+
+async function staleWhileRevalidate(req, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cached = await cache.match(req);
+  const network = fetch(req).then((resp) => {
+    if (resp.ok) cache.put(req, resp.clone());
+    return resp;
+  });
+  return cached || network;
+}
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") {
     self.skipWaiting();
   }
 });
