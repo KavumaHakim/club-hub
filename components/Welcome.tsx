@@ -1,5 +1,7 @@
 
-import React, { useRef, useEffect, useState } from 'react';
+
+// FIX: Import useState from React to resolve usage error in HackerText component.
+import React, { useState, useRef, useEffect } from 'react';
 import { CalendarIcon } from './icons/CalendarIcon';
 import { ClipboardListIcon } from './icons/ClipboardListIcon';
 import { ChatBubbleIcon } from './icons/ChatBubbleIcon';
@@ -61,6 +63,7 @@ const HackerText: React.FC<{ text: string, className?: string }> = ({ text, clas
 };
 
 const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToSignUp, onNavigateToPatronLogin }) => {
+  
   return (
     <div className="bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen flex flex-col font-sans selection:bg-pink-500 selection:text-white overflow-x-hidden">
       <style>{`
@@ -198,39 +201,37 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToSignUp
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {/* Feature 1 */}
                 <AnimatedFeatureCard delay={0}>
-                  <div className="group p-8 h-full rounded-3xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 hover:border-pink-200 dark:hover:border-pink-900 hover:bg-white dark:hover:bg-gray-800 transition-all duration-500 hover:-translate-y-4 hover:shadow-2xl hover:shadow-pink-500/10">
-                      <div className="w-16 h-16 mb-8 rounded-2xl bg-pink-100 dark:bg-pink-900/20 flex items-center justify-center text-pink-600 dark:text-pink-400 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500">
-                          <CalendarIcon />
+                  <div className="group p-8 h-full rounded-3xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 hover:border-pink-200 dark:hover:border-pink-900 hover:bg-white dark:hover:bg-gray-800/80 transition-all duration-300 transform hover:-translate-y-2">
+                      <div className="w-16 h-16 bg-gradient-to-br from-pink-100 to-purple-100 dark:from-pink-900/50 dark:to-purple-900/50 rounded-2xl flex items-center justify-center text-pink-500 dark:text-pink-400 mb-6 group-hover:scale-110 group-hover:rotate-6 transition-transform">
+                          <CalendarIcon className="w-8 h-8"/>
                       </div>
-                      <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Activities</h3>
-                      <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                          Track workshops, hackathons, and meetings. RSVP instantly and keep your schedule synced.
+                      <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">Activities & Events</h3>
+                      <p className="text-gray-500 dark:text-gray-400">
+                          Stay in the loop with all upcoming workshops, competitions, and social gatherings. RSVP with a single click.
                       </p>
                   </div>
                 </AnimatedFeatureCard>
-                
                 {/* Feature 2 */}
                 <AnimatedFeatureCard delay={100}>
-                  <div className="group p-8 h-full rounded-3xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 hover:border-purple-200 dark:hover:border-purple-900 hover:bg-white dark:hover:bg-gray-800 transition-all duration-500 hover:-translate-y-4 hover:shadow-2xl hover:shadow-purple-500/10">
-                      <div className="w-16 h-16 mb-8 rounded-2xl bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 dark:text-purple-400 group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-500">
+                  <div className="group p-8 h-full rounded-3xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 hover:border-pink-200 dark:hover:border-pink-900 hover:bg-white dark:hover:bg-gray-800/80 transition-all duration-300 transform hover:-translate-y-2">
+                      <div className="w-16 h-16 bg-gradient-to-br from-pink-100 to-purple-100 dark:from-pink-900/50 dark:to-purple-900/50 rounded-2xl flex items-center justify-center text-pink-500 dark:text-pink-400 mb-6 group-hover:scale-110 group-hover:rotate-6 transition-transform">
                           <ClipboardListIcon />
                       </div>
-                      <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Projects</h3>
-                      <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                          Collaborate on a Kanban board. Manage tasks, assign roles, and ship projects faster.
+                      <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">Project Boards</h3>
+                      <p className="text-gray-500 dark:text-gray-400">
+                          Collaborate on club projects using Kanban-style boards. Track tasks, assign members, and monitor progress.
                       </p>
                   </div>
                 </AnimatedFeatureCard>
-                
                 {/* Feature 3 */}
                 <AnimatedFeatureCard delay={200}>
-                  <div className="group p-8 h-full rounded-3xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 hover:border-indigo-200 dark:hover:border-indigo-900 hover:bg-white dark:hover:bg-gray-800 transition-all duration-500 hover:-translate-y-4 hover:shadow-2xl hover:shadow-indigo-500/10">
-                      <div className="w-16 h-16 mb-8 rounded-2xl bg-indigo-100 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500">
+                  <div className="group p-8 h-full rounded-3xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 hover:border-pink-200 dark:hover:border-pink-900 hover:bg-white dark:hover:bg-gray-800/80 transition-all duration-300 transform hover:-translate-y-2">
+                      <div className="w-16 h-16 bg-gradient-to-br from-pink-100 to-purple-100 dark:from-pink-900/50 dark:to-purple-900/50 rounded-2xl flex items-center justify-center text-pink-500 dark:text-pink-400 mb-6 group-hover:scale-110 group-hover:rotate-6 transition-transform">
                           <ChatBubbleIcon />
                       </div>
-                      <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Community</h3>
-                      <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                          Engage in real-time discussions, share resources, and ask for help from peers.
+                      <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">Real-time Chat</h3>
+                      <p className="text-gray-500 dark:text-gray-400">
+                          Communicate with members, create group chats for projects, and get help from the AI Tutor.
                       </p>
                   </div>
                 </AnimatedFeatureCard>
@@ -238,52 +239,9 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToSignUp
         </div>
       </section>
       
-      {/* CTA Section at bottom */}
-      <section className="py-32 bg-gray-50 dark:bg-gray-950 relative overflow-hidden">
-        {/* Moving grid background again for consistency */}
-        <div className="absolute inset-0 z-0 opacity-10 overflow-hidden">
-             <div className="absolute inset-0 animate-move-grid" 
-                style={{ 
-                    backgroundImage: 'linear-gradient(rgba(128, 128, 128, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(128, 128, 128, 0.2) 1px, transparent 1px)', 
-                    backgroundSize: '40px 40px',
-                    height: '200%'
-                }}>
-            </div>
-        </div>
-
-        <div className="container mx-auto px-6 text-center max-w-4xl relative z-10">
-            <div className="p-12 md:p-16 rounded-[2.5rem] bg-gradient-to-b from-gray-900 to-black dark:from-gray-800 dark:to-gray-900 text-white shadow-2xl overflow-hidden relative border border-gray-800">
-                
-                {/* Glowing orbs */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-pink-600/30 rounded-full blur-[120px] pointer-events-none animate-pulse"></div>
-                
-                <div className="relative z-10">
-                    <h2 className="text-4xl md:text-6xl font-black mb-8 tracking-tight">Ready to join the club?</h2>
-                    <p className="mb-12 text-xl text-gray-300 max-w-2xl mx-auto font-light">
-                        Start your journey today. Become a part of the most innovative student community in Naggalama.
-                    </p>
-                    <button
-                        onClick={onNavigateToSignUp}
-                        className="px-12 py-5 text-xl font-bold text-gray-900 bg-white rounded-2xl shadow-lg hover:bg-gray-50 hover:scale-105 transition-all duration-300 shine-effect"
-                    >
-                        Get Started Now
-                    </button>
-                </div>
-            </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="py-10 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 text-center relative z-10">
-        <div className="container mx-auto px-6">
-            <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-2">&copy; {new Date().getFullYear()} ICT Club Naggalama.</p>
-            <p className="text-xs text-gray-400 dark:text-gray-600 flex items-center justify-center gap-1">
-                Made with <span className="text-pink-500 animate-pulse">♥</span> and Code
-            </p>
-        </div>
-      </footer>
     </div>
   );
 };
 
+// FIX: Add default export to allow the component to be imported in App.tsx.
 export default Welcome;
