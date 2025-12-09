@@ -1,5 +1,3 @@
-
-
 // FIX: Import useState from React to resolve usage error in HackerText component.
 import React, { useState, useRef, useEffect } from 'react';
 import { CalendarIcon } from './icons/CalendarIcon';
@@ -239,6 +237,12 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToSignUp
         </div>
       </section>
       
+      {/* Footer */}
+      <footer className="bg-white dark:bg-gray-900 py-6 text-center border-t border-gray-200 dark:border-gray-700 relative z-10">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+            &copy; {new Date().getFullYear()} ICT Club Hub. Designed & Developed by HAKIM.
+        </p>
+      </footer>
     </div>
   );
 };
