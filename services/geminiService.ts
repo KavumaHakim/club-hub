@@ -397,8 +397,9 @@ export interface PythonTip {
 
 export const generatePythonTip = async (): Promise<PythonTip> => {
     const prompt = `
-        Generate an intermediate Python tip using built-in features (no imports).
-        Focus on: List/Dict comprehensions, slicing, unpacking, f-strings, etc.
+        Generate an interesting Python tip.
+        You can use built-in features OR popular third-party modules (like pandas, numpy, requests, itertools, collections, etc.).
+        If using a module, ensure imports are included.
         
         Return VALID JSON:
         { 
