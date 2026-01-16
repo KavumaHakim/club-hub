@@ -121,7 +121,7 @@ export const CodeRunnerModal: React.FC<CodeRunnerModalProps> = ({ isOpen, onClos
 
   useEffect(() => {
     if (isOpen) {
-        // Basic detection: if it contains 'import ' or 'def ' it's likely python, else check for typical JS patterns
+        // Simple heuristic to detect language
         const isLikelyPython = /import\s+|def\s+|print\s*\(/.test(code);
         setLanguage(isLikelyPython ? 'python' : 'javascript');
 
@@ -158,12 +158,6 @@ export const CodeRunnerModal: React.FC<CodeRunnerModalProps> = ({ isOpen, onClos
         completionProvidersRef.current = [];
     };
   }, [isOpen, code]);
-
-  useEffect(() => {
-    return () => {
-        completionProvidersRef.current.forEach(p => p.dispose());
-    };
-  }, []);
 
   const handleEditorDidMount = (editor: any, monaco: any) => {
       editor.updateOptions({
@@ -362,106 +356,114 @@ asyncio.sleep = custom_sleep_async
   if (!isOpen) return null;
 
   return (
-    <>
-        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-5xl w-full h-[80vh] relative border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden animate-fade-in-up">
-            <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
-                <div className="flex items-center gap-3">
-                    <div className="flex bg-gray-200 dark:bg-gray-700 p-1 rounded-lg">
-                        <button onClick={() => setLanguage('python')} className={`px-2 py-0.5 text-xs font-bold rounded ${language === 'python' ? 'bg-pink-500 text-white' : 'text-gray-500'}`}>PY</button>
-                        <button onClick={() => setLanguage('javascript')} className={`px-2 py-0.5 text-xs font-bold rounded ${language === 'javascript' ? 'bg-yellow-500 text-white' : 'text-gray-500'}`}>JS</button>
-                    </div>
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white truncate">
-                        {title}
-                    </h3>
-                </div>
-                <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full p-1 transition-colors">
-                    <XIcon />
-                </button>
-            </div>
+    <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-5xl w-full h-[80vh] relative border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden animate-fade-in-up">
+          <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+              <div className="flex items-center gap-3">
+                  <div className="flex bg-gray-200 dark:bg-gray-700 p-1 rounded-lg">
+                      <button 
+                          onClick={() => setLanguage('python')} 
+                          className={`px-2 py-0.5 text-xs font-bold rounded transition-colors ${language === 'python' ? 'bg-pink-500 text-white' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                      >
+                          PY
+                      </button>
+                      <button 
+                          onClick={() => setLanguage('javascript')} 
+                          className={`px-2 py-0.5 text-xs font-bold rounded transition-colors ${language === 'javascript' ? 'bg-yellow-500 text-white' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                      >
+                          JS
+                      </button>
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white truncate">
+                      {title}
+                  </h3>
+              </div>
+              <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full p-1 transition-colors">
+                  <XIcon />
+              </button>
+          </div>
 
-            <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-                <div className="flex-1 border-r border-gray-200 dark:border-gray-800 overflow-hidden relative">
-                    <Editor
-                        height="100%"
-                        language={language}
-                        theme={editorTheme}
-                        value={activeCode}
-                        onChange={(value) => setActiveCode(value || '')}
-                        onMount={handleEditorDidMount}
-                        options={{
-                            readOnly: false,
-                            minimap: { enabled: false },
-                            fontSize: 14,
-                            padding: { top: 16 },
-                            scrollBeyondLastLine: false,
-                            automaticLayout: true,
-                            renderLineHighlight: 'all',
-                            contextmenu: true,
-                        }}
-                        loading={<div className="flex items-center justify-center h-full text-gray-500 text-sm">Loading code...</div>}
-                    />
-                </div>
+          <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+              <div className="flex-1 border-r border-gray-200 dark:border-gray-800 overflow-hidden relative">
+                  <Editor
+                      height="100%"
+                      language={language}
+                      theme={editorTheme}
+                      value={activeCode}
+                      onChange={(value) => setActiveCode(value || '')}
+                      onMount={handleEditorDidMount}
+                      options={{
+                          readOnly: false,
+                          minimap: { enabled: false },
+                          fontSize: 14,
+                          padding: { top: 16 },
+                          scrollBeyondLastLine: false,
+                          automaticLayout: true,
+                          renderLineHighlight: 'all',
+                          contextmenu: true,
+                      }}
+                      loading={<div className="flex items-center justify-center h-full text-gray-500 text-sm">Loading code...</div>}
+                  />
+              </div>
 
-                <div 
-                    ref={outputContainerRef}
-                    className="flex-1 bg-gray-900 dark:bg-black text-gray-300 font-mono text-xs md:text-sm p-4 overflow-y-auto flex flex-col shadow-inner"
-                    onClick={() => {
-                        if (isWaitingForInput && consoleInputRef.current) {
-                            consoleInputRef.current.focus();
-                        }
-                    }}
-                >
-                    <div className="flex-1">
-                        {output.length === 0 && !isExecuting && (
-                            <div className="text-gray-500 italic">Click Run to execute...</div>
-                        )}
-                        {output.map((line, i) => (
-                            <div key={i} className="mb-1 whitespace-pre-wrap break-all leading-relaxed">
-                                {line.type === 'log' ? (
-                                    <SyntaxHighlightedText text={line.content} />
-                                ) : (
-                                    <span className="text-red-400 font-medium">{line.content}</span>
-                                )}
-                            </div>
-                        ))}
-                        
-                        {isWaitingForInput && (
-                            <div className="flex items-center text-gray-300 leading-relaxed mt-1">
-                                <span className="whitespace-pre-wrap">{inputPrompt}</span>
-                                <input
-                                    ref={consoleInputRef}
-                                    value={consoleInput}
-                                    onChange={e => setConsoleInput(e.target.value)}
-                                    onKeyDown={handleConsoleInputEnter}
-                                    className="flex-1 bg-transparent border-none outline-none text-green-400 font-bold ml-1 min-w-[50px]"
-                                    autoFocus
-                                    autoComplete="off"
-                                    spellCheck="false"
-                                />
-                            </div>
-                        )}
+              <div 
+                  ref={outputContainerRef}
+                  className="flex-1 bg-gray-900 dark:bg-black text-gray-300 font-mono text-xs md:text-sm p-4 overflow-y-auto flex flex-col shadow-inner"
+                  onClick={() => {
+                      if (isWaitingForInput && consoleInputRef.current) {
+                          consoleInputRef.current.focus();
+                      }
+                  }}
+              >
+                  <div className="flex-1">
+                      {output.length === 0 && !isExecuting && (
+                          <div className="text-gray-500 italic">Click Run to execute...</div>
+                      )}
+                      {output.map((line, i) => (
+                          <div key={i} className="mb-1 whitespace-pre-wrap break-all leading-relaxed">
+                              {line.type === 'log' ? (
+                                  <SyntaxHighlightedText text={line.content} />
+                              ) : (
+                                  <span className="text-red-400 font-medium">{line.content}</span>
+                              )}
+                          </div>
+                      ))}
+                      
+                      {isWaitingForInput && (
+                          <div className="flex items-center text-gray-300 leading-relaxed mt-1">
+                              <span className="whitespace-pre-wrap">{inputPrompt}</span>
+                              <input
+                                  ref={consoleInputRef}
+                                  value={consoleInput}
+                                  onChange={e => setConsoleInput(e.target.value)}
+                                  onKeyDown={handleConsoleInputEnter}
+                                  className="flex-1 bg-transparent border-none outline-none text-green-400 font-bold ml-1 min-w-[50px]"
+                                  autoFocus
+                                  autoComplete="off"
+                                  spellCheck="false"
+                              />
+                          </div>
+                      )}
 
-                        {isExecuting && !isWaitingForInput && <div className="animate-pulse mt-2 text-green-500">_</div>}
-                    </div>
-                </div>
-            </div>
+                      {isExecuting && !isWaitingForInput && <div className="animate-pulse mt-2 text-green-500">_</div>}
+                  </div>
+              </div>
+          </div>
 
-            <div className="p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex justify-end">
-                <button 
-                    onClick={handleRunCode}
-                    disabled={isExecuting || (language === 'python' && isLoadingPyodide)}
-                    className="flex items-center gap-2 px-6 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-pink-500/20 transition-all"
-                >
-                    {language === 'python' && isLoadingPyodide ? 'Loading Engine...' : isExecuting ? 'Running...' : (
-                        <>
-                            <PlayIcon /> Run Code
-                        </>
-                    )}
-                </button>
-            </div>
-        </div>
-        </div>
-    </>
+          <div className="p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex justify-end">
+              <button 
+                  onClick={handleRunCode}
+                  disabled={isExecuting || (language === 'python' && isLoadingPyodide)}
+                  className="flex items-center gap-2 px-6 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-pink-500/20 transition-all"
+              >
+                  {language === 'python' && isLoadingPyodide ? 'Loading Engine...' : isExecuting ? 'Running...' : (
+                      <>
+                          <PlayIcon /> Run Code
+                      </>
+                  )}
+              </button>
+          </div>
+      </div>
+    </div>
   );
 };

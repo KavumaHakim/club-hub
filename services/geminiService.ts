@@ -201,16 +201,16 @@ export const getAiTutorResponse = async (
 
 export const analyzeChallengeSubmission = async (challengeTitle: string, code: string) => {
     const prompt = `
-      You are a friendly but rigorous Code Mentor. Review this Python submission for: "${challengeTitle}".
+      You are a friendly but rigorous Code Mentor. Review this code submission for: "${challengeTitle}".
       
       Student Code:
-      \`\`\`python
+      \`\`\`
       ${code}
       \`\`\`
       
       Provide a structured review in Markdown:
       **🧐 Analysis**: Does it solve the problem? Logic check.
-      **🚀 Style & Efficiency**: Comments on naming, complexity, pythonic style.
+      **🚀 Style & Efficiency**: Comments on naming, complexity, and language-specific best practices.
       **💡 Better Approach**: A short, optimized code snippet example.
       **🌟 Verdict**: A closing motivating sentence.
     `;
@@ -341,16 +341,20 @@ export const evaluateShortAnswer = async (question: string, userAnswer: string, 
 };
 
 export const gradeProjectSubmission = async (taskDescription: string, code: string): Promise<{ grade: number, feedback: string }> => {
+    // Detect language
+    const isPython = /import\s+|def\s+|print\s*\(/.test(code);
+    const language = isPython ? 'Python' : 'JavaScript';
+
     const prompt = `
-        Grade this Python code submission for task: "${taskDescription}".
+        Grade this ${language} code submission for task: "${taskDescription}".
         Code:
-        \`\`\`python
+        \`\`\`${language.toLowerCase()}
         ${code}
         \`\`\`
         
         Criteria: Correctness, Style, Efficiency.
         Return JSON:
-        { "grade": number (1-5), "feedback": "Short constructive paragraph." }
+        { "grade": number (1-5), "feedback": "Short constructive paragraph tailored to ${language} best practices." }
     `;
 
     try {
@@ -368,14 +372,14 @@ export const gradeProjectSubmission = async (taskDescription: string, code: stri
 
 export const getAIPlaygroundHint = async (code: string, language: string = 'python'): Promise<string> => {
     const prompt = `
-        You are a ${language === 'python' ? 'Python' : 'JavaScript'} code mentor. Analyze this code and identify ONE specific improvement (logic, readability, or language-specific best practices).
+        You are a ${language === 'python' ? 'Python' : 'JavaScript'} code mentor. Analyze this code and identify ONE specific improvement (logic, readability, or ${language}-specific best practices).
         Student Code:
         \`\`\`${language}
         ${code}
         \`\`\`
         
         Provide:
-        1. Short explanation of the improvement.
+        1. Short explanation of the improvement (referencing ${language} concepts).
         2. A code snippet inside \`\`\`${language} ... \`\`\` showing the improvement.
         Keep it encouraging and helpful.
     `;
