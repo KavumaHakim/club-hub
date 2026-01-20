@@ -41,7 +41,7 @@ interface ScriptFile {
 
 type Language = 'python' | 'javascript';
 
-const DEFAULT_PYTHON = `# 🐍 Simple Python Example
+const DEFAULT_PYTHON = `#  A Python Example
 name = "ICT Club Member"
 print(f"Hello, {name}!")
 
@@ -59,13 +59,13 @@ def add_numbers(a, b):
 result = add_numbers(5, 10)
 print(f"5 + 10 = {result}")`;
 
-const DEFAULT_JS = `// 🚀 Simple JavaScript Example
+const DEFAULT_JS = `//  A JavaScript Example
 const clubName = "ICT Club Naggalama";
 console.log("Welcome to " + clubName);
 
 // Objects and Arrays
 const member = {
-  name: "Alex",
+  name: "Emily",
   xp: 150,
   skills: ["Coding", "Design"]
 };
