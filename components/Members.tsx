@@ -33,8 +33,20 @@ const Members: React.FC<MembersProps> = ({ currentUser }) => {
 
     const onConfirmDelete = async () => {
         if (!userToDelete) return;
-        await handleAction(() => api.deleteUser(userToDelete.uid), `Member ${userToDelete.name} removed.`);
-        setUserToDelete(null);
+        
+        try {
+            // Explicitly call the API delete service
+            await api.deleteUser(userToDelete.uid);
+            // Refresh the data context
+            await fetchUsers();
+            showToast(`User ${userToDelete.name} has been removed.`, "success");
+        } catch (error: any) {
+            console.error("Deletion failed:", error);
+            // Provide a very specific toast message for constraint violations
+            showToast(error.message || "Permissions denied or database error", "error");
+        } finally {
+            setUserToDelete(null);
+        }
     };
 
     const onUpdateUserRole = (uid: string, role: 'MEMBER' | 'PATRON') => 
