@@ -8,29 +8,40 @@ import { ArrowDownCircleIcon } from './icons/ArrowDownCircleIcon';
 import { CheckIcon } from './icons/CheckIcon';
 import { SearchIcon } from './icons/SearchIcon';
 import { useData } from '../DataContext';
+import ConfirmationModal from './ConfirmationModal';
 
 interface MembersProps {
     currentUser: User;
 }
 
 const Members: React.FC<MembersProps> = ({ currentUser }) => {
-    const { allUsers, isLoadingUsers, allUsersError, fetchUsers, onlineUsers } = useData();
+    const { allUsers, isLoadingUsers, allUsersError, fetchUsers, onlineUsers, showToast } = useData();
     const [activeTab, setActiveTab] = useState<'active' | 'pending'>('active');
     const [searchTerm, setSearchTerm] = useState('');
+    const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
-    const handleAction = async (action: () => Promise<any>) => {
+    const handleAction = async (action: () => Promise<any>, successMsg: string) => {
         try {
             await action();
             await fetchUsers(); // Refetch from context after any action
+            showToast(successMsg, "success");
         } catch (error: any) {
             console.error("Failed to perform user action:", error);
-            alert(error.message || "An error occurred. Please try again.");
+            showToast(error.message || "An error occurred. Please try again.", "error");
         }
     };
 
-    const onDeleteUser = (uid: string) => handleAction(() => api.deleteUser(uid));
-    const onUpdateUserRole = (uid: string, role: 'MEMBER' | 'PATRON') => handleAction(() => api.updateUser(uid, { role }));
-    const onApproveUser = (uid: string) => handleAction(() => api.approveMember(uid));
+    const onConfirmDelete = async () => {
+        if (!userToDelete) return;
+        await handleAction(() => api.deleteUser(userToDelete.uid), `Member ${userToDelete.name} removed.`);
+        setUserToDelete(null);
+    };
+
+    const onUpdateUserRole = (uid: string, role: 'MEMBER' | 'PATRON') => 
+        handleAction(() => api.updateUser(uid, { role }), `Role updated to ${role}.`);
+    
+    const onApproveUser = (uid: string) => 
+        handleAction(() => api.approveMember(uid), "Member approved successfully.");
     
     if (isLoadingUsers) {
         return <div className="text-center p-8 text-gray-500 dark:text-gray-400">Loading members...</div>;
@@ -204,7 +215,7 @@ const Members: React.FC<MembersProps> = ({ currentUser }) => {
                                                 </button>
                                             )}
                                             <button 
-                                                onClick={() => onDeleteUser(user.uid)}
+                                                onClick={() => setUserToDelete(user)}
                                                 className={`p-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${activeTab === 'pending' ? 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20' : 'text-gray-500 hover:text-red-600 hover:bg-red-100 dark:hover:bg-red-900/50'}`}
                                                 aria-label={`Delete ${user.name}`}
                                                 title={activeTab === 'pending' ? "Reject Request" : "Remove User"}
@@ -220,6 +231,16 @@ const Members: React.FC<MembersProps> = ({ currentUser }) => {
                     </table>
                 )}
             </div>
+
+            <ConfirmationModal 
+                isOpen={!!userToDelete}
+                onClose={() => setUserToDelete(null)}
+                onConfirm={onConfirmDelete}
+                title={activeTab === 'pending' ? "Reject Request" : "Remove Member"}
+                message={`Are you sure you want to remove ${userToDelete?.name}? This action cannot be undone.`}
+                confirmText={activeTab === 'pending' ? "Reject" : "Remove"}
+                isDangerous
+            />
         </div>
     );
 };
