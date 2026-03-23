@@ -78,7 +78,10 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
     isLoadingActivities, 
     attendanceError,
     activitiesError,
-    fetchAttendance 
+    fetchAttendance,
+    fetchActivities,
+    allUsers,
+    isLoadingUsers
   } = useData();
   
   const [isFormVisible, setIsFormVisible] = useState(false);
@@ -86,6 +89,10 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
   const [selectedStatus, setSelectedStatus] = useState<AttendanceStatus>('Present');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [shouldRenderChart, setShouldRenderChart] = useState(false);
+  const [patronActivityId, setPatronActivityId] = useState<string>('');
+  const [attendanceChecklist, setAttendanceChecklist] = useState<Record<string, boolean>>({});
+  const [isQuickCreating, setIsQuickCreating] = useState(false);
+  const [isBulkSubmitting, setIsBulkSubmitting] = useState(false);
 
   // Animation Refs
   const formRef = useScrollAnimation();
@@ -105,10 +112,25 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
     }
   }, [isVisible]);
 
+  useEffect(() => {
+    if (!patronActivityId) return;
+    setAttendanceChecklist((prev) => {
+      const next: Record<string, boolean> = {};
+      memberUsers.forEach((user) => {
+        next[user.uid] = prev[user.uid] ?? false;
+      });
+      return next;
+    });
+  }, [patronActivityId, memberUsers]);
+
   const unrecordedActivities = useMemo(() => 
     activities.filter(activity => 
       !attendanceRecords.some(record => record.activityId === activity.id)
     ), [activities, attendanceRecords]);
+
+  const memberUsers = useMemo(() => 
+    allUsers.filter(user => user.role === 'MEMBER' && user.status === 'APPROVED'),
+  [allUsers]);
 
   const attendanceSummary = useMemo(() => attendanceRecords.reduce(
     (acc, record) => {
@@ -163,6 +185,66 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
   const handleRecordAttendance = async (newRecordData: Omit<AttendanceRecord, 'id' | 'userId'>) => {
     await api.addAttendance(currentUser.uid, newRecordData);
     await fetchAttendance(); // Refetch from context
+  };
+
+  const handleQuickAttendance = async () => {
+    setIsQuickCreating(true);
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const newActivity = await api.addActivity({
+        title: today,
+        date: today,
+        description: 'Quick attendance session',
+        location: 'ICT Club',
+        category: 'OTHER'
+      }, currentUser.uid);
+      await fetchActivities();
+      setPatronActivityId(newActivity.id);
+    } catch (err: any) {
+      console.error("Failed to create quick attendance activity:", err);
+      alert(`Failed to create quick attendance: ${err.message || 'Unknown error'}`);
+    } finally {
+      setIsQuickCreating(false);
+    }
+  };
+
+  const handleToggleChecklist = (userId: string) => {
+    setAttendanceChecklist((prev) => ({
+      ...prev,
+      [userId]: !prev[userId]
+    }));
+  };
+
+  const handleBulkSubmit = async () => {
+    if (!patronActivityId) {
+      alert("Please select an activity.");
+      return;
+    }
+    const activity = activities.find(a => a.id === patronActivityId);
+    if (!activity) {
+      alert("Selected activity not found.");
+      return;
+    }
+    if (memberUsers.length === 0) {
+      alert("No members available to mark attendance.");
+      return;
+    }
+
+    setIsBulkSubmitting(true);
+    try {
+      const records = memberUsers.map(user => ({
+        userId: user.uid,
+        activityId: activity.id,
+        status: attendanceChecklist[user.uid] ? 'Present' : 'Absent'
+      }));
+      await api.addAttendanceBatch(records);
+      alert("Attendance saved for all members.");
+    } catch (err: any) {
+      console.error("Failed to submit bulk attendance:", err);
+      alert(`Failed to submit attendance: ${err.message || 'Unknown error'}`);
+    } finally {
+      setIsBulkSubmitting(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -224,7 +306,7 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
   };
 
 
-  if (isLoadingAttendance || isLoadingActivities) {
+  if (isLoadingAttendance || isLoadingActivities || isLoadingUsers) {
       return <div className="text-center p-8 text-gray-500 dark:text-gray-400">Loading attendance data...</div>;
   }
   
@@ -234,83 +316,164 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
 
   return (
     <>
-      <div ref={formRef} className="scroll-animate mb-8 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Record Your Attendance</h2>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">Missed signing in? Log your attendance for a past event here.</p>
+      {currentUser.role === 'PATRON' ? (
+        <div ref={formRef} className="scroll-animate mb-8 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Take Attendance (Patron)</h2>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">Mark attendance for all members using a checklist.</p>
+            </div>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={handleQuickAttendance}
+                disabled={isQuickCreating}
+                className="flex items-center space-x-2 px-5 py-3 font-semibold text-white bg-pink-600 rounded-lg shadow-md hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                <PlusCircleIcon />
+                <span>{isQuickCreating ? 'Creating...' : 'Quick Attendance'}</span>
+              </button>
+              <button
+                onClick={handleDownloadCSV}
+                className="flex items-center space-x-2 px-5 py-3 font-semibold text-white bg-purple-600 rounded-lg shadow-md hover:bg-purple-700 transition-all"
+                aria-label="Download attendance records as CSV"
+              >
+                <DownloadIcon />
+                <span>Download CSV</span>
+              </button>
+            </div>
           </div>
-          <div className="flex items-center space-x-3">
-            {currentUser.role === 'PATRON' && (
-               <button
-                  onClick={handleDownloadCSV}
-                  className="flex items-center space-x-2 px-5 py-3 font-semibold text-white bg-purple-600 rounded-lg shadow-md hover:bg-purple-700 transition-all"
-                  aria-label="Download attendance records as CSV"
+
+          <div className="mt-6 border-t border-gray-200 dark:border-gray-700 pt-6 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto] gap-4 items-end">
+              <div>
+                <label htmlFor="patron-activity-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Activity</label>
+                <select
+                  id="patron-activity-select"
+                  value={patronActivityId}
+                  onChange={(e) => setPatronActivityId(e.target.value)}
+                  className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-pink-500 focus:border-pink-500 sm:text-sm rounded-md"
                 >
-                  <DownloadIcon />
-                  <span>Download CSV</span>
-                </button>
-            )}
-            <button
-              onClick={() => setIsFormVisible(!isFormVisible)}
-              disabled={unrecordedActivities.length === 0 && !isFormVisible}
-              className="flex items-center space-x-2 px-5 py-3 font-semibold text-white bg-pink-600 rounded-lg shadow-md hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-            >
-              <PlusCircleIcon />
-              <span>{isFormVisible ? 'Cancel' : 'Record Attendance'}</span>
-            </button>
+                  <option value="" disabled>Select an activity...</option>
+                  {activities.map(act => (
+                    <option key={act.id} value={act.id}>{act.title} ({formatDate(act.date)})</option>
+                  ))}
+                </select>
+              </div>
+              <button
+                onClick={handleBulkSubmit}
+                disabled={!patronActivityId || isBulkSubmitting}
+                className="inline-flex justify-center py-2.5 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 dark:focus:ring-offset-gray-800 disabled:opacity-50"
+              >
+                {isBulkSubmitting ? 'Saving...' : 'Save Attendance'}
+              </button>
+            </div>
+
+            <div className="rounded-lg border border-gray-200 dark:border-gray-700">
+              <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Members</p>
+                <span className="text-xs text-gray-400">{memberUsers.length} total</span>
+              </div>
+              <div className="max-h-80 overflow-y-auto custom-scrollbar divide-y divide-gray-100 dark:divide-gray-700">
+                {memberUsers.map(user => (
+                  <label key={user.uid} className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/40 cursor-pointer">
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={user.avatarUrl || `https://i.pravatar.cc/40?u=${user.username}`}
+                        alt={user.name}
+                        className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-700 object-cover"
+                      />
+                      <div>
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{user.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">@{user.username}</p>
+                      </div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={attendanceChecklist[user.uid] || false}
+                      onChange={() => handleToggleChecklist(user.uid)}
+                      className="h-4 w-4 text-pink-600 border-gray-300 dark:border-gray-600 rounded focus:ring-pink-500"
+                    />
+                  </label>
+                ))}
+                {memberUsers.length === 0 && (
+                  <p className="text-center text-gray-500 dark:text-gray-400 py-6">No members found.</p>
+                )}
+              </div>
+              <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
+                Checked = Present, unchecked = Absent.
+              </div>
+            </div>
           </div>
         </div>
-        {isFormVisible && (
-          <form onSubmit={handleSubmit} className="mt-6 border-t border-gray-200 dark:border-gray-700 pt-6">
-            {unrecordedActivities.length > 0 ? (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="activity-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Activity</label>
-                    <select
-                      id="activity-select"
-                      value={selectedActivityId}
-                      onChange={(e) => setSelectedActivityId(e.target.value)}
-                      className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-pink-500 focus:border-pink-500 sm:text-sm rounded-md"
-                    >
-                      <option value="" disabled>Select an activity...</option>
-                      {unrecordedActivities.map(act => (
-                        <option key={act.id} value={act.id}>{act.title} ({formatDate(act.date)})</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
-                    <div className="flex space-x-4">
-                      {(['Present', 'Absent', 'Excused'] as AttendanceStatus[]).map(status => (
-                        <label key={status} className="flex items-center">
-                          <input
-                            type="radio"
-                            name="status"
-                            value={status}
-                            checked={selectedStatus === status}
-                            onChange={() => setSelectedStatus(status)}
-                            className="focus:ring-pink-500 h-4 w-4 text-pink-600 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700"
-                          />
-                          <span className="ml-2 text-gray-700 dark:text-gray-300">{status}</span>
-                        </label>
-                      ))}
+      ) : (
+        <div ref={formRef} className="scroll-animate mb-8 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Record Your Attendance</h2>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">Missed signing in? Log your attendance for a past event here.</p>
+            </div>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => setIsFormVisible(!isFormVisible)}
+                disabled={unrecordedActivities.length === 0 && !isFormVisible}
+                className="flex items-center space-x-2 px-5 py-3 font-semibold text-white bg-pink-600 rounded-lg shadow-md hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                <PlusCircleIcon />
+                <span>{isFormVisible ? 'Cancel' : 'Record Attendance'}</span>
+              </button>
+            </div>
+          </div>
+          {isFormVisible && (
+            <form onSubmit={handleSubmit} className="mt-6 border-t border-gray-200 dark:border-gray-700 pt-6">
+              {unrecordedActivities.length > 0 ? (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label htmlFor="activity-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Activity</label>
+                      <select
+                        id="activity-select"
+                        value={selectedActivityId}
+                        onChange={(e) => setSelectedActivityId(e.target.value)}
+                        className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-pink-500 focus:border-pink-500 sm:text-sm rounded-md"
+                      >
+                        <option value="" disabled>Select an activity...</option>
+                        {unrecordedActivities.map(act => (
+                          <option key={act.id} value={act.id}>{act.title} ({formatDate(act.date)})</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
+                      <div className="flex space-x-4">
+                        {(['Present', 'Absent', 'Excused'] as AttendanceStatus[]).map(status => (
+                          <label key={status} className="flex items-center">
+                            <input
+                              type="radio"
+                              name="status"
+                              value={status}
+                              checked={selectedStatus === status}
+                              onChange={() => setSelectedStatus(status)}
+                              className="focus:ring-pink-500 h-4 w-4 text-pink-600 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700"
+                            />
+                            <span className="ml-2 text-gray-700 dark:text-gray-300">{status}</span>
+                          </label>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="mt-6 text-right">
-                  <button type="submit" disabled={isSubmitting} className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 dark:focus:ring-offset-gray-800 disabled:opacity-50">
-                    {isSubmitting ? 'Submitting...' : 'Submit Record'}
-                  </button>
-                </div>
-              </>
-            ) : (
-              <p className="text-center text-gray-500 dark:text-gray-400 mt-4">All attendance has been recorded. Good job!</p>
-            )}
-          </form>
-        )}
-      </div>
+                  <div className="mt-6 text-right">
+                    <button type="submit" disabled={isSubmitting} className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 dark:focus:ring-offset-gray-800 disabled:opacity-50">
+                      {isSubmitting ? 'Submitting...' : 'Submit Record'}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <p className="text-center text-gray-500 dark:text-gray-400 mt-4">All attendance has been recorded. Good job!</p>
+              )}
+            </form>
+          )}
+        </div>
+      )}
 
       <div className="grid gap-8 lg:grid-cols-3 mb-8">
         <div ref={logRef} className="scroll-animate lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">

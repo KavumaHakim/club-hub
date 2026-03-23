@@ -1,6 +1,6 @@
 
 import { supabase } from './supabaseClient';
-import { User, Activity, AttendanceRecord, FeedItem, ProjectData, ProjectTask, Resource, AppNotification, Room, ShowcaseItem, Suggestion, Challenge, ChallengeSubmission, FeedComment, SuggestionType, SuggestionStatus, SubmissionStatus, ActivityCategory, FeedItemType, TaskPriority, ResourceCategory, ResourceType, Tab, Roadmap, RoadmapProgress, ShowcaseComment, Message } from '../types';
+import { User, Activity, AttendanceRecord, AttendanceStatus, FeedItem, ProjectData, ProjectTask, Resource, AppNotification, Room, ShowcaseItem, Suggestion, Challenge, ChallengeSubmission, FeedComment, SuggestionType, SuggestionStatus, SubmissionStatus, ActivityCategory, FeedItemType, TaskPriority, ResourceCategory, ResourceType, Tab, Roadmap, RoadmapProgress, ShowcaseComment, Message } from '../types';
 
 // --- Helper for Notifications ---
 const notifyAllUsers = async (message: string, linkTo: Tab, excludeUid?: string) => {
@@ -227,16 +227,25 @@ export const getActivities = async (): Promise<Activity[]> => {
     }));
 };
 
-export const addActivity = async (activity: Omit<Activity, 'id' | 'rsvpUserIds'>, creatorUid?: string) => {
-    const { error } = await supabase.from('activities').insert({
+export const addActivity = async (activity: Omit<Activity, 'id' | 'rsvpUserIds'>, creatorUid?: string): Promise<Activity> => {
+    const { data, error } = await supabase.from('activities').insert({
         title: activity.title,
         date: activity.date,
         description: activity.description,
         location: activity.location,
         category: activity.category
-    });
+    }).select().single();
     if (error) throw error;
     await notifyAllUsers(`New Activity: ${activity.title}`, 'activities', creatorUid);
+    return {
+        id: String(data.id),
+        title: data.title,
+        date: data.date,
+        description: data.description,
+        location: data.location,
+        category: data.category,
+        rsvpUserIds: []
+    };
 };
 
 export const deleteActivity = async (activityId: string) => {
@@ -295,6 +304,19 @@ export const addAttendance = async (userId: string, record: Omit<AttendanceRecor
         activity_id: record.activityId,
         status: record.status
     });
+    if (error) throw error;
+};
+
+export const addAttendanceBatch = async (records: Array<{ userId: string; activityId: string; status: AttendanceStatus }>) => {
+    if (records.length === 0) return;
+    const payload = records.map((record) => ({
+        user_uid: record.userId,
+        activity_id: record.activityId,
+        status: record.status
+    }));
+    const { error } = await supabase
+        .from('attendance')
+        .upsert(payload, { onConflict: 'user_uid,activity_id' });
     if (error) throw error;
 };
 
