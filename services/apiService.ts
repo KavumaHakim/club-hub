@@ -17,7 +17,18 @@ const notifyAllUsers = async (message: string, linkTo: Tab, excludeUid?: string)
         }));
 
     if (notifications.length > 0) {
-        await supabase.from('notifications').insert(notifications);
+        const { error } = await supabase.from('notifications').insert(notifications);
+        if (error) {
+            const msg = (error.message || '').toLowerCase();
+            const isConflict =
+                (error as any).status === 409 ||
+                error.code === '23505' ||
+                msg.includes('duplicate') ||
+                msg.includes('conflict');
+            if (!isConflict) {
+                throw error;
+            }
+        }
     }
 };
 
