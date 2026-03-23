@@ -64,63 +64,6 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToSignUp
   
   return (
     <div className="bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen flex flex-col font-sans selection:bg-pink-500 selection:text-white overflow-x-hidden">
-      <style>{`
-        @keyframes gradient-fast {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-15px); }
-            100% { transform: translateY(0px); }
-        }
-        @keyframes fade-in-up {
-            0% { opacity: 0; transform: translateY(20px); }
-            100% { opacity: 1; transform: translateY(0); }
-        }
-        .animate-gradient-fast {
-            background-size: 300% 300%;
-            animation: gradient-fast 2s linear infinite;
-        }
-        .animate-float {
-            animation: float 6s ease-in-out infinite;
-        }
-        .animate-fade-in-up {
-            animation: fade-in-up 0.8s ease-out forwards;
-        }
-        .shine-effect {
-            position: relative;
-            overflow: hidden;
-        }
-        .shine-effect::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(to right, transparent, rgba(255,255,255,0.3), transparent);
-            animation: shine 3s infinite;
-        }
-        @keyframes shine {
-            0% { left: -100%; }
-            20% { left: 100%; }
-            100% { left: 100%; }
-        }
-        @keyframes pulse-heart {
-          0%, 100% {
-            transform: scale(1);
-          }
-          50% {
-            transform: scale(1.2);
-          }
-        }
-        .animate-pulse-heart {
-          animation: pulse-heart 1.5s ease-in-out infinite;
-        }
-      `}</style>
-      
       {/* Hero Section */}
       <header className="min-h-[100dvh] flex flex-col items-center justify-center relative overflow-hidden p-6 bg-gray-50 dark:bg-gray-950">
         

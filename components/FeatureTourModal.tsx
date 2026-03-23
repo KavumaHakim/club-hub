@@ -117,32 +117,6 @@ const FeatureTourModal: React.FC<FeatureTourModalProps> = ({ isOpen, onClose }) 
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <style>{`
-        @keyframes initialFadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes iconBounceIn {
-            0% { transform: scale(0.5) rotate(-15deg); opacity: 0; }
-            50% { transform: scale(1.1) rotate(5deg); opacity: 1; }
-            70% { transform: scale(0.9) rotate(-5deg); }
-            100% { transform: scale(1) rotate(0deg); opacity: 1; }
-        }
-        @keyframes contentFadeInUp {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-initial-fade-in-up {
-            animation: initialFadeInUp 0.4s ease-out forwards;
-        }
-        .animate-icon-bounce-in {
-            animation: iconBounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-        }
-        .animate-content-fade-in-up {
-            animation: contentFadeInUp 0.4s ease-out forwards 0.1s;
-            opacity: 0;
-        }
-      `}</style>
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col min-h-[500px] animate-initial-fade-in-up relative border border-gray-200 dark:border-gray-700">
         
         {/* Header / Graphic Area */}

@@ -12,8 +12,8 @@
     "cap:open:ios": "npx cap open ios"
   },
   "dependencies": {
-    "@capacitor/core": "^6.0.0",
     "@capacitor/app": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
     "@capacitor/haptics": "^6.0.0",
     "@capacitor/keyboard": "^6.0.0",
     "@capacitor/status-bar": "^6.0.0",
@@ -30,6 +30,7 @@
     "@capacitor/android": "^6.0.0",
     "@capacitor/cli": "^6.0.0",
     "@capacitor/ios": "^6.0.0",
+    "@tailwindcss/line-clamp": "^0.4.4",
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
     "@types/three": "^0.165.0",
