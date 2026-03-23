@@ -93,10 +93,26 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
   const [attendanceChecklist, setAttendanceChecklist] = useState<Record<string, boolean>>({});
   const [isQuickCreating, setIsQuickCreating] = useState(false);
   const [isBulkSubmitting, setIsBulkSubmitting] = useState(false);
+  const [memberSearch, setMemberSearch] = useState('');
 
   const memberUsers = useMemo(() => 
     allUsers.filter(user => user.role === 'MEMBER' && user.status === 'APPROVED'),
   [allUsers]);
+  
+  const filteredMembers = useMemo(() => {
+    const term = memberSearch.trim().toLowerCase();
+    if (!term) return memberUsers;
+    return memberUsers.filter(user => 
+      user.name.toLowerCase().includes(term) || 
+      user.username.toLowerCase().includes(term)
+    );
+  }, [memberUsers, memberSearch]);
+
+  const presentCount = useMemo(() => 
+    memberUsers.reduce((count, user) => count + (attendanceChecklist[user.uid] ? 1 : 0), 0),
+  [memberUsers, attendanceChecklist]);
+  
+  const absentCount = memberUsers.length - presentCount;
 
   // Animation Refs
   const formRef = useScrollAnimation();
@@ -247,6 +263,16 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
     }
   };
 
+  const handleMarkAll = (isPresent: boolean) => {
+    setAttendanceChecklist(() => {
+      const next: Record<string, boolean> = {};
+      memberUsers.forEach((user) => {
+        next[user.uid] = isPresent;
+      });
+      return next;
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedActivityId) {
@@ -317,24 +343,24 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
   return (
     <>
       {currentUser.role === 'PATRON' ? (
-        <div ref={formRef} className="scroll-animate mb-8 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-          <div className="flex flex-wrap items-center justify-between gap-4">
+        <div ref={formRef} className="scroll-animate mb-8 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-md border border-gray-200 dark:border-gray-700">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div>
-              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Take Attendance (Patron)</h2>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">Mark attendance for all members using a checklist.</p>
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Patron Attendance</h2>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">Quickly mark attendance for all members in one session.</p>
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex flex-wrap items-center gap-3">
               <button
                 onClick={handleQuickAttendance}
                 disabled={isQuickCreating}
-                className="flex items-center space-x-2 px-5 py-3 font-semibold text-white bg-pink-600 rounded-lg shadow-md hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="flex items-center space-x-2 px-5 py-3 font-semibold text-white bg-pink-600 rounded-xl shadow-md hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 <PlusCircleIcon />
                 <span>{isQuickCreating ? 'Creating...' : 'Quick Attendance'}</span>
               </button>
               <button
                 onClick={handleDownloadCSV}
-                className="flex items-center space-x-2 px-5 py-3 font-semibold text-white bg-purple-600 rounded-lg shadow-md hover:bg-purple-700 transition-all"
+                className="flex items-center space-x-2 px-5 py-3 font-semibold text-white bg-purple-600 rounded-xl shadow-md hover:bg-purple-700 transition-all"
                 aria-label="Download attendance records as CSV"
               >
                 <DownloadIcon />
@@ -344,14 +370,14 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
           </div>
 
           <div className="mt-6 border-t border-gray-200 dark:border-gray-700 pt-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto] gap-4 items-end">
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] gap-4 items-end">
               <div>
                 <label htmlFor="patron-activity-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Activity</label>
                 <select
                   id="patron-activity-select"
                   value={patronActivityId}
                   onChange={(e) => setPatronActivityId(e.target.value)}
-                  className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-pink-500 focus:border-pink-500 sm:text-sm rounded-md"
+                  className="block w-full pl-3 pr-10 py-2.5 text-base border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-pink-500 focus:border-pink-500 sm:text-sm rounded-xl"
                 >
                   <option value="" disabled>Select an activity...</option>
                   {activities.map(act => (
@@ -362,19 +388,44 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
               <button
                 onClick={handleBulkSubmit}
                 disabled={!patronActivityId || isBulkSubmitting}
-                className="inline-flex justify-center py-2.5 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 dark:focus:ring-offset-gray-800 disabled:opacity-50"
+                className="inline-flex justify-center py-2.5 px-5 border border-transparent shadow-sm text-sm font-semibold rounded-xl text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 dark:focus:ring-offset-gray-800 disabled:opacity-50"
               >
                 {isBulkSubmitting ? 'Saving...' : 'Save Attendance'}
               </button>
             </div>
 
-            <div className="rounded-lg border border-gray-200 dark:border-gray-700">
-              <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Members</p>
-                <span className="text-xs text-gray-400">{memberUsers.length} total</span>
+            <div className="rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-gray-50/80 dark:bg-gray-900/40">
+                <div>
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Members</p>
+                  <p className="text-xs text-gray-400">{memberUsers.length} total • {presentCount} present • {absentCount} absent</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleMarkAll(true)}
+                    className="px-3 py-1.5 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200 hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors"
+                  >
+                    All Present
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleMarkAll(false)}
+                    className="px-3 py-1.5 text-xs font-semibold rounded-full bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    Clear All
+                  </button>
+                  <input
+                    type="text"
+                    value={memberSearch}
+                    onChange={(e) => setMemberSearch(e.target.value)}
+                    placeholder="Search members..."
+                    className="px-3 py-1.5 text-xs rounded-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  />
+                </div>
               </div>
-              <div className="max-h-80 overflow-y-auto custom-scrollbar divide-y divide-gray-100 dark:divide-gray-700">
-                {memberUsers.map(user => (
+              <div className="max-h-96 overflow-y-auto custom-scrollbar divide-y divide-gray-100 dark:divide-gray-700">
+                {filteredMembers.map(user => (
                   <label key={user.uid} className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/40 cursor-pointer">
                     <div className="flex items-center gap-3">
                       <img
@@ -395,7 +446,7 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
                     />
                   </label>
                 ))}
-                {memberUsers.length === 0 && (
+                {filteredMembers.length === 0 && (
                   <p className="text-center text-gray-500 dark:text-gray-400 py-6">No members found.</p>
                 )}
               </div>
@@ -406,7 +457,7 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
           </div>
         </div>
       ) : (
-        <div ref={formRef} className="scroll-animate mb-8 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+        <div ref={formRef} className="scroll-animate mb-8 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-md border border-gray-200 dark:border-gray-700">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Record Your Attendance</h2>
