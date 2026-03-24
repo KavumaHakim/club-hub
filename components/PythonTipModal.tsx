@@ -78,7 +78,7 @@ const DailyTipModal: React.FC<DailyTipModalProps> = ({ isOpen, onClose }) => {
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm z-[80] flex items-center justify-center p-4 animate-fade-in">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden relative border border-gray-200 dark:border-gray-700 flex flex-col">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden relative border border-gray-200 dark:border-gray-700 flex flex-col">
                 
                 {/* Dynamic Header */}
                 <div className={`p-6 flex justify-between items-start text-white transition-colors duration-500 shadow-lg ${
@@ -106,7 +106,7 @@ const DailyTipModal: React.FC<DailyTipModalProps> = ({ isOpen, onClose }) => {
                 </div>
 
                 {/* Content */}
-                <div className="p-6 bg-white dark:bg-gray-800">
+                <div className="p-6 bg-white dark:bg-gray-800 flex-1 overflow-y-auto custom-scrollbar">
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-8 space-y-4">
                             <div className={`animate-spin rounded-full h-10 w-10 border-4 border-gray-200 dark:border-gray-700 ${

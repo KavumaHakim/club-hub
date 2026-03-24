@@ -108,6 +108,20 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
       return allUsers.filter(user => onlineSet.has(user.uid));
   }, [allUsers, onlineUsers]);
 
+  const challengeLeaders = useMemo(() => {
+      return [...allUsers]
+          .filter(user => user.status === 'APPROVED')
+          .map(user => ({
+              ...user,
+              badgeCount: user.badges?.length || 0
+          }))
+          .sort((a, b) => {
+              if (b.badgeCount !== a.badgeCount) return b.badgeCount - a.badgeCount;
+              return a.name.localeCompare(b.name);
+          })
+          .slice(0, 5);
+  }, [allUsers]);
+
   const recentInteractions = useMemo(() => {
       const toTime = (value?: string) => {
           if (!value) return 0;
@@ -445,6 +459,40 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
                         )}
                         {onlineUserList.length > 8 && (
                             <p className="text-xs text-gray-400 mt-3">+{onlineUserList.length - 8} more online</p>
+                        )}
+                    </div>
+
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-4">
+                        <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300">Challenges Leaderboard</h3>
+                            <span className="text-xs text-gray-400">Top 5</span>
+                        </div>
+                        {isLoadingUsers ? (
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Loading leaderboard...</p>
+                        ) : challengeLeaders.length === 0 ? (
+                            <p className="text-sm text-gray-500 dark:text-gray-400">No leaderboard data yet.</p>
+                        ) : (
+                            <ul className="space-y-3">
+                                {challengeLeaders.map((user, index) => (
+                                    <li key={user.uid} className="flex items-center gap-3">
+                                        <div className="flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
+                                            {index + 1}
+                                        </div>
+                                        <img
+                                            src={user.avatarUrl || `https://i.pravatar.cc/40?u=${user.username}`}
+                                            alt={user.name}
+                                            className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-700 object-cover"
+                                        />
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{user.name}</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">@{user.username}</p>
+                                        </div>
+                                        <span className="text-xs font-semibold px-2 py-1 rounded-full bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-200">
+                                            {user.badgeCount} wins
+                                        </span>
+                                    </li>
+                                ))}
+                            </ul>
                         )}
                     </div>
                 </div>
