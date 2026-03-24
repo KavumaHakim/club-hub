@@ -198,7 +198,7 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
       return entries
           .filter(entry => toTime(entry.time) > 0)
           .sort((a, b) => toTime(b.time) - toTime(a.time))
-          .slice(0, 7);
+          .slice(0, 5);
   }, [allUsers, showcaseItems, suggestions, items, projectData]);
 
   const isLoadingActivityFeed = isLoadingShowcase || isLoadingSuggestions || isLoadingProjects || isLoadingFeed;
@@ -312,10 +312,10 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
             </div>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(220px,280px)_minmax(0,1fr)_minmax(220px,280px)] gap-6 mt-0">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(220px,280px)_minmax(0,1fr)_minmax(220px,280px)] gap-6 mt-0 items-start">
             {/* Left Panel: Recent Activities */}
             <aside className="hidden lg:block">
-                <div className="sticky top-28 space-y-4">
+                <div className="sticky top-24 space-y-4">
                     <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-4">
                         <div className="flex items-center justify-between mb-3">
                             <h3 className="text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300">Recent Activity</h3>
@@ -373,11 +373,8 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
                 )}
 
                 <div className="space-y-6 relative">
-                    {/* Timeline Line (Desktop only) - Made more subtle */}
-                    <div className="hidden md:block absolute left-8 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-gray-300 dark:via-gray-700 to-transparent z-0"></div>
-
                     {filteredItems.length === 0 ? (
-                        <div className="text-center py-20 backdrop-blur-md bg-white/50 dark:bg-gray-800/50 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm mx-4 sm:mx-0">
+                         <div className="text-center py-20 backdrop-blur-md bg-white/50 dark:bg-gray-800/50 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm mx-4 sm:mx-0">
                             <div className="text-gray-300 dark:text-gray-600 mb-4 bg-gray-100 dark:bg-gray-700/50 w-20 h-20 rounded-full flex items-center justify-center mx-auto">
                                 <NewspaperIcon />
                             </div>
@@ -398,11 +395,8 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
                         filteredItems.map((item, index) => (
                         <div
                             key={item.id}
-                            className="pl-0 md:pl-20 relative"
+                            className="relative"
                         >
-                            {/* Timeline Dot (Desktop only) */}
-                            <div className="hidden md:flex absolute left-[30px] top-8 w-3 h-3 rounded-full border-2 border-white dark:border-gray-900 bg-pink-500 shadow-sm z-10"></div>
-                            
                             <FeedItemCard 
                                 item={item} 
                                 currentUser={currentUser} 
@@ -427,7 +421,7 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
 
             {/* Right Panel: Online Users */}
             <aside className="hidden lg:block">
-                <div className="sticky top-28 space-y-4">
+                <div className="sticky top-24 space-y-4">
                     <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-4">
                         <div className="flex items-center justify-between mb-3">
                             <h3 className="text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300">Online Now</h3>
@@ -439,7 +433,7 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
                             <p className="text-sm text-gray-500 dark:text-gray-400">No users online.</p>
                         ) : (
                             <ul className="space-y-3">
-                                {onlineUserList.slice(0, 8).map(user => (
+                                {onlineUserList.slice(0, 6).map(user => (
                                     <li key={user.uid} className="flex items-center gap-3">
                                         <div className="relative">
                                             <img
@@ -457,8 +451,8 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
                                 ))}
                             </ul>
                         )}
-                        {onlineUserList.length > 8 && (
-                            <p className="text-xs text-gray-400 mt-3">+{onlineUserList.length - 8} more online</p>
+                        {onlineUserList.length > 6 && (
+                            <p className="text-xs text-gray-400 mt-3">+{onlineUserList.length - 6} more online</p>
                         )}
                     </div>
 
