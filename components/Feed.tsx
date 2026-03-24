@@ -17,37 +17,6 @@ interface FeedProps {
 
 type FilterCategory = 'ALL' | 'NEWS' | 'EVENTS' | 'DISCUSSIONS' | 'POLLS' | 'BOOKMARKED';
 
-const TimelineItem: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const element = ref.current;
-    if (!element) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          element.classList.add('is-active');
-        } else {
-          element.classList.remove('is-active');
-        }
-      },
-      { threshold: 0.25 }
-    );
-
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <div ref={ref} className="relative timeline-item">
-      <div className="hidden md:block timeline-line" />
-      <div className="hidden md:block timeline-dot" />
-      {children}
-    </div>
-  );
-};
-
 const Feed: React.FC<FeedProps> = ({ currentUser }) => {
   const { 
       feedItems: items,
@@ -70,6 +39,9 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
   const [filter, setFilter] = useState<FilterCategory>('ALL');
   const [isMobileComposeOpen, setIsMobileComposeOpen] = useState(false);
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
+  const scrollRootRef = useRef<HTMLDivElement>(null);
+  const timelineRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const rafRef = useRef<number | null>(null);
 
   // Update bookmarked IDs on mount and when changed
   useEffect(() => {
@@ -245,6 +217,61 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
       }).format(date);
   };
 
+  useEffect(() => {
+      const root = scrollRootRef.current;
+      if (!root) return;
+
+      let scrollEl: HTMLElement | Window = window;
+      let node: HTMLElement | null = root.parentElement;
+      while (node && node !== document.body) {
+          const style = getComputedStyle(node);
+          if (/(auto|scroll)/.test(style.overflowY)) {
+              scrollEl = node;
+              break;
+          }
+          node = node.parentElement;
+      }
+
+      const updateGlow = () => {
+          const containerRect = scrollEl instanceof Window
+              ? { top: 0, height: window.innerHeight }
+              : (scrollEl as HTMLElement).getBoundingClientRect();
+          const center = containerRect.top + containerRect.height / 2;
+          const max = containerRect.height * 0.6;
+
+          Object.values(timelineRefs.current).forEach((el) => {
+              if (!el) return;
+              const rect = el.getBoundingClientRect();
+              const elCenter = rect.top + rect.height / 2;
+              const dist = Math.abs(center - elCenter);
+              const glow = Math.max(0, 1 - dist / max);
+              el.style.setProperty('--timeline-glow', glow.toFixed(3));
+          });
+      };
+
+      const onScroll = () => {
+          if (rafRef.current !== null) return;
+          rafRef.current = requestAnimationFrame(() => {
+              rafRef.current = null;
+              updateGlow();
+          });
+      };
+
+      updateGlow();
+      const target = scrollEl instanceof Window ? window : scrollEl;
+      target.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', updateGlow);
+
+      return () => {
+          target.removeEventListener('scroll', onScroll);
+          window.removeEventListener('resize', updateGlow);
+          if (rafRef.current !== null) {
+              cancelAnimationFrame(rafRef.current);
+              rafRef.current = null;
+          }
+      };
+  }, [filteredItems]);
+
   if (isLoadingFeed) {
     return (
         <div className="flex flex-col items-center justify-center py-20 space-y-4 h-full">
@@ -275,7 +302,7 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
   }
 
   return (
-    <div className="relative min-h-full pb-12">
+    <div ref={scrollRootRef} className="relative min-h-full pb-12">
        {/* Background */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0 fixed">
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-300 dark:bg-purple-900/10 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-30 animate-blob"></div>
@@ -424,14 +451,20 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
                         </div>
                     ) : (
                         filteredItems.map((item, index) => (
-                        <TimelineItem key={item.id}>
+                        <div
+                            key={item.id}
+                            ref={(el) => { timelineRefs.current[item.id] = el; }}
+                            className="relative timeline-item"
+                        >
+                            <div className="hidden md:block timeline-line" />
+                            <div className="hidden md:block timeline-dot" />
                             <FeedItemCard 
                                 item={item} 
                                 currentUser={currentUser} 
                                 onDelete={setItemToDelete}
                                 staggerDelay={index * 50}
                             />
-                        </TimelineItem>
+                        </div>
                         ))
                     )}
                 </div>
