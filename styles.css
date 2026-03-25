@@ -190,10 +190,10 @@
 
   @media (min-width: 1024px) {
     .feed-layout {
-      --feed-panel-left: calc(var(--sidebar-width, 5.5rem) + 2.5rem);
+      --feed-panel-left: calc(var(--sidebar-width, 5.5rem) + 1.5rem);
       --feed-panel-right: 1.5rem;
-      --feed-side-offset: calc(var(--sidebar-width, 5.5rem) + 16rem + 4.5rem);
-      --feed-side-offset-right: calc(16rem + 2.75rem);
+      --feed-side-offset: calc(var(--sidebar-width, 5.5rem) + 16rem + 2rem);
+      --feed-side-offset-right: calc(16rem + 2rem);
     }
   }
 

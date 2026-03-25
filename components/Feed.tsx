@@ -39,10 +39,7 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
   const [filter, setFilter] = useState<FilterCategory>('ALL');
   const [isMobileComposeOpen, setIsMobileComposeOpen] = useState(false);
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
-  const scrollRootRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
-  const timelineRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const rafRef = useRef<number | null>(null);
   const [panelTop, setPanelTop] = useState(96);
 
   // Update bookmarked IDs on mount and when changed
@@ -203,8 +200,12 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
       return entries
           .filter(entry => toTime(entry.time) > 0)
           .sort((a, b) => toTime(b.time) - toTime(a.time))
-          .slice(0, 5);
+          .slice(0, 8);
   }, [allUsers, showcaseItems, suggestions, items, projectData]);
+
+  const recentActivityDisplay = useMemo(() => {
+      return recentInteractions.slice(0, 5);
+  }, [recentInteractions]);
 
   const isLoadingActivityFeed = isLoadingShowcase || isLoadingSuggestions || isLoadingProjects || isLoadingFeed;
 
@@ -242,61 +243,6 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
       };
   }, []);
 
-  useEffect(() => {
-      const root = scrollRootRef.current;
-      if (!root) return;
-
-      let scrollEl: HTMLElement | Window = window;
-      let node: HTMLElement | null = root.parentElement;
-      while (node && node !== document.body) {
-          const style = getComputedStyle(node);
-          if (/(auto|scroll)/.test(style.overflowY)) {
-              scrollEl = node;
-              break;
-          }
-          node = node.parentElement;
-      }
-
-      const updateGlow = () => {
-          const containerRect = scrollEl instanceof Window
-              ? { top: 0, height: window.innerHeight }
-              : (scrollEl as HTMLElement).getBoundingClientRect();
-          const center = containerRect.top + containerRect.height / 2;
-          const max = containerRect.height * 0.6;
-
-          Object.values(timelineRefs.current).forEach((el) => {
-              if (!el) return;
-              const rect = el.getBoundingClientRect();
-              const elCenter = rect.top + rect.height / 2;
-              const dist = Math.abs(center - elCenter);
-              const glow = Math.max(0, 1 - dist / max);
-              el.style.setProperty('--timeline-glow', glow.toFixed(3));
-          });
-      };
-
-      const onScroll = () => {
-          if (rafRef.current !== null) return;
-          rafRef.current = requestAnimationFrame(() => {
-              rafRef.current = null;
-              updateGlow();
-          });
-      };
-
-      updateGlow();
-      const target = scrollEl instanceof Window ? window : scrollEl;
-      target.addEventListener('scroll', onScroll, { passive: true });
-      window.addEventListener('resize', updateGlow);
-
-      return () => {
-          target.removeEventListener('scroll', onScroll);
-          window.removeEventListener('resize', updateGlow);
-          if (rafRef.current !== null) {
-              cancelAnimationFrame(rafRef.current);
-              rafRef.current = null;
-          }
-      };
-  }, [filteredItems]);
-
   if (isLoadingFeed) {
     return (
         <div className="flex flex-col items-center justify-center py-20 space-y-4 h-full">
@@ -327,7 +273,7 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
   }
 
   return (
-    <div ref={scrollRootRef} className="relative min-h-full pb-12">
+    <div className="relative min-h-full pb-12">
        {/* Background */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0 fixed">
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-300 dark:bg-purple-900/10 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-30 animate-blob"></div>
@@ -404,15 +350,15 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
                 <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-4">
                     <div className="flex items-center justify-between mb-3">
                         <h3 className="text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300">Recent Activity</h3>
-                        <span className="text-xs text-gray-400">{recentInteractions.length}</span>
+                        <span className="text-xs text-gray-400">{recentActivityDisplay.length}</span>
                     </div>
                     {isLoadingActivityFeed ? (
                         <p className="text-sm text-gray-500 dark:text-gray-400">Loading activity...</p>
-                    ) : recentInteractions.length === 0 ? (
+                    ) : recentActivityDisplay.length === 0 ? (
                         <p className="text-sm text-gray-500 dark:text-gray-400">No activity yet.</p>
                     ) : (
                         <ul className="space-y-3">
-                            {recentInteractions.map(activity => (
+                            {recentActivityDisplay.map(activity => (
                                 <li key={activity.id} className="flex items-start gap-3">
                                     <div className="relative mt-0.5">
                                         <img
@@ -554,20 +500,13 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
                         </div>
                     ) : (
                         filteredItems.map((item, index) => (
-                        <div
-                            key={item.id}
-                            ref={(el) => { timelineRefs.current[item.id] = el; }}
-                            className="relative timeline-item"
-                        >
-                            <div className="hidden md:block timeline-line" />
-                            <div className="hidden md:block timeline-dot" />
                             <FeedItemCard 
+                                key={item.id}
                                 item={item} 
                                 currentUser={currentUser} 
                                 onDelete={setItemToDelete}
                                 staggerDelay={index * 50}
                             />
-                        </div>
                         ))
                     )}
                 </div>
