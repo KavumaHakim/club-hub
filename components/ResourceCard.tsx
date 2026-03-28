@@ -7,7 +7,6 @@ import { VideoCameraIcon } from './icons/VideoCameraIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import { CodeIcon } from './icons/CodeIcon';
 import { DocumentTextIcon } from './icons/DocumentTextIcon';
-import LinkPreview from './LinkPreview';
 
 interface ResourceCardProps {
   resource: Resource;
@@ -86,58 +85,74 @@ const ResourceCard: React.FC<ResourceCardProps> = ({ resource, currentUser, onDe
     
     const iconElement = getResourceIcon(resource.type);
 
+    const isImage = !!resource.url && /\.(jpeg|jpg|gif|png|webp|svg)(\?.*)?$/i.test(resource.url);
+    const domain = resource.url ? (() => {
+        try {
+            return new URL(resource.url).hostname.replace('www.', '');
+        } catch {
+            return '';
+        }
+    })() : '';
+
     return (
-        <div ref={cardRef} className="scroll-animate group bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm hover:shadow-lg border border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row items-start gap-5 transition-all duration-300 transform hover:-translate-y-1 hover:border-pink-200 dark:hover:border-pink-900/50">
-            <div className="flex-shrink-0 w-full sm:w-40">
-                {(resource.type === 'LINK' || resource.type === 'VIDEO') && resource.url ? (
-                    <LinkPreview url={resource.url} size="normal" />
+        <div ref={cardRef} className="scroll-animate group bg-white dark:bg-gray-900 rounded-2xl shadow-sm hover:shadow-xl border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col transition-all duration-300">
+            <div className="relative">
+                {(resource.type === 'LINK' || resource.type === 'VIDEO') && resource.url && isImage ? (
+                    <img src={resource.url} alt={resource.title} className="h-40 w-full object-cover" loading="lazy" />
                 ) : (
-                    <a
-                        href={getActionLink()}
-                        target={resource.type === 'PYTHON' ? undefined : "_blank"}
-                        rel="noopener noreferrer"
-                        onClick={handleOpenAction}
-                        className="block w-full aspect-video bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center group/icon transition-all duration-300 hover:bg-gray-200 dark:hover:bg-gray-600 shadow-inner"
-                    >
-                        <div className="text-pink-500 dark:text-pink-400 group-hover/icon:scale-110 transition-transform">
-                            {iconElement && React.cloneElement(iconElement, { className: "w-12 h-12" })}
+                    <div className="h-40 w-full bg-gradient-to-br from-slate-800 via-slate-900 to-indigo-900 flex items-center justify-center">
+                        <div className="text-pink-400/90">
+                            {iconElement && React.cloneElement(iconElement, { className: "w-14 h-14" })}
                         </div>
-                    </a>
+                    </div>
+                )}
+                <div className="absolute top-3 left-3 flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-white/80 text-slate-900">
+                        {resource.type}
+                    </span>
+                </div>
+                {resource.category && (
+                    <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-black/60 text-white">
+                        {resource.category}
+                    </span>
                 )}
             </div>
-            <div className="flex-grow min-w-0 flex flex-col justify-between self-stretch w-full">
+
+            <div className="p-4 flex flex-col gap-3 flex-1">
                 <div>
-                    <div className="flex justify-between items-start">
-                         <h4 className="font-bold text-gray-900 dark:text-gray-100 text-lg mb-1 truncate group-hover:text-pink-600 dark:group-hover:text-pink-400 transition-colors pr-2">{resource.title}</h4>
-                         <span className="flex-shrink-0 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
-                             {resource.type}
-                         </span>
-                    </div>
-                    { !((resource.type === 'LINK' || resource.type === 'VIDEO') && resource.url) &&
-                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 leading-relaxed line-clamp-2">{resource.description}</p>
-                    }
+                    <h4 className="font-bold text-gray-900 dark:text-gray-100 text-lg leading-snug line-clamp-2 group-hover:text-pink-600 dark:group-hover:text-pink-400 transition-colors">
+                        {resource.title}
+                    </h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{resource.description}</p>
                 </div>
-                
-                <div className="mt-auto pt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex items-center text-xs text-gray-400 dark:text-gray-500">
-                        <span className="font-medium mr-1 text-gray-600 dark:text-gray-300">{resource.uploaderName}</span>
-                        <span className="w-1 h-1 bg-gray-300 dark:bg-gray-600 rounded-full mx-2"></span>
+
+                {(resource.type === 'LINK' || resource.type === 'VIDEO') && domain && (
+                    <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-indigo-400"></span>
+                        {domain}
+                    </div>
+                )}
+
+                <div className="mt-auto flex items-center justify-between gap-3">
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                        <span className="font-semibold text-gray-700 dark:text-gray-200">{resource.uploaderName}</span>
+                        <span className="mx-2">•</span>
                         <span>{resource.createdAt}</span>
                     </div>
-                    <div className="flex items-center gap-2 self-start sm:self-center">
+                    <div className="flex items-center gap-2">
                         <a
                             href={getActionLink()}
                             target={resource.type === 'PYTHON' ? undefined : "_blank"}
                             rel="noopener noreferrer"
                             onClick={handleOpenAction}
-                            className={`flex-1 sm:flex-none text-center px-4 py-2 text-sm font-semibold text-white bg-gray-900 dark:bg-gray-700 hover:bg-pink-600 dark:hover:bg-pink-600 rounded-xl shadow-sm transition-all ${isLoading ? 'opacity-70 cursor-wait' : ''}`}
+                            className={`px-3 py-1.5 text-xs font-semibold text-white bg-slate-900 dark:bg-slate-700 hover:bg-pink-600 rounded-lg transition-all ${isLoading ? 'opacity-70 cursor-wait' : ''}`}
                         >
                             {getActionText()}
                         </a>
                         {isPatron && (
                             <button
                                 onClick={() => onDelete(resource)}
-                                className="p-2 text-gray-400 hover:text-red-600 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors border border-gray-200 dark:border-gray-700 hover:border-red-200 dark:hover:border-red-900/50"
+                                className="p-2 text-gray-400 hover:text-red-500 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-red-200 dark:hover:border-red-900/50 transition-colors"
                                 aria-label="Delete resource"
                                 title="Delete Resource"
                             >

@@ -34,37 +34,129 @@ const AiTutor: React.FC<AiTutorProps> = ({ currentUser }) => {
     const dragStartOffset = useRef({ x: 0, y: 0 });
 
     // Get real-time club data
-    const { activities, challenges, feedItems } = useData();
+    const { 
+        activities, 
+        challenges, 
+        feedItems, 
+        resources, 
+        allUsers,
+        showcaseItems,
+        suggestions,
+        teams,
+        teamChallenges,
+        projectData
+    } = useData();
 
     // Memoize the context string so it updates when data changes
     const clubContext = useMemo(() => {
+        const safeList = (items: string[], limit: number) => items.slice(0, limit).join('\n');
+
+        const leadership = allUsers
+            .filter(u => u.role === 'PATRON')
+            .map(u => `${u.name} (@${u.username || 'member'})`);
+
+        const membersSummary = {
+            total: allUsers.length,
+            patrons: allUsers.filter(u => u.role === 'PATRON').length,
+            members: allUsers.filter(u => u.role === 'MEMBER').length
+        };
+
         const upcomingActivities = activities
             .filter(a => new Date(a.date) >= new Date())
             .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-            .map(a => `- ${a.title} on ${a.date} at ${a.location} (${a.category})`)
-            .join('\n');
+            .map(a => `- ${a.title} on ${a.date} at ${a.location} (${a.category})`);
 
         const activeChallenges = challenges
             .filter(c => c.status === 'ACTIVE')
-            .map(c => `- ${c.title} (Due: ${c.deadline}): ${c.description}`)
-            .join('\n');
-            
+            .map(c => `- ${c.title} (Due: ${c.deadline}): ${c.description}`);
+
+        const activeTeamChallenges = teamChallenges
+            .slice(0, 5)
+            .map(ch => `- ${ch.title} (Team: ${teams.find(t => t.id === ch.teamId)?.name || 'Team'})`);
+
         const latestAnnouncements = feedItems
             .slice(0, 3)
-            .map(f => `- ${f.title || 'Post'}: ${f.message} (by ${f.author})`)
-            .join('\n');
+            .map(f => `- ${f.title || 'Post'}: ${f.message} (by ${f.author})`);
+
+        const resourceHighlights = resources
+            .slice(0, 6)
+            .map(r => `- ${r.title} [${r.type}] (${r.category})`);
+
+        const resourceLinks = resources
+            .filter(r => r.type === 'LINK' || r.type === 'VIDEO')
+            .slice(0, 5)
+            .map(r => `- ${r.title}: ${r.url}`);
+
+        const showcaseHighlights = showcaseItems
+            .slice(0, 5)
+            .map(item => `- ${item.title} by ${item.userName}`);
+
+        const recognitionBoard = allUsers
+            .filter(user => user.status === 'APPROVED')
+            .map(user => {
+                const showcaseScore = showcaseItems.filter(item => item.userUid === user.uid).length;
+                const suggestionScore = suggestions.filter(item => item.userId === user.uid).length;
+                const badges = user.badges?.length || 0;
+                const score = showcaseScore * 3 + suggestionScore + badges * 2;
+                return { user, score, showcaseScore, suggestionScore, badges };
+            })
+            .filter(entry => entry.score > 0)
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 5)
+            .map(entry => `- ${entry.user.name}: ${entry.score} pts (Showcases ${entry.showcaseScore}, Ideas ${entry.suggestionScore}, Badges ${entry.badges})`);
+
+        const projectSnapshot = projectData ? (() => {
+            const totalTasks = Object.keys(projectData.tasks || {}).length;
+            const columns = (projectData.columnOrder || []).map(colId => {
+                const col = projectData.columns?.[colId];
+                if (!col) return null;
+                return `${col.title}: ${col.taskIds.length}`;
+            }).filter(Boolean) as string[];
+            return { totalTasks, columns };
+        })() : null;
+
+        const playgroundLang = localStorage.getItem('playground_lang') || 'python';
+        const playgroundCode = localStorage.getItem(`playground_code_${playgroundLang}`) || '';
+        const playgroundSnippet = playgroundCode.trim() ? playgroundCode.trim().slice(0, 600) : '';
 
         return `
-        UPCOMING ACTIVITIES:
-        ${upcomingActivities || 'None scheduled.'}
+        LEADERSHIP:
+        ${leadership.length ? safeList(leadership, 5) : 'None listed.'}
+
+        MEMBERS:
+        Total ${membersSummary.total} (Patrons ${membersSummary.patrons}, Members ${membersSummary.members})
+
+        ONGOING PROJECTS:
+        ${projectSnapshot ? `Total tasks: ${projectSnapshot.totalTasks}\n${safeList(projectSnapshot.columns, 5)}` : 'No project board data.'}
+
+        UPCOMING EVENTS:
+        ${upcomingActivities.length ? safeList(upcomingActivities, 5) : 'None scheduled.'}
 
         ACTIVE CHALLENGES:
-        ${activeChallenges || 'None active.'}
+        ${activeChallenges.length ? safeList(activeChallenges, 5) : 'None active.'}
+
+        TEAM CHALLENGES:
+        ${activeTeamChallenges.length ? safeList(activeTeamChallenges, 5) : 'None active.'}
 
         LATEST ANNOUNCEMENTS:
-        ${latestAnnouncements || 'None.'}
+        ${latestAnnouncements.length ? safeList(latestAnnouncements, 3) : 'None.'}
+
+        RESOURCE HIGHLIGHTS:
+        ${resourceHighlights.length ? safeList(resourceHighlights, 6) : 'No resources.'}
+
+        RESOURCE LINKS:
+        ${resourceLinks.length ? safeList(resourceLinks, 5) : 'No links.'}
+
+        SHOWCASE HIGHLIGHTS:
+        ${showcaseHighlights.length ? safeList(showcaseHighlights, 5) : 'No showcases.'}
+
+        COMMUNITY LEADERBOARD:
+        ${recognitionBoard.length ? safeList(recognitionBoard, 5) : 'No leaderboard data yet.'}
+
+        CURRENT PLAYGROUND CODE (${playgroundLang}):
+        ${playgroundSnippet || 'No current code.'}
         `;
-    }, [activities, challenges, feedItems]);
+    }, [activities, challenges, feedItems, resources, allUsers, showcaseItems, suggestions, teams, teamChallenges, projectData]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

@@ -21,6 +21,10 @@ interface ResourcesProps {
 const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
     const { resources, isLoadingResources, resourcesError, fetchResources, showToast } = useData();
     const isPatron = currentUser.role === 'PATRON';
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState<'All' | ResourceCategory>('All');
+    const [selectedType, setSelectedType] = useState<'All' | ResourceType>('All');
+    const [sortBy, setSortBy] = useState<'Newest' | 'Oldest' | 'A-Z'>('Newest');
 
     // Form state
     const [title, setTitle] = useState('');
@@ -139,12 +143,34 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
         }
     };
     
+    const filteredResources = useMemo(() => {
+        const term = searchTerm.trim().toLowerCase();
+        let items = resources.filter(resource => {
+            const matchesTerm = !term ||
+                resource.title.toLowerCase().includes(term) ||
+                resource.description.toLowerCase().includes(term) ||
+                resource.uploaderName?.toLowerCase().includes(term);
+            const matchesCategory = selectedCategory === 'All' || resource.category === selectedCategory;
+            const matchesType = selectedType === 'All' || resource.type === selectedType;
+            return matchesTerm && matchesCategory && matchesType;
+        });
+
+        items = [...items].sort((a, b) => {
+            if (sortBy === 'A-Z') return a.title.localeCompare(b.title);
+            const aDate = new Date(a.createdAt).getTime();
+            const bDate = new Date(b.createdAt).getTime();
+            return sortBy === 'Newest' ? bDate - aDate : aDate - bDate;
+        });
+
+        return items;
+    }, [resources, searchTerm, selectedCategory, selectedType, sortBy]);
+
     const groupedResources: Record<string, Resource[]> = useMemo(() => {
-        return resources.reduce((acc, resource) => {
+        return filteredResources.reduce((acc, resource) => {
             (acc[resource.category] = acc[resource.category] || []).push(resource);
             return acc;
         }, {} as Record<string, Resource[]>);
-    }, [resources]);
+    }, [filteredResources]);
 
     const renderContent = () => {
         if (isLoadingResources) {
@@ -157,11 +183,14 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
 
         if (Object.keys(groupedResources).length > 0) {
             return (
-                <div className="space-y-8">
+                <div className="space-y-10">
                     {Object.entries(groupedResources).map(([category, items]) => (
                         <div key={category}>
-                            <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4 pb-2 border-b-2 border-pink-500/50">{category}</h3>
-                            <div className="space-y-4">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{category}</h3>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">{items.length} items</span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
                                 {items.map(resource => (
                                     <ResourceCard 
                                         key={resource.id} 
@@ -182,8 +211,66 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
     };
 
     return (
-        <div>
-            <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-6">Club Resources</h2>
+        <div className="space-y-8">
+            <div className="rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 text-white p-8 shadow-xl border border-white/10">
+                <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+                    <div>
+                        <p className="uppercase tracking-[0.3em] text-xs text-indigo-200">Club Library</p>
+                        <h2 className="text-3xl lg:text-4xl font-bold mt-2">Explore the eLibrary</h2>
+                        <p className="text-indigo-100/80 mt-2 max-w-xl">Search curated tutorials, documents, videos, and tooling references. Save time with filters and smart previews.</p>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+                        <div className="relative">
+                            <input
+                                type="text"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                placeholder="Search resources, authors, topics..."
+                                className="w-full sm:w-80 px-4 py-2.5 rounded-xl bg-white/10 text-white placeholder:text-indigo-200 border border-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400"
+                            />
+                        </div>
+                        <select
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                            className="px-4 py-2.5 rounded-xl bg-white/10 text-white border border-white/20 focus:outline-none"
+                        >
+                            <option value="Newest">Newest</option>
+                            <option value="Oldest">Oldest</option>
+                            <option value="A-Z">A-Z</option>
+                        </select>
+                    </div>
+                </div>
+                <div className="mt-6 flex flex-wrap gap-3">
+                    {(['All', 'Documentation', 'Tutorial', 'Tool', 'Article', 'Other'] as const).map(cat => (
+                        <button
+                            key={cat}
+                            onClick={() => setSelectedCategory(cat as any)}
+                            className={`px-4 py-2 rounded-full text-xs font-semibold transition-colors ${
+                                selectedCategory === cat
+                                    ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/30'
+                                    : 'bg-white/10 text-indigo-100 hover:bg-white/20'
+                            }`}
+                        >
+                            {cat}
+                        </button>
+                    ))}
+                </div>
+                <div className="mt-4 flex flex-wrap gap-3">
+                    {(['All', 'LINK', 'VIDEO', 'PYTHON', 'DOCUMENT'] as const).map(kind => (
+                        <button
+                            key={kind}
+                            onClick={() => setSelectedType(kind as any)}
+                            className={`px-4 py-2 rounded-full text-xs font-semibold transition-colors ${
+                                selectedType === kind
+                                    ? 'bg-indigo-400 text-slate-900 shadow-lg shadow-indigo-500/30'
+                                    : 'bg-white/10 text-indigo-100 hover:bg-white/20'
+                            }`}
+                        >
+                            {kind === 'LINK' ? 'Link' : kind === 'VIDEO' ? 'Video' : kind === 'PYTHON' ? 'Python' : kind === 'DOCUMENT' ? 'Document' : 'All'}
+                        </button>
+                    ))}
+                </div>
+            </div>
 
             {isPatron && (
                 <div className="mb-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">

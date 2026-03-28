@@ -332,6 +332,9 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
   const [inviteUserId, setInviteUserId] = useState('');
   const [inviteTeamId, setInviteTeamId] = useState('');
   const [htmlPreview, setHtmlPreview] = useState(DEFAULT_HTML);
+  const [previewConsole, setPreviewConsole] = useState<OutputLine[]>([]);
+  const [previewSessionId, setPreviewSessionId] = useState(0);
+  const [showPreviewConsole, setShowPreviewConsole] = useState(true);
   
   const [output, setOutput] = useState<OutputLine[]>([{ type: 'log', content: 'Click "Run Code" to see the output here.' }]);
   const [isExecuting, setIsExecuting] = useState<boolean>(false);
@@ -460,6 +463,20 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
           setHtmlPreview(code);
       }
   }, [language, activeProject]);
+
+  useEffect(() => {
+      const handlePreviewMessage = (event: MessageEvent) => {
+          const data = event.data;
+          if (!data || data.type !== 'clubhub-preview') return;
+          if (data.sessionId !== previewSessionId) return;
+          const level = data.level as 'log' | 'error';
+          const content = typeof data.message === 'string' ? data.message : JSON.stringify(data.message);
+          setPreviewConsole(prev => [...prev, { type: level === 'error' ? 'error' : 'log', content }]);
+      };
+
+      window.addEventListener('message', handlePreviewMessage);
+      return () => window.removeEventListener('message', handlePreviewMessage);
+  }, [previewSessionId]);
 
   useEffect(() => {
       activeFileRef.current = activeFile;
@@ -913,7 +930,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
           showToast("Member invited.", "success");
       } catch (error: any) {
           console.error("Failed to invite member", error);
-          showToast("Failed to invite member.", "error");
+          showToast(error?.message || "Failed to invite member.", "error");
       }
   };
 
@@ -938,7 +955,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
           showToast("Team invited.", "success");
       } catch (error: any) {
           console.error("Failed to invite team", error);
-          showToast("Failed to invite team.", "error");
+          showToast(error?.message || "Failed to invite team.", "error");
       }
   };
 
@@ -1004,8 +1021,11 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
 
   const handleImportCode = (importedCode: string) => {
       if (activeProject) {
-           showToast("Exit project mode to import code into the single-file playground.", "info");
-           return;
+           setActiveProject(null);
+           setActiveFile(null);
+           setProjectFiles([]);
+           setProjectMembers([]);
+           showToast("Exited project mode to open imported code.", "info");
       }
       const currentCode = codeRef.current;
       const def = language === 'python' ? DEFAULT_PYTHON : language === 'javascript' ? DEFAULT_JS : DEFAULT_HTML;
@@ -1426,7 +1446,10 @@ asyncio.sleep = custom_sleep_async
       if (language === 'python') runPython();
       else if (language === 'javascript') runJS();
       else {
-          setHtmlPreview(code);
+          const session = Date.now();
+          setPreviewSessionId(session);
+          setPreviewConsole([]);
+          setHtmlPreview(buildWebPreviewHtml({ 'index.html': code }, session));
           setActiveTabState('preview');
       }
   };
@@ -1487,7 +1510,7 @@ if "${projectDir}" not in sys.path:
       return parts[parts.length - 1].toLowerCase();
   };
 
-  const buildWebPreviewHtml = (contents: Record<string, string>) => {
+  const buildWebPreviewHtml = (contents: Record<string, string>, sessionId: number) => {
       const filePaths = Object.keys(contents);
       const htmlPath = filePaths.find(path => path.toLowerCase().endsWith('index.html'))
           || filePaths.find(path => getFileExtension(path) === 'html');
@@ -1520,6 +1543,38 @@ if "${projectDir}" not in sys.path:
           }
       }
 
+      const instrumentation = `
+<script id="clubhub-console-hook">
+(function() {
+  const sessionId = ${sessionId};
+  const send = (level, message) => {
+    try {
+      window.parent.postMessage({ type: 'clubhub-preview', level, message, sessionId }, '*');
+    } catch (e) {}
+  };
+  const wrap = (level) => (...args) => {
+    send(level, args.map(arg => {
+      try { return typeof arg === 'string' ? arg : JSON.stringify(arg); } catch (e) { return String(arg); }
+    }).join(' '));
+  };
+  console.log = wrap('log');
+  console.error = wrap('error');
+  window.addEventListener('error', (event) => {
+    send('error', event.message || 'Runtime error');
+  });
+  window.addEventListener('unhandledrejection', (event) => {
+    send('error', event.reason ? (event.reason.message || String(event.reason)) : 'Unhandled promise rejection');
+  });
+})();
+</script>
+      `.trim();
+
+      if (html.includes('</body>')) {
+          html = html.replace('</body>', `\n${instrumentation}\n</body>`);
+      } else {
+          html += `\n${instrumentation}`;
+      }
+
       return html;
   };
 
@@ -1527,7 +1582,13 @@ if "${projectDir}" not in sys.path:
       if (!activeProject) return;
       try {
           const contents = await ensureProjectFilesLoaded();
-          const previewHtml = buildWebPreviewHtml(contents);
+          if (activeFile) {
+              contents[activeFile.path] = codeRef.current;
+          }
+          const session = Date.now();
+          setPreviewSessionId(session);
+          setPreviewConsole([]);
+          const previewHtml = buildWebPreviewHtml(contents, session);
           setHtmlPreview(previewHtml);
           setActiveTabState('preview');
           await api.logPlaygroundActivity({
@@ -1904,6 +1965,15 @@ if "${projectDir}" not in sys.path:
         <div className="flex items-center gap-2">
              {activeProject && (
                 <button
+                    onClick={() => setActiveProject(null)}
+                    className="px-2 py-1 text-xs font-semibold rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
+                    title="Exit project mode"
+                >
+                    Exit Project
+                </button>
+             )}
+             {activeProject && (
+                <button
                     onClick={handleSaveFile}
                     className="px-2 py-1 text-xs font-semibold rounded-md bg-indigo-600 text-white hover:bg-indigo-700"
                     title="Save file"
@@ -2063,20 +2133,55 @@ if "${projectDir}" not in sys.path:
             <div className={`absolute inset-0 w-full h-full bg-white dark:bg-gray-900 overflow-hidden flex flex-col ${activeTab === 'preview' ? 'z-10 opacity-100' : 'z-0 opacity-0 pointer-events-none'}`}>
                  <div className="flex justify-between items-center p-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                     <span className="text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider pl-2">Preview</span>
-                    <button
-                        onClick={() => setHtmlPreview(code)}
-                        className="px-2 py-1 text-xs font-semibold rounded-md bg-indigo-600 text-white hover:bg-indigo-700"
-                    >
-                        Refresh
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setShowPreviewConsole(prev => !prev)}
+                            className="px-2 py-1 text-xs font-semibold rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200"
+                        >
+                            {showPreviewConsole ? 'Hide Console' : 'Show Console'}
+                        </button>
+                        <button
+                            onClick={() => setPreviewConsole([])}
+                            className="px-2 py-1 text-xs font-semibold rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200"
+                        >
+                            Clear Console
+                        </button>
+                        <button
+                            onClick={() => {
+                                if (activeProject) runWebPreview();
+                                else {
+                                    setPreviewConsole([]);
+                                    const session = Date.now();
+                                    setPreviewSessionId(session);
+                                    setHtmlPreview(buildWebPreviewHtml({ 'index.html': code }, session));
+                                }
+                            }}
+                            className="px-2 py-1 text-xs font-semibold rounded-md bg-indigo-600 text-white hover:bg-indigo-700"
+                        >
+                            Refresh
+                        </button>
+                    </div>
                  </div>
-                 <div className="flex-1 bg-white">
+                 <div className="flex-1 bg-white flex flex-col">
                     <iframe
                         title="HTML Preview"
-                        className="w-full h-full border-0 bg-white"
+                        className={`w-full border-0 bg-white ${showPreviewConsole ? 'flex-1' : 'h-full'}`}
                         sandbox="allow-scripts allow-modals allow-forms"
                         srcDoc={htmlPreview}
                     />
+                    {showPreviewConsole && (
+                        <div className="h-40 border-t border-gray-200 dark:border-gray-700 bg-gray-900 text-gray-200 text-xs font-mono overflow-y-auto p-3 space-y-1 custom-scrollbar">
+                            {previewConsole.length === 0 ? (
+                                <span className="text-gray-500">Preview console ready…</span>
+                            ) : (
+                                previewConsole.map((line, idx) => (
+                                    <div key={idx} className={line.type === 'error' ? 'text-red-400' : 'text-gray-200'}>
+                                        {line.content}
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    )}
                  </div>
             </div>
           </div>

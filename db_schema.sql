@@ -264,6 +264,11 @@ create policy "Project members insert"
               where tm.team_id = p.team_id
                 and tm.user_uid = auth.uid()::text
             ))
+            or exists (
+              select 1 from public.playground_project_members ppm
+              where ppm.project_id = p.id
+                and ppm.user_uid = auth.uid()::text
+            )
           )
       )
       or exists (

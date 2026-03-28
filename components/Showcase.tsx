@@ -35,6 +35,13 @@ const MiniSyntaxHighlighter: React.FC<{ text: string }> = ({ text }) => {
     );
 };
 
+const detectShowcaseLanguage = (code: string) => {
+    if (!code) return 'JS';
+    if (/<\s*!doctype|<\s*html|<\s*head|<\s*body|<\s*div|<\s*script|<\s*style/i.test(code)) return 'HTML';
+    if (/import\s+|def\s+|print\s*\(/.test(code)) return 'PY';
+    return 'JS';
+};
+
 const ShowcaseCard: React.FC<{ 
     item: ShowcaseItem, 
     currentUser: User, 
@@ -49,6 +56,7 @@ const ShowcaseCard: React.FC<{
     const [isLoadingComments, setIsLoadingComments] = useState(false);
     const [newComment, setNewComment] = useState('');
     const [isPosting, setIsPosting] = useState(false);
+    const languageBadge = useMemo(() => detectShowcaseLanguage(item.codeContent), [item.codeContent]);
 
     const isLiked = likes.includes(currentUser.uid);
 
@@ -103,7 +111,18 @@ const ShowcaseCard: React.FC<{
                         />
                         <div>
                             <h3 className="font-bold text-gray-900 dark:text-gray-100 text-lg leading-tight line-clamp-1" title={item.title}>{item.title}</h3>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">by {item.userName} • {item.createdAt}</p>
+                            <div className="flex items-center gap-2">
+                                <p className="text-xs text-gray-500 dark:text-gray-400">by {item.userName} • {item.createdAt}</p>
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                                    languageBadge === 'HTML'
+                                        ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-200'
+                                        : languageBadge === 'PY'
+                                            ? 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-200'
+                                            : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-200'
+                                }`}>
+                                    {languageBadge}
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>

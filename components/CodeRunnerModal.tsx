@@ -110,7 +110,12 @@ export const CodeRunnerModal: React.FC<CodeRunnerModalProps> = ({ isOpen, onClos
   const [editorTheme, setEditorTheme] = useState('vs-dark');
   
   const [activeCode, setActiveCode] = useState(code);
-  const [language, setLanguage] = useState<'python' | 'javascript'>('python');
+  const [language, setLanguage] = useState<'python' | 'javascript' | 'html'>('python');
+  const [activeTab, setActiveTab] = useState<'code' | 'output' | 'preview'>('code');
+  const [htmlPreview, setHtmlPreview] = useState('');
+  const [previewConsole, setPreviewConsole] = useState<OutputLine[]>([]);
+  const [previewSessionId, setPreviewSessionId] = useState(0);
+  const [showPreviewConsole, setShowPreviewConsole] = useState(true);
   
   const [isWaitingForInput, setIsWaitingForInput] = useState(false);
   const [inputPrompt, setInputPrompt] = useState('');
@@ -122,10 +127,13 @@ export const CodeRunnerModal: React.FC<CodeRunnerModalProps> = ({ isOpen, onClos
   useEffect(() => {
     if (isOpen) {
         // Simple heuristic to detect language
+        const isLikelyHtml = /<\s*!doctype|<\s*html|<\s*head|<\s*body|<\s*div|<\s*script|<\s*style/i.test(code);
         const isLikelyPython = /import\s+|def\s+|print\s*\(/.test(code);
-        setLanguage(isLikelyPython ? 'python' : 'javascript');
+        const detected = isLikelyHtml ? 'html' : (isLikelyPython ? 'python' : 'javascript');
+        setLanguage(detected);
+        setActiveTab(isLikelyHtml ? 'preview' : 'output');
 
-        if (isLikelyPython && !pyodideRef.current) {
+        if (detected === 'python' && !pyodideRef.current) {
             const loadPyodide = async () => {
                 setIsLoadingPyodide(true);
                 try {
@@ -148,6 +156,12 @@ export const CodeRunnerModal: React.FC<CodeRunnerModalProps> = ({ isOpen, onClos
         setIsWaitingForInput(false);
         setConsoleInput('');
         setActiveCode(code);
+        setPreviewConsole([]);
+        if (isLikelyHtml) {
+            const session = Date.now();
+            setPreviewSessionId(session);
+            setHtmlPreview(buildHtmlPreview(code, session));
+        }
 
         const isDark = document.documentElement.classList.contains('dark');
         setEditorTheme(isDark ? 'vs-dark' : 'light');
@@ -158,6 +172,29 @@ export const CodeRunnerModal: React.FC<CodeRunnerModalProps> = ({ isOpen, onClos
         completionProvidersRef.current = [];
     };
   }, [isOpen, code]);
+
+  useEffect(() => {
+      if (language === 'html' && activeTab !== 'preview') {
+          setActiveTab('preview');
+      }
+      if (language !== 'html' && activeTab === 'preview') {
+          setActiveTab('output');
+      }
+  }, [language, activeTab]);
+
+  useEffect(() => {
+      const handlePreviewMessage = (event: MessageEvent) => {
+          const data = event.data;
+          if (!data || data.type !== 'clubhub-preview') return;
+          if (data.sessionId !== previewSessionId) return;
+          const level = data.level as 'log' | 'error';
+          const content = typeof data.message === 'string' ? data.message : JSON.stringify(data.message);
+          setPreviewConsole(prev => [...prev, { type: level === 'error' ? 'error' : 'log', content }]);
+      };
+
+      window.addEventListener('message', handlePreviewMessage);
+      return () => window.removeEventListener('message', handlePreviewMessage);
+  }, [previewSessionId]);
 
   const handleEditorDidMount = (editor: any, monaco: any) => {
       editor.updateOptions({
@@ -218,6 +255,39 @@ export const CodeRunnerModal: React.FC<CodeRunnerModalProps> = ({ isOpen, onClos
               inputResolverRef.current = null;
           }
       }
+  };
+
+  const buildHtmlPreview = (html: string, sessionId: number) => {
+      const instrumentation = `
+<script id="clubhub-console-hook">
+(function() {
+  const sessionId = ${sessionId};
+  const send = (level, message) => {
+    try {
+      window.parent.postMessage({ type: 'clubhub-preview', level, message, sessionId }, '*');
+    } catch (e) {}
+  };
+  const wrap = (level) => (...args) => {
+    send(level, args.map(arg => {
+      try { return typeof arg === 'string' ? arg : JSON.stringify(arg); } catch (e) { return String(arg); }
+    }).join(' '));
+  };
+  console.log = wrap('log');
+  console.error = wrap('error');
+  window.addEventListener('error', (event) => {
+    send('error', event.message || 'Runtime error');
+  });
+  window.addEventListener('unhandledrejection', (event) => {
+    send('error', event.reason ? (event.reason.message || String(event.reason)) : 'Unhandled promise rejection');
+  });
+})();
+</script>
+      `.trim();
+
+      if (html.includes('</body>')) {
+          return html.replace('</body>', `\n${instrumentation}\n</body>`);
+      }
+      return `${html}\n${instrumentation}`;
   };
 
   const runJS = () => {
@@ -349,7 +419,13 @@ asyncio.sleep = custom_sleep_async
   };
 
   const handleRunCode = () => {
-      if (language === 'python') runPython();
+      if (language === 'html') {
+          const session = Date.now();
+          setPreviewSessionId(session);
+          setPreviewConsole([]);
+          setHtmlPreview(buildHtmlPreview(activeCode, session));
+          setActiveTab('preview');
+      } else if (language === 'python') runPython();
       else runJS();
   };
 
@@ -372,6 +448,12 @@ asyncio.sleep = custom_sleep_async
                           className={`px-2 py-0.5 text-xs font-bold rounded transition-colors ${language === 'javascript' ? 'bg-yellow-500 text-white' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
                       >
                           JS
+                      </button>
+                      <button 
+                          onClick={() => setLanguage('html')} 
+                          className={`px-2 py-0.5 text-xs font-bold rounded transition-colors ${language === 'html' ? 'bg-indigo-500 text-white' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                      >
+                          HTML
                       </button>
                   </div>
                   <h3 className="text-lg font-bold text-gray-900 dark:text-white truncate">
@@ -406,48 +488,91 @@ asyncio.sleep = custom_sleep_async
                   />
               </div>
 
-              <div 
-                  ref={outputContainerRef}
-                  className="flex-1 bg-gray-900 dark:bg-black text-gray-300 font-mono text-xs md:text-sm p-4 overflow-y-auto flex flex-col shadow-inner"
-                  onClick={() => {
-                      if (isWaitingForInput && consoleInputRef.current) {
-                          consoleInputRef.current.focus();
-                      }
-                  }}
-              >
-                  <div className="flex-1">
-                      {output.length === 0 && !isExecuting && (
-                          <div className="text-gray-500 italic">Click Run to execute...</div>
-                      )}
-                      {output.map((line, i) => (
-                          <div key={i} className="mb-1 whitespace-pre-wrap break-all leading-relaxed">
-                              {line.type === 'log' ? (
-                                  <SyntaxHighlightedText text={line.content} />
-                              ) : (
-                                  <span className="text-red-400 font-medium">{line.content}</span>
-                              )}
-                          </div>
-                      ))}
-                      
-                      {isWaitingForInput && (
-                          <div className="flex items-center text-gray-300 leading-relaxed mt-1">
-                              <span className="whitespace-pre-wrap">{inputPrompt}</span>
-                              <input
-                                  ref={consoleInputRef}
-                                  value={consoleInput}
-                                  onChange={e => setConsoleInput(e.target.value)}
-                                  onKeyDown={handleConsoleInputEnter}
-                                  className="flex-1 bg-transparent border-none outline-none text-green-400 font-bold ml-1 min-w-[50px]"
-                                  autoFocus
-                                  autoComplete="off"
-                                  spellCheck="false"
-                              />
-                          </div>
-                      )}
+              {language !== 'html' ? (
+                  <div 
+                      ref={outputContainerRef}
+                      className="flex-1 bg-gray-900 dark:bg-black text-gray-300 font-mono text-xs md:text-sm p-4 overflow-y-auto flex flex-col shadow-inner"
+                      onClick={() => {
+                          if (isWaitingForInput && consoleInputRef.current) {
+                              consoleInputRef.current.focus();
+                          }
+                      }}
+                  >
+                      <div className="flex-1">
+                          {output.length === 0 && !isExecuting && (
+                              <div className="text-gray-500 italic">Click Run to execute...</div>
+                          )}
+                          {output.map((line, i) => (
+                              <div key={i} className="mb-1 whitespace-pre-wrap break-all leading-relaxed">
+                                  {line.type === 'log' ? (
+                                      <SyntaxHighlightedText text={line.content} />
+                                  ) : (
+                                      <span className="text-red-400 font-medium">{line.content}</span>
+                                  )}
+                              </div>
+                          ))}
+                          
+                          {isWaitingForInput && (
+                              <div className="flex items-center text-gray-300 leading-relaxed mt-1">
+                                  <span className="whitespace-pre-wrap">{inputPrompt}</span>
+                                  <input
+                                      ref={consoleInputRef}
+                                      value={consoleInput}
+                                      onChange={e => setConsoleInput(e.target.value)}
+                                      onKeyDown={handleConsoleInputEnter}
+                                      className="flex-1 bg-transparent border-none outline-none text-green-400 font-bold ml-1 min-w-[50px]"
+                                      autoFocus
+                                      autoComplete="off"
+                                      spellCheck="false"
+                                  />
+                              </div>
+                          )}
 
-                      {isExecuting && !isWaitingForInput && <div className="animate-pulse mt-2 text-green-500">_</div>}
+                          {isExecuting && !isWaitingForInput && <div className="animate-pulse mt-2 text-green-500">_</div>}
+                      </div>
                   </div>
-              </div>
+              ) : (
+                  <div className="flex-1 flex flex-col bg-white dark:bg-gray-900">
+                      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-800/60">
+                          <span className="text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">Preview</span>
+                          <div className="flex items-center gap-2">
+                              <button
+                                  onClick={() => setShowPreviewConsole(prev => !prev)}
+                                  className="px-2 py-1 text-xs font-semibold rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200"
+                              >
+                                  {showPreviewConsole ? 'Hide Console' : 'Show Console'}
+                              </button>
+                              <button
+                                  onClick={() => setPreviewConsole([])}
+                                  className="px-2 py-1 text-xs font-semibold rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200"
+                              >
+                                  Clear Console
+                              </button>
+                          </div>
+                      </div>
+                      <div className="flex-1 flex flex-col">
+                          <iframe
+                              title="HTML Showcase Preview"
+                              className={`w-full border-0 bg-white ${showPreviewConsole ? 'flex-1' : 'h-full'}`}
+                              sandbox="allow-scripts allow-modals allow-forms"
+                              srcDoc={htmlPreview}
+                          />
+                          {showPreviewConsole && (
+                              <div className="h-40 border-t border-gray-200 dark:border-gray-800 bg-gray-900 text-gray-200 text-xs font-mono overflow-y-auto p-3 space-y-1 custom-scrollbar">
+                                  {previewConsole.length === 0 ? (
+                                      <span className="text-gray-500">Preview console ready…</span>
+                                  ) : (
+                                      previewConsole.map((line, idx) => (
+                                          <div key={idx} className={line.type === 'error' ? 'text-red-400' : 'text-gray-200'}>
+                                              {line.content}
+                                          </div>
+                                      ))
+                                  )}
+                              </div>
+                          )}
+                      </div>
+                  </div>
+              )}
           </div>
 
           <div className="p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex justify-end">
@@ -458,7 +583,7 @@ asyncio.sleep = custom_sleep_async
               >
                   {language === 'python' && isLoadingPyodide ? 'Loading Engine...' : isExecuting ? 'Running...' : (
                       <>
-                          <PlayIcon /> Run Code
+                          <PlayIcon /> {language === 'html' ? 'Refresh Preview' : 'Run Code'}
                       </>
                   )}
               </button>
