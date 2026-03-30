@@ -248,6 +248,66 @@ const AppearanceSettings: React.FC = () => {
                 </div>
             )
         },
+        { 
+            id: 'halo', 
+            name: 'Halo', 
+            preview: (
+                <div className="relative w-12 h-12 flex items-center justify-center">
+                    <div className="w-2 h-2 bg-yellow-300 rounded-full shadow-[0_0_6px_rgba(253,224,71,0.9)]"></div>
+                    <div className="absolute w-10 h-10 border-2 border-yellow-300/70 rounded-full"></div>
+                </div>
+            )
+        },
+        { 
+            id: 'orbit', 
+            name: 'Orbit', 
+            preview: (
+                <div className="relative w-12 h-12 flex items-center justify-center">
+                    <div className="w-2.5 h-2.5 bg-cyan-300 rounded-full"></div>
+                    <div className="absolute w-10 h-10 border border-cyan-400/50 rounded-full animate-spin-slow"></div>
+                </div>
+            )
+        },
+        { 
+            id: 'comet', 
+            name: 'Comet', 
+            preview: (
+                <div className="relative w-12 h-12 flex items-center justify-center">
+                    <div className="w-2.5 h-2.5 bg-white rounded-full shadow-[0_0_6px_rgba(255,255,255,0.9)]"></div>
+                    <div className="absolute left-1/2 w-8 h-1 -translate-x-1/2 rounded-full bg-gradient-to-r from-transparent via-cyan-300/70 to-white/80"></div>
+                </div>
+            )
+        },
+        { 
+            id: 'neon', 
+            name: 'Neon', 
+            preview: (
+                <div className="relative w-12 h-12 flex items-center justify-center">
+                    <div className="w-2.5 h-2.5 bg-lime-300 rounded-sm shadow-[0_0_8px_rgba(190,242,100,0.9)]"></div>
+                    <div className="absolute w-9 h-9 border-2 border-lime-300/70 rounded-lg"></div>
+                </div>
+            )
+        },
+        { 
+            id: 'scanner', 
+            name: 'Scanner', 
+            preview: (
+                <div className="relative w-12 h-12 flex items-center justify-center">
+                    <div className="w-2 h-2 bg-emerald-300 rounded-full"></div>
+                    <div className="absolute w-9 h-9 border border-emerald-400/60 rounded-md"></div>
+                </div>
+            )
+        },
+        { 
+            id: 'glitch', 
+            name: 'Glitch', 
+            preview: (
+                <div className="relative w-12 h-12 flex items-center justify-center">
+                    <div className="w-2.5 h-2.5 bg-pink-500"></div>
+                    <div className="absolute w-8 h-8 border border-cyan-400/60 translate-x-0.5 -translate-y-0.5"></div>
+                </div>
+            )
+        },
     ];
 
     const fontOptions = [

@@ -55,7 +55,13 @@ export type CursorVariant =
   | 'bomb'
   | 'robot'
   | 'skull'
-  | 'potion';
+  | 'potion'
+  | 'halo'
+  | 'orbit'
+  | 'comet'
+  | 'neon'
+  | 'scanner'
+  | 'glitch';
 
 const CustomCursor: React.FC = () => {
   const cursorRef = useRef<HTMLDivElement>(null);
@@ -106,6 +112,9 @@ const CustomCursor: React.FC = () => {
       if (cursorRef.current) {
         cursorRef.current.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
       }
+      if (followerRef.current) {
+        followerRef.current.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
+      }
 
       const target = e.target as HTMLElement;
       const isInteractive = 
@@ -129,34 +138,11 @@ const CustomCursor: React.FC = () => {
     document.addEventListener('mouseenter', onMouseEnter);
     window.addEventListener('mousedown', onMouseDown);
 
-    let animationFrameId: number;
-
-    const animate = () => {
-      // Follower movement with smooth lerp
-      if (followerRef.current) {
-        // Adjust speed based on variant - EVEN FASTER FOR SNAPPY FEEL
-        let speed = 0.92; // Faster base speed (near-cursor feel)
-        
-        if (['retro', 'pixel', 'target', 'ring', 'gear', 'figma'].includes(variant)) speed = 0.98; // Near instant
-        if (['bubble', 'ghost', 'ufo', 'potion'].includes(variant)) speed = 0.82; // Floaty but still quick
-        if (['crosshair', 'pencil', 'wand', 'sword'].includes(variant)) speed = 0.95; // Very precise
-        
-        followerPosition.current.x += (position.current.x - followerPosition.current.x) * speed;
-        followerPosition.current.y += (position.current.y - followerPosition.current.y) * speed;
-        
-        followerRef.current.style.transform = `translate3d(${followerPosition.current.x}px, ${followerPosition.current.y}px, 0)`;
-      }
-      animationFrameId = requestAnimationFrame(animate);
-    };
-
-    animate();
-
     return () => {
       window.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseleave', onMouseLeave);
       document.removeEventListener('mouseenter', onMouseEnter);
       window.removeEventListener('mousedown', onMouseDown);
-      cancelAnimationFrame(animationFrameId);
     };
   }, [isSupported, isVisible, variant]);
 
@@ -871,6 +857,102 @@ const CustomCursor: React.FC = () => {
                         className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 bg-purple-500/20 rounded-full blur-md transition-all duration-300 ease-out
                         ${hovering ? 'scale-150 bg-purple-400/30 animate-pulse' : 'scale-100'}`}
                     />
+                  </>
+              );
+          case 'halo':
+              return (
+                  <>
+                    <div 
+                        ref={cursorRef}
+                        className="fixed top-0 left-0 w-2 h-2 bg-yellow-300 rounded-full pointer-events-none z-[9999] -ml-1 -mt-1 shadow-[0_0_6px_rgba(253,224,71,0.9)]"
+                    />
+                    <div 
+                        ref={followerRef}
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-7 -mt-7 w-14 h-14 rounded-full border-2 border-yellow-300/60 shadow-[0_0_16px_rgba(253,224,71,0.45)] transition-all duration-100
+                        ${hovering ? 'scale-110 border-yellow-400' : 'scale-100'}`}
+                    />
+                  </>
+              );
+          case 'orbit':
+              return (
+                  <>
+                    <div 
+                        ref={cursorRef}
+                        className="fixed top-0 left-0 w-2.5 h-2.5 bg-cyan-300 rounded-full pointer-events-none z-[9999] -ml-1.5 -mt-1.5 shadow-[0_0_6px_rgba(34,211,238,0.9)]"
+                    />
+                    <div 
+                        ref={followerRef}
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-7 -mt-7 w-14 h-14 rounded-full border border-cyan-300/50 transition-all duration-120
+                        ${hovering ? 'scale-110 border-cyan-200' : 'scale-100'}`}
+                    >
+                        <div className="absolute inset-0 animate-spin-slow">
+                            <div className="absolute -top-1 left-1/2 w-2 h-2 bg-cyan-300 rounded-full -translate-x-1/2 shadow-[0_0_6px_rgba(34,211,238,0.8)]"></div>
+                            <div className="absolute -bottom-1 left-1/2 w-1.5 h-1.5 bg-purple-400 rounded-full -translate-x-1/2 shadow-[0_0_6px_rgba(168,85,247,0.8)]"></div>
+                        </div>
+                    </div>
+                  </>
+              );
+          case 'comet':
+              return (
+                  <>
+                    <div 
+                        ref={cursorRef}
+                        className="fixed top-0 left-0 w-2.5 h-2.5 bg-white rounded-full pointer-events-none z-[9999] -ml-1.5 -mt-1.5 shadow-[0_0_8px_rgba(255,255,255,0.9)]"
+                    />
+                    <div 
+                        ref={followerRef}
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-8 -mt-4 w-16 h-8 transition-all duration-150
+                        ${hovering ? 'scale-110' : 'scale-100'}`}
+                    >
+                        <div className="absolute left-0 top-1/2 w-12 h-1.5 -translate-y-1/2 rounded-full bg-gradient-to-r from-transparent via-cyan-300/60 to-white/90 blur-[1px]"></div>
+                    </div>
+                  </>
+              );
+          case 'neon':
+              return (
+                  <>
+                    <div 
+                        ref={cursorRef}
+                        className="fixed top-0 left-0 w-3 h-3 bg-lime-300 rounded-sm pointer-events-none z-[9999] -ml-1.5 -mt-1.5 shadow-[0_0_10px_rgba(190,242,100,0.9)]"
+                    />
+                    <div 
+                        ref={followerRef}
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border-2 border-lime-300/60 rounded-lg shadow-[0_0_18px_rgba(190,242,100,0.35)] transition-all duration-120
+                        ${hovering ? 'scale-110 border-lime-200' : 'scale-100'}`}
+                    />
+                  </>
+              );
+          case 'scanner':
+              return (
+                  <>
+                    <div 
+                        ref={cursorRef}
+                        className="fixed top-0 left-0 w-2 h-2 bg-emerald-300 rounded-full pointer-events-none z-[9999] -ml-1 -mt-1"
+                    />
+                    <div 
+                        ref={followerRef}
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border border-emerald-400/60 rounded-md transition-all duration-100
+                        ${hovering ? 'scale-110 border-emerald-300' : 'scale-100'}`}
+                    >
+                        <div className="absolute inset-x-1 top-1/2 h-0.5 bg-emerald-300/70 animate-pulse"></div>
+                    </div>
+                  </>
+              );
+          case 'glitch':
+              return (
+                  <>
+                    <div 
+                        ref={cursorRef}
+                        className="fixed top-0 left-0 w-3 h-3 bg-pink-500 pointer-events-none z-[9999] -ml-1.5 -mt-1.5 shadow-[0_0_6px_rgba(236,72,153,0.8)]"
+                    />
+                    <div 
+                        ref={followerRef}
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 transition-all duration-100
+                        ${hovering ? 'scale-110' : 'scale-100'}`}
+                    >
+                        <div className="absolute inset-0 border border-cyan-400/50 translate-x-0.5 -translate-y-0.5"></div>
+                        <div className="absolute inset-0 border border-pink-500/50 -translate-x-0.5 translate-y-0.5"></div>
+                    </div>
                   </>
               );
           default: // 'default'
