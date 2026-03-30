@@ -96,13 +96,14 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
         }
     };
 
-    const handleJoinTeam = async (teamId: string) => {
+    const handleRequestJoin = async (teamId: string) => {
         try {
-            await api.addTeamMember(teamId, currentUser.uid);
+            await api.requestTeamJoin(teamId, currentUser.uid);
             await fetchTeams();
+            showToast('Join request sent to team owner.', 'success');
         } catch (error) {
             console.error("Failed to join team", error);
-            showToast('Failed to join team.', 'error');
+            showToast('Failed to send join request.', 'error');
         }
     };
 
@@ -127,6 +128,36 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
         } catch (error) {
             console.error("Failed to add member", error);
             showToast('Failed to add member.', 'error');
+        }
+    };
+
+    const handleApproveRequest = async (teamId: string, requestId: string, requesterId: string) => {
+        try {
+            await api.approveTeamJoinRequest({
+                requestId,
+                teamId,
+                requesterId,
+                reviewedBy: currentUser.uid
+            });
+            await fetchTeams();
+            showToast('Member approved.', 'success');
+        } catch (error) {
+            console.error("Failed to approve request", error);
+            showToast('Failed to approve request.', 'error');
+        }
+    };
+
+    const handleRejectRequest = async (requestId: string) => {
+        try {
+            await api.rejectTeamJoinRequest({
+                requestId,
+                reviewedBy: currentUser.uid
+            });
+            await fetchTeams();
+            showToast('Request rejected.', 'info');
+        } catch (error) {
+            console.error("Failed to reject request", error);
+            showToast('Failed to reject request.', 'error');
         }
     };
 
@@ -314,7 +345,10 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         {teams.map(team => {
                             const isMember = team.memberIds.includes(currentUser.uid);
-                            const canManageMembers = isMember || currentUser.role === 'PATRON';
+                            const isOwner = team.createdBy === currentUser.uid;
+                            const pendingRequests = (team.joinRequests || []).filter(req => req.status === 'PENDING');
+                            const myRequest = (team.joinRequests || []).find(req => req.requesterId === currentUser.uid && req.status === 'PENDING');
+                            const canManageMembers = isOwner;
                             const availableMembers = allUsers
                                 .filter(user => user.status === 'APPROVED')
                                 .filter(user => !team.memberIds.includes(user.uid));
@@ -332,12 +366,16 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
                                             >
                                                 Leave
                                             </button>
+                                        ) : myRequest ? (
+                                            <span className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">
+                                                Requested
+                                            </span>
                                         ) : (
                                             <button
-                                                onClick={() => handleJoinTeam(team.id)}
+                                                onClick={() => handleRequestJoin(team.id)}
                                                 className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-pink-600 text-white hover:bg-pink-700"
                                             >
-                                                Join
+                                                Request Join
                                             </button>
                                         )}
                                     </div>
@@ -357,6 +395,44 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
                                             <span className="text-xs text-gray-500 dark:text-gray-400">+{team.memberIds.length - 6} more</span>
                                         )}
                                     </div>
+                                    {isOwner && pendingRequests.length > 0 && (
+                                        <div className="mt-4 rounded-lg border border-amber-200 dark:border-amber-700/40 bg-amber-50/60 dark:bg-amber-900/20 p-3 space-y-2">
+                                            <p className="text-xs font-semibold text-amber-700 dark:text-amber-200 uppercase tracking-wide">Join Requests</p>
+                                            {pendingRequests.map(req => {
+                                                const requester = userMap.get(req.requesterId);
+                                                return (
+                                                    <div key={req.id} className="flex items-center justify-between gap-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <img
+                                                                src={requester?.avatarUrl || `https://i.pravatar.cc/40?u=${requester?.username || req.requesterId}`}
+                                                                alt={requester?.name || 'Member'}
+                                                                className="w-7 h-7 rounded-full border border-gray-200 dark:border-gray-700 object-cover"
+                                                            />
+                                                            <div className="text-xs text-gray-700 dark:text-gray-200">
+                                                                <p className="font-semibold">{requester?.name || 'Member'}</p>
+                                                                <p className="text-[11px] text-gray-500 dark:text-gray-400">@{requester?.username || 'unknown'}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <button
+                                                                onClick={() => handleApproveRequest(team.id, req.id, req.requesterId)}
+                                                                className="px-2.5 py-1 text-[11px] font-semibold rounded-md bg-emerald-600 text-white hover:bg-emerald-700"
+                                                            >
+                                                                Approve
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleRejectRequest(req.id)}
+                                                                className="px-2.5 py-1 text-[11px] font-semibold rounded-md bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
+                                                            >
+                                                                Decline
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+
                                     {canManageMembers && availableMembers.length > 0 && (
                                         <div className="mt-4 flex flex-col sm:flex-row gap-2">
                                             <select
@@ -364,7 +440,7 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
                                                 onChange={(e) => setMemberInvite(prev => ({ ...prev, [team.id]: e.target.value }))}
                                                 className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm flex-1"
                                             >
-                                                <option value="">Add member</option>
+                                                <option value="">Invite member</option>
                                                 {availableMembers.map(user => (
                                                     <option key={user.uid} value={user.uid}>
                                                         {user.name} (@{user.username})
@@ -375,7 +451,7 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
                                                 onClick={() => handleAddMember(team.id)}
                                                 className="px-3 py-2 text-xs font-semibold rounded-lg bg-gray-900 text-white hover:bg-gray-800"
                                             >
-                                                Add
+                                                Invite
                                             </button>
                                         </div>
                                     )}

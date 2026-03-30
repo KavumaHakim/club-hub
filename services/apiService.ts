@@ -1503,6 +1503,14 @@ export const getTeams = async (): Promise<Team[]> => {
             created_at,
             team_members (
                 user_uid
+            ),
+            team_join_requests (
+                id,
+                requester_uid,
+                status,
+                created_at,
+                reviewed_by,
+                reviewed_at
             )
         `)
         .order('created_at', { ascending: false });
@@ -1513,7 +1521,16 @@ export const getTeams = async (): Promise<Team[]> => {
         description: team.description,
         createdBy: team.created_by,
         createdAt: team.created_at,
-        memberIds: team.team_members?.map((m: any) => m.user_uid) || []
+        memberIds: team.team_members?.map((m: any) => m.user_uid) || [],
+        joinRequests: (team.team_join_requests || []).map((req: any) => ({
+            id: String(req.id),
+            teamId: String(team.id),
+            requesterId: req.requester_uid,
+            status: req.status,
+            createdAt: req.created_at,
+            reviewedBy: req.reviewed_by,
+            reviewedAt: req.reviewed_at
+        }))
     }));
 };
 
@@ -1543,6 +1560,60 @@ export const addTeamMember = async (teamId: string, userId: string) => {
         user_uid: userId
     });
     if (error && error.code !== '23505') throw error;
+};
+
+export const requestTeamJoin = async (teamId: string, userId: string) => {
+    const { error } = await supabase
+        .from('team_join_requests')
+        .upsert({
+            team_id: teamId,
+            requester_uid: userId,
+            status: 'PENDING'
+        }, { onConflict: 'team_id,requester_uid' });
+    if (error) throw error;
+
+    try {
+        const { data: team } = await supabase
+            .from('teams')
+            .select('created_by, name')
+            .eq('id', teamId)
+            .maybeSingle();
+        if (team?.created_by && team.created_by !== userId) {
+            await notifyUsers(
+                [team.created_by],
+                `New join request for ${team.name || 'your team'}.`,
+                'community',
+                userId
+            );
+        }
+    } catch (err) {
+        console.warn('Failed to notify team owner about join request', err);
+    }
+};
+
+export const approveTeamJoinRequest = async (payload: { requestId: string; teamId: string; requesterId: string; reviewedBy: string }) => {
+    const { error } = await supabase
+        .from('team_join_requests')
+        .update({
+            status: 'APPROVED',
+            reviewed_by: payload.reviewedBy,
+            reviewed_at: new Date().toISOString()
+        })
+        .eq('id', payload.requestId);
+    if (error) throw error;
+    await addTeamMember(payload.teamId, payload.requesterId);
+};
+
+export const rejectTeamJoinRequest = async (payload: { requestId: string; reviewedBy: string }) => {
+    const { error } = await supabase
+        .from('team_join_requests')
+        .update({
+            status: 'REJECTED',
+            reviewed_by: payload.reviewedBy,
+            reviewed_at: new Date().toISOString()
+        })
+        .eq('id', payload.requestId);
+    if (error) throw error;
 };
 
 export const removeTeamMember = async (teamId: string, userId: string) => {

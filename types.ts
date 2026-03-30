@@ -24,6 +24,19 @@ export interface Team {
   createdBy: string;
   createdAt: string;
   memberIds: string[];
+  joinRequests?: TeamJoinRequest[];
+}
+
+export type TeamJoinRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface TeamJoinRequest {
+  id: string;
+  teamId: string;
+  requesterId: string;
+  status: TeamJoinRequestStatus;
+  createdAt: string;
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
 }
 
 export interface TeamChallengeSubmission {

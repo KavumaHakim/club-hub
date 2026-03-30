@@ -475,69 +475,12 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
         <div ref={formRef} className="scroll-animate mb-8 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-md border border-gray-200 dark:border-gray-700">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Record Your Attendance</h2>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">Missed signing in? Log your attendance for a past event here.</p>
-            </div>
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={() => setIsFormVisible(!isFormVisible)}
-                disabled={unrecordedActivities.length === 0 && !isFormVisible}
-                className="flex items-center space-x-2 px-5 py-3 font-semibold text-white bg-pink-600 rounded-lg shadow-md hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              >
-                <PlusCircleIcon />
-                <span>{isFormVisible ? 'Cancel' : 'Record Attendance'}</span>
-              </button>
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Attendance Recording</h2>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">
+                Attendance can only be recorded by patron accounts.
+              </p>
             </div>
           </div>
-          {isFormVisible && (
-            <form onSubmit={handleSubmit} className="mt-6 border-t border-gray-200 dark:border-gray-700 pt-6">
-              {unrecordedActivities.length > 0 ? (
-                <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label htmlFor="activity-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Activity</label>
-                      <select
-                        id="activity-select"
-                        value={selectedActivityId}
-                        onChange={(e) => setSelectedActivityId(e.target.value)}
-                        className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-pink-500 focus:border-pink-500 sm:text-sm rounded-md"
-                      >
-                        <option value="" disabled>Select an activity...</option>
-                        {unrecordedActivities.map(act => (
-                          <option key={act.id} value={act.id}>{act.title} ({formatDate(act.date)})</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
-                      <div className="flex space-x-4">
-                        {(['Present', 'Absent', 'Excused'] as AttendanceStatus[]).map(status => (
-                          <label key={status} className="flex items-center">
-                            <input
-                              type="radio"
-                              name="status"
-                              value={status}
-                              checked={selectedStatus === status}
-                              onChange={() => setSelectedStatus(status)}
-                              className="focus:ring-pink-500 h-4 w-4 text-pink-600 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700"
-                            />
-                            <span className="ml-2 text-gray-700 dark:text-gray-300">{status}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-6 text-right">
-                    <button type="submit" disabled={isSubmitting} className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 dark:focus:ring-offset-gray-800 disabled:opacity-50">
-                      {isSubmitting ? 'Submitting...' : 'Submit Record'}
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <p className="text-center text-gray-500 dark:text-gray-400 mt-4">All attendance has been recorded. Good job!</p>
-              )}
-            </form>
-          )}
         </div>
       )}
 
