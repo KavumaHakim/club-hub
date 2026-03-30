@@ -221,27 +221,56 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
   };
 
   useEffect(() => {
+      if (isLoadingFeed || feedItemsError) return;
       const header = headerRef.current;
       if (!header) return;
 
+      let raf = 0;
       const updateTop = () => {
+          const appHeader = document.querySelector('[data-app-header="true"]') as HTMLElement | null;
+          const appHeaderHeight = appHeader?.offsetHeight ?? 0;
+          const headerHeight = header.offsetHeight || 0;
+          const gap = 16;
+
+          if (appHeaderHeight || headerHeight) {
+              setPanelTop(Math.max(0, Math.round(appHeaderHeight + headerHeight + gap)));
+              return;
+          }
+
           const rect = header.getBoundingClientRect();
           const next = Math.max(0, Math.round(rect.bottom + 20));
           setPanelTop(next);
       };
+      const scheduleUpdate = () => {
+          cancelAnimationFrame(raf);
+          raf = requestAnimationFrame(updateTop);
+      };
 
       updateTop();
+      scheduleUpdate();
+
       let observer: ResizeObserver | null = null;
       if (typeof ResizeObserver !== 'undefined') {
-          observer = new ResizeObserver(updateTop);
+          observer = new ResizeObserver(scheduleUpdate);
           observer.observe(header);
+          const appHeader = document.querySelector('[data-app-header="true"]') as HTMLElement | null;
+          if (appHeader) observer.observe(appHeader);
       }
-      window.addEventListener('resize', updateTop);
+      window.addEventListener('resize', scheduleUpdate);
+      window.addEventListener('orientationchange', scheduleUpdate);
+      window.addEventListener('load', scheduleUpdate);
+      if (document?.fonts?.ready) {
+          document.fonts.ready.then(scheduleUpdate).catch(() => {});
+      }
+
       return () => {
+          cancelAnimationFrame(raf);
           observer?.disconnect();
-          window.removeEventListener('resize', updateTop);
+          window.removeEventListener('resize', scheduleUpdate);
+          window.removeEventListener('orientationchange', scheduleUpdate);
+          window.removeEventListener('load', scheduleUpdate);
       };
-  }, []);
+  }, [isLoadingFeed, feedItemsError]);
 
   if (isLoadingFeed) {
     return (

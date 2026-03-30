@@ -353,7 +353,7 @@ const App: React.FC = () => {
             />
             <div className="flex-1 flex flex-col w-full h-full relative overflow-hidden transition-all duration-300">
                {/* Unified Header (Mobile & Desktop) */}
-              <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 flex items-center justify-between p-4 sticky top-0 z-20 flex-shrink-0">
+              <header data-app-header="true" className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 flex items-center justify-between p-4 sticky top-0 z-20 flex-shrink-0">
                 <div className="flex items-center gap-3">
                     <button onClick={handleSidebarToggle} className="md:hidden text-gray-600 dark:text-gray-300 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Open menu">
                       <MenuIcon />
