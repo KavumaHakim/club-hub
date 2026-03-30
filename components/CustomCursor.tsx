@@ -135,11 +135,11 @@ const CustomCursor: React.FC = () => {
       // Follower movement with smooth lerp
       if (followerRef.current) {
         // Adjust speed based on variant - EVEN FASTER FOR SNAPPY FEEL
-        let speed = 0.85; // High Base speed
+        let speed = 0.92; // Faster base speed (near-cursor feel)
         
-        if (['retro', 'pixel', 'target', 'ring', 'gear', 'figma'].includes(variant)) speed = 0.95; // Near instant
-        if (['bubble', 'ghost', 'ufo', 'potion'].includes(variant)) speed = 0.5; // Floating feel but faster
-        if (['crosshair', 'pencil', 'wand', 'sword'].includes(variant)) speed = 0.9; // Very Precise
+        if (['retro', 'pixel', 'target', 'ring', 'gear', 'figma'].includes(variant)) speed = 0.98; // Near instant
+        if (['bubble', 'ghost', 'ufo', 'potion'].includes(variant)) speed = 0.82; // Floaty but still quick
+        if (['crosshair', 'pencil', 'wand', 'sword'].includes(variant)) speed = 0.95; // Very precise
         
         followerPosition.current.x += (position.current.x - followerPosition.current.x) * speed;
         followerPosition.current.y += (position.current.y - followerPosition.current.y) * speed;
