@@ -103,6 +103,10 @@
     50% { transform: translateY(-1px) scaleY(0.95); opacity: 0.9; }
     100% { transform: translateY(2px) scaleY(0.2); opacity: 0.4; }
   }
+  @keyframes clock-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
   @keyframes shine {
     0% { left: -100%; }
     20% { left: 100%; }

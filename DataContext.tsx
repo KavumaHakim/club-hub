@@ -95,7 +95,6 @@ interface IDataContext {
 // Create the context with a default value
 const DataContext = createContext<IDataContext | undefined>(undefined);
 
-const FEATURE_FLAG_KEY = 'clubhub_feature_flags';
 const NOTIFICATION_PREFS_KEY = 'clubhub_notification_prefs';
 const defaultFeatureFlags: FeatureFlags = {
   showFeed: true,
@@ -137,17 +136,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
   const [teams, setTeams] = useState<Team[]>([]);
   const [teamChallenges, setTeamChallenges] = useState<TeamChallenge[]>([]);
   const [unreadMessageCounts, setUnreadMessageCounts] = useState<Record<string, number>>({});
-  const [featureFlags, setFeatureFlags] = useState<FeatureFlags>(() => {
-      if (typeof window === 'undefined') return defaultFeatureFlags;
-      try {
-          const raw = localStorage.getItem(FEATURE_FLAG_KEY);
-          if (!raw) return defaultFeatureFlags;
-          const parsed = JSON.parse(raw) as Partial<FeatureFlags>;
-          return { ...defaultFeatureFlags, ...parsed };
-      } catch {
-          return defaultFeatureFlags;
-      }
-  });
+  const [featureFlags, setFeatureFlags] = useState<FeatureFlags>(defaultFeatureFlags);
   const [notificationPrefs, setNotificationPrefs] = useState<NotificationPrefs>(() => {
       if (typeof window === 'undefined') return defaultNotificationPrefs;
       try {
@@ -457,22 +446,70 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
       }
   }, [currentUser.uid, showToast]);
 
-  const updateFeatureFlags = useCallback((updates: Partial<FeatureFlags>) => {
-      setFeatureFlags(prev => {
-          const next = { ...prev, ...updates };
-          if (typeof window !== 'undefined') {
-              localStorage.setItem(FEATURE_FLAG_KEY, JSON.stringify(next));
-          }
-          return next;
-      });
-  }, []);
-
-  const resetFeatureFlags = useCallback(() => {
-      setFeatureFlags(defaultFeatureFlags);
-      if (typeof window !== 'undefined') {
-          localStorage.setItem(FEATURE_FLAG_KEY, JSON.stringify(defaultFeatureFlags));
+  const fetchFeatureFlags = useCallback(async () => {
+      try {
+          const flags = await api.getFeatureFlags();
+          setFeatureFlags({ ...defaultFeatureFlags, ...flags });
+      } catch (e) {
+          console.warn('Failed to fetch feature flags, using defaults', e);
+          setFeatureFlags(defaultFeatureFlags);
       }
   }, []);
+
+  const updateFeatureFlags = useCallback(async (updates: Partial<FeatureFlags>) => {
+      setFeatureFlags(prev => ({ ...prev, ...updates }));
+      try {
+          const updated = await api.setFeatureFlags(updates);
+          setFeatureFlags({ ...defaultFeatureFlags, ...updated });
+      } catch (e) {
+          console.error('Failed to update feature flags', e);
+      }
+  }, []);
+
+  const resetFeatureFlags = useCallback(async () => {
+      setFeatureFlags(defaultFeatureFlags);
+      try {
+          const updated = await api.setFeatureFlags(defaultFeatureFlags);
+          setFeatureFlags({ ...defaultFeatureFlags, ...updated });
+      } catch (e) {
+          console.error('Failed to reset feature flags', e);
+      }
+  }, []);
+
+  useEffect(() => {
+      fetchFeatureFlags();
+
+      const mapFlags = (row: any): FeatureFlags => ({
+          showFeed: row.show_feed,
+          showActivities: row.show_activities,
+          showAttendance: row.show_attendance,
+          showProjects: row.show_projects,
+          showResources: row.show_resources,
+          showChat: row.show_chat,
+          showShowcase: row.show_showcase,
+          showSuggestions: row.show_suggestions,
+          showChallenges: row.show_challenges,
+          showRoadmap: row.show_roadmap,
+          showCommunity: row.show_community,
+          showPlayground: row.show_playground
+      });
+
+      const channel = supabase.channel('feature_flags_listener')
+          .on(
+              'postgres_changes',
+              { event: 'UPDATE', schema: 'public', table: 'feature_flags' },
+              (payload) => {
+                  if (payload.new) {
+                      setFeatureFlags({ ...defaultFeatureFlags, ...mapFlags(payload.new) });
+                  }
+              }
+          )
+          .subscribe();
+
+      return () => {
+          supabase.removeChannel(channel);
+      };
+  }, [fetchFeatureFlags]);
 
   // Effect to perform the client-side join for resources
   useEffect(() => {

@@ -389,6 +389,21 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
       if (activeProject && activeFile) {
           setFileContents(prev => ({ ...prev, [activeFile.path]: code }));
       }
+      if (typeof window !== 'undefined') {
+          const liveLang = activeProject ? activeProject.language : language;
+          const payload = {
+              language: liveLang,
+              code,
+              file: activeFile?.path || '',
+              projectId: activeProject?.id || '',
+              projectMode: !!activeProject
+          };
+          localStorage.setItem('playground_live_lang', liveLang);
+          localStorage.setItem('playground_live_code', code);
+          localStorage.setItem('playground_live_file', payload.file);
+          localStorage.setItem('playground_live_project', payload.projectId);
+          window.dispatchEvent(new CustomEvent('playground-code-change', { detail: payload }));
+      }
   }, [code, language, activeProject, activeFile]);
 
   const handleLanguageChange = (newLang: SingleLanguage) => {

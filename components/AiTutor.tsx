@@ -26,6 +26,16 @@ const AiTutor: React.FC<AiTutorProps> = ({ currentUser }) => {
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+    const [livePlayground, setLivePlayground] = useState<{ language: string; code: string; file?: string; projectId?: string; projectMode?: boolean }>(() => {
+        if (typeof window === 'undefined') return { language: 'python', code: '' };
+        return {
+            language: localStorage.getItem('playground_live_lang') || localStorage.getItem('playground_lang') || 'python',
+            code: localStorage.getItem('playground_live_code') || localStorage.getItem(`playground_code_${localStorage.getItem('playground_lang') || 'python'}`) || '',
+            file: localStorage.getItem('playground_live_file') || '',
+            projectId: localStorage.getItem('playground_live_project') || '',
+            projectMode: !!localStorage.getItem('playground_live_project')
+        };
+    });
     
     // Dragging State
     const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -48,6 +58,22 @@ const AiTutor: React.FC<AiTutorProps> = ({ currentUser }) => {
     } = useData();
 
     // Memoize the context string so it updates when data changes
+    useEffect(() => {
+        const handler = (e: Event) => {
+            const detail = (e as CustomEvent).detail;
+            if (!detail) return;
+            setLivePlayground({
+                language: detail.language || 'python',
+                code: detail.code || '',
+                file: detail.file || '',
+                projectId: detail.projectId || '',
+                projectMode: !!detail.projectMode
+            });
+        };
+        window.addEventListener('playground-code-change', handler as EventListener);
+        return () => window.removeEventListener('playground-code-change', handler as EventListener);
+    }, []);
+
     const clubContext = useMemo(() => {
         const safeList = (items: string[], limit: number) => items.slice(0, limit).join('\n');
 
@@ -115,9 +141,12 @@ const AiTutor: React.FC<AiTutorProps> = ({ currentUser }) => {
             return { totalTasks, columns };
         })() : null;
 
-        const playgroundLang = localStorage.getItem('playground_lang') || 'python';
-        const playgroundCode = localStorage.getItem(`playground_code_${playgroundLang}`) || '';
+        const playgroundLang = livePlayground.language || 'python';
+        const playgroundCode = livePlayground.code || '';
         const playgroundSnippet = playgroundCode.trim() ? playgroundCode.trim().slice(0, 600) : '';
+        const playgroundMeta = livePlayground.projectMode
+            ? `Project mode (${livePlayground.projectId || 'active'})${livePlayground.file ? ` • File: ${livePlayground.file}` : ''}`
+            : 'Single file mode';
 
         return `
         LEADERSHIP:
@@ -153,10 +182,10 @@ const AiTutor: React.FC<AiTutorProps> = ({ currentUser }) => {
         COMMUNITY LEADERBOARD:
         ${recognitionBoard.length ? safeList(recognitionBoard, 5) : 'No leaderboard data yet.'}
 
-        CURRENT PLAYGROUND CODE (${playgroundLang}):
+        CURRENT PLAYGROUND CODE (${playgroundLang}) [${playgroundMeta}]:
         ${playgroundSnippet || 'No current code.'}
         `;
-    }, [activities, challenges, feedItems, resources, allUsers, showcaseItems, suggestions, teams, teamChallenges, projectData]);
+    }, [activities, challenges, feedItems, resources, allUsers, showcaseItems, suggestions, teams, teamChallenges, projectData, livePlayground]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

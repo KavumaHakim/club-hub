@@ -1,6 +1,6 @@
 
 import { supabase } from './supabaseClient';
-import { User, Activity, AttendanceRecord, AttendanceStatus, FeedItem, ProjectData, ProjectTask, Resource, AppNotification, Room, ShowcaseItem, Suggestion, Challenge, ChallengeSubmission, FeedComment, SuggestionType, SuggestionStatus, SubmissionStatus, ActivityCategory, FeedItemType, TaskPriority, ResourceCategory, ResourceType, Tab, Roadmap, RoadmapProgress, ShowcaseComment, Message, Team, TeamChallenge, TeamChallengeSubmission, PlaygroundProject, PlaygroundProjectFile, PlaygroundProjectActivity, PlaygroundProjectMember } from '../types';
+import { User, Activity, AttendanceRecord, AttendanceStatus, FeedItem, ProjectData, ProjectTask, Resource, AppNotification, Room, ShowcaseItem, Suggestion, Challenge, ChallengeSubmission, FeedComment, SuggestionType, SuggestionStatus, SubmissionStatus, ActivityCategory, FeedItemType, TaskPriority, ResourceCategory, ResourceType, Tab, Roadmap, RoadmapProgress, ShowcaseComment, Message, Team, TeamChallenge, TeamChallengeSubmission, PlaygroundProject, PlaygroundProjectFile, PlaygroundProjectActivity, PlaygroundProjectMember, FeatureFlags } from '../types';
 
 // --- Helper for Notifications ---
 const insertNotifications = async (notifications: Array<{ user_uid: string; message: string; is_read: boolean; link_to: Tab }>) => {
@@ -77,6 +77,39 @@ const notifyUsers = async (userIds: string[], message: string, linkTo: Tab, excl
 const truncateText = (text: string, maxLen: number) => {
     if (!text) return '';
     return text.length > maxLen ? `${text.slice(0, maxLen)}…` : text;
+};
+
+const mapFeatureFlagsFromDb = (row: any): FeatureFlags => ({
+    showFeed: row.show_feed,
+    showActivities: row.show_activities,
+    showAttendance: row.show_attendance,
+    showProjects: row.show_projects,
+    showResources: row.show_resources,
+    showChat: row.show_chat,
+    showShowcase: row.show_showcase,
+    showSuggestions: row.show_suggestions,
+    showChallenges: row.show_challenges,
+    showRoadmap: row.show_roadmap,
+    showCommunity: row.show_community,
+    showPlayground: row.show_playground
+});
+
+const mapFeatureFlagsToDb = (updates: Partial<FeatureFlags>) => {
+    const payload: any = {};
+    if (typeof updates.showFeed === 'boolean') payload.show_feed = updates.showFeed;
+    if (typeof updates.showActivities === 'boolean') payload.show_activities = updates.showActivities;
+    if (typeof updates.showAttendance === 'boolean') payload.show_attendance = updates.showAttendance;
+    if (typeof updates.showProjects === 'boolean') payload.show_projects = updates.showProjects;
+    if (typeof updates.showResources === 'boolean') payload.show_resources = updates.showResources;
+    if (typeof updates.showChat === 'boolean') payload.show_chat = updates.showChat;
+    if (typeof updates.showShowcase === 'boolean') payload.show_showcase = updates.showShowcase;
+    if (typeof updates.showSuggestions === 'boolean') payload.show_suggestions = updates.showSuggestions;
+    if (typeof updates.showChallenges === 'boolean') payload.show_challenges = updates.showChallenges;
+    if (typeof updates.showRoadmap === 'boolean') payload.show_roadmap = updates.showRoadmap;
+    if (typeof updates.showCommunity === 'boolean') payload.show_community = updates.showCommunity;
+    if (typeof updates.showPlayground === 'boolean') payload.show_playground = updates.showPlayground;
+    payload.updated_at = new Date().toISOString();
+    return payload;
 };
 
 // --- Auth & User ---
@@ -321,6 +354,36 @@ export const resetPasswordWithOtp = async (email: string, otp: string, newPasswo
 export const updateUserSkillLevel = async (userId: string, newLevel: string) => {
     const { error } = await supabase.from('users').update({ skill_level: newLevel }).eq('uid', userId);
     if (error) throw error;
+};
+
+// --- Feature Flags ---
+
+export const getFeatureFlags = async (): Promise<FeatureFlags> => {
+    const { data, error } = await supabase
+        .from('feature_flags')
+        .select('*')
+        .eq('id', 1)
+        .maybeSingle();
+    if (error) throw error;
+    if (!data) {
+        throw new Error('Feature flags not initialized.');
+    }
+    return mapFeatureFlagsFromDb(data);
+};
+
+export const setFeatureFlags = async (updates: Partial<FeatureFlags>): Promise<FeatureFlags> => {
+    const payload = mapFeatureFlagsToDb(updates);
+    const { data, error } = await supabase
+        .from('feature_flags')
+        .update(payload)
+        .eq('id', 1)
+        .select()
+        .maybeSingle();
+    if (error) throw error;
+    if (!data) {
+        throw new Error('Failed to update feature flags.');
+    }
+    return mapFeatureFlagsFromDb(data);
 };
 
 // --- Activities ---

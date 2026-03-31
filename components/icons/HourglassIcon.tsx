@@ -1,29 +1,14 @@
 
-import React, { useId } from 'react';
+import React from 'react';
 
 export const HourglassIcon: React.FC<{className?: string}> = ({className}) => {
-    const gradientId = useId();
-    const clipId = useId();
-
     return (
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
-            <defs>
-                <linearGradient id={gradientId} x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#EC4899" />
-                    <stop offset="100%" stopColor="#8B5CF6" />
-                </linearGradient>
-                <clipPath id={clipId}>
-                    <path d="M16 4.1V8.5L12 12 8 8.5V4.1zM8 15.5L12 12l4 3.5V19.9H8z" />
-                </clipPath>
-            </defs>
-            <path d="M18 2H6v4l4 4-4 4v4h12v-4l-4-4 4-4V2z" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
-            
-            <g clipPath={`url(#${clipId})`}>
-                {/* Top sand */}
-                <path d="M16 4.1V8.5L12 12 8 8.5V4.1z" fill={`url(#${gradientId})`} style={{ animation: 'sand-flow-top 2s ease-in-out infinite' }} />
-                
-                {/* Bottom sand */}
-                <path d="M8 15.5L12 12l4 3.5V19.9H8z" fill={`url(#${gradientId})`} style={{ animation: 'sand-flow-bottom 2s ease-in-out infinite' }}/>
+            <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+            <circle cx="12" cy="12" r="1.2" fill="currentColor" />
+            <g style={{ transformOrigin: '12px 12px', animation: 'clock-spin 4s linear infinite' }}>
+                <line x1="12" y1="12" x2="12" y2="6.2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                <line x1="12" y1="12" x2="16.2" y2="12" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.8" />
             </g>
         </svg>
     );
