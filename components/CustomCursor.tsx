@@ -112,9 +112,6 @@ const CustomCursor: React.FC = () => {
       if (cursorRef.current) {
         cursorRef.current.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
       }
-      if (followerRef.current) {
-        followerRef.current.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
-      }
 
       const target = e.target as HTMLElement;
       const isInteractive = 
@@ -138,11 +135,23 @@ const CustomCursor: React.FC = () => {
     document.addEventListener('mouseenter', onMouseEnter);
     window.addEventListener('mousedown', onMouseDown);
 
+    let animationFrameId: number;
+
+    const animate = () => {
+      if (followerRef.current) {
+        followerRef.current.style.transform = `translate3d(${position.current.x}px, ${position.current.y}px, 0)`;
+      }
+      animationFrameId = requestAnimationFrame(animate);
+    };
+
+    animate();
+
     return () => {
       window.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseleave', onMouseLeave);
       document.removeEventListener('mouseenter', onMouseEnter);
       window.removeEventListener('mousedown', onMouseDown);
+      cancelAnimationFrame(animationFrameId);
     };
   }, [isSupported, isVisible, variant]);
 

@@ -93,6 +93,16 @@
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.2); }
   }
+  @keyframes sand-flow-top {
+    0% { transform: translateY(0) scaleY(1); opacity: 1; }
+    50% { transform: translateY(2px) scaleY(0.35); opacity: 0.6; }
+    100% { transform: translateY(0) scaleY(1); opacity: 1; }
+  }
+  @keyframes sand-flow-bottom {
+    0% { transform: translateY(2px) scaleY(0.2); opacity: 0.4; }
+    50% { transform: translateY(-1px) scaleY(0.95); opacity: 0.9; }
+    100% { transform: translateY(2px) scaleY(0.2); opacity: 0.4; }
+  }
   @keyframes shine {
     0% { left: -100%; }
     20% { left: 100%; }
