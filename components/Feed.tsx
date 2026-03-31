@@ -330,41 +330,49 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
                     )}
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-3">
-                    <div className="relative flex-grow">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                            <SearchIcon className="h-5 w-5" />
+                <div className="mt-3 rounded-2xl border border-gray-200/70 dark:border-gray-700/70 bg-white/80 dark:bg-gray-900/70 backdrop-blur-md p-3 shadow-sm">
+                    <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
+                        <div className="relative flex-grow">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                <SearchIcon className="h-5 w-5" />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Search posts, authors, or keywords..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="block w-full pl-10 pr-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 shadow-sm transition-all"
+                            />
                         </div>
-                        <input
-                            type="text"
-                            placeholder="Search posts..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="block w-full pl-10 pr-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 shadow-sm transition-all"
-                        />
-                    </div>
-                    
-                    <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0 custom-scrollbar">
-                        {[
-                            { id: 'ALL', label: 'All' },
-                            { id: 'NEWS', label: 'News' },
-                            { id: 'EVENTS', label: 'Events' },
-                            { id: 'DISCUSSIONS', label: 'Discuss' },
-                            { id: 'POLLS', label: 'Polls' },
-                            { id: 'BOOKMARKED', label: 'Saved' }
-                        ].map((pill) => (
-                            <button
-                                key={pill.id}
-                                onClick={() => setFilter(pill.id as FilterCategory)}
-                                className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all shadow-sm ${
-                                    filter === pill.id 
-                                    ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900' 
-                                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
-                                }`}
-                            >
-                                {pill.label}
-                            </button>
-                        ))}
+                        
+                        <div className="flex items-center gap-2">
+                            <div className="hidden sm:flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                <FilterIcon className="h-4 w-4" />
+                                Filters
+                            </div>
+                            <div className="flex gap-2 overflow-x-auto custom-scrollbar bg-gray-100 dark:bg-gray-800/60 p-1.5 rounded-xl">
+                                {[
+                                    { id: 'ALL', label: 'All' },
+                                    { id: 'NEWS', label: 'News' },
+                                    { id: 'EVENTS', label: 'Events' },
+                                    { id: 'DISCUSSIONS', label: 'Discuss' },
+                                    { id: 'POLLS', label: 'Polls' },
+                                    { id: 'BOOKMARKED', label: 'Saved' }
+                                ].map((pill) => (
+                                    <button
+                                        key={pill.id}
+                                        onClick={() => setFilter(pill.id as FilterCategory)}
+                                        className={`px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all ${
+                                            filter === pill.id 
+                                            ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow'
+                                            : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-white/70 dark:hover:bg-gray-700/70'
+                                        }`}
+                                    >
+                                        {pill.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

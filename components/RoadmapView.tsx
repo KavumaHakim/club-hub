@@ -268,6 +268,15 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
         }
     };
 
+    const getRoadmapLanguage = (topic: string) => {
+        const lower = (topic || '').toLowerCase();
+        if (lower.startsWith('python')) return 'Python';
+        if (lower.startsWith('javascript')) return 'JavaScript';
+        if (lower.includes('javascript')) return 'JavaScript';
+        if (lower.includes('python')) return 'Python';
+        return 'Python';
+    };
+
     const handleDelete = async () => {
         if (!deleteId) return;
         try {
@@ -281,10 +290,11 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
         }
     };
 
-    const handleTakeQuiz = async (roadmapId: string, milestoneIndex: number, milestone: Milestone) => {
+    const handleTakeQuiz = async (roadmapId: string, milestoneIndex: number, milestone: Milestone, roadmapTopic: string) => {
         setIsGeneratingQuiz(true);
         try {
-            const questions = await generateMilestoneQuiz(milestone.title, milestone.description);
+            const language = getRoadmapLanguage(roadmapTopic);
+            const questions = await generateMilestoneQuiz(milestone.title, milestone.description, language, milestone.resources);
             setQuizQuestions(questions);
             setActiveRoadmapId(roadmapId);
             setActiveMilestoneIndex(milestoneIndex);
@@ -399,7 +409,7 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
                                                 isLocked={isLocked}
                                                 isCompleted={isCompleted}
                                                 isPatron={isPatron}
-                                                onTakeQuiz={() => handleTakeQuiz(roadmap.id!, idx, ms)}
+                                                onTakeQuiz={() => handleTakeQuiz(roadmap.id!, idx, ms, roadmap.topic)}
                                             />
                                         );
                                     })}
