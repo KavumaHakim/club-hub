@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { User, Challenge, ChallengeSubmission, SubmissionStatus } from '../types';
 import { useData } from '../DataContext';
 import * as api from '../services/apiService';
-import { analyzeChallengeSubmission } from '../services/geminiService';
+import { analyzeChallengeSubmission, generateAIChallenge } from '../services/geminiService';
 import { TrophyIcon } from './icons/TrophyIcon';
 import { PlusCircleIcon } from './icons/PlusCircleIcon';
 import { CheckCircleIcon } from './icons/CheckCircleIcon';
@@ -13,13 +13,26 @@ import { CheckIcon } from './icons/CheckIcon';
 import { CalendarIcon } from './icons/CalendarIcon';
 import { PlayIcon } from './icons/PlayIcon';
 import { SparklesIcon } from './icons/SparklesIcon';
-// FIX: Changed to a named import to match the corrected export from CodeRunnerModal.
 import { CodeRunnerModal } from './CodeRunnerModal';
 import { FormattedMessage } from './FormattedMessage';
 
 interface ChallengesProps {
     currentUser: User;
 }
+
+const DifficultyBadge: React.FC<{ difficulty?: string }> = ({ difficulty }) => {
+    if (!difficulty) return null;
+    let color = "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400";
+    if (difficulty === 'BEGINNER') color = "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
+    if (difficulty === 'INTERMEDIATE') color = "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300";
+    if (difficulty === 'ADVANCED') color = "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300";
+
+    return (
+        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wide ${color}`}>
+            {difficulty}
+        </span>
+    );
+};
 
 const RankAvatar: React.FC<{ user: User, rank: number, className?: string }> = ({ user, rank, className }) => {
     let ringColor = 'border-gray-200 dark:border-gray-700';
@@ -171,9 +184,12 @@ const ChallengeCard: React.FC<{
         <div className={`group relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm hover:shadow-xl border border-gray-200 dark:border-gray-700 transition-all duration-300 flex flex-col h-full ${hasBadge ? 'ring-1 ring-green-500/20' : ''}`}>
             <div className="flex-1">
                 <div className="flex justify-between items-start mb-3">
-                    <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide ${statusColor}`}>
-                        {statusText}
-                    </span>
+                    <div className="flex flex-col gap-1.5">
+                        <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide self-start ${statusColor}`}>
+                            {statusText}
+                        </span>
+                        <DifficultyBadge difficulty={challenge.difficulty} />
+                    </div>
                     {hasBadge && <div className="bg-green-100 dark:bg-green-900/30 p-1.5 rounded-full text-green-600 dark:text-green-400"><BadgeCheckIcon className="w-5 h-5" /></div>}
                 </div>
                 
@@ -223,11 +239,25 @@ const ChallengeCard: React.FC<{
     );
 };
 
-const CreateChallengeModal: React.FC<{ isOpen: boolean, onClose: () => void, onSubmit: (title: string, desc: string, date: string) => Promise<void> }> = ({ isOpen, onClose, onSubmit }) => {
+const CreateChallengeModal: React.FC<{ 
+    isOpen: boolean, 
+    onClose: () => void, 
+    onSubmit: (title: string, desc: string, date: string, diff: any) => Promise<void>,
+    prefill?: { title: string, description: string, difficulty: any } | null
+}> = ({ isOpen, onClose, onSubmit, prefill }) => {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [deadline, setDeadline] = useState('');
+    const [difficulty, setDifficulty] = useState<'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'>('BEGINNER');
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        setTitle(prefill?.title || '');
+        setDescription(prefill?.description || '');
+        setDifficulty((prefill?.difficulty as any) || 'BEGINNER');
+        setDeadline('');
+    }, [isOpen, prefill]);
 
     if (!isOpen) return null;
 
@@ -235,12 +265,13 @@ const CreateChallengeModal: React.FC<{ isOpen: boolean, onClose: () => void, onS
         e.preventDefault();
         if (!title || !description || !deadline) return;
         setIsSubmitting(true);
-        await onSubmit(title, description, deadline);
+        await onSubmit(title, description, deadline, difficulty);
         setIsSubmitting(false);
         onClose();
         setTitle('');
         setDescription('');
         setDeadline('');
+        setDifficulty('BEGINNER');
     };
 
     return (
@@ -257,11 +288,128 @@ const CreateChallengeModal: React.FC<{ isOpen: boolean, onClose: () => void, onS
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
                         <textarea value={description} onChange={e => setDescription(e.target.value)} required rows={4} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500" placeholder="Explain the task..." />
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Deadline</label>
-                        <input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} required className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500" />
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Difficulty</label>
+                            <select 
+                                value={difficulty} 
+                                onChange={e => setDifficulty(e.target.value as any)}
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500"
+                            >
+                                <option value="BEGINNER">Beginner</option>
+                                <option value="INTERMEDIATE">Intermediate</option>
+                                <option value="ADVANCED">Advanced</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Deadline</label>
+                            <input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} required className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500" />
+                        </div>
                     </div>
                     <button type="submit" disabled={isSubmitting} className="w-full py-2 bg-pink-600 text-white rounded-lg font-medium hover:bg-pink-700 disabled:opacity-50">{isSubmitting ? 'Posting...' : 'Create Challenge'}</button>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+const GenerateAIChallengeModal: React.FC<{ 
+    isOpen: boolean, 
+    onClose: () => void, 
+    onGenerated: (title: string, desc: string, difficulty: any) => void 
+}> = ({ isOpen, onClose, onGenerated }) => {
+    const [concepts, setConcepts] = useState('');
+    const [skillLevel, setSkillLevel] = useState<'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'>('BEGINNER');
+    const [language, setLanguage] = useState('Python');
+    const [isGenerating, setIsGenerating] = useState(false);
+
+    if (!isOpen) return null;
+
+    const handleGenerate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!concepts) return;
+        setIsGenerating(true);
+        try {
+            const result = await generateAIChallenge(skillLevel, concepts, language);
+            onGenerated(result.title, result.description, skillLevel);
+            setConcepts('');
+            onClose();
+        } catch (error) {
+            console.error(error);
+            alert("Failed to generate challenge. Please try again.");
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-md w-full p-8 relative border border-gray-200 dark:border-gray-700">
+                <button onClick={onClose} className="absolute top-6 right-6 text-gray-500 hover:text-gray-700 dark:text-gray-400 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"><XIcon /></button>
+                
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2.5 bg-pink-100 dark:bg-pink-900/30 rounded-xl">
+                        <SparklesIcon className="w-6 h-6 text-pink-600 dark:text-pink-400" />
+                    </div>
+                    <h3 className="text-2xl font-black text-gray-900 dark:text-white">AI Challenge <span className="text-pink-600">Generator</span></h3>
+                </div>
+
+                <form onSubmit={handleGenerate} className="space-y-5">
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">Concepts to include</label>
+                        <textarea 
+                            value={concepts} 
+                            onChange={e => setConcepts(e.target.value)} 
+                            required 
+                            rows={3} 
+                            className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl dark:bg-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500 transition-all outline-none" 
+                            placeholder="e.g. For loops, lists, string manipulation..." 
+                        />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">Skill Level</label>
+                            <select 
+                                value={skillLevel} 
+                                onChange={e => setSkillLevel(e.target.value as any)}
+                                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl dark:bg-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500 outline-none"
+                            >
+                                <option value="BEGINNER">Beginner</option>
+                                <option value="INTERMEDIATE">Intermediate</option>
+                                <option value="ADVANCED">Advanced</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">Language</label>
+                            <select 
+                                value={language} 
+                                onChange={e => setLanguage(e.target.value)}
+                                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl dark:bg-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500 outline-none"
+                            >
+                                <option value="Python">Python</option>
+                                <option value="JavaScript">JavaScript</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button 
+                        type="submit" 
+                        disabled={isGenerating} 
+                        className="w-full py-4 bg-gradient-to-r from-pink-600 to-purple-600 text-white rounded-xl font-bold hover:from-pink-700 hover:to-purple-700 disabled:opacity-50 shadow-lg shadow-pink-500/20 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                    >
+                        {isGenerating ? (
+                            <>
+                                <div className="animate-spin h-5 w-5 border-2 border-white/30 border-t-white rounded-full"></div>
+                                Crafting Challenge...
+                            </>
+                        ) : (
+                            <>
+                                <SparklesIcon className="w-5 h-5" />
+                                Generate Challenge
+                            </>
+                        )}
+                    </button>
                 </form>
             </div>
         </div>
@@ -487,24 +635,36 @@ const ReviewSubmissionsModal: React.FC<{
 const Challenges: React.FC<ChallengesProps> = ({ currentUser }) => {
     const { challenges, allUsers, fetchChallenges, isLoadingChallenges, challengesError } = useData();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isAIModalOpen, setIsAIModalOpen] = useState(false);
     const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
     const [selectedChallengeId, setSelectedChallengeId] = useState<string | null>(null);
     const [selectedReviewChallenge, setSelectedReviewChallenge] = useState<{ id: string, title: string } | null>(null);
     
+    // For pre-filling create modal from AI
+    const [prefillData, setPrefillData] = useState<{ title: string, description: string, difficulty: any } | null>(null);
+
     // Filter State
     const [activeTab, setActiveTab] = useState<'ACTIVE' | 'COMPLETED' | 'ALL'>('ACTIVE');
 
     const isPatron = currentUser.role === 'PATRON';
 
-    const handleCreateChallenge = async (title: string, description: string, deadline: string) => {
+    const handleCreateChallenge = async (title: string, description: string, deadline: string, difficulty: any) => {
         await api.addChallenge({
             title,
             description,
             deadline,
+            difficulty,
             createdBy: currentUser.uid
         });
+        setPrefillData(null);
         await fetchChallenges();
+    };
+
+    const handleAIChallengeGenerated = (title: string, description: string, difficulty: any) => {
+        setPrefillData({ title, description, difficulty });
+        setIsAIModalOpen(false);
+        setIsCreateModalOpen(true);
     };
 
     const handleSubmitSolution = async (content: string) => {
@@ -561,12 +721,20 @@ const Challenges: React.FC<ChallengesProps> = ({ currentUser }) => {
                     </p>
                 </div>
                 {isPatron && (
-                    <button 
-                        onClick={() => setIsCreateModalOpen(true)}
-                        className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
-                    >
-                        <PlusCircleIcon /> Create Challenge
-                    </button>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <button 
+                            onClick={() => setIsAIModalOpen(true)}
+                            className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+                        >
+                            <SparklesIcon className="w-5 h-5 text-pink-600" /> Generate with AI
+                        </button>
+                        <button 
+                            onClick={() => { setPrefillData(null); setIsCreateModalOpen(true); }}
+                            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
+                        >
+                            <PlusCircleIcon /> Create Challenge
+                        </button>
+                    </div>
                 )}
             </div>
 
@@ -627,12 +795,19 @@ const Challenges: React.FC<ChallengesProps> = ({ currentUser }) => {
                 isOpen={isCreateModalOpen} 
                 onClose={() => setIsCreateModalOpen(false)} 
                 onSubmit={handleCreateChallenge} 
+                prefill={prefillData}
             />
 
             <SubmitSolutionModal 
                 isOpen={isSubmitModalOpen} 
                 onClose={() => setIsSubmitModalOpen(false)} 
                 onSubmit={handleSubmitSolution} 
+            />
+
+            <GenerateAIChallengeModal 
+                isOpen={isAIModalOpen}
+                onClose={() => setIsAIModalOpen(false)}
+                onGenerated={handleAIChallengeGenerated}
             />
 
             {selectedReviewChallenge && (

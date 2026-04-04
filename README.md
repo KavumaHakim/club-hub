@@ -37,6 +37,10 @@ ALTER TABLE project_task_assignees
 ADD COLUMN IF NOT EXISTS submission_file_path TEXT,
 ADD COLUMN IF NOT EXISTS submitted_at TIMESTAMP WITH TIME ZONE,
 ADD COLUMN IF NOT EXISTS grade INTEGER;
+
+-- Fix Challenges (Add missing difficulty column)
+ALTER TABLE challenges
+ADD COLUMN IF NOT EXISTS difficulty TEXT DEFAULT 'BEGINNER';
 ```
 
 ### 2. Create Missing Showcase Table
@@ -61,6 +65,7 @@ CREATE TABLE IF NOT EXISTS challenges (
   deadline TIMESTAMP WITH TIME ZONE,
   created_by TEXT REFERENCES users(uid),
   status TEXT DEFAULT 'ACTIVE',
+  difficulty TEXT DEFAULT 'BEGINNER',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 

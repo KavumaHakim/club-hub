@@ -1369,19 +1369,27 @@ export const getChallenges = async (): Promise<Challenge[]> => {
             deadline: c.deadline,
             createdBy: c.created_by,
             createdAt: c.created_at,
-            status: c.status
+            status: c.status,
+            difficulty: c.difficulty
         }));
     } catch (error) {
         return [];
     }
 };
 
-export const addChallenge = async (challenge: { title: string, description: string, deadline: string, createdBy: string }) => {
+export const addChallenge = async (challenge: { 
+    title: string, 
+    description: string, 
+    deadline: string, 
+    createdBy: string,
+    difficulty?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' 
+}) => {
     const { error } = await supabase.from('challenges').insert({
         title: challenge.title,
         description: challenge.description,
         deadline: challenge.deadline,
         created_by: challenge.createdBy,
+        difficulty: challenge.difficulty || 'BEGINNER',
         status: 'ACTIVE'
     });
     if (error) throw error;

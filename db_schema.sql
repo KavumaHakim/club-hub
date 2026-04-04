@@ -216,6 +216,10 @@ create policy "Team challenge creator can delete"
   on public.team_challenges for delete
   using (auth.uid()::text = created_by);
 
+-- Challenges (core)
+alter table public.challenges
+  add column if not exists difficulty text default 'BEGINNER';
+
 -- Team challenge submissions policies
 create policy "Team submissions visible to authenticated users"
   on public.team_challenge_submissions for select

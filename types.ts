@@ -298,6 +298,7 @@ export interface Challenge {
   createdBy: string;
   createdAt: string;
   status: 'ACTIVE' | 'CLOSED';
+  difficulty?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
 }
 
 export type SubmissionStatus = 'PENDING' | 'APPROVED' | 'REJECTED';

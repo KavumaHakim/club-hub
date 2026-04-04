@@ -392,11 +392,48 @@ export const getAIPlaygroundHint = async (code: string, language: string = 'pyth
     }
 };
 
-export const analyzeChallengeSubmission = async (challengeTitle: string, code: string) => {
+export const analyzeChallengeSubmission = async (challengeTitle: string, code: string): Promise<string> => {
     const prompt = `Analyze this solution for "${challengeTitle}":\n${code}`;
     try {
         const text = await callAI([{ role: "user", content: prompt }]);
         return cleanResponse(text);
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const generateAIChallenge = async (
+    skillLevel: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED',
+    concepts: string,
+    language: string = 'python'
+): Promise<{ title: string; description: string }> => {
+    const prompt = `Act as a creative coding tutor. Create a unique, scenario-based coding challenge for a student at the ${skillLevel} level.
+
+    The challenge must focus on these concepts: ${concepts}
+    Programming language: ${language}
+
+    FORMAT (Markdown inside "description"):
+    - "Scenario" heading with a vivid story context.
+    - "Task" heading with a clear, specific objective.
+    - "Requirements" heading with 3-5 concrete constraints.
+    - "Example" heading with sample input/output if applicable.
+
+    Difficulty Context (must noticeably differ by level):
+    - BEGINNER: Simple logic, basic loops, variables, standard data types.
+    - INTERMEDIATE: Functions, classes, complex data structures, basic algorithms.
+    - ADVANCED: Optimization, complex algorithms, system design, or advanced language features.
+
+    Important: Do NOT reuse the same structure/constraints across levels; tailor complexity and constraints to the selected level.
+
+    Return ONLY a JSON object:
+    {
+        "title": "A short, catchy title",
+        "description": "The full challenge description in Markdown, including Scenario, Task, Requirements, and Example."
+    }`;
+
+    try {
+        const text = await callGemini(prompt); // Use Gemini for more creative writing
+        return parseJSONResponse(text);
     } catch (error) {
         throw error;
     }
