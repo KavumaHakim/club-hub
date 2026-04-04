@@ -10,6 +10,7 @@ import { SearchIcon } from './icons/SearchIcon';
 import { useData } from '../DataContext';
 import ConfirmationModal from './ConfirmationModal';
 import MemberPortfolioModal from './MemberPortfolioModal';
+import Tooltip from './Tooltip';
 
 interface MembersProps {
     currentUser: User;
@@ -199,12 +200,14 @@ const Members: React.FC<MembersProps> = ({ currentUser }) => {
                                     <td className="py-4 px-4 text-right">
                                         <div className="inline-flex items-center space-x-2">
                                             {activeTab === 'active' && (
-                                                <button
-                                                    onClick={() => setPortfolioUser(user)}
-                                                    className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-900 text-white hover:bg-gray-800"
-                                                >
-                                                    View Portfolio
-                                                </button>
+                                                <Tooltip text="Open this member’s portfolio and achievements.">
+                                                    <button
+                                                        onClick={() => setPortfolioUser(user)}
+                                                        className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-900 text-white hover:bg-gray-800"
+                                                    >
+                                                        View Portfolio
+                                                    </button>
+                                                </Tooltip>
                                             )}
                                             {activeTab === 'pending' && (
                                                 <button 

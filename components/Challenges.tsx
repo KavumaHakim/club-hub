@@ -15,6 +15,7 @@ import { PlayIcon } from './icons/PlayIcon';
 import { SparklesIcon } from './icons/SparklesIcon';
 import { CodeRunnerModal } from './CodeRunnerModal';
 import { FormattedMessage } from './FormattedMessage';
+import Tooltip from './Tooltip';
 
 interface ChallengesProps {
     currentUser: User;
@@ -211,20 +212,24 @@ const ChallengeCard: React.FC<{
                 </div>
 
                 {isPatron ? (
-                    <button 
-                        onClick={() => onOpenReview(challenge.id, challenge.title)}
-                        className="w-full py-2.5 rounded-xl text-sm font-semibold bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/20 dark:text-purple-300 dark:hover:bg-purple-900/30 transition-colors flex items-center justify-center gap-2"
-                    >
-                        Review Submissions
-                    </button>
+                    <Tooltip text="Review member submissions and approve badges.">
+                        <button 
+                            onClick={() => onOpenReview(challenge.id, challenge.title)}
+                            className="w-full py-2.5 rounded-xl text-sm font-semibold bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/20 dark:text-purple-300 dark:hover:bg-purple-900/30 transition-colors flex items-center justify-center gap-2"
+                        >
+                            Review Submissions
+                        </button>
+                    </Tooltip>
                 ) : (
                     !hasBadge && challenge.status === 'ACTIVE' && !isExpired ? (
-                        <button 
-                            onClick={() => onOpenSubmission(challenge.id)}
-                            className="w-full py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
-                        >
-                            Submit Solution
-                        </button>
+                        <Tooltip text="Submit your solution to earn a badge.">
+                            <button 
+                                onClick={() => onOpenSubmission(challenge.id)}
+                                className="w-full py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
+                            >
+                                Submit Solution
+                            </button>
+                        </Tooltip>
                     ) : (
                        <button 
                             disabled 
@@ -743,18 +748,22 @@ const Challenges: React.FC<ChallengesProps> = ({ currentUser }) => {
                 </div>
                 {isPatron && (
                     <div className="flex flex-col sm:flex-row gap-3">
-                        <button 
-                            onClick={() => setIsAIModalOpen(true)}
-                            className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
-                        >
-                            <SparklesIcon className="w-5 h-5 text-pink-600" /> Generate with AI
-                        </button>
-                        <button 
-                            onClick={() => { setPrefillData(null); setIsCreateModalOpen(true); }}
-                            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
-                        >
-                            <PlusCircleIcon /> Create Challenge
-                        </button>
+                        <Tooltip text="Describe concepts and let AI craft a scenario-based challenge.">
+                            <button 
+                                onClick={() => setIsAIModalOpen(true)}
+                                className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+                            >
+                                <SparklesIcon className="w-5 h-5 text-pink-600" /> Generate with AI
+                            </button>
+                        </Tooltip>
+                        <Tooltip text="Post a custom challenge with title, description, and deadline.">
+                            <button 
+                                onClick={() => { setPrefillData(null); setIsCreateModalOpen(true); }}
+                                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
+                            >
+                                <PlusCircleIcon /> Create Challenge
+                            </button>
+                        </Tooltip>
                     </div>
                 )}
             </div>

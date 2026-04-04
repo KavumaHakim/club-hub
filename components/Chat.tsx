@@ -23,6 +23,7 @@ import { PencilIcon } from './icons/PencilIcon';
 import { UserAddIcon } from './icons/UserAddIcon';
 import { CheckIcon } from './icons/CheckIcon';
 import { CodeIcon } from './icons/CodeIcon';
+import Tooltip from './Tooltip';
 import { CopyIcon } from './icons/CopyIcon';
 import LinkPreview from './LinkPreview';
 import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react';
@@ -1221,13 +1222,15 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
                                         }}
                                     />
                                     <div className="absolute right-2 bottom-1.5">
-                                         <button 
-                                            type="submit" 
-                                            disabled={!newMessage.trim()}
-                                            className="p-2 bg-pink-500 text-white rounded-xl hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center"
-                                        >
-                                            <SendIcon className="h-4 w-4 transform rotate-90" />
-                                        </button>
+                                         <Tooltip text="Send your message to the room.">
+                                             <button 
+                                                type="submit" 
+                                                disabled={!newMessage.trim()}
+                                                className="p-2 bg-pink-500 text-white rounded-xl hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center"
+                                            >
+                                                <SendIcon className="h-4 w-4 transform rotate-90" />
+                                            </button>
+                                         </Tooltip>
                                     </div>
                                 </div>
                             </form>

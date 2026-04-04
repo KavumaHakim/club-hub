@@ -8,6 +8,7 @@ import { SparklesIcon } from './icons/SparklesIcon';
 import { PlusCircleIcon } from './icons/PlusCircleIcon';
 import { CheckCircleIcon } from './icons/CheckCircleIcon';
 import MemberPortfolioModal from './MemberPortfolioModal';
+import Tooltip from './Tooltip';
 
 interface CommunityProps {
     currentUser: User;
@@ -308,12 +309,14 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
                             <p className="text-sm text-gray-500 dark:text-gray-400">Form squads for challenges and projects.</p>
                         </div>
                     </div>
-                    <button
-                        onClick={handleCreateTeam}
-                        className="inline-flex items-center gap-2 px-3 py-2 bg-pink-600 text-white rounded-lg text-sm font-semibold hover:bg-pink-700 transition-colors"
-                    >
-                        <PlusCircleIcon className="w-4 h-4" /> Create Team
-                    </button>
+                    <Tooltip text="Create a new team and invite members.">
+                        <button
+                            onClick={handleCreateTeam}
+                            className="inline-flex items-center gap-2 px-3 py-2 bg-pink-600 text-white rounded-lg text-sm font-semibold hover:bg-pink-700 transition-colors"
+                        >
+                            <PlusCircleIcon className="w-4 h-4" /> Create Team
+                        </button>
+                    </Tooltip>
                 </div>
 
                 {currentUser.role === 'PATRON' && (
@@ -539,12 +542,14 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
                             type="date"
                             className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm"
                         />
-                        <button
-                            onClick={handleCreateChallenge}
-                            className="inline-flex items-center justify-center gap-2 px-3 py-2 bg-pink-600 text-white rounded-lg text-sm font-semibold hover:bg-pink-700"
-                        >
-                            <PlusCircleIcon className="w-4 h-4" /> Add Challenge
-                        </button>
+                        <Tooltip text="Create a team challenge with due date and description.">
+                            <button
+                                onClick={handleCreateChallenge}
+                                className="inline-flex items-center justify-center gap-2 px-3 py-2 bg-pink-600 text-white rounded-lg text-sm font-semibold hover:bg-pink-700"
+                            >
+                                <PlusCircleIcon className="w-4 h-4" /> Add Challenge
+                            </button>
+                        </Tooltip>
                         <textarea
                             value={challengeForm.description}
                             onChange={(e) => setChallengeForm(prev => ({ ...prev, description: e.target.value }))}

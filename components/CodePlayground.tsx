@@ -9,6 +9,7 @@ import { CopyIcon } from './icons/CopyIcon';
 import { GlobeIcon } from './icons/GlobeIcon'; 
 import { ShareIcon } from './icons/ShareIcon';
 import { TrophyIcon } from './icons/TrophyIcon';
+import Tooltip from './Tooltip';
 import { LightBulbIcon } from './icons/LightBulbIcon';
 import { DotsVerticalIcon } from './icons/DotsVerticalIcon';
 import { DocumentTextIcon } from './icons/DocumentTextIcon';
@@ -360,6 +361,13 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
       if (language === 'python') return DEFAULT_PYTHON;
       if (language === 'javascript') return DEFAULT_JS;
       return DEFAULT_HTML;
+  });
+
+  const [showFirstLoginTips, setShowFirstLoginTips] = useState(() => {
+      if (typeof window === 'undefined') return false;
+      const firstSession = sessionStorage.getItem('first_login_session') === 'true';
+      const seen = sessionStorage.getItem('playground_tips_seen') === 'true';
+      return firstSession && !seen;
   });
 
   const [projects, setProjects] = useState<PlaygroundProject[]>([]);
@@ -1553,6 +1561,13 @@ asyncio.sleep = custom_sleep_async
           setActiveTabState('preview');
       }
   };
+
+  const dismissPlaygroundTips = () => {
+      setShowFirstLoginTips(false);
+      try {
+          sessionStorage.setItem('playground_tips_seen', 'true');
+      } catch {}
+  };
   
   const handleClearOutput = () => {
       setOutput([]);
@@ -2073,35 +2088,39 @@ if "${projectDir}" not in sys.path:
                 </button>
              )}
              {activeProject && (
-                <button
-                    onClick={handleSaveFile}
-                    className="px-2 py-1 text-xs font-semibold rounded-md bg-indigo-600 text-white hover:bg-indigo-700"
-                    title="Save file"
-                >
-                    Save
-                </button>
+                <Tooltip text="Save the current file to your project.">
+                    <button
+                        onClick={handleSaveFile}
+                        className="px-2 py-1 text-xs font-semibold rounded-md bg-indigo-600 text-white hover:bg-indigo-700"
+                    >
+                        Save
+                    </button>
+                </Tooltip>
              )}
-             <button 
-                onClick={handleGetHint} 
-                disabled={isExecuting || (language === 'python' && !isPyodideReady) || isWaitingForInput || isGettingHint}
-                className="p-1.5 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 rounded-md transition-colors disabled:opacity-50" 
-                title="AI Hint"
-             >
-                <LightBulbIcon className="w-5 h-5"/>
-             </button>
+             <Tooltip text="Get a short hint from Kevin (no full solutions).">
+                 <button 
+                    onClick={handleGetHint} 
+                    disabled={isExecuting || (language === 'python' && !isPyodideReady) || isWaitingForInput || isGettingHint}
+                    className="p-1.5 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 rounded-md transition-colors disabled:opacity-50" 
+                 >
+                    <LightBulbIcon className="w-5 h-5"/>
+                 </button>
+             </Tooltip>
              
-             <button 
-                onClick={handleRunCode} 
-                disabled={isExecuting || (language === 'python' && !isPyodideReady) || isWaitingForInput}
-                className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-             >
-                {language === 'python' && !isPyodideReady ? (
-                    <span className="animate-spin h-3 w-3 border-2 border-white/30 border-t-white rounded-full"></span>
-                ) : (
-                    <PlayIcon className="w-3.5 h-3.5"/>
-                )}
-                <span className="hidden sm:inline">{isExecuting ? 'Running...' : 'Run'}</span>
-             </button>
+             <Tooltip text="Run your code and see output below.">
+                 <button 
+                    onClick={handleRunCode} 
+                    disabled={isExecuting || (language === 'python' && !isPyodideReady) || isWaitingForInput}
+                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                 >
+                    {language === 'python' && !isPyodideReady ? (
+                        <span className="animate-spin h-3 w-3 border-2 border-white/30 border-t-white rounded-full"></span>
+                    ) : (
+                        <PlayIcon className="w-3.5 h-3.5"/>
+                    )}
+                    <span className="hidden sm:inline">{isExecuting ? 'Running...' : 'Run'}</span>
+                 </button>
+             </Tooltip>
              
              {/* Dropdown Trigger */}
              <div className="relative" ref={menuRef}>
@@ -2125,6 +2144,25 @@ if "${projectDir}" not in sys.path:
              </div>
         </div>
       </div>
+
+      {showFirstLoginTips && (
+        <div className="mx-3 mt-3 mb-1 bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-700/40 text-pink-700 dark:text-pink-200 rounded-xl p-3 text-xs flex items-start justify-between gap-3">
+          <div>
+            <div className="font-semibold">Playground Tips</div>
+            <ul className="mt-1 space-y-1 text-[11px]">
+              <li>Use <strong>Run</strong> to execute code and see output below.</li>
+              <li>Try the <strong>AI Hint</strong> bulb for guidance.</li>
+              <li>Publish or submit a challenge from the menu (•••).</li>
+            </ul>
+          </div>
+          <button
+            onClick={dismissPlaygroundTips}
+            className="px-3 py-1 rounded-lg bg-white/70 dark:bg-gray-800 text-pink-700 dark:text-pink-200 border border-pink-200/70 dark:border-pink-700/40"
+          >
+            Got it
+          </button>
+        </div>
+      )}
 
       {/* Main Area */}
       <div className="flex-1 relative w-full h-full overflow-hidden">

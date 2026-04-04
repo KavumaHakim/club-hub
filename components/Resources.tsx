@@ -12,6 +12,7 @@ import { SparklesIcon } from './icons/SparklesIcon';
 import ConfirmationModal from './ConfirmationModal';
 import { CodeIcon } from './icons/CodeIcon';
 import { DocumentTextIcon } from './icons/DocumentTextIcon';
+import Tooltip from './Tooltip';
 
 interface ResourcesProps {
     currentUser: User;
@@ -292,19 +293,21 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
                         <div className="relative">
                             <textarea placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} required rows={3} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500" />
                             {type === 'DOCUMENT' && selectedFile && (
-                                <button
-                                    type="button"
-                                    onClick={handleGenerateDesc}
-                                    disabled={isGeneratingDesc}
-                                    className="absolute bottom-2 right-2 flex items-center gap-1.5 text-xs font-semibold text-purple-600 bg-purple-100 dark:bg-purple-900/50 dark:text-purple-300 px-2.5 py-1.5 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-800 transition-all disabled:opacity-50"
-                                >
-                                    {isGeneratingDesc ? (
-                                        <span className="animate-spin h-3 w-3 border-2 border-current border-t-transparent rounded-full"></span>
-                                    ) : (
-                                        <SparklesIcon className="h-4 w-4" />
-                                    )}
-                                    {isGeneratingDesc ? 'Generating...' : 'Generate with AI'}
-                                </button>
+                                <Tooltip text="Summarize the document into a short description.">
+                                    <button
+                                        type="button"
+                                        onClick={handleGenerateDesc}
+                                        disabled={isGeneratingDesc}
+                                        className="absolute bottom-2 right-2 flex items-center gap-1.5 text-xs font-semibold text-purple-600 bg-purple-100 dark:bg-purple-900/50 dark:text-purple-300 px-2.5 py-1.5 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-800 transition-all disabled:opacity-50"
+                                    >
+                                        {isGeneratingDesc ? (
+                                            <span className="animate-spin h-3 w-3 border-2 border-current border-t-transparent rounded-full"></span>
+                                        ) : (
+                                            <SparklesIcon className="h-4 w-4" />
+                                        )}
+                                        {isGeneratingDesc ? 'Generating...' : 'Generate with AI'}
+                                    </button>
+                                </Tooltip>
                             )}
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -348,10 +351,12 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
 
                         {error && <div className="p-3 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300 rounded-md text-sm">{error}</div>}
                         <div className="text-right">
-                            <button type="submit" disabled={isSubmitting} className="inline-flex items-center space-x-2 px-5 py-2 font-semibold text-white bg-pink-600 rounded-lg shadow-md hover:bg-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                                <PlusCircleIcon />
-                                <span>{isSubmitting ? 'Uploading...' : 'Add Resource'}</span>
-                            </button>
+                            <Tooltip text="Publish this resource to the club library.">
+                                <button type="submit" disabled={isSubmitting} className="inline-flex items-center space-x-2 px-5 py-2 font-semibold text-white bg-pink-600 rounded-lg shadow-md hover:bg-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <PlusCircleIcon />
+                                    <span>{isSubmitting ? 'Uploading...' : 'Add Resource'}</span>
+                                </button>
+                            </Tooltip>
                         </div>
                     </form>
                 </div>

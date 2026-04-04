@@ -10,6 +10,7 @@ import { ChatBubbleIcon } from './icons/ChatBubbleIcon';
 import { SendIcon } from './icons/SendIcon';
 // FIX: Changed to a named import to match the corrected export from CodeRunnerModal.
 import { CodeRunnerModal } from './CodeRunnerModal';
+import Tooltip from './Tooltip';
 
 interface ShowcaseProps {
     currentUser: User;
@@ -148,37 +149,44 @@ const ShowcaseCard: React.FC<{
 
             <div className="px-5 py-3 bg-gray-50 dark:bg-gray-750 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <button 
-                        onClick={() => onLike(item.id, likes)}
-                        className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors ${isLiked ? 'text-pink-500 bg-pink-50 dark:bg-pink-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
-                    >
-                        <HeartIcon className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
-                        <span className="text-xs font-medium">{likes.length}</span>
-                    </button>
-                    <button 
-                        onClick={handleToggleComments}
-                        className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors ${showComments ? 'text-purple-500 bg-purple-50 dark:bg-purple-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
-                    >
-                        <ChatBubbleIcon className="h-4 w-4" />
-                        <span className="text-xs font-medium">{commentCount}</span>
-                    </button>
+                    <Tooltip text="Like this showcase to support the creator.">
+                        <button 
+                            onClick={() => onLike(item.id, likes)}
+                            className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors ${isLiked ? 'text-pink-500 bg-pink-50 dark:bg-pink-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+                        >
+                            <HeartIcon className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
+                            <span className="text-xs font-medium">{likes.length}</span>
+                        </button>
+                    </Tooltip>
+                    <Tooltip text="Open comments and join the discussion.">
+                        <button 
+                            onClick={handleToggleComments}
+                            className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors ${showComments ? 'text-purple-500 bg-purple-50 dark:bg-purple-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+                        >
+                            <ChatBubbleIcon className="h-4 w-4" />
+                            <span className="text-xs font-medium">{commentCount}</span>
+                        </button>
+                    </Tooltip>
                 </div>
                 
                 <div className="flex gap-2">
-                    <button
-                        onClick={() => onRun(item.codeContent, item.title)}
-                        className="p-1.5 rounded-md transition-colors text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
-                        title="Run Code"
-                    >
-                        <PlayIcon className="h-4 w-4" />
-                    </button>
-                    <button 
-                        onClick={() => onClone(item.codeContent)}
-                        className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 px-3 py-1.5 rounded-lg transition-colors shadow-sm"
-                    >
-                        <CopyIcon className="h-3.5 w-3.5" />
-                        <span className="hidden sm:inline">Clone</span>
-                    </button>
+                    <Tooltip text="Run this code snippet in the playground.">
+                        <button
+                            onClick={() => onRun(item.codeContent, item.title)}
+                            className="p-1.5 rounded-md transition-colors text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+                        >
+                            <PlayIcon className="h-4 w-4" />
+                        </button>
+                    </Tooltip>
+                    <Tooltip text="Copy this code into your playground editor.">
+                        <button 
+                            onClick={() => onClone(item.codeContent)}
+                            className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 px-3 py-1.5 rounded-lg transition-colors shadow-sm"
+                        >
+                            <CopyIcon className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline">Clone</span>
+                        </button>
+                    </Tooltip>
                 </div>
             </div>
 
@@ -359,12 +367,14 @@ const Showcase: React.FC<ShowcaseProps> = ({ currentUser, setActiveTab }) => {
                     <CodeIcon className="h-12 w-12 mx-auto text-gray-400 mb-3" />
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white">No code snippets found</h3>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">Be the first to publish your code from the Playground!</p>
-                    <button 
-                        onClick={() => setActiveTab('playground')}
-                        className="mt-4 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors text-sm font-medium"
-                    >
-                        Go to Playground
-                    </button>
+                    <Tooltip text="Open the playground to publish your first showcase.">
+                        <button 
+                            onClick={() => setActiveTab('playground')}
+                            className="mt-4 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors text-sm font-medium"
+                        >
+                            Go to Playground
+                        </button>
+                    </Tooltip>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

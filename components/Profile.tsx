@@ -14,6 +14,7 @@ import { predefinedAvatars } from '../constants';
 import { useData } from '../DataContext';
 import { CursorVariant } from './CustomCursor';
 import { FormattedMessage } from './FormattedMessage';
+import Tooltip from './Tooltip';
 
 const AvatarSelectionModal: React.FC<{
   isOpen: boolean;
@@ -538,25 +539,27 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
                         <>
                             <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-8">
                                 <div className="relative flex-shrink-0 group">
-                                    <button 
-                                        onClick={() => setIsAvatarModalOpen(true)}
-                                        className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-full ring-4 ring-pink-500/50 focus:outline-none focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-900 focus:ring-pink-500 disabled:cursor-not-allowed"
-                                        aria-label="Change profile picture"
-                                        disabled={isUpdatingAvatar}
-                                    >
-                                        <img
-                                            src={currentUser.avatarUrl || `https://i.pravatar.cc/128?u=${currentUser.username}`}
-                                            alt={currentUser.name}
-                                            className="w-full h-full rounded-full object-cover"
-                                        />
-                                        <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity">
-                                            {isUpdatingAvatar ? (
-                                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-                                            ) : (
-                                                <CameraIcon />
-                                            )}
-                                        </div>
-                                    </button>
+                                    <Tooltip text="Change your profile picture.">
+                                        <button 
+                                            onClick={() => setIsAvatarModalOpen(true)}
+                                            className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-full ring-4 ring-pink-500/50 focus:outline-none focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-900 focus:ring-pink-500 disabled:cursor-not-allowed"
+                                            aria-label="Change profile picture"
+                                            disabled={isUpdatingAvatar}
+                                        >
+                                            <img
+                                                src={currentUser.avatarUrl || `https://i.pravatar.cc/128?u=${currentUser.username}`}
+                                                alt={currentUser.name}
+                                                className="w-full h-full rounded-full object-cover"
+                                            />
+                                            <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity">
+                                                {isUpdatingAvatar ? (
+                                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                                                ) : (
+                                                    <CameraIcon />
+                                                )}
+                                            </div>
+                                        </button>
+                                    </Tooltip>
                                 </div>
                                 <div className="text-center sm:text-left">
                                     <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{currentUser.name}</h1>
@@ -602,13 +605,15 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
                                                 {bioStatus}
                                             </span>
                                         )}
-                                        <button
-                                            onClick={handleSaveBio}
-                                            disabled={isSavingBio}
-                                            className="px-4 py-2 text-xs font-semibold rounded-lg bg-pink-600 text-white hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            {isSavingBio ? 'Saving...' : 'Save Bio'}
-                                        </button>
+                                        <Tooltip text="Save your bio to display on your portfolio.">
+                                            <button
+                                                onClick={handleSaveBio}
+                                                disabled={isSavingBio}
+                                                className="px-4 py-2 text-xs font-semibold rounded-lg bg-pink-600 text-white hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {isSavingBio ? 'Saving...' : 'Save Bio'}
+                                            </button>
+                                        </Tooltip>
                                     </div>
                                 </div>
                             </div>

@@ -13,6 +13,7 @@ import { UsersIcon } from './icons/UsersIcon';
 import { XIcon } from './icons/XIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import ConfirmationModal from './ConfirmationModal';
+import Tooltip from './Tooltip';
 
 interface ActivitiesProps {
   currentUser: User;
@@ -282,28 +283,30 @@ const Activities: React.FC<ActivitiesProps> = ({ currentUser }) => {
             <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center bg-white dark:bg-gray-800 p-2 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
                  {/* View Toggle */}
                 <div className="flex bg-gray-100 dark:bg-gray-900/50 p-1 rounded-xl">
-                    <button
-                        onClick={() => setViewMode('LIST')}
-                        className={`p-2 rounded-lg transition-all duration-200 flex items-center justify-center ${
-                            viewMode === 'LIST'
-                                ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-pink-400 shadow-sm'
-                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-                        }`}
-                        title="List View"
-                    >
-                         <ViewListIcon />
-                    </button>
-                    <button
-                        onClick={() => setViewMode('CALENDAR')}
-                        className={`p-2 rounded-lg transition-all duration-200 flex items-center justify-center ${
-                            viewMode === 'CALENDAR'
-                                ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-pink-400 shadow-sm'
-                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-                        }`}
-                        title="Calendar View"
-                    >
-                        <CalendarIcon />
-                    </button>
+                    <Tooltip text="Switch to list view for detailed activity cards.">
+                        <button
+                            onClick={() => setViewMode('LIST')}
+                            className={`p-2 rounded-lg transition-all duration-200 flex items-center justify-center ${
+                                viewMode === 'LIST'
+                                    ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-pink-400 shadow-sm'
+                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                            }`}
+                        >
+                             <ViewListIcon />
+                        </button>
+                    </Tooltip>
+                    <Tooltip text="Switch to calendar view for a monthly overview.">
+                        <button
+                            onClick={() => setViewMode('CALENDAR')}
+                            className={`p-2 rounded-lg transition-all duration-200 flex items-center justify-center ${
+                                viewMode === 'CALENDAR'
+                                    ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-pink-400 shadow-sm'
+                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                            }`}
+                        >
+                            <CalendarIcon />
+                        </button>
+                    </Tooltip>
                 </div>
 
                 {/* Filter Controls - Only visible in List Mode */}

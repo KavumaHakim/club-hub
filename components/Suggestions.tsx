@@ -11,6 +11,7 @@ import { XIcon } from './icons/XIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import { ArrowUpCircleIcon } from './icons/ArrowUpCircleIcon';
 import ConfirmationModal from './ConfirmationModal';
+import Tooltip from './Tooltip';
 
 interface SuggestionsProps {
     currentUser: User;
@@ -104,13 +105,15 @@ const AddSuggestionModal: React.FC<{ isOpen: boolean; onClose: () => void; onSub
                             required
                         />
                     </div>
-                    <button 
-                        type="submit" 
-                        disabled={isSubmitting}
-                        className="w-full py-2.5 bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-lg shadow-md transition-all disabled:opacity-50"
-                    >
-                        {isSubmitting ? 'Submitting...' : 'Submit'}
-                    </button>
+                    <Tooltip text="Send your suggestion or bug report to the club.">
+                        <button 
+                            type="submit" 
+                            disabled={isSubmitting}
+                            className="w-full py-2.5 bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-lg shadow-md transition-all disabled:opacity-50"
+                        >
+                            {isSubmitting ? 'Submitting...' : 'Submit'}
+                        </button>
+                    </Tooltip>
                 </form>
             </div>
         </div>
@@ -270,12 +273,14 @@ const Suggestions: React.FC<SuggestionsProps> = ({ currentUser }) => {
                     <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200">Suggestions & Bugs</h2>
                     <p className="text-gray-600 dark:text-gray-400 mt-1">Help us improve the ICT Club Hub.</p>
                 </div>
-                <button 
-                    onClick={() => setIsModalOpen(true)}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-pink-600 hover:bg-pink-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-pink-500/25 transition-all"
-                >
-                    <PlusCircleIcon /> New Suggestion
-                </button>
+                <Tooltip text="Create a new feature request or bug report.">
+                    <button 
+                        onClick={() => setIsModalOpen(true)}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-pink-600 hover:bg-pink-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-pink-500/25 transition-all"
+                    >
+                        <PlusCircleIcon /> New Suggestion
+                    </button>
+                </Tooltip>
             </div>
 
             <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl mb-6 w-fit">

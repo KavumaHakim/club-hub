@@ -11,6 +11,7 @@ import { PlusCircleIcon } from './icons/PlusCircleIcon';
 import { useData } from '../DataContext';
 import EditTaskModal from './EditTaskModal';
 import ConfirmationModal from './ConfirmationModal';
+import Tooltip from './Tooltip';
 import { ViewGridIcon } from './icons/ViewGridIcon';
 import { UsersIcon } from './icons/UsersIcon';
 import AssignmentsView from './AssignmentsView';
@@ -361,13 +362,15 @@ const ProjectsBoard: React.FC<ProjectsBoardProps> = ({ currentUser }) => {
                 )}
             </div>
             {currentUser.role === 'PATRON' && (
-                 <button
-                    onClick={handleOpenNewTaskModal}
-                    className="flex items-center justify-center space-x-2 px-4 py-2.5 font-semibold text-white bg-pink-600 rounded-lg shadow-md hover:bg-pink-700 transition-all"
-                  >
-                    <PlusCircleIcon />
-                    <span className="hidden sm:inline">New Task</span>
-                  </button>
+                 <Tooltip text="Create a new task for the project board.">
+                     <button
+                        onClick={handleOpenNewTaskModal}
+                        className="flex items-center justify-center space-x-2 px-4 py-2.5 font-semibold text-white bg-pink-600 rounded-lg shadow-md hover:bg-pink-700 transition-all"
+                      >
+                        <PlusCircleIcon />
+                        <span className="hidden sm:inline">New Task</span>
+                      </button>
+                 </Tooltip>
             )}
         </div>
       </div>

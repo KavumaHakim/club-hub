@@ -1,9 +1,10 @@
 
-import React, { Suspense, lazy, useState, useEffect } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useMemo } from 'react';
 import { User, Tab } from '../types';
 import AiTutor from './AiTutor';
 import DailyTipModal from './PythonTipModal';
 import { useData } from '../DataContext';
+import FeatureIntroModal from './FeatureIntroModal';
 
 const Feed = lazy(() => import('./Feed'));
 const Activities = lazy(() => import('./Activities'));
@@ -48,6 +49,7 @@ const TabPanel: React.FC<{ active: boolean; children: React.ReactNode; className
 
 const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile, activeTab, setActiveTab, theme }) => {
   const [showTipModal, setShowTipModal] = useState(false);
+  const [featureIntro, setFeatureIntro] = useState<{ tab: Tab; title: string; body: string } | null>(null);
   const { featureFlags } = useData();
 
   useEffect(() => {
@@ -65,6 +67,90 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile,
           return () => clearTimeout(timer);
       }
   }, []);
+
+  const isFirstLoginSession = useMemo(() => {
+      if (typeof window === 'undefined') return false;
+      return sessionStorage.getItem('first_login_session') === 'true';
+  }, []);
+
+  const featureIntroMap: Partial<Record<Tab, { title: string; body: string }>> = useMemo(() => ({
+      feed: {
+          title: 'Feed & Announcements',
+          body: `Your central news hub.\n\n- Filter posts by category to focus on what matters.\n- React and comment to join discussions.\n- Polls help the club decide on events, tools, and topics.\n- Announcements from patrons are pinned for visibility.`
+      },
+      activities: {
+          title: 'Activities',
+          body: `Plan your club time and stay in the loop.\n\n- RSVP to sessions and see who else is attending.\n- View details like location, time, and category.\n- Attendance records are linked to activities, so keeping this up‑to‑date matters.`
+      },
+      attendance: {
+          title: 'Attendance',
+          body: `Track participation over time.\n\n- Patrons can quick‑create sessions in one click.\n- Bulk mark members present/absent for a selected activity.\n- Review logs, summaries, and trends to identify engagement patterns.`
+      },
+      projects: {
+          title: 'Projects Board',
+          body: `Organize work like a real dev team.\n\n- Add tasks and move them through columns.\n- Assign owners and set priorities.\n- Collaborate in teams and keep progress visible.`
+      },
+      playground: {
+          title: 'Code Playground',
+          body: `Your in‑browser coding lab.\n\n- Run Python or JavaScript instantly.\n- Build multi‑file web projects (HTML/CSS/JS).\n- Save, download, upload, and publish your work.\n- Submit challenge solutions directly from here.`
+      },
+      resources: {
+          title: 'Resources Library',
+          body: `Curated learning tools to level up.\n\n- Filter by category (docs, videos, tools).\n- Search quickly for what you need.\n- High‑quality resources selected by patrons.`
+      },
+      chat: {
+          title: 'Chat',
+          body: `Fast, real‑time communication.\n\n- Send messages to the whole club.\n- Share links, updates, and quick questions.\n- Great for coordination during sessions.`
+      },
+      showcase: {
+          title: 'Showcase',
+          body: `Publish your best work.\n\n- Share projects with previews and descriptions.\n- Collect likes and feedback.\n- Appear on leaderboards for recognition.`
+      },
+      suggestions: {
+          title: 'Suggestions',
+          body: `Help improve the club platform.\n\n- Submit ideas and bug reports.\n- Vote to prioritize what should ship next.\n- Track the status of suggestions.`
+      },
+      challenges: {
+          title: 'Challenges',
+          body: `Test your skills and earn badges.\n\n- Solve challenges and submit solutions.\n- Get instant AI feedback on submissions.\n- Patrons can create or generate AI challenges by level.`
+      },
+      roadmap: {
+          title: 'Roadmaps',
+          body: `Personalized learning paths.\n\n- Ebgae in Roadmaps by topic and level.\n- Each milestone includes resources and quizzes.\n- Track progress as you grow.`
+      },
+      community: {
+          title: 'Community',
+          body: `Collaboration and recognition.\n\n- Form teams and compete in team challenges.\n- Recognition board highlights top contributors.\n- Encourage teamwork and consistent participation.`
+      },
+      profile: {
+          title: 'Profile & Portfolio',
+          body: `Your public identity in the club.\n\n- Update avatar, bio, and details.\n- Show portfolio highlights and badges.\n- Share your progress with members and patrons.`
+      },
+      members: {
+          title: 'Members',
+          body: `Discover and learn from others.\n\n- Open member portfolios.\n- See badges, activity, and showcases.\n- Great for collaboration or finding mentors.`
+      },
+      admin: {
+          title: 'Admin Tools',
+          body: `Patron‑only control center.\n\n- Toggle feature flags across the app.\n- Moderate submissions and content.\n- View analytics snapshots for the club.`
+      }
+  }), []);
+
+  useEffect(() => {
+      if (!isFirstLoginSession) return;
+      const intro = featureIntroMap[activeTab];
+      if (!intro) return;
+      const key = `intro_seen_${activeTab}`;
+      if (sessionStorage.getItem(key) === 'true') return;
+      setFeatureIntro({ tab: activeTab, ...intro });
+  }, [activeTab, featureIntroMap, isFirstLoginSession]);
+
+  const handleCloseFeatureIntro = () => {
+      if (featureIntro?.tab) {
+          sessionStorage.setItem(`intro_seen_${featureIntro.tab}`, 'true');
+      }
+      setFeatureIntro(null);
+  };
 
   useEffect(() => {
       const disabledTabs = new Set<Tab>();
@@ -149,6 +235,13 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile,
         isOpen={showTipModal} 
         onClose={() => setShowTipModal(false)} 
         skillLevel={currentUser.skillLevel || 'BEGINNER'}
+      />
+
+      <FeatureIntroModal
+        isOpen={!!featureIntro}
+        title={featureIntro?.title || ''}
+        body={featureIntro?.body || ''}
+        onClose={handleCloseFeatureIntro}
       />
     </div>
   );

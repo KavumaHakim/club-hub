@@ -25,13 +25,13 @@ const FeatureTourModal: React.FC<FeatureTourModalProps> = ({ isOpen, onClose }) 
   const steps = [
     {
       title: "Welcome to ICT Club Hub",
-      description: "Here’s a quick tour of every major feature so you can jump in fast.",
+      description: "Here’s a detailed tour of every major feature so you can jump in with confidence.",
       icon: <span className="text-6xl animate-icon-bounce-in">🚀</span>,
       gradient: "from-pink-500 to-purple-600"
     },
     {
       title: "Feed & Announcements",
-      description: "Catch the latest updates, polls, and discussions on the **Feed**. Filters help you focus fast.",
+      description: "Catch the latest updates, polls, and discussions on the **Feed**.\n\n- Filter by category (announcements, polls, posts)\n- React and comment to join the conversation\n- Pinned posts highlight important club updates",
       icon: (
         <div className="p-6 bg-white/20 rounded-full backdrop-blur-sm text-white animate-icon-bounce-in">
            <HomeIcon />
@@ -41,7 +41,7 @@ const FeatureTourModal: React.FC<FeatureTourModalProps> = ({ isOpen, onClose }) 
     },
     {
       title: "Activities & Attendance",
-      description: "Track events, RSVP, and mark attendance. Patrons can run **quick attendance** in one click.",
+      description: "Track events, RSVP, and mark attendance.\n\n- RSVP to upcoming activities\n- View schedule details and locations\n- Patrons can run **quick attendance** and bulk mark members",
       icon: (
         <div className="p-6 bg-white/20 rounded-full backdrop-blur-sm text-white animate-icon-bounce-in">
            <CalendarIcon />
@@ -51,7 +51,7 @@ const FeatureTourModal: React.FC<FeatureTourModalProps> = ({ isOpen, onClose }) 
     },
     {
       title: "Projects & Teams",
-      description: "Organize tasks on the **Project Board**, build teams, and collaborate on team challenges.",
+      description: "Organize tasks on the **Project Board**, build teams, and collaborate.\n\n- Kanban workflow for tasks\n- Assign owners and priorities\n- Team challenges and shared projects",
       icon: (
         <div className="p-6 bg-white/20 rounded-full backdrop-blur-sm text-white animate-icon-bounce-in">
            <ClipboardListIcon />
@@ -61,7 +61,7 @@ const FeatureTourModal: React.FC<FeatureTourModalProps> = ({ isOpen, onClose }) 
     },
     {
       title: "Playground & Web Projects",
-      description: "Code in Python/JS or build **Web projects** with HTML, CSS, and JS together. Save files and collaborate.",
+      description: "Code in Python/JS or build **Web projects** with HTML, CSS, and JS together.\n\n- Run and debug instantly\n- Save multi‑file projects\n- Publish or submit challenges from the menu",
       icon: (
          <div className="p-6 bg-white/20 rounded-full backdrop-blur-sm text-white animate-icon-bounce-in">
            <CodeIcon />
@@ -71,7 +71,7 @@ const FeatureTourModal: React.FC<FeatureTourModalProps> = ({ isOpen, onClose }) 
     },
     {
       title: "Resources Library",
-      description: "Use the eLibrary to search, filter, and open curated docs, tools, videos, and Python files.",
+      description: "Use the eLibrary to search, filter, and open curated docs, tools, videos, and files.\n\n- Filter by category and type\n- Open videos, docs, and tools quickly\n- Curated by patrons for quality",
       icon: (
         <div className="p-6 bg-white/20 rounded-full backdrop-blur-sm text-white animate-icon-bounce-in">
            <BookOpenIcon />
@@ -81,7 +81,7 @@ const FeatureTourModal: React.FC<FeatureTourModalProps> = ({ isOpen, onClose }) 
     },
     {
       title: "Showcase & Leaderboard",
-      description: "Publish code, view HTML previews, and climb the **Community Leaderboard**.",
+      description: "Publish code, view previews, and climb the **Community Leaderboard**.\n\n- Share project highlights\n- Get likes and feedback\n- Build your portfolio reputation",
       icon: (
         <div className="p-6 bg-white/20 rounded-full backdrop-blur-sm text-white animate-icon-bounce-in">
            <GlobeIcon />
@@ -91,7 +91,7 @@ const FeatureTourModal: React.FC<FeatureTourModalProps> = ({ isOpen, onClose }) 
     },
     {
       title: "Challenges & Roadmaps",
-      description: "Take on challenges, submit solutions, and generate **AI Roadmaps** with quizzes.",
+      description: "Take on challenges, submit solutions and quizzes.\n\n- Earn badges from challenges\n- Get instant AI feedback\n- Roadmaps include milestones and quizzes",
       icon: (
         <div className="p-6 bg-white/20 rounded-full backdrop-blur-sm text-white animate-icon-bounce-in">
            <TrophyIcon />
@@ -101,7 +101,7 @@ const FeatureTourModal: React.FC<FeatureTourModalProps> = ({ isOpen, onClose }) 
     },
     {
       title: "AI Tutor & Chat",
-      description: "Get help from the **AI Tutor** (club‑aware) or chat with members anytime.",
+      description: "Get help from **Kevin**, the club‑aware AI Tutor, or chat with members anytime.\n\n- Ask coding questions\n- Kevin knows active challenges & resources\n- Real‑time member chat",
       icon: (
         <div className="p-6 bg-white/20 rounded-full backdrop-blur-sm text-white animate-icon-bounce-in">
            <ChatBubbleIcon />
@@ -111,7 +111,7 @@ const FeatureTourModal: React.FC<FeatureTourModalProps> = ({ isOpen, onClose }) 
     },
     {
       title: "Member Tools & Admin",
-      description: "Manage profiles, portfolios, and (for patrons) moderation, analytics, and feature flags.",
+      description: "Manage profiles, portfolios, and (for patrons) moderation, analytics, and feature flags.\n\n- Update your profile and bio\n- View member portfolios\n- Patron tools for governance",
       icon: (
         <div className="p-6 bg-white/20 rounded-full backdrop-blur-sm text-white animate-icon-bounce-in">
            <IdentificationIcon />
@@ -121,7 +121,7 @@ const FeatureTourModal: React.FC<FeatureTourModalProps> = ({ isOpen, onClose }) 
     },
     {
       title: "Ready to Explore?",
-      description: "You’re set. Start building, learning, and collaborating!",
+      description: "You’re set. Start building, learning, and collaborating with your club.",
       icon: <span className="text-6xl animate-icon-bounce-in">✨</span>,
       gradient: "from-gray-700 to-black"
     }

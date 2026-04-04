@@ -160,6 +160,13 @@ const App: React.FC = () => {
                   const hasSeenTour = localStorage.getItem(`has_seen_tour_${userProfile.uid}`);
                   if (!hasSeenTour) {
                       setShowTourModal(true);
+                      try {
+                          sessionStorage.setItem('first_login_session', 'true');
+                      } catch {}
+                  } else {
+                      try {
+                          sessionStorage.removeItem('first_login_session');
+                      } catch {}
                   }
 
                   // Update Last Login
@@ -278,6 +285,9 @@ const App: React.FC = () => {
     try {
         await api.logout();
         localStorage.removeItem('active_tab'); 
+        try {
+            sessionStorage.removeItem('first_login_session');
+        } catch {}
     } catch (error) {
         console.error("Logout failed:", error);
     } finally {

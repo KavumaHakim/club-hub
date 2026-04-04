@@ -6,6 +6,7 @@ import { PlusCircleIcon } from './icons/PlusCircleIcon';
 import { DownloadIcon } from './icons/DownloadIcon';
 import { useData } from '../DataContext';
 import ChartErrorBoundary from './ChartErrorBoundary';
+import Tooltip from './Tooltip';
 
 interface AttendanceProps {
   currentUser: User;
@@ -359,17 +360,23 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
                 disabled={isQuickCreating}
                 className="flex items-center space-x-2 px-5 py-3 font-semibold text-white bg-pink-600 rounded-xl shadow-md hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
-                <PlusCircleIcon />
-                <span>{isQuickCreating ? 'Creating...' : 'Quick Attendance'}</span>
+                <Tooltip text="Create a quick attendance session for today.">
+                  <span className="flex items-center space-x-2">
+                    <PlusCircleIcon />
+                    <span>{isQuickCreating ? 'Creating...' : 'Quick Attendance'}</span>
+                  </span>
+                </Tooltip>
               </button>
-              <button
-                onClick={handleDownloadCSV}
-                className="flex items-center space-x-2 px-5 py-3 font-semibold text-white bg-purple-600 rounded-xl shadow-md hover:bg-purple-700 transition-all"
-                aria-label="Download attendance records as CSV"
-              >
-                <DownloadIcon />
-                <span>Download CSV</span>
-              </button>
+              <Tooltip text="Export attendance records as a CSV file.">
+                <button
+                  onClick={handleDownloadCSV}
+                  className="flex items-center space-x-2 px-5 py-3 font-semibold text-white bg-purple-600 rounded-xl shadow-md hover:bg-purple-700 transition-all"
+                  aria-label="Download attendance records as CSV"
+                >
+                  <DownloadIcon />
+                  <span>Download CSV</span>
+                </button>
+              </Tooltip>
             </div>
           </div>
 
@@ -389,13 +396,15 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
                   ))}
                 </select>
               </div>
-              <button
-                onClick={handleBulkSubmit}
-                disabled={!patronActivityId || isBulkSubmitting}
-                className="inline-flex justify-center py-2.5 px-5 border border-transparent shadow-sm text-sm font-semibold rounded-xl text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 dark:focus:ring-offset-gray-800 disabled:opacity-50"
-              >
-                {isBulkSubmitting ? 'Saving...' : 'Save Attendance'}
-              </button>
+              <Tooltip text="Save attendance for all members at once.">
+                <button
+                  onClick={handleBulkSubmit}
+                  disabled={!patronActivityId || isBulkSubmitting}
+                  className="inline-flex justify-center py-2.5 px-5 border border-transparent shadow-sm text-sm font-semibold rounded-xl text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 dark:focus:ring-offset-gray-800 disabled:opacity-50"
+                >
+                  {isBulkSubmitting ? 'Saving...' : 'Save Attendance'}
+                </button>
+              </Tooltip>
             </div>
 
             <div className="rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -405,20 +414,24 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
                   <p className="text-xs text-gray-400">{memberUsers.length} total • {presentCount} present • {absentCount} absent</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleMarkAll(true)}
-                    className="px-3 py-1.5 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200 hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors"
-                  >
-                    All Present
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleMarkAll(false)}
-                    className="px-3 py-1.5 text-xs font-semibold rounded-full bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                  >
-                    Clear All
-                  </button>
+                  <Tooltip text="Mark every member as present.">
+                    <button
+                      type="button"
+                      onClick={() => handleMarkAll(true)}
+                      className="px-3 py-1.5 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200 hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors"
+                    >
+                      All Present
+                    </button>
+                  </Tooltip>
+                  <Tooltip text="Clear all selections (mark everyone absent).">
+                    <button
+                      type="button"
+                      onClick={() => handleMarkAll(false)}
+                      className="px-3 py-1.5 text-xs font-semibold rounded-full bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                    >
+                      Clear All
+                    </button>
+                  </Tooltip>
                   <input
                     type="text"
                     value={memberSearch}

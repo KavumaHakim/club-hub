@@ -18,6 +18,7 @@ import { PencilIcon } from './icons/PencilIcon';
 import { SparklesIcon } from './icons/SparklesIcon';
 import ConfirmationModal from './ConfirmationModal';
 import RoadmapQuizModal from './RoadmapQuizModal';
+import Tooltip from './Tooltip';
 
 interface RoadmapViewProps {
     currentUser: User;
@@ -68,12 +69,14 @@ const MilestoneCard: React.FC<{
                 </div>
 
                 {!isPatron && !isCompleted && !isLocked && (
-                    <button 
-                        onClick={onTakeQuiz}
-                        className="w-full py-2 bg-pink-600 text-white rounded-lg text-sm font-bold hover:bg-pink-700 transition-all flex items-center justify-center gap-2"
-                    >
-                        <SparklesIcon className="w-4 h-4" /> Start Assessment
-                    </button>
+                    <Tooltip text="Take the assessment to unlock the next milestone.">
+                        <button 
+                            onClick={onTakeQuiz}
+                            className="w-full py-2 bg-pink-600 text-white rounded-lg text-sm font-bold hover:bg-pink-700 transition-all flex items-center justify-center gap-2"
+                        >
+                            <SparklesIcon className="w-4 h-4" /> Start Assessment
+                        </button>
+                    </Tooltip>
                 )}
             </div>
         </div>
@@ -185,13 +188,15 @@ const CreateRoadmapModal: React.FC<{
                                 rows={2}
                             />
                         </div>
-                        <button 
-                            onClick={handleGenerate}
-                            disabled={isGenerating || !topic}
-                            className="w-full py-3 bg-gradient-to-r from-pink-600 to-purple-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
-                        >
-                            {isGenerating ? 'Curating Content...' : 'Generate Roadmap'}
-                        </button>
+                        <Tooltip text="Generate a personalized roadmap with milestones and resources.">
+                            <button 
+                                onClick={handleGenerate}
+                                disabled={isGenerating || !topic}
+                                className="w-full py-3 bg-gradient-to-r from-pink-600 to-purple-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
+                            >
+                                {isGenerating ? 'Curating Content...' : 'Generate Roadmap'}
+                            </button>
+                        </Tooltip>
                     </div>
                 ) : (
                     <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
@@ -212,7 +217,9 @@ const CreateRoadmapModal: React.FC<{
                         </div>
                         <div className="mt-6 flex gap-3">
                             <button onClick={() => setGeneratedMilestones(null)} className="flex-1 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium">Edit Input</button>
-                            <button onClick={handleConfirmSave} className="flex-1 py-2 bg-pink-600 text-white rounded-lg font-medium hover:bg-pink-700">Publish Roadmap</button>
+                            <Tooltip text="Publish this roadmap so members can follow it.">
+                                <button onClick={handleConfirmSave} className="flex-1 py-2 bg-pink-600 text-white rounded-lg font-medium hover:bg-pink-700">Publish Roadmap</button>
+                            </Tooltip>
                         </div>
                     </div>
                 )}

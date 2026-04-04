@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Activity, ActivityCategory } from '../types';
 import { PlusCircleIcon } from './icons/PlusCircleIcon';
+import Tooltip from './Tooltip';
 
 const AddActivityForm: React.FC<{ onAddActivity: (activity: Omit<Activity, 'id' | 'rsvpUserIds'>) => Promise<void> }> = ({ onAddActivity }) => {
     const [title, setTitle] = useState('');
@@ -59,10 +60,12 @@ const AddActivityForm: React.FC<{ onAddActivity: (activity: Omit<Activity, 'id' 
                 </div>
                 <textarea placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} rows={3} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500" />
                 <div className="text-right">
-                    <button type="submit" disabled={isSubmitting} className="flex items-center justify-center space-x-2 px-5 py-2 font-semibold text-white bg-pink-600 rounded-lg shadow-md hover:bg-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                        <PlusCircleIcon />
-                        <span>{isSubmitting ? 'Adding...' : 'Add Activity'}</span>
-                    </button>
+                    <Tooltip text="Create a new club activity and notify members.">
+                        <button type="submit" disabled={isSubmitting} className="flex items-center justify-center space-x-2 px-5 py-2 font-semibold text-white bg-pink-600 rounded-lg shadow-md hover:bg-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                            <PlusCircleIcon />
+                            <span>{isSubmitting ? 'Adding...' : 'Add Activity'}</span>
+                        </button>
+                    </Tooltip>
                 </div>
             </form>
         </div>

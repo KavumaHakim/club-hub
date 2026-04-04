@@ -7,6 +7,7 @@ import { ClipboardListIcon } from './icons/ClipboardListIcon';
 import { CheckCircleIcon } from './icons/CheckCircleIcon';
 import { XCircleIcon } from './icons/XCircleIcon';
 import { HourglassIcon } from './icons/HourglassIcon';
+import Tooltip from './Tooltip';
 
 interface AdminToolsProps {
     currentUser: User;
@@ -240,18 +241,22 @@ const AdminTools: React.FC<AdminToolsProps> = ({ currentUser }) => {
                                             </div>
                                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 line-clamp-2">{submission.content}</p>
                                             <div className="mt-2 flex flex-wrap gap-2">
-                                                <button
-                                                    onClick={() => handleReviewSubmission(submission, 'APPROVED')}
-                                                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
-                                                >
-                                                    <CheckCircleIcon className="w-3 h-3" /> Approve
-                                                </button>
-                                                <button
-                                                    onClick={() => handleReviewSubmission(submission, 'REJECTED')}
-                                                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
-                                                >
-                                                    <XCircleIcon className="w-3 h-3" /> Reject
-                                                </button>
+                                                <Tooltip text="Approve and award the badge if earned.">
+                                                    <button
+                                                        onClick={() => handleReviewSubmission(submission, 'APPROVED')}
+                                                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+                                                    >
+                                                        <CheckCircleIcon className="w-3 h-3" /> Approve
+                                                    </button>
+                                                </Tooltip>
+                                                <Tooltip text="Reject the submission and notify the member.">
+                                                    <button
+                                                        onClick={() => handleReviewSubmission(submission, 'REJECTED')}
+                                                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                                                    >
+                                                        <XCircleIcon className="w-3 h-3" /> Reject
+                                                    </button>
+                                                </Tooltip>
                                             </div>
                                         </div>
                                     ))}
@@ -286,12 +291,14 @@ const AdminTools: React.FC<AdminToolsProps> = ({ currentUser }) => {
                             </label>
                         ))}
                     </div>
-                    <button
-                        onClick={resetFeatureFlags}
-                        className="mt-4 px-3 py-2 text-sm font-semibold rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
-                    >
-                        Reset Defaults
-                    </button>
+                    <Tooltip text="Restore the default feature visibility for the whole club.">
+                        <button
+                            onClick={resetFeatureFlags}
+                            className="mt-4 px-3 py-2 text-sm font-semibold rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
+                        >
+                            Reset Defaults
+                        </button>
+                    </Tooltip>
                 </div>
             </section>
         </div>
