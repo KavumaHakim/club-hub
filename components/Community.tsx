@@ -20,18 +20,12 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
         showcaseItems,
         suggestions,
         teams,
-        teamChallenges,
         isLoadingTeams,
-        isLoadingTeamChallenges,
         teamsError,
-        teamChallengesError,
         fetchTeams,
-        fetchTeamChallenges,
         showToast
     } = useData();
     const [teamForm, setTeamForm] = useState({ name: '', description: '' });
-    const [challengeForm, setChallengeForm] = useState({ teamId: '', title: '', description: '', dueDate: '' });
-    const [submissionNote, setSubmissionNote] = useState<Record<string, string>>({});
     const [memberInvite, setMemberInvite] = useState<Record<string, string>>({});
     const [memberSearch, setMemberSearch] = useState('');
     const [selectedMember, setSelectedMember] = useState<User | null>(null);
@@ -81,10 +75,8 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
     const stats = useMemo(() => {
         const approvedMembers = allUsers.filter(user => user.status === 'APPROVED').length;
         const totalTeams = teams.length;
-        const totalChallenges = teamChallenges.length;
-        const totalSubmissions = teamChallenges.reduce((acc, c) => acc + Object.keys(c.submissions || {}).length, 0);
-        return { approvedMembers, totalTeams, totalChallenges, totalSubmissions };
-    }, [allUsers, teams, teamChallenges]);
+        return { approvedMembers, totalTeams };
+    }, [allUsers, teams]);
 
     const handleCreateTeam = async () => {
         if (!teamForm.name.trim()) return;
@@ -169,44 +161,6 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
         }
     };
 
-    const handleCreateChallenge = async () => {
-        if (!challengeForm.teamId || !challengeForm.title.trim()) return;
-        try {
-            await api.createTeamChallenge({
-                teamId: challengeForm.teamId,
-                title: challengeForm.title.trim(),
-                description: challengeForm.description.trim(),
-                dueDate: challengeForm.dueDate || undefined,
-                createdBy: currentUser.uid
-            });
-            await fetchTeamChallenges();
-            setChallengeForm({ teamId: '', title: '', description: '', dueDate: '' });
-            showToast('Team challenge created.', 'success');
-        } catch (error) {
-            console.error("Failed to create team challenge", error);
-            showToast('Failed to create challenge.', 'error');
-        }
-    };
-
-    const handleSubmitChallenge = async (challengeId: string) => {
-        const note = submissionNote[challengeId]?.trim();
-        if (!note) return;
-        try {
-            await api.upsertTeamChallengeSubmission({
-                challengeId,
-                userId: currentUser.uid,
-                note
-            });
-            await fetchTeamChallenges();
-            setSubmissionNote(prev => ({ ...prev, [challengeId]: '' }));
-            showToast('Submission saved.', 'success');
-        } catch (error) {
-            console.error("Failed to submit challenge", error);
-            showToast('Failed to submit challenge.', 'error');
-        }
-    };
-
-    const teamsById = useMemo(() => new Map(teams.map(team => [team.id, team])), [teams]);
 
     const directoryMembers = useMemo(() => {
         const term = memberSearch.trim().toLowerCase();
@@ -242,19 +196,9 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
                                 <PlusCircleIcon className="w-4 h-4" /> Create Team
                             </button>
                         </Tooltip>
-                        {currentUser.role === 'PATRON' && (
-                            <Tooltip text="Create a team challenge for members.">
-                                <button
-                                    onClick={() => {
-                                        const firstTeam = teams[0];
-                                        if (firstTeam) setChallengeForm(prev => ({ ...prev, teamId: String(firstTeam.id) }));
-                                    }}
-                                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-900 text-white rounded-xl text-sm font-semibold shadow-md hover:bg-gray-800 transition-all"
-                                >
-                                    <CheckCircleIcon className="w-4 h-4" /> Add Challenge
-                                </button>
-                            </Tooltip>
-                        )}
+                        <div className="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-900/10 dark:bg-white/10 text-gray-700 dark:text-gray-200 rounded-xl text-sm font-semibold">
+                            <CheckCircleIcon className="w-4 h-4" /> Build teams for challenges
+                        </div>
                     </div>
                 </div>
                 <div className="relative z-10 mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -267,12 +211,12 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
                         <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalTeams}</p>
                     </div>
                     <div className="rounded-2xl bg-white/80 dark:bg-gray-900/70 border border-gray-200/60 dark:border-gray-700/60 p-4">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Team Challenges</p>
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalChallenges}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Spotlight</p>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{topMember ? 'Live' : '—'}</p>
                     </div>
                     <div className="rounded-2xl bg-white/80 dark:bg-gray-900/70 border border-gray-200/60 dark:border-gray-700/60 p-4">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Submissions</p>
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalSubmissions}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Highlights</p>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{recognitionBoard.length}</p>
                     </div>
                 </div>
             </section>
@@ -568,113 +512,6 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
                 )}
             </section>
 
-            <section className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm">
-                <div className="flex items-center gap-3 mb-4">
-                    <CheckCircleIcon />
-                    <div>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Team Challenges</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Work together and submit progress notes.</p>
-                    </div>
-                </div>
-
-                {currentUser.role === 'PATRON' && teams.length > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6">
-                        <select
-                            value={challengeForm.teamId}
-                            onChange={(e) => setChallengeForm(prev => ({ ...prev, teamId: e.target.value }))}
-                            className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm"
-                        >
-                            <option value="">Select team</option>
-                            {teams.map(team => (
-                                <option key={team.id} value={team.id}>{team.name}</option>
-                            ))}
-                        </select>
-                        <input
-                            value={challengeForm.title}
-                            onChange={(e) => setChallengeForm(prev => ({ ...prev, title: e.target.value }))}
-                            placeholder="Challenge title"
-                            className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm"
-                        />
-                        <input
-                            value={challengeForm.dueDate}
-                            onChange={(e) => setChallengeForm(prev => ({ ...prev, dueDate: e.target.value }))}
-                            type="date"
-                            className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm"
-                        />
-                        <Tooltip text="Create a team challenge with due date and description.">
-                            <button
-                                onClick={handleCreateChallenge}
-                                className="inline-flex items-center justify-center gap-2 px-3 py-2 bg-pink-600 text-white rounded-lg text-sm font-semibold hover:bg-pink-700"
-                            >
-                                <PlusCircleIcon className="w-4 h-4" /> Add Challenge
-                            </button>
-                        </Tooltip>
-                        <textarea
-                            value={challengeForm.description}
-                            onChange={(e) => setChallengeForm(prev => ({ ...prev, description: e.target.value }))}
-                            placeholder="Short description"
-                            className="md:col-span-4 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm"
-                            rows={2}
-                        />
-                    </div>
-                )}
-
-                {isLoadingTeamChallenges ? (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Loading challenges...</p>
-                ) : teamChallengesError ? (
-                    <p className="text-sm text-red-500 dark:text-red-400">{teamChallengesError}</p>
-                ) : teamChallenges.length === 0 ? (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">No team challenges yet.</p>
-                ) : (
-                    <div className="space-y-4">
-                        {teamChallenges.map(challenge => {
-                            const team = teamsById.get(challenge.teamId);
-                            const isMember = team?.memberIds.includes(currentUser.uid);
-                            const submission = challenge.submissions[currentUser.uid];
-                            return (
-                                <div key={challenge.id} className="border border-gray-200 dark:border-gray-700 rounded-xl p-4">
-                                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                                        <div>
-                                            <h4 className="text-md font-semibold text-gray-900 dark:text-white">{challenge.title}</h4>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">Team: {team?.name || 'Unknown team'} • Due {challenge.dueDate || 'TBD'}</p>
-                                            {challenge.description && (
-                                                <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">{challenge.description}</p>
-                                            )}
-                                        </div>
-                                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                                            {Object.keys(challenge.submissions).length} submissions
-                                        </div>
-                                    </div>
-                                    {isMember && (
-                                        <div className="mt-3">
-                                            <textarea
-                                                value={submissionNote[challenge.id] ?? ''}
-                                                onChange={(e) => setSubmissionNote(prev => ({ ...prev, [challenge.id]: e.target.value }))}
-                                                placeholder={submission ? 'Update your progress note' : 'Add a progress note'}
-                                                className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm"
-                                                rows={2}
-                                            />
-                                            <div className="mt-2 flex items-center gap-3">
-                                                <button
-                                                    onClick={() => handleSubmitChallenge(challenge.id)}
-                                                    className="inline-flex items-center gap-2 px-3 py-2 bg-gray-900 text-white rounded-lg text-sm font-semibold hover:bg-gray-800"
-                                                >
-                                                    Submit Note
-                                                </button>
-                                                {submission && (
-                                                    <span className="text-xs text-green-600 dark:text-green-400">
-                                                        Submitted {new Date(submission.submittedAt).toLocaleString()}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
-            </section>
         </div>
         <MemberPortfolioModal
             isOpen={!!selectedMember}

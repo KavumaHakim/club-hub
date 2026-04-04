@@ -118,29 +118,33 @@ const MemberPortfolioModal: React.FC<MemberPortfolioModalProps> = ({ isOpen, use
                 className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar"
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <img
-                            src={user.avatarUrl || `https://i.pravatar.cc/80?u=${user.username}`}
-                            alt={user.name}
-                            className="w-14 h-14 rounded-full border border-gray-200 dark:border-gray-700 object-cover"
-                        />
-                        <div>
-                            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{user.name}</h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">@{user.username}</p>
-                            <div className="flex flex-wrap gap-2 mt-2">
-                                <StatPill label="Badges" value={user.badges?.length || 0} tone="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-200" />
-                                <StatPill label="Showcases" value={memberShowcases.length} tone="bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-200" />
-                                <StatPill label="Suggestions" value={memberSuggestions.length} tone="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-200" />
+                <div className="relative overflow-hidden border-b border-gray-200 dark:border-gray-800">
+                    <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 via-purple-500/10 to-indigo-500/10 dark:from-pink-500/20 dark:via-purple-500/20 dark:to-indigo-500/20"></div>
+                    <div className="relative p-6 flex items-start justify-between gap-6">
+                        <div className="flex items-center gap-4">
+                            <img
+                                src={user.avatarUrl || `https://i.pravatar.cc/80?u=${user.username}`}
+                                alt={user.name}
+                                className="w-16 h-16 rounded-full border-2 border-white/80 dark:border-gray-900 shadow-md object-cover"
+                            />
+                            <div>
+                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{user.name}</h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">@{user.username}</p>
+                                <div className="flex flex-wrap gap-2 mt-3">
+                                    <StatPill label="Badges" value={user.badges?.length || 0} tone="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-200" />
+                                    <StatPill label="Showcases" value={memberShowcases.length} tone="bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-200" />
+                                    <StatPill label="Suggestions" value={memberSuggestions.length} tone="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-200" />
+                                    <StatPill label="Teams" value={memberTeams.length} tone="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200" />
+                                </div>
                             </div>
                         </div>
+                        <button
+                            onClick={onClose}
+                            className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                        >
+                            Close
+                        </button>
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                    >
-                        Close
-                    </button>
                 </div>
 
                 <div className="px-6 pt-6">
@@ -171,6 +175,23 @@ const MemberPortfolioModal: React.FC<MemberPortfolioModalProps> = ({ isOpen, use
                                 </div>
                             ) : (
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">No badges yet.</p>
+                            )}
+                        </section>
+
+                        <section className="bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+                            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Showcase Highlights</h4>
+                            {memberShowcases.length === 0 ? (
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">No showcases yet.</p>
+                            ) : (
+                                <div className="mt-3 space-y-3">
+                                    {memberShowcases.map(item => (
+                                        <div key={item.id} className="p-3 rounded-lg bg-white dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700">
+                                            <p className="text-sm font-semibold text-gray-900 dark:text-white">{item.title}</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-1">{item.description}</p>
+                                            <p className="text-[11px] text-gray-400 mt-2">Shared {item.createdAt}</p>
+                                        </div>
+                                    ))}
+                                </div>
                             )}
                         </section>
 

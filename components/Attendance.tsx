@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { AttendanceRecord, AttendanceStatus, User } from '../types';
 import * as api from '../services/apiService';
 import { PlusCircleIcon } from './icons/PlusCircleIcon';
@@ -551,7 +551,7 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
                                     <Cell key={`cell-${entry.name}`} fill={chartColors[entry.name as AttendanceStatus]} />
                                 ))}
                                 </Pie>
-                                <Tooltip 
+                                <RechartsTooltip 
                                 contentStyle={{ 
                                     backgroundColor: 'rgba(31, 41, 55, 0.8)',
                                     borderColor: '#4B5563'
@@ -592,7 +592,7 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
                                 <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
                                 <XAxis dataKey="date" tickFormatter={(d) => formatDate(d).split(',')[0]} tick={{ fontSize: 12 }} angle={-35} textAnchor="end" height={70} interval={0} />
                                 <YAxis domain={[0, 2]} ticks={[0, 1, 2]} tickFormatter={yAxisTickFormatter} tick={{ fontSize: 12 }} />
-                                <Tooltip content={<CustomTooltip />} />
+                                <RechartsTooltip content={<CustomTooltip />} />
                                 <Line 
                                 type="monotone" 
                                 dataKey="value" 
