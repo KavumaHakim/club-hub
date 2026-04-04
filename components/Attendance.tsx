@@ -103,10 +103,11 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
   const filteredMembers = useMemo(() => {
     const term = memberSearch.trim().toLowerCase();
     if (!term) return memberUsers;
-    return memberUsers.filter(user => 
-      user.name.toLowerCase().includes(term) || 
-      user.username.toLowerCase().includes(term)
-    );
+    return memberUsers.filter(user => {
+      const name = (user.name || '').toLowerCase();
+      const username = (user.username || '').toLowerCase();
+      return name.includes(term) || username.includes(term);
+    });
   }, [memberUsers, memberSearch]);
 
   const presentCount = useMemo(() => 

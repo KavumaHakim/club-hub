@@ -58,4 +58,25 @@ export const predefinedAvatars = [
     'https://api.dicebear.com/8.x/initials/svg?seed=John Doe',
     'https://api.dicebear.com/8.x/initials/svg?seed=Jane Doe',
     'https://api.dicebear.com/8.x/initials/svg?seed=ICT Club',
+
+    // Pixel Art
+    'https://api.dicebear.com/8.x/pixel-art/svg?seed=Nova',
+    'https://api.dicebear.com/8.x/pixel-art/svg?seed=Orbit',
+    'https://api.dicebear.com/8.x/pixel-art/svg?seed=Echo',
+    'https://api.dicebear.com/8.x/pixel-art/svg?seed=Rogue',
+    'https://api.dicebear.com/8.x/pixel-art/svg?seed=Vega',
+
+    // Persona (Modern)
+    'https://api.dicebear.com/8.x/personas/svg?seed=Kai',
+    'https://api.dicebear.com/8.x/personas/svg?seed=Zara',
+    'https://api.dicebear.com/8.x/personas/svg?seed=Juno',
+    'https://api.dicebear.com/8.x/personas/svg?seed=Aria',
+    'https://api.dicebear.com/8.x/personas/svg?seed=Rowan',
+
+    // Micah (Minimal)
+    'https://api.dicebear.com/8.x/micah/svg?seed=Iris',
+    'https://api.dicebear.com/8.x/micah/svg?seed=Atlas',
+    'https://api.dicebear.com/8.x/micah/svg?seed=Skye',
+    'https://api.dicebear.com/8.x/micah/svg?seed=Onyx',
+    'https://api.dicebear.com/8.x/micah/svg?seed=Juniper',
 ];

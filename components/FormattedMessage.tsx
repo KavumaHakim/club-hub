@@ -87,6 +87,47 @@ const renderItalics = (text: string, baseKey: string) => {
     return nodes;
 };
 
+const renderLinks = (text: string, baseKey: string, isUser: boolean) => {
+    const nodes: React.ReactNode[] = [];
+    const regex = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(text)) !== null) {
+        if (match.index > lastIndex) {
+            nodes.push(
+                <React.Fragment key={`${baseKey}-t-${lastIndex}`}>
+                    {text.slice(lastIndex, match.index)}
+                </React.Fragment>
+            );
+        }
+        const label = match[1];
+        const url = match[2];
+        nodes.push(
+            <a
+                key={`${baseKey}-l-${match.index}`}
+                href={url}
+                target="_blank"
+                rel="noreferrer"
+                className={`underline underline-offset-2 ${
+                    isUser ? 'text-teal-100 hover:text-white' : 'text-pink-600 dark:text-pink-300 hover:opacity-80'
+                }`}
+            >
+                {label}
+            </a>
+        );
+        lastIndex = match.index + match[0].length;
+    }
+    if (lastIndex < text.length) {
+        nodes.push(
+            <React.Fragment key={`${baseKey}-t-end`}>
+                {text.slice(lastIndex)}
+            </React.Fragment>
+        );
+    }
+    return nodes;
+};
+
 const formatInline = (text: string, isUser: boolean) => {
     // Split by bold (**text**)
     const boldParts = text.split(/(\*\*.*?\*\*)/g);
@@ -112,7 +153,18 @@ const formatInline = (text: string, isUser: boolean) => {
                     </code>
                 );
             }
-            return renderItalics(subPart, `${i}-${j}`);
+            const italicNodes = renderItalics(subPart, `${i}-${j}`);
+            return italicNodes.map((node, k) => {
+                if (typeof node === 'string') {
+                    return <React.Fragment key={`${i}-${j}-${k}`}>{node}</React.Fragment>;
+                }
+                if ((node as any)?.props?.children && typeof (node as any).props.children === 'string') {
+                    const textContent = (node as any).props.children as string;
+                    const linked = renderLinks(textContent, `${i}-${j}-${k}`, isUser);
+                    return <React.Fragment key={`${i}-${j}-${k}`}>{linked}</React.Fragment>;
+                }
+                return <React.Fragment key={`${i}-${j}-${k}`}>{node}</React.Fragment>;
+            });
         });
     });
 };
@@ -178,6 +230,27 @@ const renderTextPart = (content: string, isUser: boolean) => {
                 i += 1;
             }
             nodes.push(renderTable(header, rows, isUser, i));
+            continue;
+        }
+
+        // Blockquote
+        if (trimmed.startsWith('>')) {
+            const quoteText = trimmed.replace(/^>\s?/, '');
+            nodes.push(
+                <div key={i} className={`border-l-4 pl-3 my-2 ${isUser ? 'border-teal-300 text-teal-50/90' : 'border-pink-400 text-gray-700 dark:text-gray-200'}`}>
+                    {formatInline(quoteText, isUser)}
+                </div>
+            );
+            i += 1;
+            continue;
+        }
+
+        // Horizontal Rule
+        if (/^(-{3,}|\*{3,}|_{3,})$/.test(trimmed)) {
+            nodes.push(
+                <hr key={i} className={`my-3 border-0 h-px ${isUser ? 'bg-teal-300/40' : 'bg-gray-200 dark:bg-gray-700'}`} />
+            );
+            i += 1;
             continue;
         }
 
