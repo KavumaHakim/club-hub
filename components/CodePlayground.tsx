@@ -1500,7 +1500,6 @@ builtins.input = custom_input_async
 async def custom_sleep_async(seconds):
     await js.Promise.new(lambda resolve, reject: js.setTimeout(resolve, seconds * 1000))
 
-time.sleep = custom_sleep_async
 asyncio.sleep = custom_sleep_async
     `;
 
@@ -1512,7 +1511,7 @@ asyncio.sleep = custom_sleep_async
         }
         await pyodideRef.current.runPythonAsync(setupCode);
         
-        const asyncCode = wrapAsyncCalls(code, ['input', 'time.sleep', 'asyncio.sleep']);
+        const asyncCode = wrapAsyncCalls(code, ['input', 'asyncio.sleep']);
         
         const result = await pyodideRef.current.runPythonAsync(asyncCode);
 

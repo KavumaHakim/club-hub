@@ -220,6 +220,10 @@ create policy "Team challenge creator can delete"
 alter table public.challenges
   add column if not exists difficulty text default 'BEGINNER';
 
+-- Users (bio/about)
+alter table public.users
+  add column if not exists bio text;
+
 -- Team challenge submissions policies
 create policy "Team submissions visible to authenticated users"
   on public.team_challenge_submissions for select

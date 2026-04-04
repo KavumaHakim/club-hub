@@ -13,6 +13,7 @@ import { AcademicCapIcon } from './icons/AcademicCapIcon';
 import { predefinedAvatars } from '../constants';
 import { useData } from '../DataContext';
 import { CursorVariant } from './CustomCursor';
+import { FormattedMessage } from './FormattedMessage';
 
 const AvatarSelectionModal: React.FC<{
   isOpen: boolean;
@@ -394,6 +395,9 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
     const [isLoading, setIsLoading] = useState(true);
     const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
     const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+    const [bio, setBio] = useState(currentUser.bio || '');
+    const [isSavingBio, setIsSavingBio] = useState(false);
+    const [bioStatus, setBioStatus] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'details' | 'appearance'>('details');
     const { fetchUsers, fetchFeedItems, fetchProjectData, showcaseItems } = useData();
     const badgesRef = useRef<HTMLDivElement>(null);
@@ -429,6 +433,10 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
         };
         fetchAttendance();
     }, [currentUser.uid]);
+
+    useEffect(() => {
+        setBio(currentUser.bio || '');
+    }, [currentUser.bio]);
 
     const attendanceSummary = useMemo(() => {
         return attendance.reduce(
@@ -473,6 +481,26 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
             alert(`Error updating avatar: ${error.message}`);
         } finally {
             setIsUpdatingAvatar(false);
+        }
+    };
+
+    const handleSaveBio = async () => {
+        if (isSavingBio) return;
+        setIsSavingBio(true);
+        setBioStatus(null);
+        try {
+            const cleaned = bio.trim();
+            await api.updateUser(currentUser.uid, { bio: cleaned });
+            const updatedUser = { ...currentUser, bio: cleaned };
+            onUpdateUserProfile(updatedUser);
+            await fetchUsers();
+            setBioStatus('Saved!');
+        } catch (error: any) {
+            console.error("Failed to update bio:", error);
+            setBioStatus(error?.message || 'Failed to save bio.');
+        } finally {
+            setIsSavingBio(false);
+            setTimeout(() => setBioStatus(null), 2500);
         }
     };
     
@@ -542,6 +570,45 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
                                                 <AcademicCapIcon className="w-4 h-4" /> {currentUser.skillLevel}
                                             </span>
                                         )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+                                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">About Me</h3>
+                                <textarea
+                                    value={bio}
+                                    onChange={(e) => setBio(e.target.value)}
+                                    rows={3}
+                                    maxLength={240}
+                                    className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/60 p-3 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                                    placeholder="Write a short bio or about phrase for your portfolio..."
+                                />
+                                <div className="mt-3">
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Preview</p>
+                                    <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/60 p-3">
+                                        {bio.trim() ? (
+                                            <FormattedMessage text={bio} isUser={false} />
+                                        ) : (
+                                            <p className="text-xs text-gray-400">Your bio will appear here.</p>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="mt-3 flex items-center justify-between">
+                                    <span className="text-xs text-gray-400">{bio.length}/240</span>
+                                    <div className="flex items-center gap-3">
+                                        {bioStatus && (
+                                            <span className={`text-xs ${bioStatus === 'Saved!' ? 'text-green-600' : 'text-red-500'}`}>
+                                                {bioStatus}
+                                            </span>
+                                        )}
+                                        <button
+                                            onClick={handleSaveBio}
+                                            disabled={isSavingBio}
+                                            className="px-4 py-2 text-xs font-semibold rounded-lg bg-pink-600 text-white hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {isSavingBio ? 'Saving...' : 'Save Bio'}
+                                        </button>
                                     </div>
                                 </div>
                             </div>

@@ -99,6 +99,7 @@ export interface User {
   role: 'MEMBER' | 'PATRON';
   status: 'APPROVED' | 'PENDING';
   avatarUrl?: string;
+  bio?: string;
   phoneNumber?: string;
   skillLevel?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
   badges?: string[]; // List of challenge titles won

@@ -205,6 +205,7 @@ export const getUserProfile = async (userId: string): Promise<User | null> => {
       role: data.role,
       status: data.status,
       avatarUrl: data.avatar_url,
+      bio: data.bio,
       phoneNumber: data.phone_number,
       skillLevel: data.skill_level,
       badges: data.badges,
@@ -223,6 +224,7 @@ export const getUsers = async (): Promise<User[]> => {
         role: u.role,
         status: u.status,
         avatarUrl: u.avatar_url,
+        bio: u.bio,
         phoneNumber: u.phone_number,
         skillLevel: u.skill_level,
         badges: u.badges,
@@ -237,6 +239,7 @@ export const updateUser = async (uid: string, data: Partial<User>) => {
     if (data.role) updates.role = data.role;
     if (data.status) updates.status = data.status;
     if (data.avatarUrl) updates.avatar_url = data.avatarUrl;
+    if (data.bio !== undefined) updates.bio = data.bio;
     if (data.phoneNumber) updates.phone_number = data.phoneNumber;
     if (data.skillLevel) updates.skill_level = data.skillLevel;
     if (data.badges) updates.badges = data.badges;

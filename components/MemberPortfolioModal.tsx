@@ -7,6 +7,7 @@ import { CheckCircleIcon } from './icons/CheckCircleIcon';
 import { XCircleIcon } from './icons/XCircleIcon';
 import { ExclamationCircleIcon } from './icons/ExclamationCircleIcon';
 import { UsersIcon } from './icons/UsersIcon';
+import { FormattedMessage } from './FormattedMessage';
 
 interface MemberPortfolioModalProps {
     isOpen: boolean;
@@ -140,6 +141,17 @@ const MemberPortfolioModal: React.FC<MemberPortfolioModalProps> = ({ isOpen, use
                     >
                         Close
                     </button>
+                </div>
+
+                <div className="px-6 pt-6">
+                    <section className="bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">About</h4>
+                        {user.bio?.trim() ? (
+                            <FormattedMessage text={user.bio} isUser={false} />
+                        ) : (
+                            <p className="text-sm text-gray-600 dark:text-gray-300">No bio added yet.</p>
+                        )}
+                    </section>
                 </div>
 
                 <div className="p-6 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-6">

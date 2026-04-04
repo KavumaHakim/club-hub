@@ -84,7 +84,18 @@ const formatInline = (text: string, isUser: boolean) => {
                     </code>
                 );
             }
-            return subPart;
+            // Italics (*text* or _text_)
+            const italicParts = subPart.split(/(\*(?!\*)([^*]+)\*|_(?!_)([^_]+)_)/g);
+            return italicParts.map((italicPart, k) => {
+                if (!italicPart) return null;
+                if (
+                    (italicPart.startsWith('*') && italicPart.endsWith('*') && italicPart.length > 2) ||
+                    (italicPart.startsWith('_') && italicPart.endsWith('_') && italicPart.length > 2)
+                ) {
+                    return <em key={`${i}-${j}-${k}`} className="italic">{italicPart.slice(1, -1)}</em>;
+                }
+                return <React.Fragment key={`${i}-${j}-${k}`}>{italicPart}</React.Fragment>;
+            });
         });
     });
 };
@@ -178,19 +189,18 @@ const renderTextPart = (content: string, isUser: boolean) => {
             continue;
         }
         
-        // Headings
-        if (trimmed.startsWith('### ')) {
-            nodes.push(<h4 key={i} className="font-bold text-base mt-3 mb-1 block">{formatInline(trimmed.substring(4), isUser)}</h4>);
-            i += 1;
-            continue;
-        }
-        if (trimmed.startsWith('## ')) {
-            nodes.push(<h3 key={i} className="font-bold text-lg mt-4 mb-2 block border-b border-gray-200 dark:border-gray-700 pb-1">{formatInline(trimmed.substring(3), isUser)}</h3>);
-            i += 1;
-            continue;
-        }
-        if (trimmed.startsWith('# ')) {
-            nodes.push(<h2 key={i} className="font-extrabold text-xl mt-4 mb-2 block">{formatInline(trimmed.substring(2), isUser)}</h2>);
+        // Headings (#, ##, ###) with or without a space after hashes
+        const headingMatch = trimmed.match(/^(#{1,3})\s*(.+)$/);
+        if (headingMatch && headingMatch[2]?.trim()) {
+            const level = headingMatch[1].length;
+            const text = headingMatch[2].trim();
+            if (level === 3) {
+                nodes.push(<h4 key={i} className="font-bold text-base mt-3 mb-1 block">{formatInline(text, isUser)}</h4>);
+            } else if (level === 2) {
+                nodes.push(<h3 key={i} className="font-bold text-lg mt-4 mb-2 block border-b border-gray-200 dark:border-gray-700 pb-1">{formatInline(text, isUser)}</h3>);
+            } else {
+                nodes.push(<h2 key={i} className="font-extrabold text-xl mt-4 mb-2 block">{formatInline(text, isUser)}</h2>);
+            }
             i += 1;
             continue;
         }

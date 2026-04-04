@@ -449,7 +449,14 @@ const SubmitSolutionModal: React.FC<{ isOpen: boolean, onClose: () => void, onSu
     );
 };
 
-const AnalysisModal: React.FC<{ isOpen: boolean, onClose: () => void, content: string, isLoading: boolean }> = ({ isOpen, onClose, content, isLoading }) => {
+const AnalysisModal: React.FC<{ 
+    isOpen: boolean, 
+    onClose: () => void, 
+    content: string, 
+    isLoading: boolean,
+    title?: string,
+    subtitle?: string
+}> = ({ isOpen, onClose, content, isLoading, title = 'AI Analysis', subtitle = 'Powered by Gemini' }) => {
     if (!isOpen) return null;
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
@@ -462,9 +469,9 @@ const AnalysisModal: React.FC<{ isOpen: boolean, onClose: () => void, content: s
                     </div>
                     <div>
                         <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                            AI Analysis
+                            {title}
                         </h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Powered by Gemini</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{subtitle}</p>
                     </div>
                 </div>
 
@@ -640,6 +647,12 @@ const Challenges: React.FC<ChallengesProps> = ({ currentUser }) => {
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
     const [selectedChallengeId, setSelectedChallengeId] = useState<string | null>(null);
     const [selectedReviewChallenge, setSelectedReviewChallenge] = useState<{ id: string, title: string } | null>(null);
+    const [autoFeedback, setAutoFeedback] = useState<{ isOpen: boolean, content: string, isLoading: boolean, title: string }>({
+        isOpen: false,
+        content: '',
+        isLoading: false,
+        title: 'AI Feedback'
+    });
     
     // For pre-filling create modal from AI
     const [prefillData, setPrefillData] = useState<{ title: string, description: string, difficulty: any } | null>(null);
@@ -671,6 +684,14 @@ const Challenges: React.FC<ChallengesProps> = ({ currentUser }) => {
         if (selectedChallengeId) {
             await api.submitChallenge(selectedChallengeId, currentUser.uid, content);
             await fetchChallenges();
+            const challengeTitle = challenges.find(c => c.id === selectedChallengeId)?.title || 'Challenge';
+            setAutoFeedback({ isOpen: true, content: '', isLoading: true, title: `Feedback: ${challengeTitle}` });
+            try {
+                const result = await analyzeChallengeSubmission(challengeTitle, content);
+                setAutoFeedback({ isOpen: true, content: result, isLoading: false, title: `Feedback: ${challengeTitle}` });
+            } catch (e) {
+                setAutoFeedback({ isOpen: true, content: "AI feedback is unavailable right now. Please try again later.", isLoading: false, title: `Feedback: ${challengeTitle}` });
+            }
         }
     };
 
@@ -808,6 +829,15 @@ const Challenges: React.FC<ChallengesProps> = ({ currentUser }) => {
                 isOpen={isAIModalOpen}
                 onClose={() => setIsAIModalOpen(false)}
                 onGenerated={handleAIChallengeGenerated}
+            />
+
+            <AnalysisModal 
+                isOpen={autoFeedback.isOpen}
+                content={autoFeedback.content}
+                isLoading={autoFeedback.isLoading}
+                title={autoFeedback.title}
+                subtitle="Instant AI feedback on your submission"
+                onClose={() => setAutoFeedback(prev => ({ ...prev, isOpen: false }))}
             />
 
             {selectedReviewChallenge && (

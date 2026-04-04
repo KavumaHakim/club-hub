@@ -41,6 +41,10 @@ ADD COLUMN IF NOT EXISTS grade INTEGER;
 -- Fix Challenges (Add missing difficulty column)
 ALTER TABLE challenges
 ADD COLUMN IF NOT EXISTS difficulty TEXT DEFAULT 'BEGINNER';
+
+-- Add user bio/about field
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS bio TEXT;
 ```
 
 ### 2. Create Missing Showcase Table
