@@ -89,48 +89,124 @@ const formatInline = (text: string, isUser: boolean) => {
     });
 };
 
+const splitTableRow = (line: string) => {
+    const raw = line.trim();
+    const trimmed = raw.startsWith('|') ? raw.slice(1) : raw;
+    const normalized = trimmed.endsWith('|') ? trimmed.slice(0, -1) : trimmed;
+    return normalized.split('|').map(cell => cell.trim());
+};
+
+const isTableSeparator = (line: string) => /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(line);
+const isTableRow = (line: string) => line.includes('|');
+
+const renderTable = (header: string[], rows: string[][], isUser: boolean, key: number) => {
+    const headBg = isUser ? 'bg-teal-700/30 text-teal-50' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100';
+    const cellBorder = isUser ? 'border-teal-400/30' : 'border-gray-200 dark:border-gray-600';
+
+    return (
+        <div key={key} className="my-2 overflow-x-auto">
+            <table className="w-full text-xs border-collapse">
+                <thead className={headBg}>
+                    <tr>
+                        {header.map((cell, idx) => (
+                            <th key={idx} className={`text-left px-2 py-1 font-semibold border ${cellBorder}`}>
+                                {formatInline(cell, isUser)}
+                            </th>
+                        ))}
+                    </tr>
+                </thead>
+                <tbody>
+                    {rows.map((row, rIdx) => (
+                        <tr key={rIdx} className={rIdx % 2 === 0 ? '' : (isUser ? 'bg-teal-700/10' : 'bg-gray-50 dark:bg-gray-800/40')}>
+                            {row.map((cell, cIdx) => (
+                                <td key={cIdx} className={`px-2 py-1 align-top border ${cellBorder}`}>
+                                    {formatInline(cell, isUser)}
+                                </td>
+                            ))}
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+};
+
 const renderTextPart = (content: string, isUser: boolean) => {
     const lines = content.split('\n');
-    return lines.map((line, i) => {
+    const nodes: React.ReactNode[] = [];
+    let i = 0;
+
+    while (i < lines.length) {
+        const line = lines[i];
         const trimmed = line.trim();
-        
+        const next = lines[i + 1];
+
+        if (isTableRow(line) && next && isTableSeparator(next)) {
+            const header = splitTableRow(line);
+            i += 2;
+            const rows: string[][] = [];
+            while (i < lines.length && isTableRow(lines[i]) && lines[i].trim()) {
+                rows.push(splitTableRow(lines[i]));
+                i += 1;
+            }
+            nodes.push(renderTable(header, rows, isUser, i));
+            continue;
+        }
+
         // Unordered List
         if (trimmed.match(/^[-*]\s/)) {
-            return (
+            nodes.push(
                 <div key={i} className="flex gap-2 ml-1 mb-1">
                     <span className={`text-xs mt-1.5 ${isUser ? 'text-teal-200' : 'text-pink-500'}`}>●</span>
                     <span className="flex-1">{formatInline(trimmed.substring(2), isUser)}</span>
                 </div>
             );
+            i += 1;
+            continue;
         }
         
         // Ordered List
         const orderedMatch = trimmed.match(/^(\d+)\.\s/);
         if (orderedMatch) {
-             return (
+            nodes.push(
                 <div key={i} className="flex gap-2 ml-1 mb-1">
                     <span className={`font-bold text-xs mt-0.5 ${isUser ? 'text-teal-200' : 'text-pink-500'}`}>{orderedMatch[1]}.</span>
                     <span className="flex-1">{formatInline(trimmed.substring(orderedMatch[0].length), isUser)}</span>
                 </div>
             );
+            i += 1;
+            continue;
         }
         
         // Headings
         if (trimmed.startsWith('### ')) {
-             return <h4 key={i} className="font-bold text-base mt-3 mb-1 block">{formatInline(trimmed.substring(4), isUser)}</h4>
+            nodes.push(<h4 key={i} className="font-bold text-base mt-3 mb-1 block">{formatInline(trimmed.substring(4), isUser)}</h4>);
+            i += 1;
+            continue;
         }
         if (trimmed.startsWith('## ')) {
-             return <h3 key={i} className="font-bold text-lg mt-4 mb-2 block border-b border-gray-200 dark:border-gray-700 pb-1">{formatInline(trimmed.substring(3), isUser)}</h3>
+            nodes.push(<h3 key={i} className="font-bold text-lg mt-4 mb-2 block border-b border-gray-200 dark:border-gray-700 pb-1">{formatInline(trimmed.substring(3), isUser)}</h3>);
+            i += 1;
+            continue;
         }
         if (trimmed.startsWith('# ')) {
-             return <h2 key={i} className="font-extrabold text-xl mt-4 mb-2 block">{formatInline(trimmed.substring(2), isUser)}</h2>
+            nodes.push(<h2 key={i} className="font-extrabold text-xl mt-4 mb-2 block">{formatInline(trimmed.substring(2), isUser)}</h2>);
+            i += 1;
+            continue;
         }
 
         // Empty lines
-        if (!trimmed) return <div key={i} className="h-2" />;
+        if (!trimmed) {
+            nodes.push(<div key={i} className="h-2" />);
+            i += 1;
+            continue;
+        }
 
-        return <div key={i} className="min-h-[1.25rem]">{formatInline(line, isUser)}</div>;
-    });
+        nodes.push(<div key={i} className="min-h-[1.25rem]">{formatInline(line, isUser)}</div>);
+        i += 1;
+    }
+
+    return nodes;
 };
 
 export const FormattedMessage: React.FC<{ text: string, isUser: boolean }> = ({ text, isUser }) => {

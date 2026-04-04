@@ -76,6 +76,7 @@ const AiTutor: React.FC<AiTutorProps> = ({ currentUser }) => {
 
     const clubContext = useMemo(() => {
         const safeList = (items: string[], limit: number) => items.slice(0, limit).join('\n');
+        const contextUpdatedAt = new Date().toISOString();
 
         const leadership = allUsers
             .filter(u => u.role === 'PATRON')
@@ -149,6 +150,9 @@ const AiTutor: React.FC<AiTutorProps> = ({ currentUser }) => {
             : 'Single file mode';
 
         return `
+        CONTEXT UPDATED AT:
+        ${contextUpdatedAt}
+
         LEADERSHIP:
         ${leadership.length ? safeList(leadership, 5) : 'None listed.'}
 
