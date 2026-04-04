@@ -124,7 +124,7 @@ const AdminTools: React.FC<AdminToolsProps> = ({ currentUser }) => {
     };
 
     const flagOptions: Array<{ key: keyof FeatureFlags; label: string; description: string }> = [
-        { key: 'showCommunity', label: 'Community Hub', description: 'Teams, recognition board, and team challenges.' },
+        { key: 'showCommunity', label: 'Community Hub', description: 'Teams, recognition board, and member spotlights.' },
         { key: 'showChallenges', label: 'Challenges', description: 'Member coding challenges and submissions.' },
         { key: 'showSuggestions', label: 'Suggestions', description: 'Feature & bug suggestions board.' },
         { key: 'showShowcase', label: 'Showcase', description: 'Member code showcases.' },
@@ -135,6 +135,7 @@ const AdminTools: React.FC<AdminToolsProps> = ({ currentUser }) => {
         { key: 'showRoadmap', label: 'Roadmap', description: 'Learning roadmaps.' },
         { key: 'showChat', label: 'Chat', description: 'Member messaging.' },
         { key: 'showPlayground', label: 'Playground', description: 'Code playground.' },
+        { key: 'showGames', label: 'Games', description: 'Quick focus games lounge.' },
     ];
 
     return (

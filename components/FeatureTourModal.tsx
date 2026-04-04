@@ -11,6 +11,7 @@ import { GlobeIcon } from './icons/GlobeIcon';
 import { IdentificationIcon } from './icons/IdentificationIcon';
 import { TrophyIcon } from './icons/TrophyIcon';
 import { ChevronRightIcon } from './icons/ChevronRightIcon';
+import { GamepadIcon } from './icons/GamepadIcon';
 
 interface FeatureTourModalProps {
   isOpen: boolean;
@@ -51,7 +52,7 @@ const FeatureTourModal: React.FC<FeatureTourModalProps> = ({ isOpen, onClose }) 
     },
     {
       title: "Projects & Teams",
-      description: "Organize tasks on the **Project Board**, build teams, and collaborate.\n\n- Kanban workflow for tasks\n- Assign owners and priorities\n- Team challenges and shared projects",
+      description: "Organize tasks on the **Project Board**, build teams, and collaborate.\n\n- Kanban workflow for tasks\n- Assign owners and priorities\n- Team collaboration and shared projects",
       icon: (
         <div className="p-6 bg-white/20 rounded-full backdrop-blur-sm text-white animate-icon-bounce-in">
            <ClipboardListIcon />
@@ -68,6 +69,16 @@ const FeatureTourModal: React.FC<FeatureTourModalProps> = ({ isOpen, onClose }) 
         </div>
       ),
       gradient: "from-yellow-400 to-orange-500"
+    },
+    {
+      title: "Games Lounge",
+      description: "Take quick focus breaks in the **Games** tab.\n\n- Reaction timer, quick math, and number guessing\n- Local high scores to challenge yourself\n- Perfect for short brain resets between sessions",
+      icon: (
+        <div className="p-6 bg-white/20 rounded-full backdrop-blur-sm text-white animate-icon-bounce-in">
+           <GamepadIcon />
+        </div>
+      ),
+      gradient: "from-blue-400 to-cyan-500"
     },
     {
       title: "Resources Library",
@@ -211,3 +222,4 @@ const FeatureTourModal: React.FC<FeatureTourModalProps> = ({ isOpen, onClose }) 
 };
 
 export default FeatureTourModal;
+

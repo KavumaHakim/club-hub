@@ -1,6 +1,6 @@
 
 
-export type Tab = 'feed' | 'activities' | 'attendance' | 'projects' | 'profile' | 'members' | 'playground' | 'resources' | 'chat' | 'showcase' | 'suggestions' | 'challenges' | 'roadmap' | 'community' | 'admin';
+export type Tab = 'feed' | 'activities' | 'attendance' | 'projects' | 'profile' | 'members' | 'playground' | 'resources' | 'chat' | 'showcase' | 'suggestions' | 'challenges' | 'roadmap' | 'community' | 'games' | 'admin';
 
 export interface FeatureFlags {
   showFeed: boolean;
@@ -15,6 +15,7 @@ export interface FeatureFlags {
   showRoadmap: boolean;
   showCommunity: boolean;
   showPlayground: boolean;
+  showGames: boolean;
 }
 
 export interface Team {

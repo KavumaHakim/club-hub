@@ -197,7 +197,7 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
                             </button>
                         </Tooltip>
                         <div className="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-900/10 dark:bg-white/10 text-gray-700 dark:text-gray-200 rounded-xl text-sm font-semibold">
-                            <CheckCircleIcon className="w-4 h-4" /> Build teams for challenges
+                            <CheckCircleIcon className="w-4 h-4" /> Build teams for projects
                         </div>
                     </div>
                 </div>
@@ -309,7 +309,7 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
                         <UsersIcon />
                         <div>
                             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Teams</h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Form squads for challenges and projects.</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Form squads for projects and study groups.</p>
                         </div>
                     </div>
                     <Tooltip text="Create a new team and invite members.">

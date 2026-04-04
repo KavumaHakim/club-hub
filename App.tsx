@@ -63,7 +63,7 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>(() => {
       if (typeof window !== 'undefined') {
           const savedTab = localStorage.getItem('active_tab') as Tab;
-          const validTabs: Tab[] = ['feed', 'activities', 'attendance', 'projects', 'profile', 'members', 'playground', 'resources', 'chat', 'showcase', 'suggestions', 'challenges', 'roadmap', 'community', 'admin'];
+          const validTabs: Tab[] = ['feed', 'activities', 'attendance', 'projects', 'profile', 'members', 'playground', 'resources', 'chat', 'showcase', 'suggestions', 'challenges', 'roadmap', 'community', 'games', 'admin'];
           return validTabs.includes(savedTab) ? savedTab : 'feed';
       }
       return 'feed';

@@ -45,6 +45,10 @@ ADD COLUMN IF NOT EXISTS difficulty TEXT DEFAULT 'BEGINNER';
 -- Add user bio/about field
 ALTER TABLE users
 ADD COLUMN IF NOT EXISTS bio TEXT;
+
+-- Add Games feature flag
+ALTER TABLE feature_flags
+ADD COLUMN IF NOT EXISTS show_games BOOLEAN DEFAULT true;
 ```
 
 ### 2. Create Missing Showcase Table

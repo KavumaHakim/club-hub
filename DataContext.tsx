@@ -108,7 +108,8 @@ const defaultFeatureFlags: FeatureFlags = {
   showChallenges: true,
   showRoadmap: true,
   showCommunity: true,
-  showPlayground: true
+  showPlayground: true,
+  showGames: true
 };
 
 const defaultNotificationPrefs: NotificationPrefs = {
@@ -491,7 +492,8 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
           showChallenges: row.show_challenges,
           showRoadmap: row.show_roadmap,
           showCommunity: row.show_community,
-          showPlayground: row.show_playground
+          showPlayground: row.show_playground,
+          showGames: row.show_games ?? defaultFeatureFlags.showGames
       });
 
       const channel = supabase.channel('feature_flags_listener')

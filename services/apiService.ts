@@ -91,7 +91,8 @@ const mapFeatureFlagsFromDb = (row: any): FeatureFlags => ({
     showChallenges: row.show_challenges,
     showRoadmap: row.show_roadmap,
     showCommunity: row.show_community,
-    showPlayground: row.show_playground
+    showPlayground: row.show_playground,
+    showGames: row.show_games ?? true
 });
 
 const mapFeatureFlagsToDb = (updates: Partial<FeatureFlags>) => {
@@ -108,6 +109,7 @@ const mapFeatureFlagsToDb = (updates: Partial<FeatureFlags>) => {
     if (typeof updates.showRoadmap === 'boolean') payload.show_roadmap = updates.showRoadmap;
     if (typeof updates.showCommunity === 'boolean') payload.show_community = updates.showCommunity;
     if (typeof updates.showPlayground === 'boolean') payload.show_playground = updates.showPlayground;
+    if (typeof updates.showGames === 'boolean') payload.show_games = updates.showGames;
     payload.updated_at = new Date().toISOString();
     return payload;
 };

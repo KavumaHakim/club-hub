@@ -16,6 +16,7 @@ create table if not exists public.feature_flags (
   show_roadmap boolean not null default true,
   show_community boolean not null default true,
   show_playground boolean not null default true,
+  show_games boolean not null default true,
   updated_at timestamptz not null default now()
 );
 
@@ -219,6 +220,9 @@ create policy "Team challenge creator can delete"
 -- Challenges (core)
 alter table public.challenges
   add column if not exists difficulty text default 'BEGINNER';
+
+alter table public.feature_flags
+  add column if not exists show_games boolean default true;
 
 -- Users (bio/about)
 alter table public.users

@@ -20,6 +20,7 @@ const Suggestions = lazy(() => import('./Suggestions'));
 const Challenges = lazy(() => import('./Challenges'));
 const RoadmapView = lazy(() => import('./RoadmapView'));
 const Community = lazy(() => import('./Community'));
+const Games = lazy(() => import('./Games'));
 const AdminTools = lazy(() => import('./AdminTools'));
 
 
@@ -120,7 +121,11 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile,
       },
       community: {
           title: 'Community',
-          body: `Collaboration and recognition.\n\n- Form teams and compete in team challenges.\n- Recognition board highlights top contributors.\n- Encourage teamwork and consistent participation.`
+          body: `Collaboration and recognition.\n\n- Form teams and connect with members.\n- Recognition board highlights top contributors.\n- Encourage teamwork and consistent participation.`
+      },
+      games: {
+          title: 'Games Lounge',
+          body: `Quick breaks that sharpen focus.\n\n- Reaction tests, math sprints, and number guessers.\n- Scores are local, so you can compete with yourself.\n- Ideal for brain resets between deeper sessions.`
       },
       profile: {
           title: 'Profile & Portfolio',
@@ -166,6 +171,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile,
       if (!featureFlags.showRoadmap) disabledTabs.add('roadmap');
       if (!featureFlags.showCommunity) disabledTabs.add('community');
       if (!featureFlags.showPlayground) disabledTabs.add('playground');
+      if (!featureFlags.showGames) disabledTabs.add('games');
 
       if (disabledTabs.has(activeTab)) {
           setActiveTab(featureFlags.showFeed ? 'feed' : 'profile');
@@ -214,6 +220,9 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile,
         </TabPanel>
         <TabPanel active={activeTab === 'community' && featureFlags.showCommunity}>
             <Community currentUser={currentUser} />
+        </TabPanel>
+        <TabPanel active={activeTab === 'games' && featureFlags.showGames}>
+            <Games />
         </TabPanel>
         {currentUser.role === 'PATRON' && (
             <TabPanel active={activeTab === 'members'}>

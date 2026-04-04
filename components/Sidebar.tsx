@@ -18,6 +18,7 @@ import { GlobeIcon } from './icons/GlobeIcon';
 import { LightBulbIcon } from './icons/LightBulbIcon';
 import { TrophyIcon } from './icons/TrophyIcon';
 import { MapIcon } from './icons/MapIcon';
+import { GamepadIcon } from './icons/GamepadIcon';
 import { useData } from '../DataContext';
 import MatrixRain from './MatrixRain';
 
@@ -145,6 +146,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, activeTab, setActiveTab, isOpen
               ...(featureFlags.showRoadmap ? [{ tab: 'roadmap' as Tab, label: 'Roadmap', icon: <MapIcon />, badge: notificationCounts['roadmap'] }] : []),
               ...(featureFlags.showResources ? [{ tab: 'resources' as Tab, label: 'Resources', icon: <BookOpenIcon /> }] : []),
               ...(featureFlags.showPlayground ? [{ tab: 'playground' as Tab, label: 'Playground', icon: <CodeIcon /> }] : []),
+              ...(featureFlags.showGames ? [{ tab: 'games' as Tab, label: 'Games', icon: <GamepadIcon /> }] : []),
               ...(featureFlags.showShowcase ? [{ tab: 'showcase' as Tab, label: 'Showcase', icon: <GlobeIcon /> }] : []),
           ]
       },
