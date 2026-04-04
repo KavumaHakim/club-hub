@@ -1,6 +1,6 @@
 
-const CACHE_NAME = 'ict-club-hub-v11';
-const DATA_CACHE_NAME = 'ict-club-data-v11';
+const CACHE_NAME = 'ict-club-hub-v12';
+const DATA_CACHE_NAME = 'ict-club-data-v12';
 
 // App shell files to be pre-cached.
 const PRECACHE_ASSETS = [
@@ -55,6 +55,12 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const req = event.request;
   const url = new URL(req.url);
+
+  // 0. SEO / Meta files: Network only (never cache)
+  if (url.pathname === '/sitemap.xml' || url.pathname === '/robots.txt') {
+    event.respondWith(fetch(req));
+    return;
+  }
 
   // 1. Navigation: Network first, fallback to cached index.html
   if (req.mode === 'navigate') {
