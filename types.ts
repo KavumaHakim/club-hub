@@ -359,3 +359,13 @@ export interface RoadmapProgress {
   roadmapId: string;
   completedMilestoneIndices: number[];
 }
+
+export interface GameLeaderboardEntry {
+  userId: string;
+  userName: string;
+  userUsername: string;
+  userAvatarUrl?: string;
+  gameKey: string;
+  bestValue: number;
+  updatedAt: string;
+}

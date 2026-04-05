@@ -222,7 +222,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile,
             <Community currentUser={currentUser} />
         </TabPanel>
         <TabPanel active={activeTab === 'games' && featureFlags.showGames}>
-            <Games />
+            <Games currentUser={currentUser} />
         </TabPanel>
         {currentUser.role === 'PATRON' && (
             <TabPanel active={activeTab === 'members'}>

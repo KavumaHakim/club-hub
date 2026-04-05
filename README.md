@@ -49,6 +49,18 @@ ADD COLUMN IF NOT EXISTS bio TEXT;
 -- Add Games feature flag
 ALTER TABLE feature_flags
 ADD COLUMN IF NOT EXISTS show_games BOOLEAN DEFAULT true;
+
+-- Add Games leaderboard table
+CREATE TABLE IF NOT EXISTS game_leaderboard (
+  id BIGSERIAL PRIMARY KEY,
+  user_uid TEXT NOT NULL REFERENCES users(uid) ON DELETE CASCADE,
+  game_key TEXT NOT NULL,
+  best_value INTEGER NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (user_uid, game_key)
+);
+
+CREATE INDEX IF NOT EXISTS idx_game_leaderboard_game_key ON game_leaderboard(game_key);
 ```
 
 ### 2. Create Missing Showcase Table

@@ -1,10 +1,23 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { User } from '../types';
+import * as api from '../services/apiService';
 import Tooltip from './Tooltip';
 
 type ReactionState = 'idle' | 'waiting' | 'ready' | 'tooSoon' | 'done';
 type MathDifficulty = 'warmup' | 'core' | 'boss';
 type Direction = 'U' | 'D' | 'L' | 'R';
 type Position = { x: number; y: number };
+type GamesLeaderboard = {
+    reactionBestMs?: number;
+    mathBest?: number;
+    guessBest?: number;
+    outputBest?: number;
+    bugBest?: number;
+    sequenceBest?: number;
+    loopBest?: number;
+    functionBest?: number;
+    coordBest?: number;
+};
 
 const randomBetween = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
 const nextIndex = (current: number, length: number) => {
@@ -46,6 +59,30 @@ const runPath = (start: Position, commands: Direction[], size: number, obstacles
     return { pos, path, status };
 };
 
+const parseSumExpression = (raw: string) => {
+    const cleaned = raw.replace(/\s+/g, '');
+    if (!cleaned) return null;
+    if (!/^[0-9+\-]+$/.test(cleaned)) return null;
+    const normalized = cleaned.replace(/-/g, '+-');
+    const parts = normalized.split('+').filter(Boolean);
+    let total = 0;
+    for (const part of parts) {
+        const value = Number(part);
+        if (Number.isNaN(value)) return null;
+        total += value;
+    }
+    return total;
+};
+
+const parseCoordinateInput = (raw: string) => {
+    const parts = raw.split(',').map(part => part.trim());
+    if (parts.length !== 2) return null;
+    const x = parseSumExpression(parts[0]);
+    const y = parseSumExpression(parts[1]);
+    if (x === null || y === null) return null;
+    return { x, y };
+};
+
 const generateMathQuestion = (difficulty: MathDifficulty) => {
     if (difficulty === 'warmup') {
         const a = randomBetween(1, 20);
@@ -72,7 +109,67 @@ const generateMathQuestion = (difficulty: MathDifficulty) => {
     return { text: `${a} x ${b} ${op} ${c}`, answer };
 };
 
-const Games: React.FC = () => {
+const gameMeta: Record<string, { label: string; lowerIsBetter: boolean; valueSuffix?: string; }> = {
+    reaction: { label: 'Reaction Time', lowerIsBetter: true, valueSuffix: 'ms' },
+    math: { label: 'Quick Math', lowerIsBetter: false },
+    guess: { label: 'Number Guess', lowerIsBetter: true, valueSuffix: 'tries' },
+    output: { label: 'Output Prediction', lowerIsBetter: false },
+    bug: { label: 'Bug Hunt', lowerIsBetter: false },
+    sequence: { label: 'Sequence Builder', lowerIsBetter: true, valueSuffix: 'steps' },
+    loop: { label: 'Loop Logic', lowerIsBetter: false },
+    function: { label: 'Function Calls', lowerIsBetter: false },
+    coord: { label: 'Coordinate Target', lowerIsBetter: false }
+};
+
+const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
+    const [leaderboard, setLeaderboard] = useState<GamesLeaderboard>({});
+    const lastSubmittedRef = useRef<Record<string, number | undefined>>({});
+    const [leaderboardGameKey, setLeaderboardGameKey] = useState<keyof typeof gameMeta>('reaction');
+    const [leaderboardEntries, setLeaderboardEntries] = useState<Array<{ userId: string; userName: string; userUsername: string; userAvatarUrl?: string; bestValue: number }>>([]);
+    const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+    const [leaderboardError, setLeaderboardError] = useState<string | null>(null);
+
+    const submitGameScore = async (gameKey: keyof typeof gameMeta, value: number) => {
+        if (!currentUser?.uid || Number.isNaN(value)) return;
+        const meta = gameMeta[gameKey];
+        const lastValue = lastSubmittedRef.current[gameKey];
+        const isBetter = lastValue === undefined
+            ? true
+            : meta.lowerIsBetter
+                ? value < lastValue
+                : value > lastValue;
+        if (!isBetter) return;
+        lastSubmittedRef.current[gameKey] = value;
+        try {
+            await api.upsertGameScore({ userId: currentUser.uid, gameKey, bestValue: value });
+        } catch (error) {
+            console.warn('Failed to submit game score', error);
+        }
+    };
+
+    const loadLeaderboard = async (gameKey: keyof typeof gameMeta) => {
+        setLeaderboardLoading(true);
+        setLeaderboardError(null);
+        try {
+            const data = await api.getGameLeaderboard(gameKey, gameMeta[gameKey].lowerIsBetter);
+            setLeaderboardEntries(data.map(entry => ({
+                userId: entry.userId,
+                userName: entry.userName,
+                userUsername: entry.userUsername,
+                userAvatarUrl: entry.userAvatarUrl,
+                bestValue: entry.bestValue
+            })));
+        } catch (error: any) {
+            setLeaderboardError(error?.message || 'Failed to load leaderboard.');
+        } finally {
+            setLeaderboardLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadLeaderboard(leaderboardGameKey);
+    }, [leaderboardGameKey]);
+
     const sequencePuzzles = useMemo(() => ([
         {
             id: 'seq-1',
@@ -357,6 +454,9 @@ const Games: React.FC = () => {
     const [mathFeedback, setMathFeedback] = useState<string | null>(null);
     const [mathStreak, setMathStreak] = useState(0);
     const [mathBest, setMathBest] = useState(0);
+    const [mathDuration, setMathDuration] = useState(30);
+    const [mathTimeLeft, setMathTimeLeft] = useState(30);
+    const [mathIsRunning, setMathIsRunning] = useState(false);
 
     useEffect(() => {
         setMathQuestion(generateMathQuestion(mathDifficulty));
@@ -364,8 +464,14 @@ const Games: React.FC = () => {
         setMathAnswer('');
     }, [mathDifficulty]);
 
+    useEffect(() => {
+        setMathTimeLeft(mathDuration);
+    }, [mathDuration]);
+
     const submitMath = (e: React.FormEvent) => {
         e.preventDefault();
+        if (!mathIsRunning) return;
+        if (mathTimeLeft <= 0) return;
         const value = Number(mathAnswer);
         if (!mathAnswer.trim() || Number.isNaN(value)) {
             setMathFeedback('Enter a valid number to score this round.');
@@ -387,8 +493,41 @@ const Games: React.FC = () => {
     };
 
     const skipMath = () => {
+        if (!mathIsRunning) return;
         setMathFeedback('Skipped. New prompt generated.');
         setMathQuestion(generateMathQuestion(mathDifficulty));
+    };
+
+    useEffect(() => {
+        if (!mathIsRunning) return;
+        const timer = window.setInterval(() => {
+            setMathTimeLeft(prev => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    setMathIsRunning(false);
+                    setMathFeedback('Time is up. Start a new round to try again.');
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [mathIsRunning]);
+
+    const startMathTimer = () => {
+        setMathTimeLeft(mathDuration);
+        setMathIsRunning(true);
+        setMathFeedback(null);
+        setMathAnswer('');
+        setMathQuestion(generateMathQuestion(mathDifficulty));
+    };
+
+    const resetMathTimer = () => {
+        setMathIsRunning(false);
+        setMathTimeLeft(mathDuration);
+        setMathFeedback('Timer reset. Press Start to play.');
+        setMathAnswer('');
+        setMathStreak(0);
     };
 
     // Number Guess
@@ -460,6 +599,8 @@ const Games: React.FC = () => {
     const [loopFeedback, setLoopFeedback] = useState<string | null>(null);
     const [loopPath, setLoopPath] = useState<Set<string>>(new Set([positionKey(currentLoop.start)]));
     const [loopPos, setLoopPos] = useState<Position>(currentLoop.start);
+    const [loopStreak, setLoopStreak] = useState(0);
+    const [loopBest, setLoopBest] = useState(0);
 
     useEffect(() => {
         setLoopChoice(null);
@@ -477,8 +618,14 @@ const Games: React.FC = () => {
         setLoopPos(result.pos);
         if (choice === currentLoop.answer) {
             setLoopFeedback('Correct. The loop count matches the target.');
+            setLoopStreak(prev => {
+                const next = prev + 1;
+                setLoopBest(best => Math.max(best, next));
+                return next;
+            });
         } else {
             setLoopFeedback('Not quite. Try another loop count.');
+            setLoopStreak(0);
         }
     };
 
@@ -493,6 +640,8 @@ const Games: React.FC = () => {
     const [functionFeedback, setFunctionFeedback] = useState<string | null>(null);
     const [functionPath, setFunctionPath] = useState<Set<string>>(new Set([positionKey(currentFunction.start)]));
     const [functionPos, setFunctionPos] = useState<Position>(currentFunction.start);
+    const [functionStreak, setFunctionStreak] = useState(0);
+    const [functionBest, setFunctionBest] = useState(0);
 
     useEffect(() => {
         setFunctionCalls(Array.from({ length: currentFunction.slots }, () => 'A'));
@@ -518,16 +667,24 @@ const Games: React.FC = () => {
         setFunctionPos(result.pos);
         if (result.status === 'wall') {
             setFunctionFeedback('Oops. That sequence left the grid.');
+            setFunctionStreak(0);
             return;
         }
         if (result.status === 'obstacle') {
             setFunctionFeedback('Obstacle hit. Reorder your function calls.');
+            setFunctionStreak(0);
             return;
         }
         if (result.pos.x === currentFunction.goal.x && result.pos.y === currentFunction.goal.y) {
             setFunctionFeedback('Success! Functions combined perfectly.');
+            setFunctionStreak(prev => {
+                const next = prev + 1;
+                setFunctionBest(best => Math.max(best, next));
+                return next;
+            });
         } else {
             setFunctionFeedback('Close. Adjust the function order.');
+            setFunctionStreak(0);
         }
     };
 
@@ -541,6 +698,7 @@ const Games: React.FC = () => {
     const [coordOriginBottom, setCoordOriginBottom] = useState(false);
     const createCoordTarget = (size: number) => ({ x: randomBetween(0, size - 1), y: randomBetween(0, size - 1) });
     const [coordTarget, setCoordTarget] = useState<Position>(() => createCoordTarget(6));
+    const [coordInput, setCoordInput] = useState('');
     const [coordFeedback, setCoordFeedback] = useState<string | null>(null);
     const [coordStreak, setCoordStreak] = useState(0);
     const [coordBest, setCoordBest] = useState(0);
@@ -554,6 +712,7 @@ const Games: React.FC = () => {
     const resetCoordTarget = () => {
         setCoordTarget(createCoordTarget(coordinateSize));
         setCoordFeedback(null);
+        setCoordInput('');
     };
 
     const handleCoordClick = (x: number, y: number) => {
@@ -567,12 +726,45 @@ const Games: React.FC = () => {
                 return next;
             });
             setCoordTarget(createCoordTarget(coordinateSize));
+            setCoordInput('');
         } else {
             const hints = [];
             if (displayX < coordTarget.x) hints.push('go right');
             if (displayX > coordTarget.x) hints.push('go left');
             if (displayY < coordTarget.y) hints.push('go up');
             if (displayY > coordTarget.y) hints.push('go down');
+            const hintText = hints.length ? `Hint: ${hints.join(' & ')}.` : 'Try again.';
+            setCoordFeedback(`Not quite. ${hintText}`);
+            setCoordStreak(0);
+        }
+    };
+
+    const submitCoordInput = (e: React.FormEvent) => {
+        e.preventDefault();
+        const parsed = parseCoordinateInput(coordInput);
+        if (!parsed) {
+            setCoordFeedback('Invalid syntax. Try x+y, y+z (example: 2+1, 3+0).');
+            return;
+        }
+        if (parsed.x < 0 || parsed.y < 0 || parsed.x >= coordinateSize || parsed.y >= coordinateSize) {
+            setCoordFeedback(`Out of bounds. Use 0 to ${coordinateSize - 1}.`);
+            return;
+        }
+        if (parsed.x === coordTarget.x && parsed.y === coordTarget.y) {
+            setCoordFeedback('Correct. Target acquired.');
+            setCoordStreak(prev => {
+                const next = prev + 1;
+                setCoordBest(best => Math.max(best, next));
+                return next;
+            });
+            setCoordTarget(createCoordTarget(coordinateSize));
+            setCoordInput('');
+        } else {
+            const hints = [];
+            if (parsed.x < coordTarget.x) hints.push('go right');
+            if (parsed.x > coordTarget.x) hints.push('go left');
+            if (parsed.y < coordTarget.y) hints.push('go up');
+            if (parsed.y > coordTarget.y) hints.push('go down');
             const hintText = hints.length ? `Hint: ${hints.join(' & ')}.` : 'Try again.';
             setCoordFeedback(`Not quite. ${hintText}`);
             setCoordStreak(0);
@@ -682,6 +874,81 @@ const Games: React.FC = () => {
         return '';
     }, [reactionState, reactionTime]);
 
+    const leaderboardItems = useMemo(() => ([
+        { key: 'reaction', label: 'Reaction Time', value: leaderboard.reactionBestMs ? `${leaderboard.reactionBestMs} ms` : '--', detail: 'Lower is better.' },
+        { key: 'math', label: 'Quick Math', value: leaderboard.mathBest ?? 0, detail: 'Best streak.' },
+        { key: 'guess', label: 'Number Guess', value: leaderboard.guessBest ? `${leaderboard.guessBest} tries` : '--', detail: 'Lower is better.' },
+        { key: 'output', label: 'Output Prediction', value: leaderboard.outputBest ?? 0, detail: 'Best streak.' },
+        { key: 'bug', label: 'Bug Hunt', value: leaderboard.bugBest ?? 0, detail: 'Best streak.' },
+        { key: 'sequence', label: 'Sequence Builder', value: leaderboard.sequenceBest ? `${leaderboard.sequenceBest} steps` : '--', detail: 'Lower is better.' },
+        { key: 'loop', label: 'Loop Logic', value: leaderboard.loopBest ?? 0, detail: 'Best streak.' },
+        { key: 'function', label: 'Function Calls', value: leaderboard.functionBest ?? 0, detail: 'Best streak.' },
+        { key: 'coord', label: 'Coordinate Target', value: leaderboard.coordBest ?? 0, detail: 'Best streak.' },
+    ]), [leaderboard]);
+
+    useEffect(() => {
+        if (bestReaction !== null) {
+            setLeaderboard(prev => ({ ...prev, reactionBestMs: bestReaction }));
+            submitGameScore('reaction', bestReaction);
+        }
+    }, [bestReaction]);
+
+    useEffect(() => {
+        setLeaderboard(prev => ({ ...prev, mathBest }));
+        if (mathBest > 0) {
+            submitGameScore('math', mathBest);
+        }
+    }, [mathBest]);
+
+    useEffect(() => {
+        if (bestGuess !== null) {
+            setLeaderboard(prev => ({ ...prev, guessBest: bestGuess }));
+            submitGameScore('guess', bestGuess);
+        }
+    }, [bestGuess]);
+
+    useEffect(() => {
+        setLeaderboard(prev => ({ ...prev, outputBest }));
+        if (outputBest > 0) {
+            submitGameScore('output', outputBest);
+        }
+    }, [outputBest]);
+
+    useEffect(() => {
+        setLeaderboard(prev => ({ ...prev, bugBest }));
+        if (bugBest > 0) {
+            submitGameScore('bug', bugBest);
+        }
+    }, [bugBest]);
+
+    useEffect(() => {
+        if (sequenceBest !== null) {
+            setLeaderboard(prev => ({ ...prev, sequenceBest }));
+            submitGameScore('sequence', sequenceBest);
+        }
+    }, [sequenceBest]);
+
+    useEffect(() => {
+        setLeaderboard(prev => ({ ...prev, loopBest }));
+        if (loopBest > 0) {
+            submitGameScore('loop', loopBest);
+        }
+    }, [loopBest]);
+
+    useEffect(() => {
+        setLeaderboard(prev => ({ ...prev, functionBest }));
+        if (functionBest > 0) {
+            submitGameScore('function', functionBest);
+        }
+    }, [functionBest]);
+
+    useEffect(() => {
+        setLeaderboard(prev => ({ ...prev, coordBest }));
+        if (coordBest > 0) {
+            submitGameScore('coord', coordBest);
+        }
+    }, [coordBest]);
+
     return (
         <div className="max-w-6xl mx-auto space-y-8">
             <section className="relative overflow-hidden rounded-3xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-8 shadow-sm">
@@ -695,6 +962,84 @@ const Games: React.FC = () => {
                     <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 max-w-2xl">
                         Short, focused coding games to reset your brain between deep work sessions. Scores are local to this device so you can keep things casual.
                     </p>
+                </div>
+            </section>
+
+            <section className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm space-y-4">
+                <div className="flex items-center justify-between gap-4">
+                    <div>
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Arcade Leaderboard</h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Club-wide scores updated in real time.</p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <div className="lg:col-span-1 space-y-2">
+                        {leaderboardItems.map(item => (
+                            <button
+                                key={item.key}
+                                onClick={() => setLeaderboardGameKey(item.key as keyof typeof gameMeta)}
+                                className={`w-full text-left rounded-xl border px-3 py-2 text-sm transition-all ${
+                                    leaderboardGameKey === item.key
+                                        ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-200'
+                                        : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-900/40'
+                                }`}
+                            >
+                                <div className="flex items-center justify-between">
+                                    <span className="font-semibold">{item.label}</span>
+                                    <span className="text-xs text-gray-400">{item.value}</span>
+                                </div>
+                                <p className="text-[10px] text-gray-400">{item.detail}</p>
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="lg:col-span-2 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-4">
+                        <div className="flex items-center justify-between mb-3">
+                            <div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">Leaderboard</p>
+                                <p className="text-lg font-semibold text-gray-900 dark:text-white">{gameMeta[leaderboardGameKey].label}</p>
+                            </div>
+                            <button
+                                onClick={() => loadLeaderboard(leaderboardGameKey)}
+                                className="text-xs text-pink-500 hover:text-pink-600"
+                            >
+                                Refresh
+                            </button>
+                        </div>
+
+                        {leaderboardLoading ? (
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Loading leaderboard...</p>
+                        ) : leaderboardError ? (
+                            <p className="text-sm text-red-500 dark:text-red-400">{leaderboardError}</p>
+                        ) : leaderboardEntries.length === 0 ? (
+                            <p className="text-sm text-gray-500 dark:text-gray-400">No scores yet. Be the first.</p>
+                        ) : (
+                            <div className="space-y-2">
+                                {leaderboardEntries.map((entry, index) => (
+                                    <div key={`${entry.userId}-${index}`} className="flex items-center gap-3 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3">
+                                        <div className="h-8 w-8 rounded-full bg-gray-900 text-white dark:bg-white dark:text-gray-900 flex items-center justify-center text-xs font-bold">
+                                            {index + 1}
+                                        </div>
+                                        <img
+                                            src={entry.userAvatarUrl || `https://i.pravatar.cc/40?u=${entry.userUsername}`}
+                                            alt={entry.userName}
+                                            className="w-9 h-9 rounded-full object-cover border border-gray-200 dark:border-gray-700"
+                                        />
+                                        <div className="flex-1">
+                                            <p className="text-sm font-semibold text-gray-900 dark:text-white">{entry.userName}</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">@{entry.userUsername}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-sm font-bold text-gray-900 dark:text-white">
+                                                {entry.bestValue}{gameMeta[leaderboardGameKey].valueSuffix ? ` ${gameMeta[leaderboardGameKey].valueSuffix}` : ''}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </section>
 
@@ -756,6 +1101,37 @@ const Games: React.FC = () => {
                         </div>
                     </div>
 
+                    <div className="flex items-center justify-between rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 px-3 py-2">
+                        <div>
+                            <p className="text-[10px] uppercase tracking-[0.2em] text-gray-400">Timer</p>
+                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{mathTimeLeft}s</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <select
+                                value={mathDuration}
+                                onChange={(e) => setMathDuration(Number(e.target.value))}
+                                className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/60 px-2 py-1 text-xs text-gray-700 dark:text-gray-200"
+                                disabled={mathIsRunning}
+                            >
+                                {[30, 45, 60].map(sec => (
+                                    <option key={sec} value={sec}>{sec}s</option>
+                                ))}
+                            </select>
+                            <button
+                                onClick={startMathTimer}
+                                className="px-3 py-1.5 rounded-lg bg-pink-600 text-white text-xs font-semibold hover:bg-pink-700"
+                            >
+                                Start
+                            </button>
+                            <button
+                                onClick={resetMathTimer}
+                                className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            >
+                                Reset
+                            </button>
+                        </div>
+                    </div>
+
                     <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 px-4 py-4 text-center text-2xl font-bold text-gray-900 dark:text-white">
                         {mathQuestion.text}
                     </div>
@@ -767,18 +1143,21 @@ const Games: React.FC = () => {
                             type="number"
                             className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/60 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-pink-500"
                             placeholder="Type your answer"
+                            disabled={!mathIsRunning || mathTimeLeft === 0}
                         />
                         <div className="flex flex-wrap gap-2">
                             <button
                                 type="submit"
-                                className="flex-1 px-3 py-2 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-semibold"
+                                className="flex-1 px-3 py-2 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-semibold disabled:opacity-60"
+                                disabled={!mathIsRunning || mathTimeLeft === 0}
                             >
                                 Submit
                             </button>
                             <button
                                 type="button"
                                 onClick={skipMath}
-                                className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-60"
+                                disabled={!mathIsRunning || mathTimeLeft === 0}
                             >
                                 Skip
                             </button>
@@ -791,6 +1170,7 @@ const Games: React.FC = () => {
                             value={mathDifficulty}
                             onChange={(e) => setMathDifficulty(e.target.value as MathDifficulty)}
                             className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/60 px-2 py-1 text-xs text-gray-700 dark:text-gray-200"
+                            disabled={mathIsRunning}
                         >
                             <option value="warmup">Warm-up</option>
                             <option value="core">Core</option>
@@ -948,12 +1328,16 @@ const Games: React.FC = () => {
                             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Loop Logic</h3>
                             <p className="text-xs text-gray-500 dark:text-gray-400">Pick how many loops reach the target.</p>
                         </div>
-                        <button
-                            onClick={nextLoop}
-                            className="text-xs text-pink-500 hover:text-pink-600"
-                        >
-                            New Loop
-                        </button>
+                        <div className="text-right">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Streak</p>
+                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{loopStreak} / {loopBest}</p>
+                            <button
+                                onClick={nextLoop}
+                                className="text-xs text-pink-500 hover:text-pink-600"
+                            >
+                                New Loop
+                            </button>
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-5 gap-1 justify-center">
@@ -1008,12 +1392,16 @@ const Games: React.FC = () => {
                             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Function Calls</h3>
                             <p className="text-xs text-gray-500 dark:text-gray-400">Combine mini-functions to reach the goal.</p>
                         </div>
-                        <button
-                            onClick={nextFunctionPuzzle}
-                            className="text-xs text-pink-500 hover:text-pink-600"
-                        >
-                            New Puzzle
-                        </button>
+                        <div className="text-right">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Streak</p>
+                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{functionStreak} / {functionBest}</p>
+                            <button
+                                onClick={nextFunctionPuzzle}
+                                className="text-xs text-pink-500 hover:text-pink-600"
+                            >
+                                New Puzzle
+                            </button>
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-5 gap-1 justify-center">
@@ -1120,6 +1508,22 @@ const Games: React.FC = () => {
                 <p className="text-sm text-gray-700 dark:text-gray-300">
                     Target: <span className="font-semibold">({coordTarget.x}, {coordTarget.y})</span>
                 </p>
+
+                <form onSubmit={submitCoordInput} className="flex flex-col sm:flex-row gap-2">
+                    <input
+                        value={coordInput}
+                        onChange={(e) => setCoordInput(e.target.value)}
+                        className="flex-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/60 px-3 py-2 text-sm text-gray-700 dark:text-gray-200"
+                        placeholder="Enter coordinates like 2+1, 3+0"
+                    />
+                    <button
+                        type="submit"
+                        className="px-4 py-2 rounded-lg bg-pink-600 text-white text-sm font-semibold hover:bg-pink-700"
+                    >
+                        Submit
+                    </button>
+                </form>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Use sums to calculate coordinates. Example: <span className="font-semibold">1+2, 4+0</span>.</p>
 
                 <div className="grid gap-1 max-w-xs" style={{ gridTemplateColumns: `repeat(${coordinateSize}, minmax(0, 1fr))` }}>
                     {Array.from({ length: coordinateSize }).map((_, y) => (

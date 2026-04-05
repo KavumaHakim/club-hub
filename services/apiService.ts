@@ -1,6 +1,6 @@
 
 import { supabase } from './supabaseClient';
-import { User, Activity, AttendanceRecord, AttendanceStatus, FeedItem, ProjectData, ProjectTask, Resource, AppNotification, Room, ShowcaseItem, Suggestion, Challenge, ChallengeSubmission, FeedComment, SuggestionType, SuggestionStatus, SubmissionStatus, ActivityCategory, FeedItemType, TaskPriority, ResourceCategory, ResourceType, Tab, Roadmap, RoadmapProgress, ShowcaseComment, Message, Team, TeamChallenge, TeamChallengeSubmission, PlaygroundProject, PlaygroundProjectFile, PlaygroundProjectActivity, PlaygroundProjectMember, FeatureFlags } from '../types';
+import { User, Activity, AttendanceRecord, AttendanceStatus, FeedItem, ProjectData, ProjectTask, Resource, AppNotification, Room, ShowcaseItem, Suggestion, Challenge, ChallengeSubmission, FeedComment, SuggestionType, SuggestionStatus, SubmissionStatus, ActivityCategory, FeedItemType, TaskPriority, ResourceCategory, ResourceType, Tab, Roadmap, RoadmapProgress, ShowcaseComment, Message, Team, TeamChallenge, TeamChallengeSubmission, PlaygroundProject, PlaygroundProjectFile, PlaygroundProjectActivity, PlaygroundProjectMember, FeatureFlags, GameLeaderboardEntry } from '../types';
 
 // --- Helper for Notifications ---
 const insertNotifications = async (notifications: Array<{ user_uid: string; message: string; is_read: boolean; link_to: Tab }>) => {
@@ -1963,5 +1963,38 @@ export const getPlaygroundActivity = async (projectId: string): Promise<Playgrou
         action: row.action,
         detail: row.detail,
         createdAt: row.created_at
+    }));
+};
+
+// --- Games Leaderboard ---
+
+export const upsertGameScore = async (payload: { userId: string; gameKey: string; bestValue: number }) => {
+    const { error } = await supabase
+        .from('game_leaderboard')
+        .upsert({
+            user_uid: payload.userId,
+            game_key: payload.gameKey,
+            best_value: payload.bestValue,
+            updated_at: new Date().toISOString()
+        }, { onConflict: 'user_uid,game_key' });
+    if (error) throw error;
+};
+
+export const getGameLeaderboard = async (gameKey: string, lowerIsBetter = true): Promise<GameLeaderboardEntry[]> => {
+    const { data, error } = await supabase
+        .from('game_leaderboard')
+        .select('user_uid, game_key, best_value, updated_at, users ( name, username, avatar_url )')
+        .eq('game_key', gameKey)
+        .order('best_value', { ascending: lowerIsBetter })
+        .limit(20);
+    if (error) throw error;
+    return (data || []).map((row: any) => ({
+        userId: row.user_uid,
+        userName: row.users?.name || 'Unknown',
+        userUsername: row.users?.username || 'user',
+        userAvatarUrl: row.users?.avatar_url,
+        gameKey: row.game_key,
+        bestValue: row.best_value,
+        updatedAt: row.updated_at
     }));
 };
