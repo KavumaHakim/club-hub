@@ -180,13 +180,13 @@ export interface ProjectTask {
   priority: TaskPriority;
   dueDate?: string;
   tags?: string[];
-  submissions?: { 
-    [userId: string]: { 
-      filePath: string; 
-      submittedAt: string; 
+  submissions?: {
+    [userId: string]: {
+      filePath: string;
+      submittedAt: string;
       grade?: number | null;
       feedback?: string | null;
-    } 
+    }
   };
 }
 
@@ -238,7 +238,10 @@ export interface Message {
   senderId: string;
   content: string;
   createdAt: string;
-  metadata?: any;
+  metadata?: {
+    readBy?: string[];
+    [key: string]: any;
+  };
 }
 
 export interface Room {

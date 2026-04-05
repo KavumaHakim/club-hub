@@ -117,52 +117,52 @@ const mapFeatureFlagsToDb = (updates: Partial<FeatureFlags>) => {
 // --- Auth & User ---
 
 export const login = async (email: string, password?: string) => {
-  if (!password) throw new Error("Password is required for login");
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw error;
+    if (!password) throw new Error("Password is required for login");
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
 };
 
 export const logout = async () => {
-  const { error } = await supabase.auth.signOut();
-  if (error && error.message !== 'Auth session missing!') throw error;
+    const { error } = await supabase.auth.signOut();
+    if (error && error.message !== 'Auth session missing!') throw error;
 };
 
-export const signUp = async (userData: Omit<User, 'uid' | 'role' | 'status' | 'avatarUrl'> & {password: string}) => {
-  const { data, error } = await supabase.auth.signUp({
-    email: userData.email,
-    password: userData.password,
-    options: {
-      data: {
-        name: userData.name,
-        username: userData.username,
-        phoneNumber: userData.phoneNumber,
-        skillLevel: userData.skillLevel,
-        role: 'MEMBER',
-        status: 'PENDING'
-      }
+export const signUp = async (userData: Omit<User, 'uid' | 'role' | 'status' | 'avatarUrl'> & { password: string }) => {
+    const { data, error } = await supabase.auth.signUp({
+        email: userData.email,
+        password: userData.password,
+        options: {
+            data: {
+                name: userData.name,
+                username: userData.username,
+                phoneNumber: userData.phoneNumber,
+                skillLevel: userData.skillLevel,
+                role: 'MEMBER',
+                status: 'PENDING'
+            }
+        }
+    });
+    if (error) throw error;
+
+    if (data.user) {
+        const { error: profileError } = await supabase.from('users').insert({
+            uid: data.user.id,
+            email: userData.email,
+            name: userData.name,
+            username: userData.username,
+            phone_number: userData.phoneNumber,
+            skill_level: userData.skillLevel,
+            role: 'MEMBER',
+            status: 'PENDING'
+        }).select().single();
+
+        if (profileError && profileError.code !== '23505') {
+            console.error("Error creating user profile:", profileError);
+        }
     }
-  });
-  if (error) throw error;
-  
-  if (data.user) {
-      const { error: profileError } = await supabase.from('users').insert({
-          uid: data.user.id,
-          email: userData.email,
-          name: userData.name,
-          username: userData.username,
-          phone_number: userData.phoneNumber,
-          skill_level: userData.skillLevel,
-          role: 'MEMBER',
-          status: 'PENDING'
-      }).select().single();
-      
-      if (profileError && profileError.code !== '23505') { 
-          console.error("Error creating user profile:", profileError);
-      }
-  }
 };
 
-export const signUpAsPatron = async (userData: Omit<User, 'uid' | 'role' | 'status' | 'avatarUrl'> & {password: string}) => {
+export const signUpAsPatron = async (userData: Omit<User, 'uid' | 'role' | 'status' | 'avatarUrl'> & { password: string }) => {
     const { data, error } = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password,
@@ -172,7 +172,7 @@ export const signUpAsPatron = async (userData: Omit<User, 'uid' | 'role' | 'stat
                 username: userData.username,
                 phoneNumber: userData.phoneNumber,
                 role: 'PATRON',
-                status: 'PENDING' 
+                status: 'PENDING'
             }
         }
     });
@@ -196,23 +196,23 @@ export const signUpAsPatron = async (userData: Omit<User, 'uid' | 'role' | 'stat
 };
 
 export const getUserProfile = async (userId: string): Promise<User | null> => {
-  const { data, error } = await supabase.from('users').select('*').eq('uid', userId).maybeSingle();
-  if (error) return null;
-  if (!data) return null;
-  return {
-      uid: data.uid,
-      email: data.email,
-      name: data.name,
-      username: data.username,
-      role: data.role,
-      status: data.status,
-      avatarUrl: data.avatar_url,
-      bio: data.bio,
-      phoneNumber: data.phone_number,
-      skillLevel: data.skill_level,
-      badges: data.badges,
-      lastLogin: data.last_login
-  };
+    const { data, error } = await supabase.from('users').select('*').eq('uid', userId).maybeSingle();
+    if (error) return null;
+    if (!data) return null;
+    return {
+        uid: data.uid,
+        email: data.email,
+        name: data.name,
+        username: data.username,
+        role: data.role,
+        status: data.status,
+        avatarUrl: data.avatar_url,
+        bio: data.bio,
+        phoneNumber: data.phone_number,
+        skillLevel: data.skill_level,
+        badges: data.badges,
+        lastLogin: data.last_login
+    };
 };
 
 export const getUsers = async (): Promise<User[]> => {
@@ -402,9 +402,9 @@ export const getActivities = async (): Promise<Activity[]> => {
                 user_uid
             )
         `);
-    
+
     if (error) throw error;
-    
+
     return data.map((a: any) => ({
         id: String(a.id),
         title: a.title,
@@ -448,7 +448,7 @@ export const toggleRSVP = async (activityId: string, userId: string, isJoining: 
             activity_id: activityId,
             user_uid: userId
         });
-        if (error && error.code !== '23505') throw error; 
+        if (error && error.code !== '23505') throw error;
     } else {
         const { error } = await supabase.from('activity_rsvps').delete().match({
             activity_id: activityId,
@@ -512,7 +512,7 @@ export const addAttendanceBatch = async (records: Array<{ userId: string; activi
 export const markAttendanceOnLogin = async (userId: string) => {
     const today = new Date().toISOString().split('T')[0];
     const { data: activities } = await supabase.from('activities').select('*').eq('date', today);
-    
+
     if (activities && activities.length > 0) {
         for (const activity of activities) {
             const { data: existing } = await supabase.from('attendance')
@@ -520,7 +520,7 @@ export const markAttendanceOnLogin = async (userId: string) => {
                 .eq('user_uid', userId)
                 .eq('activity_id', activity.id)
                 .maybeSingle();
-            
+
             if (!existing) {
                 await supabase.from('attendance').insert({
                     user_uid: userId,
@@ -556,7 +556,7 @@ export const getFeedItems = async (): Promise<FeedItem[]> => {
         .order('created_at', { ascending: false });
 
     if (error) throw error;
-    
+
     const { data: { session } } = await supabase.auth.getSession();
     const currentUserId = session?.user?.id;
 
@@ -590,7 +590,7 @@ export const addFeedItem = async (item: { title: string, message: string, type: 
         message: item.message,
         author_uid: userId,
     }).select().single();
-    
+
     if (error) throw error;
 
     if (item.type === 'POLL' && item.pollOptions && item.pollOptions.length > 0) {
@@ -613,7 +613,7 @@ export const deleteFeedItem = async (id: string) => {
 
 export const votePoll = async (feedItemId: string, optionId: string, userId: string) => {
     const { data: options } = await supabase.from('poll_options').select('id').eq('feed_item_id', feedItemId);
-    
+
     if (options && options.length > 0) {
         const optionIds = options.map(o => o.id);
         await supabase.from('poll_votes')
@@ -636,12 +636,12 @@ export const getFeedComments = async (feedItemId: string): Promise<FeedComment[]
         .select('*')
         .eq('feed_item_id', feedItemId)
         .order('created_at', { ascending: true });
-    
+
     if (error) throw error;
 
     const userIds = [...new Set(comments.map((c: any) => c.user_uid))];
     let usersMap: Record<string, any> = {};
-    
+
     if (userIds.length > 0) {
         const { data: users } = await supabase.from('users').select('uid, name, avatar_url').in('uid', userIds);
         if (users) {
@@ -664,13 +664,13 @@ export const getFeedComments = async (feedItemId: string): Promise<FeedComment[]
 
 export const addFeedComment = async (feedItemId: string, userId: string, content: string): Promise<FeedComment> => {
     const { data: user } = await supabase.from('users').select('name, avatar_url').eq('uid', userId).maybeSingle();
-    
+
     const { data, error } = await supabase.from('feed_comments').insert({
         feed_item_id: feedItemId,
         user_uid: userId,
         content: content
     }).select().single();
-    
+
     if (error) throw error;
 
     return {
@@ -695,10 +695,10 @@ export const getProjectData = async (): Promise<ProjectData | null> => {
         if (taskError) throw taskError;
 
         const { data: assignments, error: assignError } = await supabase.from('project_task_assignees').select('*');
-        
+
         if (assignError) {
-             if (assignError.code === '42P01') return null;
-             throw assignError;
+            if (assignError.code === '42P01') return null;
+            throw assignError;
         }
 
         const assignmentsMap = new Map<string, string[]>();
@@ -744,7 +744,7 @@ export const getProjectData = async (): Promise<ProjectData | null> => {
                 dueDate: t.due_date,
                 tags: t.tags || [],
                 submissions: submissionsMap.get(taskIdStr)
-            } as any; 
+            } as any;
         });
 
         columns.forEach((c: any) => {
@@ -755,7 +755,7 @@ export const getProjectData = async (): Promise<ProjectData | null> => {
             projectData.columns[colIdStr] = {
                 id: colIdStr,
                 title: c.title,
-                taskIds: taskIds 
+                taskIds: taskIds
             };
             projectData.columnOrder.push(colIdStr);
         });
@@ -789,7 +789,7 @@ export const addProjectTask = async (taskData: { content: string, priority: Task
         column_id: columnId,
         is_completed: false,
     }).select('id').single();
-    
+
     if (taskInsertError) throw taskInsertError;
 
     const newTaskId = newTask.id;
@@ -799,7 +799,7 @@ export const addProjectTask = async (taskData: { content: string, priority: Task
             task_id: newTaskId,
             user_uid: assigneeId
         }));
-        
+
         const { error: assignmentError } = await supabase.from('project_task_assignees').insert(assignmentRecords);
         if (assignmentError) throw assignmentError;
 
@@ -814,7 +814,7 @@ export const addProjectTask = async (taskData: { content: string, priority: Task
                 is_read: false,
                 link_to: 'projects' as Tab
             }));
-        
+
         await insertNotifications(notifications);
     }
 };
@@ -858,7 +858,7 @@ export const updateTaskAssignees = async (taskId: string, newAssigneeIds: string
 
     const { error: deleteError } = await supabase.from('project_task_assignees').delete().eq('task_id', taskId);
     if (deleteError) throw deleteError;
-    
+
     if (newAssigneeIds.length > 0) {
         const newAssignmentRecords = newAssigneeIds.map(userId => ({
             task_id: taskId,
@@ -867,7 +867,7 @@ export const updateTaskAssignees = async (taskId: string, newAssigneeIds: string
         const { error: insertError } = await supabase.from('project_task_assignees').insert(newAssignmentRecords);
         if (insertError) throw insertError;
     }
-    
+
     const newlyAddedIds = newAssigneeIds.filter(id => !oldAssigneeIds.includes(id) && id !== assigner.uid);
 
     if (newlyAddedIds.length > 0) {
@@ -880,7 +880,7 @@ export const updateTaskAssignees = async (taskId: string, newAssigneeIds: string
             }));
 
             await insertNotifications(notifications);
-        } catch (notifError) {}
+        } catch (notifError) { }
     }
 };
 
@@ -908,39 +908,39 @@ export const toggleProjectTaskCompletion = async (taskId: string, isCompleted: b
 
                 await insertNotifications(notifications);
             }
-        } catch (notifError) {}
+        } catch (notifError) { }
     }
 };
 
 export const uploadTaskSubmission = async (taskId: string, file: File, userId: string) => {
-  const fileExt = file.name.split('.').pop();
-  const filePath = `submissions/${taskId}/${userId}/${Date.now()}.${fileExt}`;
+    const fileExt = file.name.split('.').pop();
+    const filePath = `submissions/${taskId}/${userId}/${Date.now()}.${fileExt}`;
 
-  const { error: uploadError } = await supabase.storage
-    .from('resource_uploads')
-    .upload(filePath, file);
+    const { error: uploadError } = await supabase.storage
+        .from('resource_uploads')
+        .upload(filePath, file);
 
-  if (uploadError) throw uploadError;
+    if (uploadError) throw uploadError;
 
-  const { error: updateError } = await supabase
-    .from('project_task_assignees')
-    .update({ submission_file_path: filePath, submitted_at: new Date().toISOString() })
-    .match({ task_id: taskId, user_uid: userId });
+    const { error: updateError } = await supabase
+        .from('project_task_assignees')
+        .update({ submission_file_path: filePath, submitted_at: new Date().toISOString() })
+        .match({ task_id: taskId, user_uid: userId });
 
-  if (updateError) {
-    await supabase.storage.from('resource_uploads').remove([filePath]);
-    throw updateError;
-  }
-  return filePath;
+    if (updateError) {
+        await supabase.storage.from('resource_uploads').remove([filePath]);
+        throw updateError;
+    }
+    return filePath;
 };
 
 export const deleteTaskSubmission = async (taskId: string, userId: string, filePath: string) => {
-  await supabase.storage.from('resource_uploads').remove([filePath]);
-  const { error: updateError } = await supabase
-    .from('project_task_assignees')
-    .update({ submission_file_path: null, submitted_at: null })
-    .match({ task_id: taskId, user_uid: userId });
-  if (updateError) throw updateError;
+    await supabase.storage.from('resource_uploads').remove([filePath]);
+    const { error: updateError } = await supabase
+        .from('project_task_assignees')
+        .update({ submission_file_path: null, submitted_at: null })
+        .match({ task_id: taskId, user_uid: userId });
+    if (updateError) throw updateError;
 };
 
 export const getSubmissionPublicUrl = (filePath: string) => {
@@ -1109,8 +1109,8 @@ export const addRoomMembers = async (roomId: string, newMemberIds: string[]) => 
     if (fetchError) throw fetchError;
     const currentParticipants = room.metadata?.participants || [];
     const updatedIds = [...new Set([...currentParticipants, ...newMemberIds])];
-    const { error } = await supabase.from('rooms').update({ 
-        metadata: { ...room.metadata, participants: updatedIds } 
+    const { error } = await supabase.from('rooms').update({
+        metadata: { ...room.metadata, participants: updatedIds }
     }).eq('id', roomId);
     if (error) throw error;
 };
@@ -1120,7 +1120,7 @@ export const removeGroupMember = async (roomId: string, userId: string) => {
     if (fetchError) throw fetchError;
     const currentParticipants = room.metadata?.participants || [];
     const updatedIds = currentParticipants.filter((id: string) => id !== userId);
-    const { error } = await supabase.from('rooms').update({ 
+    const { error } = await supabase.from('rooms').update({
         metadata: { ...room.metadata, participants: updatedIds }
     }).eq('id', roomId);
     if (error) throw error;
@@ -1182,6 +1182,27 @@ export const deleteMessage = async (messageId: string) => {
     if (error) throw error;
 };
 
+export const markMessagesAsRead = async (messageIds: string[], userId: string) => {
+    if (!messageIds || messageIds.length === 0) return;
+
+    const { data: messages, error: fetchError } = await supabase
+        .from('messages')
+        .select('id, metadata')
+        .in('id', messageIds);
+
+    if (fetchError || !messages) return;
+
+    for (const msg of messages) {
+        let metadata = msg.metadata || {};
+        let readBy = metadata.readBy || [];
+        if (!readBy.includes(userId)) {
+            readBy = [...readBy, userId];
+            metadata = { ...metadata, readBy };
+            await supabase.from('messages').update({ metadata }).eq('id', msg.id);
+        }
+    }
+};
+
 export const uploadChatFile = async (file: File, roomId: string, userId: string) => {
     const fileExt = file.name.split('.').pop();
     const fileName = `chat/${roomId}/${userId}/${Date.now()}.${fileExt}`;
@@ -1196,7 +1217,7 @@ export const uploadChatFile = async (file: File, roomId: string, userId: string)
 export const getShowcaseItems = async (): Promise<ShowcaseItem[]> => {
     try {
         const { data, error } = await supabase
-            .from('showcase_items') 
+            .from('showcase_items')
             .select(`*, showcase_comments ( count )`)
             .order('created_at', { ascending: false });
 
@@ -1356,7 +1377,7 @@ export const deleteSuggestion = async (id: string) => {
     if (error) throw error;
 };
 
-export const updateSuggestionStatus = async (id: string, status: SuggestionStatus, userId: string) => { 
+export const updateSuggestionStatus = async (id: string, status: SuggestionStatus, userId: string) => {
     const { error } = await supabase.from('suggestions').update({ status }).eq('id', id);
     if (error) throw error;
 };
@@ -1382,12 +1403,12 @@ export const getChallenges = async (): Promise<Challenge[]> => {
     }
 };
 
-export const addChallenge = async (challenge: { 
-    title: string, 
-    description: string, 
-    deadline: string, 
+export const addChallenge = async (challenge: {
+    title: string,
+    description: string,
+    deadline: string,
     createdBy: string,
-    difficulty?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' 
+    difficulty?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'
 }) => {
     const { error } = await supabase.from('challenges').insert({
         title: challenge.title,
@@ -1549,7 +1570,7 @@ export const updateMilestoneProgress = async (userId: string, roadmapId: string,
         .eq('user_id', userId)
         .eq('roadmap_id', roadmapId)
         .maybeSingle();
-    
+
     if (existing) {
         const indices = new Set(existing.completed_milestone_indices || []);
         indices.add(milestoneIndex);
