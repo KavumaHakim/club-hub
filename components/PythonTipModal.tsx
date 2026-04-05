@@ -45,7 +45,7 @@ const DailyTipModal: React.FC<DailyTipModalProps> = ({ isOpen, onClose, skillLev
     const [copied, setCopied] = useState(false);
 
     useEffect(() => {
-        if (isOpen && !tip) {
+        if (isOpen && (!tip || tip.language !== preferredLanguage)) {
             setLoading(true);
             
             generateCodingTip(preferredLanguage, skillLevel)
@@ -58,7 +58,7 @@ const DailyTipModal: React.FC<DailyTipModalProps> = ({ isOpen, onClose, skillLev
                     setLoading(false);
                 });
         }
-    }, [isOpen]);
+    }, [isOpen, preferredLanguage, skillLevel, tip]);
 
     if (!isOpen) return null;
 

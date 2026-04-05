@@ -532,9 +532,56 @@ export const evaluateShortAnswer = async (question: string, userAnswer: string, 
 };
 
 export const generateCodingTip = async (lang: 'python' | 'javascript', skillLevel: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' = 'BEGINNER'): Promise<CodingTip> => {
+    const todayIndex = Math.floor(Date.now() / 86400000);
+    const beginnerConcepts = [
+        'variables and types',
+        'print/output basics',
+        'if/else conditionals',
+        'loops (for/while)',
+        'lists/arrays basics',
+        'string methods',
+        'indexing and slicing',
+        'simple functions',
+        'input and type conversion',
+        'basic dictionaries/objects'
+    ];
+    const intermediateConcepts = [
+        'list/array comprehensions',
+        'functions with defaults',
+        'error handling',
+        'file reading basics',
+        'working with sets',
+        'classes and objects',
+        'higher-order functions',
+        'sorting with keys',
+        'string formatting options',
+        'basic algorithm patterns'
+    ];
+    const advancedConcepts = [
+        'generators and iterators',
+        'async patterns',
+        'performance tips',
+        'data structures tradeoffs',
+        'decorators',
+        'type hints/typing',
+        'complexity analysis',
+        'testing patterns',
+        'module design',
+        'advanced language features'
+    ];
+
+    const pool = skillLevel === 'BEGINNER'
+        ? beginnerConcepts
+        : skillLevel === 'INTERMEDIATE'
+            ? intermediateConcepts
+            : advancedConcepts;
+    const topic = pool[todayIndex % pool.length];
+
     const prompt = `Generate a modern ${lang} tip (JSON) for high school students.
     Target skill level: ${skillLevel}.
+    Focus topic: ${topic}.
     Keep it short, practical, and appropriate for the level.
+    For BEGINNER tips, avoid overusing f-strings; rotate across core concepts.
     Include title, explanation, and codeSnippet.`;
 
     try {

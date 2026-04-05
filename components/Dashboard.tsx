@@ -50,6 +50,10 @@ const TabPanel: React.FC<{ active: boolean; children: React.ReactNode; className
 
 const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile, activeTab, setActiveTab, theme }) => {
   const [showTipModal, setShowTipModal] = useState(false);
+  const tipLanguage = useMemo<'python' | 'javascript'>(() => {
+      const daySeed = new Date().getDate();
+      return daySeed % 2 === 0 ? 'javascript' : 'python';
+  }, []);
   const [featureIntro, setFeatureIntro] = useState<{ tab: Tab; title: string; body: string } | null>(null);
   const { featureFlags } = useData();
 
@@ -244,6 +248,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile,
         isOpen={showTipModal} 
         onClose={() => setShowTipModal(false)} 
         skillLevel={currentUser.skillLevel || 'BEGINNER'}
+        preferredLanguage={tipLanguage}
       />
 
       <FeatureIntroModal

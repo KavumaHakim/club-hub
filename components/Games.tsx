@@ -122,6 +122,49 @@ const gameMeta: Record<string, { label: string; lowerIsBetter: boolean; valueSuf
 };
 
 const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
+    const gameHelp = useMemo(() => ([
+        {
+            title: 'Reaction Timer',
+            description: 'Press Start, wait for the green cue, then tap fast.',
+            tips: ['Early tap = too soon.', 'Lower ms is better.']
+        },
+        {
+            title: 'Quick Math',
+            description: 'Solve as many prompts as you can before the timer ends.',
+            tips: ['Start the timer first.', 'Use Skip to move on.']
+        },
+        {
+            title: 'Sequence Builder',
+            description: 'Queue U/D/L/R steps to move the bot to the goal.',
+            tips: ['Avoid X obstacles.', 'Shorter paths score better.']
+        },
+        {
+            title: 'Loop Logic',
+            description: 'Pick how many repeats of the pattern reaches the goal.',
+            tips: ['Watch the preview path.', 'Correct loop count increases streak.']
+        },
+        {
+            title: 'Function Calls',
+            description: 'Choose an order of function calls to reach the goal.',
+            tips: ['Functions are mini move sets.', 'Reorder if you hit walls.']
+        },
+        {
+            title: 'Coordinate Target',
+            description: 'Enter coordinates using sum syntax like 2+1, 3+0.',
+            tips: ['Use the origin toggle if needed.', 'Hints guide direction.']
+        },
+        {
+            title: 'Output Prediction',
+            description: 'Read the snippet and choose the correct output.',
+            tips: ['Timer counts down.', 'Streak grows on correct answers.']
+        },
+        {
+            title: 'Bug Hunt',
+            description: 'Pick the fix that makes the code work.',
+            tips: ['Check the error first.', 'Streak resets on mistakes.']
+        }
+    ]), []);
+    const [showHelp, setShowHelp] = useState(true);
     const [leaderboard, setLeaderboard] = useState<GamesLeaderboard>({});
     const lastSubmittedRef = useRef<Record<string, number | undefined>>({});
     const [leaderboardGameKey, setLeaderboardGameKey] = useState<keyof typeof gameMeta>('reaction');
@@ -1119,6 +1162,37 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                         )}
                     </div>
                 </div>
+            </section>
+
+            <section className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm space-y-4">
+                <div className="flex items-center justify-between gap-4">
+                    <div>
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">How To Play</h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Quick guides for every game.</p>
+                    </div>
+                    <button
+                        onClick={() => setShowHelp(prev => !prev)}
+                        className="text-xs text-pink-500 hover:text-pink-600"
+                    >
+                        {showHelp ? 'Hide tips' : 'Show tips'}
+                    </button>
+                </div>
+
+                {showHelp && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {gameHelp.map(help => (
+                            <div key={help.title} className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 p-4">
+                                <p className="text-sm font-semibold text-gray-900 dark:text-white">{help.title}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{help.description}</p>
+                                <div className="mt-2 space-y-1">
+                                    {help.tips.map(tip => (
+                                        <p key={tip} className="text-[11px] text-gray-400">- {tip}</p>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </section>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
