@@ -480,6 +480,8 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
 
     const [messageToDelete, setMessageToDelete] = useState<string | null>(null);
     const [roomToDelete, setRoomToDelete] = useState<string | null>(null);
+    const [roomSearch, setRoomSearch] = useState('');
+    const [roomFilter, setRoomFilter] = useState<'all' | 'dm' | 'groups'>('all');
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const emojiPickerRef = useRef<HTMLDivElement>(null);
@@ -487,6 +489,48 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const activeRoom = useMemo(() => rooms.find(r => r.id === activeRoomId), [rooms, activeRoomId]);
+
+    const lowerRoomSearch = roomSearch.trim().toLowerCase();
+    const filteredRooms = useMemo(() => {
+        return rooms.filter(room => {
+            const participants = room.participantIds || [];
+            const otherParticipants = participants.filter(uid => uid !== currentUser.uid);
+            const titles = [room.title, ...otherParticipants.map(uid => allUsers.find(u => u.uid === uid)?.name)].filter(Boolean) as string[];
+            const matchesSearch = lowerRoomSearch === '' || titles.some(title => title.toLowerCase().includes(lowerRoomSearch));
+
+            const isDM = !room.title && participants.length === 2;
+            const isGroup = room.title || participants.length > 2;
+
+            if (roomFilter === 'dm' && !isDM) return false;
+            if (roomFilter === 'groups' && !isGroup) return false;
+
+            return matchesSearch;
+        });
+    }, [rooms, roomFilter, lowerRoomSearch, currentUser.uid, allUsers]);
+
+    const roomFilterOptions = [
+        { label: 'All', value: 'all', helper: 'Show every conversation' },
+        { label: 'DMs', value: 'dm', helper: 'Direct messages only' },
+        { label: 'Groups', value: 'groups', helper: 'Group chats only' }
+    ] as const;
+
+    const connectionLabels: Record<typeof realtimeStatus, string> = {
+        CONNECTING: 'Connecting…',
+        SUBSCRIBED: 'Realtime synced',
+        TIMED_OUT: 'Timed out',
+        CLOSED: 'Connection closed',
+        CHANNEL_ERROR: 'Channel error'
+    };
+    const connectionColors: Record<typeof realtimeStatus, string> = {
+        CONNECTING: 'bg-amber-400',
+        SUBSCRIBED: 'bg-emerald-500',
+        TIMED_OUT: 'bg-yellow-500',
+        CLOSED: 'bg-gray-500',
+        CHANNEL_ERROR: 'bg-red-500'
+    };
+
+    const connectionLabel = connectionLabels[realtimeStatus] || 'Connecting…';
+    const connectionColor = connectionColors[realtimeStatus] || 'bg-amber-400';
 
     const isUserOnline = (uid: string) => onlineUsers.includes(uid);
 
@@ -997,11 +1041,47 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
         <div className="flex h-full bg-white dark:bg-gray-900 shadow-xl rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
             {/* Sidebar */}
             <div className={`${isSidebarOpen ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-1/3 border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800`}>
-                <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-white dark:bg-gray-800/50">
-                    <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200">Messages</h2>
-                    <button onClick={() => setIsModalOpen(true)} className="text-pink-600 hover:text-pink-700 dark:text-pink-400 p-2 hover:bg-pink-50 dark:hover:bg-pink-900/20 rounded-full transition-colors">
-                        <PlusCircleIcon />
-                    </button>
+                <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 space-y-3">
+                    <div className="flex justify-between items-center">
+                        <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200">Messages</h2>
+                        <button onClick={() => setIsModalOpen(true)} className="text-pink-600 hover:text-pink-700 dark:text-pink-400 p-2 hover:bg-pink-50 dark:hover:bg-pink-900/20 rounded-full transition-colors">
+                            <PlusCircleIcon />
+                        </button>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-gray-500 dark:text-gray-400">
+                        <div className="flex items-center gap-2">
+                            <span className={`h-2.5 w-2.5 rounded-full ${connectionColor}`}></span>
+                            <span className="font-medium">{connectionLabel}</span>
+                        </div>
+                        <span className="text-xs text-gray-400">{rooms.length} rooms • {filteredRooms.length} visible</span>
+                    </div>
+                    <div className="space-y-2">
+                    <div className="relative">
+                        <input
+                            type="text"
+                            value={roomSearch}
+                            onChange={(e) => setRoomSearch(e.target.value)}
+                            placeholder="Search chats..."
+                            className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                        />
+                    </div>
+                        <div className="flex flex-wrap gap-2">
+                            {roomFilterOptions.map(option => (
+                                <Tooltip key={option.value} text={option.helper}>
+                                    <button
+                                        onClick={() => setRoomFilter(option.value)}
+                                        className={`px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors ${
+                                            roomFilter === option.value
+                                                ? 'bg-pink-600 text-white border-pink-600'
+                                                : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-pink-300 hover:text-pink-600'
+                                        }`}
+                                    >
+                                        {option.label}
+                                    </button>
+                                </Tooltip>
+                            ))}
+                        </div>
+                    </div>
                 </div>
                 <div className="flex-1 overflow-y-auto">
                     {isLoadingRooms ? (
@@ -1012,8 +1092,14 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
                             <p className="mt-2">No conversations yet.</p>
                             <button onClick={() => setIsModalOpen(true)} className="mt-4 text-pink-600 hover:underline">Start a chat</button>
                         </div>
+                    ) : filteredRooms.length === 0 ? (
+                        <div className="p-8 text-center text-gray-500 dark:text-gray-400 space-y-2">
+                            <ChatBubbleIcon />
+                            <p>No chats match the filter.</p>
+                            <p className="text-xs text-gray-400">Reset filters or search for another member.</p>
+                        </div>
                     ) : (
-                        rooms.map(room => {
+                        filteredRooms.map(room => {
                             const isActive = room.id === activeRoomId;
                             const roomName = getRoomName(room, allUsers, currentUser.uid);
                             const avatar = getRoomAvatar(room, allUsers, currentUser.uid);
@@ -1055,11 +1141,8 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
                                             )}
                                         </div>
                                         <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-1">
-                                            Open to chat
+                                            Active • updated {new Date(room.updatedAt).toLocaleDateString(undefined, {month: 'numeric', day: 'numeric'})}
                                         </p>
-                                    </div>
-                                    <div className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap ml-2 self-start mt-0.5">
-                                        {new Date(room.updatedAt).toLocaleDateString(undefined, {month: 'numeric', day: 'numeric'})}
                                     </div>
                                 </div>
                             );
