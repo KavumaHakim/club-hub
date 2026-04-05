@@ -386,6 +386,7 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
                 <label htmlFor="patron-activity-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Activity</label>
                 <select
                   id="patron-activity-select"
+                  name="patronActivityId"
                   value={patronActivityId}
                   onChange={(e) => setPatronActivityId(e.target.value)}
                   className="block w-full pl-3 pr-10 py-2.5 text-base border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-pink-500 focus:border-pink-500 sm:text-sm rounded-xl"
@@ -434,6 +435,8 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
                   </Tooltip>
                   <input
                     type="text"
+                    id="member-search"
+                    name="memberSearch"
                     value={memberSearch}
                     onChange={(e) => setMemberSearch(e.target.value)}
                     placeholder="Search members..."
@@ -464,6 +467,8 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
                         <div className="relative">
                           <input
                             type="checkbox"
+                            id={`present-${user.uid}`}
+                            name={`present-${user.uid}`}
                             checked={isPresent}
                             onChange={() => handleToggleChecklist(user.uid)}
                             className="peer sr-only"

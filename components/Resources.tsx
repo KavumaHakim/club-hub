@@ -39,6 +39,7 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
     const [isGeneratingDesc, setIsGeneratingDesc] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const [filePreviewText, setFilePreviewText] = useState<string | null>(null);
+    const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
 
     // Delete Modal State
     const [resourceToDelete, setResourceToDelete] = useState<Resource | null>(null);
@@ -113,15 +114,27 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
         } else {
             setSelectedFile(null);
             setFilePreviewText(null);
+            setPdfPreviewUrl(null);
         }
     }, [type]);
 
     useEffect(() => {
         if (!selectedFile) {
             setFilePreviewText(null);
+            setPdfPreviewUrl(null);
             return;
         }
-        if (type === 'PYTHON' || (type === 'DOCUMENT' && selectedFile.name.toLowerCase().endsWith('.txt'))) {
+
+        const lowerName = selectedFile.name.toLowerCase();
+        if (lowerName.endsWith('.pdf')) {
+            const url = URL.createObjectURL(selectedFile);
+            setPdfPreviewUrl(url);
+            setFilePreviewText(null);
+            return () => URL.revokeObjectURL(url);
+        }
+
+        setPdfPreviewUrl(null);
+        if (type === 'PYTHON' || (type === 'DOCUMENT' && lowerName.endsWith('.txt'))) {
             const reader = new FileReader();
             reader.onload = (e) => {
                 const content = String(e.target?.result || '');
@@ -542,6 +555,17 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
                                 {filePreviewText && (
                                     <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 text-xs text-gray-700 dark:text-gray-200 font-mono whitespace-pre-wrap max-h-40 overflow-y-auto custom-scrollbar">
                                         {filePreviewText}
+                                    </div>
+                                )}
+
+                                {pdfPreviewUrl && (
+                                    <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3">
+                                        <p className="text-[11px] text-gray-400 mb-2">PDF preview (first page)</p>
+                                        <iframe
+                                            src={`${pdfPreviewUrl}#page=1&zoom=80`}
+                                            className="w-full h-48 rounded-md border border-gray-200 dark:border-gray-700"
+                                            title="PDF preview"
+                                        />
                                     </div>
                                 )}
                             </div>
