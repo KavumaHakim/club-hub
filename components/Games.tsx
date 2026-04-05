@@ -1086,21 +1086,55 @@ const Games: React.FC = () => {
                     </div>
                 </div>
 
+                <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                    <span>Origin: <span className="font-semibold text-gray-700 dark:text-gray-200">{coordOriginBottom ? 'Bottom-left' : 'Top-left'}</span></span>
+                    <span>Grid: <span className="font-semibold text-gray-700 dark:text-gray-200">{coordinateSize} x {coordinateSize}</span></span>
+                    <span>Labels: <span className="font-semibold text-gray-700 dark:text-gray-200">{coordShowLabels ? 'On' : 'Off'}</span></span>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                    <label className="text-xs text-gray-500 dark:text-gray-400">Size</label>
+                    <select
+                        value={coordinateSize}
+                        onChange={(e) => setCoordinateSize(Number(e.target.value))}
+                        className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/60 px-2 py-1 text-xs text-gray-700 dark:text-gray-200"
+                    >
+                        {[6, 8, 10].map(size => (
+                            <option key={size} value={size}>{size}x{size}</option>
+                        ))}
+                    </select>
+                    <button
+                        onClick={() => setCoordShowLabels(prev => !prev)}
+                        className="px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                        {coordShowLabels ? 'Hide labels' : 'Show labels'}
+                    </button>
+                    <button
+                        onClick={() => setCoordOriginBottom(prev => !prev)}
+                        className="px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                        Switch origin
+                    </button>
+                </div>
+
                 <p className="text-sm text-gray-700 dark:text-gray-300">
                     Target: <span className="font-semibold">({coordTarget.x}, {coordTarget.y})</span>
                 </p>
 
-                <div className="grid grid-cols-6 gap-1 max-w-xs">
+                <div className="grid gap-1 max-w-xs" style={{ gridTemplateColumns: `repeat(${coordinateSize}, minmax(0, 1fr))` }}>
                     {Array.from({ length: coordinateSize }).map((_, y) => (
-                        Array.from({ length: coordinateSize }).map((__, x) => (
-                            <button
-                                key={`${x}-${y}`}
-                                onClick={() => handleCoordClick(x, y)}
-                                className="h-8 w-8 rounded-md border border-gray-200 dark:border-gray-700 text-[10px] text-gray-500 hover:bg-pink-50 dark:hover:bg-pink-900/20"
-                            >
-                                {x},{y}
-                            </button>
-                        ))
+                        Array.from({ length: coordinateSize }).map((__, x) => {
+                            const displayY = coordOriginBottom ? coordinateSize - 1 - y : y;
+                            return (
+                                <button
+                                    key={`${x}-${y}`}
+                                    onClick={() => handleCoordClick(x, y)}
+                                    className="h-8 w-8 rounded-md border border-gray-200 dark:border-gray-700 text-[10px] text-gray-500 hover:bg-pink-50 dark:hover:bg-pink-900/20"
+                                >
+                                    {coordShowLabels ? `${x},${displayY}` : ''}
+                                </button>
+                            );
+                        })
                     ))}
                 </div>
 
