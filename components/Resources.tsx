@@ -37,14 +37,53 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isGeneratingDesc, setIsGeneratingDesc] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
+    const [filePreviewText, setFilePreviewText] = useState<string | null>(null);
 
     // Delete Modal State
     const [resourceToDelete, setResourceToDelete] = useState<Resource | null>(null);
 
+    const getAcceptedTypes = (resourceType: ResourceType) => {
+        if (resourceType === 'PYTHON') return ['.py'];
+        if (resourceType === 'DOCUMENT') return ['.pdf', '.docx', '.txt'];
+        return [];
+    };
+
+    const isAcceptedFile = (file: File, resourceType: ResourceType) => {
+        const allowed = getAcceptedTypes(resourceType);
+        if (allowed.length === 0) return true;
+        return allowed.some(ext => file.name.toLowerCase().endsWith(ext));
+    };
+
+    const handleFileSelected = (file: File) => {
+        if (!isAcceptedFile(file, type)) {
+            setError(`Unsupported file type. Allowed: ${getAcceptedTypes(type).join(', ')}`);
+            return;
+        }
+        setSelectedFile(file);
+        setError(null);
+    };
+
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            setSelectedFile(file);
+            handleFileSelected(e.target.files[0]);
+        }
+    };
+
+    const handleDragOver = (e: React.DragEvent<HTMLLabelElement>) => {
+        e.preventDefault();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = () => {
+        setIsDragging(false);
+    };
+
+    const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
+        e.preventDefault();
+        setIsDragging(false);
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            handleFileSelected(e.dataTransfer.files[0]);
         }
     };
 
@@ -66,6 +105,33 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
             setIsGeneratingDesc(false);
         }
     };
+
+    useEffect(() => {
+        setError(null);
+        if (type === 'PYTHON' || type === 'DOCUMENT') {
+            setUrl('');
+        } else {
+            setSelectedFile(null);
+            setFilePreviewText(null);
+        }
+    }, [type]);
+
+    useEffect(() => {
+        if (!selectedFile) {
+            setFilePreviewText(null);
+            return;
+        }
+        if (type === 'PYTHON' || (type === 'DOCUMENT' && selectedFile.name.toLowerCase().endsWith('.txt'))) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const content = String(e.target?.result || '');
+                setFilePreviewText(content.slice(0, 800));
+            };
+            reader.readAsText(selectedFile);
+        } else {
+            setFilePreviewText(null);
+        }
+    }, [selectedFile, type]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -115,6 +181,7 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
             setType('LINK');
             setUrl('');
             setSelectedFile(null);
+            setFilePreviewText(null);
             
             await fetchResources();
             showToast("Resource added successfully!", "success");
@@ -172,6 +239,32 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
             return acc;
         }, {} as Record<string, Resource[]>);
     }, [filteredResources]);
+
+    const previewData = useMemo(() => {
+        const hasFile = selectedFile && (type === 'PYTHON' || type === 'DOCUMENT');
+        const hasUrl = url && type !== 'PYTHON' && type !== 'DOCUMENT';
+        if (!hasFile && !hasUrl) return null;
+
+        const fileSize = selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : null;
+        const displayUrl = url?.trim();
+        const domain = displayUrl ? (() => {
+            try {
+                return new URL(displayUrl).hostname;
+            } catch {
+                return displayUrl;
+            }
+        })() : null;
+
+        return {
+            hasFile,
+            hasUrl,
+            fileName: selectedFile?.name || null,
+            fileSize,
+            fileType: selectedFile?.type || null,
+            displayUrl,
+            domain
+        };
+    }, [selectedFile, url, type]);
 
     const renderContent = () => {
         if (isLoadingResources) {
@@ -274,14 +367,51 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
             </div>
 
             {isPatron && (
-                <div className="mb-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-                    <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">Upload New Resource</h3>
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="mb-8 p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+                        <div>
+                            <p className="text-xs uppercase tracking-[0.3em] text-pink-500 font-semibold">Upload Center</p>
+                            <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Share a New Resource</h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Add links, videos, Python scripts, or documents for the club.</p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {([
+                                { key: 'LINK', label: 'Link', desc: 'Articles, docs, tools' },
+                                { key: 'VIDEO', label: 'Video', desc: 'Tutorials & talks' },
+                                { key: 'PYTHON', label: 'Python', desc: '.py scripts' },
+                                { key: 'DOCUMENT', label: 'Document', desc: 'PDFs, docs, notes' }
+                            ] as const).map(option => (
+                                <button
+                                    key={option.key}
+                                    type="button"
+                                    onClick={() => setType(option.key)}
+                                    className={`px-4 py-2 rounded-full text-xs font-semibold transition-colors ${
+                                        type === option.key
+                                            ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/30'
+                                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                    }`}
+                                >
+                                    {option.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <form onSubmit={handleSubmit} className="space-y-5">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <input type="text" placeholder="Title" value={title} onChange={e => setTitle(e.target.value)} required className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500" />
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-gray-600 dark:text-gray-300">Title</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. Python Lists Crash Course"
+                                    value={title}
+                                    onChange={e => setTitle(e.target.value)}
+                                    required
+                                    className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500"
+                                />
+                            </div>
                             <div>
                                 <label htmlFor="category-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
-                                <select id="category-select" value={category} onChange={e => setCategory(e.target.value as ResourceCategory)} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500">
+                                <select id="category-select" value={category} onChange={e => setCategory(e.target.value as ResourceCategory)} className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500">
                                     <option value="Documentation">Documentation</option>
                                     <option value="Tutorial">Tutorial</option>
                                     <option value="Tool">Tool</option>
@@ -291,7 +421,15 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
                             </div>
                         </div>
                         <div className="relative">
-                            <textarea placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} required rows={3} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500" />
+                            <label className="text-xs font-semibold text-gray-600 dark:text-gray-300">Description</label>
+                            <textarea
+                                placeholder="Add a short, helpful summary for members..."
+                                value={description}
+                                onChange={e => setDescription(e.target.value)}
+                                required
+                                rows={3}
+                                className="mt-1 w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500"
+                            />
                             {type === 'DOCUMENT' && selectedFile && (
                                 <Tooltip text="Summarize the document into a short description.">
                                     <button
@@ -313,7 +451,7 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label htmlFor="type-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Resource Type</label>
-                                <select id="type-select" value={type} onChange={e => setType(e.target.value as ResourceType)} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500">
+                                <select id="type-select" value={type} onChange={e => setType(e.target.value as ResourceType)} className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500">
                                     <option value="LINK">Link</option>
                                     <option value="VIDEO">Video</option>
                                     <option value="PYTHON">Python File</option>
@@ -333,26 +471,90 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
                                             onChange={handleFileChange}
                                             className="hidden" 
                                         />
-                                        <label htmlFor="file-input" className="cursor-pointer flex items-center justify-between w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
+                                        <label
+                                            htmlFor="file-input"
+                                            onDragOver={handleDragOver}
+                                            onDragLeave={handleDragLeave}
+                                            onDrop={handleDrop}
+                                            className={`cursor-pointer flex items-center justify-between w-full px-3 py-2.5 border border-dashed rounded-xl transition-colors ${
+                                                isDragging
+                                                    ? 'border-pink-500 bg-pink-100/80 dark:bg-pink-900/40'
+                                                    : 'border-pink-300 dark:border-pink-500/50 bg-pink-50/50 dark:bg-pink-900/20 hover:bg-pink-50 dark:hover:bg-pink-900/30'
+                                            }`}
+                                        >
                                             <div className="flex items-center gap-2 truncate">
                                                 {selectedFile && (type === 'PYTHON' ? <CodeIcon className="h-5 w-5 text-pink-500 flex-shrink-0" /> : <DocumentTextIcon className="h-5 w-5 text-pink-500 flex-shrink-0" />)}
-                                                <span className="text-gray-500 dark:text-gray-400 truncate">
-                                                    {selectedFile ? selectedFile.name : 'Choose a file...'}
-                                                </span>
+                                                <div className="truncate">
+                                                    <span className="text-gray-600 dark:text-gray-300 truncate">
+                                                        {selectedFile ? selectedFile.name : 'Choose a file...'}
+                                                    </span>
+                                                    <span className="block text-[10px] text-gray-400">Drag & drop or click</span>
+                                                </div>
                                             </div>
                                             <UploadIcon className="h-5 w-5 text-gray-400" />
                                         </label>
                                     </div>
                                 ) : (
-                                    <input id="url-input" type="url" placeholder="https://example.com" value={url} onChange={e => setUrl(e.target.value)} required className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500" />
+                                    <input id="url-input" type="url" placeholder="https://example.com" value={url} onChange={e => setUrl(e.target.value)} required className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500" />
                                 )}
                             </div>
                         </div>
 
+                        {previewData && (
+                            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-4 space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-xs uppercase tracking-[0.2em] text-gray-400">Preview</p>
+                                        <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                                            {previewData.hasFile ? 'File ready to upload' : 'Link preview'}
+                                        </p>
+                                    </div>
+                                    {previewData.hasUrl && previewData.displayUrl && (
+                                        <a
+                                            href={previewData.displayUrl}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="text-xs text-pink-500 hover:text-pink-600"
+                                        >
+                                            Open link
+                                        </a>
+                                    )}
+                                </div>
+
+                                {previewData.hasUrl && previewData.displayUrl && (
+                                    <div className="space-y-1">
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">URL</p>
+                                        <p className="text-sm text-gray-800 dark:text-gray-200 break-all">{previewData.displayUrl}</p>
+                                        {previewData.domain && (
+                                            <p className="text-[11px] text-gray-400">Domain: {previewData.domain}</p>
+                                        )}
+                                    </div>
+                                )}
+
+                                {previewData.hasFile && (
+                                    <div className="space-y-1">
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">File</p>
+                                        <p className="text-sm text-gray-800 dark:text-gray-200">{previewData.fileName}</p>
+                                        <p className="text-[11px] text-gray-400">{previewData.fileSize}</p>
+                                    </div>
+                                )}
+
+                                {filePreviewText && (
+                                    <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 text-xs text-gray-700 dark:text-gray-200 font-mono whitespace-pre-wrap max-h-40 overflow-y-auto custom-scrollbar">
+                                        {filePreviewText}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         {error && <div className="p-3 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300 rounded-md text-sm">{error}</div>}
-                        <div className="text-right">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                <SparklesIcon className="h-4 w-4 text-pink-500" />
+                                <span>Pro tip: add a short summary to help members pick quickly.</span>
+                            </div>
                             <Tooltip text="Publish this resource to the club library.">
-                                <button type="submit" disabled={isSubmitting} className="inline-flex items-center space-x-2 px-5 py-2 font-semibold text-white bg-pink-600 rounded-lg shadow-md hover:bg-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                                <button type="submit" disabled={isSubmitting} className="inline-flex items-center justify-center space-x-2 px-5 py-2.5 font-semibold text-white bg-pink-600 rounded-xl shadow-md hover:bg-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                                     <PlusCircleIcon />
                                     <span>{isSubmitting ? 'Uploading...' : 'Add Resource'}</span>
                                 </button>
