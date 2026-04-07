@@ -136,6 +136,7 @@ const AdminTools: React.FC<AdminToolsProps> = ({ currentUser }) => {
         { key: 'showChat', label: 'Chat', description: 'Member messaging.' },
         { key: 'showPlayground', label: 'Playground', description: 'Code playground.' },
         { key: 'showGames', label: 'Games', description: 'Quick focus games lounge.' },
+        { key: 'showVoting', label: 'Voting Hub', description: 'Leadership positions, contesting, and global voting.' },
     ];
 
     return (

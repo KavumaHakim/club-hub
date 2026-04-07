@@ -88,3 +88,12 @@ USING (
 CREATE POLICY "Authenticated users can vote" 
 ON voting_votes FOR INSERT 
 WITH CHECK (auth.uid()::text = voter_uid);
+
+-- Migration for Feature Flags
+DO $$ 
+BEGIN 
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name='feature_flags' AND column_name='show_voting') THEN 
+        ALTER TABLE public.feature_flags ADD COLUMN show_voting BOOLEAN NOT NULL DEFAULT FALSE;
+    END IF;
+END $$;
