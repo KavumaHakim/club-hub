@@ -80,6 +80,15 @@ CREATE POLICY "Members can contest"
 ON voting_contestants FOR INSERT 
 WITH CHECK (auth.uid()::text = user_uid);
 
+CREATE POLICY "Patrons can moderate contestants" 
+ON voting_contestants FOR UPDATE 
+USING (
+    EXISTS (
+        SELECT 1 FROM public.users 
+        WHERE uid = auth.uid()::text AND role = 'PATRON'
+    )
+);
+
 -- Voting Votes
 ALTER TABLE voting_votes ENABLE ROW LEVEL SECURITY;
 
