@@ -2149,6 +2149,23 @@ export const getVotingContestants = async (positionId: string): Promise<VotingCo
     }));
 };
 
+export const getAllVotingContestants = async (): Promise<VotingContestant[]> => {
+    const { data, error } = await supabase
+        .from('voting_contestants')
+        .select('*, users ( name, avatar_url )');
+    if (error) throw error;
+    return (data || []).map((row: any) => ({
+        id: row.id.toString(),
+        positionId: row.position_id.toString(),
+        userId: row.user_uid,
+        manifesto: row.manifesto,
+        status: row.status as 'PENDING' | 'APPROVED' | 'REJECTED',
+        createdAt: row.created_at,
+        userName: row.users?.name || 'Unknown',
+        userAvatarUrl: row.users?.avatar_url
+    }));
+};
+
 export const contestPosition = async (positionId: string, userId: string, manifesto: string): Promise<VotingContestant> => {
     const { data, error } = await supabase
         .from('voting_contestants')
@@ -2157,7 +2174,7 @@ export const contestPosition = async (positionId: string, userId: string, manife
             user_uid: userId,
             manifesto: manifesto
         })
-        .select()
+        .select('*, users ( name, avatar_url )')
         .single();
     if (error) throw error;
     return {
@@ -2166,7 +2183,9 @@ export const contestPosition = async (positionId: string, userId: string, manife
         userId: data.user_uid,
         manifesto: data.manifesto,
         status: data.status as 'PENDING' | 'APPROVED' | 'REJECTED',
-        createdAt: data.created_at
+        createdAt: data.created_at,
+        userName: data.users?.name || 'Unknown',
+        userAvatarUrl: data.users?.avatar_url
     };
 };
 

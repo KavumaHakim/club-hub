@@ -30,7 +30,8 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
         isLoadingVoting,
         votingError,
         showToast,
-        allUsers
+        allUsers,
+        votingContestants
     } = useData();
 
     const [activeTab, setActiveTab] = useState<'active' | 'past' | 'create' | 'vetting' | 'analytics'>('active');
@@ -62,6 +63,14 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
     const activeElections = useMemo(() =>
         votingPositions.filter(p => p.status === 'OPEN' && new Date(p.dueDate) > new Date()),
         [votingPositions]);
+
+    const userContestantFor = useMemo(() => {
+        return new Set(votingContestants.filter(c => c.userId === currentUser.uid).map(c => c.positionId));
+    }, [votingContestants, currentUser.uid]);
+
+    const getContestantStatus = (posId: string) => {
+        return votingContestants.find(c => c.userId === currentUser.uid && c.positionId === posId)?.status;
+    };
 
     const isUpcoming = (pos: VotingPosition) => new Date(pos.startDate) > new Date();
     const isVotingOpen = (pos: VotingPosition) => {
@@ -305,11 +314,15 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                             <div className="grid grid-cols-2 gap-3 mt-auto">
                                 <button
                                     onClick={() => { setSelectedPosition(pos); setShowContestModal(true); }}
-                                    disabled={!isVotingOpen(pos)}
-                                    className="flex items-center justify-center gap-2 py-3 px-4 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={!isVotingOpen(pos) || userContestantFor.has(pos.id)}
+                                    className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed ${userContestantFor.has(pos.id) ? 'bg-amber-50 dark:bg-amber-900/10 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-800' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
                                 >
                                     <UserIcon className="w-4 h-4" />
-                                    Contest
+                                    {userContestantFor.has(pos.id) ? (
+                                        getContestantStatus(pos.id) === 'APPROVED' ? 'Approved Candidate' :
+                                            getContestantStatus(pos.id) === 'REJECTED' ? 'Application Rejected' :
+                                                'Applied (Pending)'
+                                    ) : 'Contest'}
                                 </button>
                                 <button
                                     onClick={() => handleOpenVoteModal(pos)}

@@ -95,6 +95,7 @@ interface IDataContext {
   createVotingPosition: (position: Omit<VotingPosition, 'id' | 'createdAt' | 'status'>) => Promise<void>;
   updateVotingPosition: (id: string, updates: Partial<VotingPosition>) => Promise<void>;
   fetchVotingContestants: (positionId: string) => Promise<VotingContestant[]>;
+  fetchAllVotingContestants: () => Promise<void>;
   contestPosition: (positionId: string, manifesto: string) => Promise<void>;
   fetchVotingVotes: (positionId: string) => Promise<VotingVote[]>;
   castVote: (positionId: string, contestantId: string) => Promise<void>;
@@ -497,9 +498,19 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
     }
   }, [showToast]);
 
+  const fetchAllVotingContestants = useCallback(async () => {
+    try {
+      const data = await api.getAllVotingContestants();
+      setVotingContestants(data);
+    } catch (e: any) {
+      console.error("Failed to fetch all voting contestants", e);
+    }
+  }, []);
+
   const contestPosition = useCallback(async (positionId: string, manifesto: string) => {
     try {
       const newContestant = await api.contestPosition(positionId, currentUser.uid, manifesto);
+      setVotingContestants(prev => [...prev, newContestant]);
       showToast('You have successfully entered the contest!', 'success');
       // Notify patrons about new contestant
       const patrons = allUsers.filter(u => u.role === 'PATRON').map(u => u.uid);
@@ -793,6 +804,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
         fetchTeams(),
         fetchTeamChallenges(),
         fetchVotingPositions(),
+        fetchAllVotingContestants(),
       ]).then(() => {
         fetchResources();
       });
@@ -870,6 +882,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> 
     createVotingPosition,
     updateVotingPosition,
     fetchVotingContestants,
+    fetchAllVotingContestants,
     contestPosition,
     fetchVotingVotes,
     castVote,
