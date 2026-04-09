@@ -16,205 +16,94 @@
 
 ## 📖 Overview
 
-**ICT Club Hub** is a next-generation web application designed to modernize high school ICT clubs. It serves as a central operating system for student members and patrons, blending club management with gamified learning and AI-powered assistance.
+**ICT Club Hub** is a next-generation "Operating System" designed specifically for high school ICT clubs. It centralizes club management, gamified learning, and AI-powered mentorship into a single, sleek platform.
 
-It features a **Kanban-style project board**, an **in-browser Python IDE**, **AI-generated learning roadmaps**, and **real-time chat**, all wrapped in a beautiful, dark-mode-enabled UI.
-
----
-
-## 🚨 Troubleshooting & Schema Fixes
-
-If you encounter errors like **"column rooms.participant_ids does not exist"**, **"Showcase table missing"**, or **"Uncaught TypeError: reading 'length'"**, run the following SQL commands in your Supabase SQL Editor immediately.
-
-### 1. Fix Missing Columns (Chat & Projects)
-```sql
--- Fix Rooms Table (Add missing participant_ids)
-ALTER TABLE rooms ADD COLUMN IF NOT EXISTS participant_ids TEXT[] DEFAULT '{}';
-CREATE INDEX IF NOT EXISTS idx_rooms_participant_ids ON rooms USING GIN(participant_ids);
-
--- Fix Project Assignments (Add grading columns)
-ALTER TABLE project_task_assignees
-ADD COLUMN IF NOT EXISTS submission_file_path TEXT,
-ADD COLUMN IF NOT EXISTS submitted_at TIMESTAMP WITH TIME ZONE,
-ADD COLUMN IF NOT EXISTS grade INTEGER;
-
--- Fix Challenges (Add missing difficulty column)
-ALTER TABLE challenges
-ADD COLUMN IF NOT EXISTS difficulty TEXT DEFAULT 'BEGINNER';
-
--- Add user bio/about field
-ALTER TABLE users
-ADD COLUMN IF NOT EXISTS bio TEXT;
-
--- Add Games feature flag
-ALTER TABLE feature_flags
-ADD COLUMN IF NOT EXISTS show_games BOOLEAN DEFAULT true;
-
--- Add Games leaderboard table
-CREATE TABLE IF NOT EXISTS game_leaderboard (
-  id BIGSERIAL PRIMARY KEY,
-  user_uid TEXT NOT NULL REFERENCES users(uid) ON DELETE CASCADE,
-  game_key TEXT NOT NULL,
-  best_value INTEGER NOT NULL,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (user_uid, game_key)
-);
-
-CREATE INDEX IF NOT EXISTS idx_game_leaderboard_game_key ON game_leaderboard(game_key);
-```
-
-### 2. Create Missing Showcase Table
-```sql
-CREATE TABLE IF NOT EXISTS showcase (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_uid TEXT NOT NULL REFERENCES users(uid),
-  title TEXT NOT NULL,
-  description TEXT,
-  code_content TEXT,
-  likes TEXT[] DEFAULT '{}', -- Array of User UIDs who liked it
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
-);
-```
-
-### 3. Create Missing Challenge Tables
-```sql
-CREATE TABLE IF NOT EXISTS challenges (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  title TEXT NOT NULL,
-  description TEXT,
-  deadline TIMESTAMP WITH TIME ZONE,
-  created_by TEXT REFERENCES users(uid),
-  status TEXT DEFAULT 'ACTIVE',
-  difficulty TEXT DEFAULT 'BEGINNER',
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
-);
-
-CREATE TABLE IF NOT EXISTS challenge_submissions (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  challenge_id UUID REFERENCES challenges(id) ON DELETE CASCADE,
-  user_uid TEXT REFERENCES users(uid),
-  content TEXT,
-  status TEXT DEFAULT 'PENDING',
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
-);
-```
-
-### 4. Remove Unused Resource Thumbnail Column
-The app now uses icons instead of storing thumbnails. You can safely remove the old column.
-```sql
-ALTER TABLE resources DROP COLUMN IF EXISTS thumbnail_url;
-```
-
+Built with **React, TypeScript, and Supabase**, the hub empowers students to learn programming through structured roadmaps, real-time collaboration, and hands-on coding challenges.
 
 ---
 
-## ✨ Key Features
+## ✨ Core Features
 
-### 🤖 AI-Powered Learning (Gemini Integration)
-The app leverages Google's Gemini models to act as a 24/7 mentor.
-*   **AI Tutor:** A floating chat assistant that answers coding questions and knows the club schedule.
-*   **Auto-Grader:** Submits project code to AI for instant feedback (1-5 stars) and code review.
-*   **Dynamic Roadmaps:** Generates personalized learning paths (Beginner -> Advanced) based on any topic.
-*   **Smart Quizzes:** Generates milestone quizzes on the fly to test knowledge.
+### 🤖 AI-Powered Mentorship (Gemini 2.0/2.5)
+The platform integrates advanced AI to provide 24/7 guidance:
+*   **AI Tutor:** A context-aware assistant that answers coding questions and provides club information.
+*   **Smart Roadmaps:** Generates personalized learning paths (Beginner to Advanced) for any tech topic.
+*   **Milestone Quizzes:** Dynamically generates quizzes to test knowledge after completing roadmap milestones.
+*   **AI Challenge Generator:** Patrons can describe concepts, and the AI crafts creative, scenario-based coding challenges tailored to different skill levels.
+*   **Instant Code Feedback:** AI analyzes challenge submissions to provide constructive reviews and 5-star ratings.
 
-### 💻 Code Playground
-A full-featured Python environment running directly in the browser using **Pyodide**.
-*   Write, run, and debug Python code instantly.
-*   **Cloud Save:** Save scripts to your profile.
-*   **Share:** Publish snippets to the club Showcase or send via Chat.
+### 💻 Advanced Python IDE (Code Playground)
+A robust coding environment running directly in the browser using **Pyodide**.
+*   **Zero Setup:** Run Python code instantly without installing anything.
+*   **AI Hints:** Get smart suggestions for your code. The AI can even **apply suggested edits** directly to your script with one click.
+*   **Cloud Persistence:** Save and manage your scripts in the cloud.
+*   **Showcase Integration:** Publish your best scripts to the community showcase.
 
-### 📅 Club Management
-*   **Activities:** Calendar and List views for events with RSVP tracking.
-*   **Attendance:** Digital logbook with visualization charts.
-*   **Projects:** Trello-like board for managing club projects, assigning tasks, and tracking file submissions.
+### 📅 Club Management & Collaboration
+*   **Kanban Projects:** Manage club projects with a Trello-style board, task assignments, and progress tracking.
+*   **Real-time Chat:** Communicate with club members in public rooms or private threads, with support for file and code sharing.
+*   **Digital Attendance:** Track and visualize club attendance with automated charts and logs.
+*   **Resources Hub:** Centralized storage for learning materials, documentation, and useful links.
 
-### 🏆 Gamification
-*   **Leaderboards:** Earn badges for completing challenges.
-*   **Showcase:** Share code and get likes from peers.
-*   **Ranks:** Progress from Member to Patron based on contributions.
+### 🏆 Gamification & Growth
+*   **Leaderboard:** Climb the ranks by earning badges through coding challenges and contributions.
+*   **Club Showcase:** A social feed for members to share projects, get likes, and inspire others.
+*   **Role-Based Access:** Distinct features for **Members** (Learners) and **Patrons** (Admins/Teachers).
 
 ---
 
-## 🛠️ Installation & Setup
+## 🛠️ Getting Started
 
 ### 1. Prerequisites
-*   Node.js (v16 or higher)
-*   npm or yarn
-*   A Supabase Project
-*   A Google Cloud Project (for Gemini API)
+*   Node.js (v18 or higher recommended)
+*   A Supabase project for the backend.
+*   A Google Gemini API Key for AI features.
 
-### 2. Clone the Repository
+### 2. Installation
 ```bash
+# Clone the repository
 git clone https://github.com/your-username/ict-club-hub.git
-cd ict-club-hub
-```
 
-### 3. Install Dependencies
-```bash
+# Install dependencies
 npm install
 ```
 
-### 4. Environment Variables
-Create a `.env` file in the root directory. You **must** set the Gemini API Key. The Supabase credentials are currently hardcoded in `src/services/supabaseClient.ts` for demo purposes, but should ideally be here too.
-
+### 3. Configuration
+Create a `.env` file in the root directory:
 ```env
-# Required for AI Features
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 VITE_API_KEY=your_google_gemini_api_key
 ```
 
-### 5. Run the App
+### 4. Database Setup
+The complete database schema including RLS policies can be found in `db_schema.sql`. Run these commands in your Supabase SQL Editor to set up the required tables and storage buckets.
+
+### 5. Run Development Server
 ```bash
 npm run dev
 ```
 
 ---
 
-## 🗄️ Full Database Schema
+## 🏗️ Tech Stack
+*   **Frontend:** React 18, Vite, Tailwind CSS, Lucide Icons, Headless UI.
+*   **Backend:** Supabase (Auth, Postgres, Real-time, Storage).
+*   **AI:** Google Gemini API (Flash/Pro).
+*   **Runtime:** Pyodide (for in-browser Python execution).
+*   **Deployment:** Vercel / Netlify.
 
-Run these if setting up from scratch.
+---
 
-### 1. Essential Tables
-```sql
--- 1. Roadmaps Table
-CREATE TABLE IF NOT EXISTS roadmaps (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  skill_level TEXT NOT NULL,
-  topic TEXT NOT NULL,
-  content JSONB NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
-  UNIQUE(skill_level)
-);
+## 🤝 Help & Support
 
--- 2. User Progress Table
-CREATE TABLE IF NOT EXISTS user_roadmap_progress (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id TEXT NOT NULL REFERENCES users(uid), -- Links to existing users table
-  roadmap_id UUID NOT NULL REFERENCES roadmaps(id) ON DELETE CASCADE,
-  completed_milestone_indices INTEGER[] DEFAULT '{}',
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
-  UNIQUE(user_id, roadmap_id)
-);
-```
+If you encounter issues during setup (e.g., missing database columns), please refer to the `db_schema.sql` file for the most up-to-date table definitions. 
 
-### 2. Storage Buckets & Policies
-Enables file uploads for Resources, Chat, and Assignments.
-```sql
--- Create Buckets
-INSERT INTO storage.buckets (id, name, public) VALUES ('resource_uploads', 'resource_uploads', true) ON CONFLICT (id) DO NOTHING;
-INSERT INTO storage.buckets (id, name, public) VALUES ('resource_files', 'resource_files', true) ON CONFLICT (id) DO NOTHING;
-INSERT INTO storage.buckets (id, name, public) VALUES ('chat_files', 'chat_files', true) ON CONFLICT (id) DO NOTHING;
-INSERT INTO storage.buckets (id, name, public) VALUES ('user_scripts', 'user_scripts', true) ON CONFLICT (id) DO NOTHING;
-INSERT INTO storage.buckets (id, name, public) VALUES ('feed_images', 'feed_images', true) ON CONFLICT (id) DO NOTHING;
-INSERT INTO storage.buckets (id, name, public) VALUES ('chat_uploads', 'chat_uploads', true) ON CONFLICT (id) DO NOTHING;
-
--- Policies (Simplified for Demo)
-CREATE POLICY "Allow Authenticated Uploads" ON storage.objects FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "Allow Public Select" ON storage.objects FOR SELECT TO public USING (true);
-CREATE POLICY "Allow Owners Delete" ON storage.objects FOR DELETE TO authenticated USING (auth.uid() = owner);
-```
+For feature requests or bug reports, please contact the **ICT Club Naggalama Team**.
 
 ---
 
 <div align="center">
   <p>Made with ❤️ by the ICT Club Naggalama Team</p>
+  <p>© 2026 ICT Club Hub</p>
 </div>
