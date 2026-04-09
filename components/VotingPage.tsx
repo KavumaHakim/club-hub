@@ -185,13 +185,7 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
     const handleCastVote = async (contestantId: string) => {
         if (!selectedPosition) return;
         if (!isVotingOpen(selectedPosition)) {
-            setStatusModalConfig({
-                title: 'Voting Not Yet Open',
-                message: 'Voting has not opened for this position yet. You can review all manifestos now and cast your vote once the window opens.',
-                type: 'upcoming',
-                date: selectedPosition.startDate
-            });
-            setShowStatusModal(true);
+            showToast(`Voting opens on ${formatDateTime(selectedPosition.startDate)}.`, 'warning');
             return;
         }
         setIsSubmitting(true);
@@ -845,11 +839,11 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                         </div>
                                     </div>
                                     <button
-                                        disabled={isSubmitting || hasUserVoted}
+                                        disabled={isSubmitting || hasUserVoted || !isVotingOpen(selectedPosition)}
                                         onClick={() => handleCastVote(contestant.id)}
                                         className="w-full py-4 bg-white dark:bg-gray-700 border-2 border-pink-100 dark:border-pink-900/30 text-pink-600 dark:text-pink-400 rounded-2xl font-bold hover:bg-pink-600 hover:text-white dark:hover:bg-pink-600 dark:hover:text-white transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                                     >
-                                        {hasUserVoted ? 'Vote Already Cast' : `Vote for ${contestant.userName}`}
+                                        {hasUserVoted ? 'Vote Already Cast' : !isVotingOpen(selectedPosition) ? `Vote opens ${new Date(selectedPosition.startDate).toLocaleDateString()}` : `Vote for ${contestant.userName}`}
                                     </button>
                                 </div>
                             ))}
