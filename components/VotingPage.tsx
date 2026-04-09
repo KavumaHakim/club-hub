@@ -211,28 +211,43 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
     };
 
     const handleActionClick = (pos: VotingPosition, action: 'contest' | 'vote') => {
-        if (isVotingOpen(pos)) {
-            setSelectedPosition(pos);
-            if (action === 'contest') {
-                setShowContestModal(true);
-            } else {
-                handleOpenVoteModal(pos);
+        const now = new Date();
+        const hasClosed = now > new Date(pos.dueDate);
+
+        setSelectedPosition(pos);
+
+        if (action === 'contest') {
+            if (hasClosed) {
+                setStatusModalConfig({
+                    title: 'Contest Period Closed',
+                    message: 'Contest entries for this position are now closed. You can view the final results in the Results tab.',
+                    type: 'closed',
+                    date: pos.dueDate
+                });
+                setShowStatusModal(true);
+                return;
             }
+
+            setShowContestModal(true);
             return;
         }
 
-        setSelectedPosition(pos);
+        if (isVotingOpen(pos)) {
+            handleOpenVoteModal(pos);
+            return;
+        }
+
         if (isUpcoming(pos)) {
             setStatusModalConfig({
                 title: 'Voting Not Yet Open',
-                message: `The ${action === 'contest' ? 'contest entry' : 'voting'} for this position hasn't started yet. Please check back once the window opens.`,
+                message: 'Voting for this position has not started yet. You can still review candidates and manifestos before the opening time.',
                 type: 'upcoming',
                 date: pos.startDate
             });
         } else {
             setStatusModalConfig({
                 title: 'Voting Period Closed',
-                message: `The ${action === 'contest' ? 'contest entry' : 'voting'} period for this position has ended. You can view the final results in the Results tab.`,
+                message: 'The voting period for this position has ended. You can view the final results in the Results tab.',
                 type: 'closed',
                 date: pos.dueDate
             });
