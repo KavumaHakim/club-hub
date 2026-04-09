@@ -97,6 +97,11 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
         return now >= new Date(pos.startDate) && now <= new Date(pos.dueDate);
     };
 
+    const formatDateTime = (date: string) => new Date(date).toLocaleString([], {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+    });
+
     const pastElections = useMemo(() =>
         votingPositions.filter(p => p.status === 'CLOSED' || new Date(p.dueDate) <= new Date()),
         [votingPositions]);
@@ -179,6 +184,10 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
 
     const handleCastVote = async (contestantId: string) => {
         if (!selectedPosition) return;
+        if (!isVotingOpen(selectedPosition)) {
+            showToast(`Voting opens on ${formatDateTime(selectedPosition.startDate)}.`, 'warning');
+            return;
+        }
         setIsSubmitting(true);
         try {
             await castVote(selectedPosition.id, contestantId);
@@ -783,6 +792,13 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                         </div>
 
                         <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+                            {!isVotingOpen(selectedPosition) && (
+                                <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl">
+                                    <p className="text-sm font-bold text-amber-700 dark:text-amber-300">Voting opens on {formatDateTime(selectedPosition.startDate)}</p>
+                                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">You can review every candidate manifesto now, and cast your vote once voting officially opens.</p>
+                                </div>
+                            )}
+
                             {contestants.length === 0 ? (
                                 <div className="text-center py-10">
                                     <UserIcon className="w-12 h-12 text-gray-200 dark:text-gray-700 mx-auto mb-4" />
@@ -798,18 +814,21 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                         />
                                         <div>
                                             <h4 className="font-extrabold text-gray-900 dark:text-white text-lg">{contestant.userName}</h4>
-                                            <p className="text-xs text-pink-600 dark:text-pink-400 font-bold uppercase tracking-widest">Candidate</p>
+                                            <p className="text-xs text-pink-600 dark:text-pink-400 font-bold uppercase tracking-widest">Candidate for {selectedPosition.title}</p>
                                         </div>
                                     </div>
-                                    <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-2xl mb-4 text-sm text-gray-700 dark:text-gray-300 italic leading-relaxed">
-                                        "{contestant.manifesto}"
+                                    <div className="mb-4">
+                                        <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">Manifesto</p>
+                                        <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-2xl text-sm text-gray-700 dark:text-gray-300 italic leading-relaxed">
+                                            {contestant.manifesto?.trim() ? `"${contestant.manifesto}"` : 'No manifesto provided by this candidate yet.'}
+                                        </div>
                                     </div>
                                     <button
-                                        disabled={isSubmitting || hasUserVoted}
+                                        disabled={isSubmitting || hasUserVoted || !isVotingOpen(selectedPosition)}
                                         onClick={() => handleCastVote(contestant.id)}
                                         className="w-full py-4 bg-white dark:bg-gray-700 border-2 border-pink-100 dark:border-pink-900/30 text-pink-600 dark:text-pink-400 rounded-2xl font-bold hover:bg-pink-600 hover:text-white dark:hover:bg-pink-600 dark:hover:text-white transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                                     >
-                                        {hasUserVoted ? 'Vote Already Cast' : 'Cast My Vote'}
+                                        {hasUserVoted ? 'Vote Already Cast' : !isVotingOpen(selectedPosition) ? `Vote opens ${new Date(selectedPosition.startDate).toLocaleDateString()}` : `Vote for ${contestant.userName}`}
                                     </button>
                                 </div>
                             ))}
