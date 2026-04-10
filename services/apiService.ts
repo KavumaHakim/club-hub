@@ -1551,7 +1551,7 @@ export const deleteUserScript = async (userId: string, fileName: string) => {
 
 export const getRoadmaps = async (): Promise<Roadmap[]> => {
     try {
-        const { data, error } = await supabase.from('roadmaps').select('*');
+        const { data, error } = await supabase.from('roadmaps').select('*').order('id', { ascending: true });
         if (error) return [];
         return (data || []).map((r: any) => ({
             id: String(r.id),
