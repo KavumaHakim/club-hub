@@ -1,5 +1,5 @@
-const CACHE_NAME = 'ict-club-hub-v13';
-const DATA_CACHE_NAME = 'ict-club-data-v13';
+const CACHE_NAME = 'ict-club-hub-v14';
+const DATA_CACHE_NAME = 'ict-club-data-v14';
 
 const PRECACHE_ASSETS = [
   '/',
@@ -41,6 +41,10 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const req = event.request;
   const url = new URL(req.url);
+
+  // Ignore unsupported request schemes such as chrome-extension:, moz-extension:, devtools:, etc.
+  // The Cache API only supports http/https requests.
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
 
   if (req.method !== 'GET') {
     event.respondWith(fetch(req).catch(() => offlineJsonResponse()));
@@ -85,11 +89,28 @@ function isSupabaseAuthRequest(url, req) {
   );
 }
 
+function canCache(req, resp) {
+  const url = new URL(req.url);
+  return req.method === 'GET' &&
+    (url.protocol === 'http:' || url.protocol === 'https:') &&
+    resp &&
+    resp.ok &&
+    resp.type !== 'opaque';
+}
+
+async function safeCachePut(cache, req, resp) {
+  try {
+    if (canCache(req, resp)) await cache.put(req, resp.clone());
+  } catch (error) {
+    console.warn('Skipping cache put:', error);
+  }
+}
+
 async function networkFirstNavigation(req) {
   const cache = await caches.open(CACHE_NAME);
   try {
     const resp = await fetch(req);
-    if (resp.ok) cache.put('/index.html', resp.clone());
+    if (resp.ok) await cache.put('/index.html', resp.clone());
     return resp;
   } catch {
     return await cache.match('/index.html') || new Response('ClubHub is offline', {
@@ -103,7 +124,7 @@ async function networkFirst(req, cacheName) {
   const cache = await caches.open(cacheName);
   try {
     const resp = await fetch(req);
-    if (resp.ok) cache.put(req, resp.clone());
+    await safeCachePut(cache, req, resp);
     return resp;
   } catch {
     return await cache.match(req) || offlineJsonResponse();
@@ -116,7 +137,7 @@ async function cacheFirst(req, cacheName) {
   if (cached) return cached;
   try {
     const resp = await fetch(req);
-    if (resp.ok) cache.put(req, resp.clone());
+    await safeCachePut(cache, req, resp);
     return resp;
   } catch {
     return offlineAssetResponse(req);
@@ -127,8 +148,8 @@ async function staleWhileRevalidate(req, cacheName) {
   const cache = await caches.open(cacheName);
   const cached = await cache.match(req);
   const networkPromise = fetch(req)
-    .then(resp => {
-      if (resp.ok) cache.put(req, resp.clone());
+    .then(async resp => {
+      await safeCachePut(cache, req, resp);
       return resp;
     })
     .catch(() => null);
@@ -137,9 +158,7 @@ async function staleWhileRevalidate(req, cacheName) {
 
 function offlineAssetResponse(req) {
   const accept = req.headers.get('accept') || '';
-  if (accept.includes('text/html')) {
-    return caches.match('/index.html');
-  }
+  if (accept.includes('text/html')) return caches.match('/index.html');
   if (accept.includes('application/json')) return offlineJsonResponse();
   return new Response('', { status: 503, statusText: 'Offline' });
 }
