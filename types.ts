@@ -98,6 +98,7 @@ export interface User {
   email: string;
   name: string;
   username: string;
+  studentClass?: string;
   role: 'MEMBER' | 'PATRON';
   status: 'APPROVED' | 'PENDING';
   avatarUrl?: string;

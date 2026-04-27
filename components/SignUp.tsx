@@ -10,6 +10,7 @@ import { MailIcon } from './icons/MailIcon';
 import { PhoneIcon } from './icons/PhoneIcon';
 import { LockClosedIcon } from './icons/LockClosedIcon';
 import { AcademicCapIcon } from './icons/AcademicCapIcon';
+import { IdentificationIcon } from './icons/IdentificationIcon';
 import PendingApprovalModal from './PendingApprovalModal';
 
 interface SignUpProps {
@@ -21,6 +22,7 @@ const SignUp: React.FC<SignUpProps> = ({ onSignUp, onNavigateToLogin }) => {
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
+  const [studentClass, setStudentClass] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [skillLevel, setSkillLevel] = useState<'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'>('BEGINNER');
   const [password, setPassword] = useState('');
@@ -36,20 +38,21 @@ const SignUp: React.FC<SignUpProps> = ({ onSignUp, onNavigateToLogin }) => {
     setError(null);
     setMessage(null);
 
-    if (!name || !username || !email || !password || !phoneNumber) {
+    if (!name || !username || !email || !password || !phoneNumber || !studentClass) {
         setError("All fields are required.");
         return;
     }
     
     setIsLoading(true);
     try {
-        await onSignUp({ name, username, email, password, phoneNumber, skillLevel });
+        await onSignUp({ name, username, email, password, studentClass, phoneNumber, skillLevel });
         setMessage('Sign up successful! Your account is pending approval.');
         setIsSignedUp(true);
         setShowPendingModal(true);
         setName('');
         setUsername('');
         setEmail('');
+        setStudentClass('');
         setPassword('');
         setPhoneNumber('');
         setSkillLevel('BEGINNER');
@@ -140,6 +143,25 @@ const SignUp: React.FC<SignUpProps> = ({ onSignUp, onNavigateToLogin }) => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1">
+                <label htmlFor="student-class" className="block text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Class</label>
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                        <IdentificationIcon />
+                    </div>
+                    <input
+                    id="student-class"
+                    type="text"
+                    required
+                    value={studentClass}
+                    onChange={(e) => setStudentClass(e.target.value)}
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
+                    placeholder="Senior 3"
+                    disabled={isLoading || isSignedUp}
+                    />
+                </div>
+            </div>
+
             <div className="space-y-1">
                 <label htmlFor="phone-number" className="block text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Phone</label>
                 <div className="relative">

@@ -10,6 +10,7 @@ import { EyeOffIcon } from './icons/EyeOffIcon';
 import { CameraIcon } from './icons/CameraIcon';
 import { BadgeCheckIcon } from './icons/BadgeCheckIcon';
 import { AcademicCapIcon } from './icons/AcademicCapIcon';
+import { IdentificationIcon } from './icons/IdentificationIcon';
 import { predefinedAvatars } from '../constants';
 import { useData } from '../DataContext';
 import { CursorVariant } from './CustomCursor';
@@ -397,6 +398,9 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
     const [isLoading, setIsLoading] = useState(true);
     const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
     const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+    const [studentClass, setStudentClass] = useState(currentUser.studentClass || '');
+    const [isSavingClass, setIsSavingClass] = useState(false);
+    const [classStatus, setClassStatus] = useState<string | null>(null);
     const [bio, setBio] = useState(currentUser.bio || '');
     const [isSavingBio, setIsSavingBio] = useState(false);
     const [bioStatus, setBioStatus] = useState<string | null>(null);
@@ -435,6 +439,10 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
         };
         fetchAttendance();
     }, [currentUser.uid]);
+
+    useEffect(() => {
+        setStudentClass(currentUser.studentClass || '');
+    }, [currentUser.studentClass]);
 
     useEffect(() => {
         setBio(currentUser.bio || '');
@@ -510,6 +518,26 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
         }
     };
 
+    const handleSaveClass = async () => {
+        if (isSavingClass) return;
+        setIsSavingClass(true);
+        setClassStatus(null);
+        try {
+            const cleaned = studentClass.trim();
+            await api.updateUser(currentUser.uid, { studentClass: cleaned });
+            const updatedUser = { ...currentUser, studentClass: cleaned };
+            onUpdateUserProfile(updatedUser);
+            await fetchUsers();
+            setClassStatus('Saved!');
+        } catch (error: any) {
+            console.error("Failed to update class:", error);
+            setClassStatus(error?.message || 'Failed to save class.');
+        } finally {
+            setIsSavingClass(false);
+            setTimeout(() => setClassStatus(null), 2500);
+        }
+    };
+
     return (
         <div className="max-w-4xl mx-auto">
             <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-6">My Profile</h2>
@@ -580,11 +608,47 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
                                         <span className={`inline-block px-3 py-1 text-sm font-semibold rounded-full ${currentUser.role === 'PATRON' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300'}`}>
                                             {currentUser.role}
                                         </span>
+                                        {currentUser.studentClass && (
+                                            <span className="inline-flex items-center gap-1 px-3 py-1 text-sm font-semibold rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300">
+                                                <IdentificationIcon className="w-4 h-4" /> {currentUser.studentClass}
+                                            </span>
+                                        )}
                                         {currentUser.skillLevel && (
                                             <span className="inline-flex items-center gap-1 px-3 py-1 text-sm font-semibold rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300">
                                                 <AcademicCapIcon className="w-4 h-4" /> {currentUser.skillLevel}
                                             </span>
                                         )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+                                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Class</h3>
+                                <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+                                    <div className="flex-1">
+                                        <label htmlFor="profile-class" className="block text-xs text-gray-500 dark:text-gray-400 mb-2">Academic class or stream</label>
+                                        <input
+                                            id="profile-class"
+                                            value={studentClass}
+                                            onChange={(e) => setStudentClass(e.target.value)}
+                                            maxLength={80}
+                                            className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/60 p-3 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                                            placeholder="Senior 3"
+                                        />
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        {classStatus && (
+                                            <span className={`text-xs ${classStatus === 'Saved!' ? 'text-green-600' : 'text-red-500'}`}>
+                                                {classStatus}
+                                            </span>
+                                        )}
+                                        <button
+                                            onClick={handleSaveClass}
+                                            disabled={isSavingClass}
+                                            className="px-4 py-2 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {isSavingClass ? 'Saving...' : 'Save Class'}
+                                        </button>
                                     </div>
                                 </div>
                             </div>

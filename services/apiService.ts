@@ -137,6 +137,7 @@ export const signUp = async (userData: Omit<User, 'uid' | 'role' | 'status' | 'a
             data: {
                 name: userData.name,
                 username: userData.username,
+                studentClass: userData.studentClass,
                 phoneNumber: userData.phoneNumber,
                 skillLevel: userData.skillLevel,
                 role: 'MEMBER',
@@ -152,6 +153,7 @@ export const signUp = async (userData: Omit<User, 'uid' | 'role' | 'status' | 'a
             email: userData.email,
             name: userData.name,
             username: userData.username,
+            class_name: userData.studentClass,
             phone_number: userData.phoneNumber,
             skill_level: userData.skillLevel,
             role: 'MEMBER',
@@ -172,6 +174,7 @@ export const signUpAsPatron = async (userData: Omit<User, 'uid' | 'role' | 'stat
             data: {
                 name: userData.name,
                 username: userData.username,
+                studentClass: userData.studentClass,
                 phoneNumber: userData.phoneNumber,
                 role: 'PATRON',
                 status: 'PENDING'
@@ -186,6 +189,7 @@ export const signUpAsPatron = async (userData: Omit<User, 'uid' | 'role' | 'stat
             email: userData.email,
             name: userData.name,
             username: userData.username,
+            class_name: userData.studentClass,
             phone_number: userData.phoneNumber,
             role: 'PATRON',
             status: 'PENDING'
@@ -206,6 +210,7 @@ export const getUserProfile = async (userId: string): Promise<User | null> => {
         email: data.email,
         name: data.name,
         username: data.username,
+        studentClass: data.class_name,
         role: data.role,
         status: data.status,
         avatarUrl: data.avatar_url,
@@ -225,6 +230,7 @@ export const getUsers = async (): Promise<User[]> => {
         email: u.email,
         name: u.name,
         username: u.username,
+        studentClass: u.class_name,
         role: u.role,
         status: u.status,
         avatarUrl: u.avatar_url,
@@ -240,6 +246,7 @@ export const updateUser = async (uid: string, data: Partial<User>) => {
     const updates: any = {};
     if (data.name) updates.name = data.name;
     if (data.username) updates.username = data.username;
+    if (data.studentClass !== undefined) updates.class_name = data.studentClass;
     if (data.role) updates.role = data.role;
     if (data.status) updates.status = data.status;
     if (data.avatarUrl) updates.avatar_url = data.avatarUrl;

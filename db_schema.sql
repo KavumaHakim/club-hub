@@ -257,6 +257,9 @@ create policy "Leaderboard update own"
 alter table public.users
   add column if not exists bio text;
 
+alter table public.users
+  add column if not exists class_name text;
+
 -- Team challenge submissions policies
 create policy "Team submissions visible to authenticated users"
   on public.team_challenge_submissions for select
