@@ -10,9 +10,10 @@ interface LoginProps {
   onLogin: (email: string, password?: string) => Promise<void>;
   onNavigateToSignUp: () => void;
   onNavigateToPatronLogin: () => void;
+  onNavigateToFreeRunner: () => void;
 }
 
-const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToSignUp, onNavigateToPatronLogin }) => {
+const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToSignUp, onNavigateToPatronLogin, onNavigateToFreeRunner }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -147,6 +148,16 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToSignUp, onNavigateTo
                         Sign up for free
                     </button>
                 </p>
+            </div>
+
+            <div className="text-center">
+                <button 
+                    onClick={onNavigateToFreeRunner}
+                    className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all flex items-center justify-center gap-2 mx-auto"
+                >
+                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    Code Runner
+                </button>
             </div>
             
             <div className="text-center">

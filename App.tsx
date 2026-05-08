@@ -8,6 +8,7 @@ import SignUp from './components/SignUp';
 import Welcome from './components/Welcome';
 import PatronLogin from './components/PatronLogin';
 import PatronSignUp from './components/PatronSignUp';
+import FreeCodeRunner from './components/FreeCodeRunner';
 import PendingApprovalModal from './components/PendingApprovalModal';
 import FeatureTourModal from './components/FeatureTourModal';
 import CustomCursor from './components/CustomCursor';
@@ -22,7 +23,7 @@ import ToastContainer from './components/Toast';
 import OfflineIndicator from './components/OfflineIndicator';
 import AlertModal from './components/AlertModal';
 
-type View = 'welcome' | 'login' | 'signup' | 'dashboard' | 'patronLogin' | 'patronSignUp';
+type View = 'welcome' | 'login' | 'signup' | 'dashboard' | 'patronLogin' | 'patronSignUp' | 'freeRunner';
 type Theme = 'light' | 'dark';
 const CACHED_USER_KEY = 'cached_user_profile';
 
@@ -447,11 +448,21 @@ const App: React.FC = () => {
         </DataProvider>
       );
     }
+    if (view === 'freeRunner') {
+      return <FreeCodeRunner theme={theme} onExit={() => setView('welcome')} />;
+    }
     if (view === 'signup') {
       return <SignUp onSignUp={handleSignUp} onNavigateToLogin={() => setView('login')} />;
     }
     if (view === 'login') {
-      return <Login onLogin={handleLogin} onNavigateToSignUp={() => setView('signup')} onNavigateToPatronLogin={() => setView('patronLogin')} />;
+      return (
+        <Login 
+          onLogin={handleLogin} 
+          onNavigateToSignUp={() => setView('signup')} 
+          onNavigateToPatronLogin={() => setView('patronLogin')} 
+          onNavigateToFreeRunner={() => setView('freeRunner')}
+        />
+      );
     }
     if (view === 'patronLogin') {
       return <PatronLogin onLogin={handleLogin} onNavigateToLogin={() => setView('login')} onNavigateToSignUp={() => setView('patronSignUp')} />;
@@ -464,6 +475,7 @@ const App: React.FC = () => {
         onNavigateToLogin={() => setView('login')}
         onNavigateToSignUp={() => setView('signup')}
         onNavigateToPatronLogin={() => setView('patronLogin')}
+        onNavigateToFreeRunner={() => setView('freeRunner')}
       />
     );
   };

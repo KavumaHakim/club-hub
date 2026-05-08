@@ -9,6 +9,7 @@ interface WelcomeProps {
   onNavigateToLogin: () => void;
   onNavigateToSignUp: () => void;
   onNavigateToPatronLogin: () => void;
+  onNavigateToFreeRunner: () => void;
 }
 
 const AnimatedFeatureCard: React.FC<{ children: React.ReactNode, delay?: number }> = ({ children, delay = 0 }) => {
@@ -60,7 +61,7 @@ const HackerText: React.FC<{ text: string, className?: string }> = ({ text, clas
   );
 };
 
-const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToSignUp, onNavigateToPatronLogin }) => {
+const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToSignUp, onNavigateToPatronLogin, onNavigateToFreeRunner }) => {
   
   return (
     <div className="bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen flex flex-col font-sans selection:bg-pink-500 selection:text-white overflow-x-hidden">
@@ -118,6 +119,14 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToSignUp
                  <span className="relative flex items-center justify-center gap-2 z-10">
                     Sign Up <span className="group-hover:translate-x-1 transition-transform">🚀</span>
                 </span>
+              </button>
+
+              <button
+                onClick={onNavigateToFreeRunner}
+                className="w-full sm:w-auto px-8 py-4 text-lg font-bold text-gray-700 bg-white/40 backdrop-blur-sm border border-gray-200 dark:text-white dark:bg-gray-800/40 dark:border-gray-700 rounded-xl shadow-lg hover:scale-105 transition-all hover:shadow-xl flex items-center justify-center gap-2"
+              >
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                Code Runner
               </button>
           </div>
 
@@ -208,5 +217,4 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToSignUp
   );
 };
 
-// FIX: Add default export to allow the component to be imported in App.tsx.
 export default Welcome;
