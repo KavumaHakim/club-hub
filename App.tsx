@@ -106,6 +106,11 @@ const App: React.FC = () => {
   useEffect(() => {
     const root = window.document.documentElement;
     root.style.setProperty('--sidebar-width', isSidebarCollapsed ? '5.5rem' : '18rem');
+    if (isSidebarCollapsed) {
+      root.removeAttribute('data-sidebar-expanded');
+    } else {
+      root.setAttribute('data-sidebar-expanded', 'true');
+    }
   }, [isSidebarCollapsed]);
 
   // Listen for Font Changes

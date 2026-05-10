@@ -396,7 +396,7 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
         <div className="relative mt-0 feed-layout">
             {/* Left Panel: Recent Activity */}
             <aside
-                className="hidden lg:block fixed w-64 space-y-4"
+                className="feed-side-panel fixed w-64 space-y-4"
                 style={{ top: panelTop, left: 'var(--feed-panel-left)' }}
             >
                 <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-4">
@@ -443,7 +443,7 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
 
             {/* Right Panel: Online Users */}
             <aside
-                className="hidden lg:block fixed w-64 space-y-4"
+                className="feed-side-panel fixed w-64 space-y-4"
                 style={{ top: panelTop, right: 'var(--feed-panel-right)' }}
             >
                 <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-4">
