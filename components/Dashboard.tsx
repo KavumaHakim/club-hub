@@ -106,10 +106,6 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile,
     }, []);
 
     const featureIntroMap: Partial<Record<Tab, { title: string; body: string }>> = useMemo(() => ({
-        feed: {
-            title: 'Feed & Announcements',
-            body: `Your central news hub.\n\n- Filter posts by category to focus on what matters.\n- React and comment to join discussions.\n- Polls help the club decide on events, tools, and topics.\n- Announcements from patrons are pinned for visibility.`
-        },
         activities: {
             title: 'Activities',
             body: `Plan your club time and stay in the loop.\n\n- RSVP to sessions and see who else is attending.\n- View details like location, time, and category.\n- Attendance records are linked to activities, so keeping this up‑to‑date matters.`
@@ -125,14 +121,6 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile,
         playground: {
             title: 'Code Playground',
             body: `Your in‑browser coding lab.\n\n- Run Python or JavaScript instantly.\n- Build multi‑file web projects (HTML/CSS/JS).\n- Save, download, upload, and publish your work.\n- Submit challenge solutions directly from here.`
-        },
-        resources: {
-            title: 'Resources Library',
-            body: `Curated learning tools to level up.\n\n- Filter by category (docs, videos, tools).\n- Search quickly for what you need.\n- High‑quality resources selected by patrons.`
-        },
-        chat: {
-            title: 'Chat',
-            body: `Fast, real‑time communication.\n\n- Send messages to the whole club.\n- Share links, updates, and quick questions.\n- Great for coordination during sessions.`
         },
         showcase: {
             title: 'Showcase',
