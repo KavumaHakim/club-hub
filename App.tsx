@@ -22,10 +22,13 @@ import { LogoutIcon } from './components/icons/LogoutIcon';
 import ToastContainer from './components/Toast';
 import OfflineIndicator from './components/OfflineIndicator';
 import AlertModal from './components/AlertModal';
+import DeploymentChangelogModal from './components/DeploymentChangelogModal';
+import { LATEST_DEPLOYMENT_CHANGELOG } from './deploymentChangelog';
 
 type View = 'welcome' | 'login' | 'signup' | 'dashboard' | 'patronLogin' | 'patronSignUp' | 'freeRunner';
 type Theme = 'light' | 'dark';
 const CACHED_USER_KEY = 'cached_user_profile';
+const getChangelogSeenKey = (userId: string, deploymentId: string) => `seen_changelog_${userId}_${deploymentId}`;
 
 // Helper component to render toasts inside the provider context
 const ToastRenderer = () => {
@@ -71,6 +74,8 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showPendingModal, setShowPendingModal] = useState(false);
   const [showTourModal, setShowTourModal] = useState(false);
+  const [showDeploymentChangelog, setShowDeploymentChangelog] = useState(false);
+  const [pendingDeploymentChangelog, setPendingDeploymentChangelog] = useState(false);
   const [isOnline, setIsOnline] = useState(() => {
     if (typeof window !== 'undefined') {
       return navigator.onLine;
@@ -158,6 +163,17 @@ const App: React.FC = () => {
     localStorage.setItem(CACHED_USER_KEY, JSON.stringify(profile));
   };
 
+  const shouldShowDeploymentChangelog = (userId: string) => {
+    if (typeof window === 'undefined') return false;
+    const key = getChangelogSeenKey(userId, LATEST_DEPLOYMENT_CHANGELOG.id);
+    return localStorage.getItem(key) !== 'true';
+  };
+
+  const markDeploymentChangelogSeen = (userId: string) => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(getChangelogSeenKey(userId, LATEST_DEPLOYMENT_CHANGELOG.id), 'true');
+  };
+
   // Centralized session handler to avoid code duplication
   const processUserSession = async (userId: string) => {
     try {
@@ -182,12 +198,17 @@ const App: React.FC = () => {
 
           // Check if user has seen the feature tour
           const hasSeenTour = localStorage.getItem(`has_seen_tour_${userProfile.uid}`);
+          const hasUnseenDeploymentChangelog = shouldShowDeploymentChangelog(userProfile.uid);
           if (!hasSeenTour) {
             setShowTourModal(true);
+            setPendingDeploymentChangelog(hasUnseenDeploymentChangelog);
             try {
               sessionStorage.setItem('first_login_session', 'true');
             } catch { }
           } else {
+            setShowTourModal(false);
+            setPendingDeploymentChangelog(false);
+            setShowDeploymentChangelog(hasUnseenDeploymentChangelog);
             try {
               sessionStorage.removeItem('first_login_session');
             } catch { }
@@ -289,6 +310,8 @@ const App: React.FC = () => {
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setView('welcome');
+        setShowDeploymentChangelog(false);
+        setPendingDeploymentChangelog(false);
         cacheUserProfile(null);
       }
     });
@@ -318,6 +341,8 @@ const App: React.FC = () => {
       setUser(null);
       setView('welcome');
       setActiveTab('feed');
+      setShowDeploymentChangelog(false);
+      setPendingDeploymentChangelog(false);
       cacheUserProfile(null);
     }
   }, []);
@@ -338,6 +363,17 @@ const App: React.FC = () => {
     setShowTourModal(false);
     if (user) {
       localStorage.setItem(`has_seen_tour_${user.uid}`, 'true');
+      if (pendingDeploymentChangelog) {
+        setShowDeploymentChangelog(true);
+        setPendingDeploymentChangelog(false);
+      }
+    }
+  }, [user, pendingDeploymentChangelog]);
+
+  const handleCloseDeploymentChangelog = useCallback(() => {
+    setShowDeploymentChangelog(false);
+    if (user) {
+      markDeploymentChangelogSeen(user.uid);
     }
   }, [user]);
 
@@ -498,6 +534,11 @@ const App: React.FC = () => {
       <FeatureTourModal
         isOpen={showTourModal}
         onClose={handleCloseTour}
+      />
+      <DeploymentChangelogModal
+        isOpen={showDeploymentChangelog}
+        entry={LATEST_DEPLOYMENT_CHANGELOG}
+        onClose={handleCloseDeploymentChangelog}
       />
     </div>
   );
