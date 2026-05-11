@@ -23,7 +23,7 @@ import ToastContainer from './components/Toast';
 import OfflineIndicator from './components/OfflineIndicator';
 import AlertModal from './components/AlertModal';
 import DeploymentChangelogModal from './components/DeploymentChangelogModal';
-import { LATEST_DEPLOYMENT_CHANGELOG } from './deploymentChangelog';
+import { DEPLOYMENT_CHANGELOGS, LATEST_DEPLOYMENT_CHANGELOG } from './deploymentChangelog';
 import StreakNoticeModal from './components/StreakNoticeModal';
 
 type View = 'welcome' | 'login' | 'signup' | 'dashboard' | 'patronLogin' | 'patronSignUp' | 'freeRunner';
@@ -589,7 +589,8 @@ const App: React.FC = () => {
       />
       <DeploymentChangelogModal
         isOpen={showDeploymentChangelog}
-        entry={LATEST_DEPLOYMENT_CHANGELOG}
+        latestEntry={LATEST_DEPLOYMENT_CHANGELOG}
+        entries={DEPLOYMENT_CHANGELOGS}
         onClose={handleCloseDeploymentChangelog}
       />
       <StreakNoticeModal

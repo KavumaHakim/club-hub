@@ -479,8 +479,9 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
     const [stickerResults, setStickerResults] = useState<string[]>([]);
     const [isSearchingStickers, setIsSearchingStickers] = useState(false);
     const [viewingImage, setViewingImage] = useState<string | null>(null);
+    const [replyTarget, setReplyTarget] = useState<Message | null>(null);
 
-    const [contextMenu, setContextMenu] = useState<{ id: string, x: number, y: number } | null>(null);
+    const [contextMenu, setContextMenu] = useState<{ id: string, x: number, y: number, canDelete: boolean } | null>(null);
     const [roomContextMenu, setRoomContextMenu] = useState<{ id: string, x: number, y: number } | null>(null);
 
     const [messageToDelete, setMessageToDelete] = useState<string | null>(null);
@@ -493,6 +494,8 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
     const stickerPickerRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
+    const longPressTimerRef = useRef<number | null>(null);
 
     const activeRoom = useMemo(() => rooms.find(r => r.id === activeRoomId), [rooms, activeRoomId]);
 
@@ -545,6 +548,52 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
             year: 'numeric'
         });
     };
+
+    const getReplyPreview = useCallback((msg: Message) => {
+        if (msg.metadata?.type === 'sticker') return '[Sticker]';
+        if (msg.metadata?.type === 'file') {
+            return msg.metadata?.fileName ? `[File] ${msg.metadata.fileName}` : '[File] Attachment';
+        }
+        return msg.content || '';
+    }, []);
+
+    const buildReplyMetadata = useCallback((msg: Message) => {
+        const sender = allUsers.find(u => u.uid === msg.senderId);
+        return {
+            id: msg.id,
+            senderId: msg.senderId,
+            senderName: sender?.name || 'Unknown',
+            content: getReplyPreview(msg).slice(0, 160),
+            type: msg.metadata?.type,
+            fileName: msg.metadata?.fileName,
+        };
+    }, [allUsers, getReplyPreview]);
+
+    const scrollToMessage = useCallback((messageId: string) => {
+        const node = messageRefs.current[messageId];
+        if (!node) return;
+        node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        node.classList.add('ring-2', 'ring-pink-400');
+        window.setTimeout(() => {
+            node.classList.remove('ring-2', 'ring-pink-400');
+        }, 1500);
+    }, []);
+
+    const clearLongPressTimer = useCallback(() => {
+        if (longPressTimerRef.current) {
+            window.clearTimeout(longPressTimerRef.current);
+            longPressTimerRef.current = null;
+        }
+    }, []);
+
+    const beginLongPressReply = useCallback((msg: Message) => {
+        clearLongPressTimer();
+        longPressTimerRef.current = window.setTimeout(() => {
+            setReplyTarget(msg);
+            textareaRef.current?.focus();
+            longPressTimerRef.current = null;
+        }, 450);
+    }, [clearLongPressTimer]);
 
     const messageSections = useMemo(() => {
         const sections: Array<{ type: 'date'; label: string } | { type: 'message'; data: Message }> = [];
@@ -765,21 +814,19 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
     const handleContextMenu = (e: React.MouseEvent, msg: Message) => {
         const isMe = msg.senderId === currentUser.uid;
         const isRecent = (Date.now() - new Date(msg.createdAt).getTime()) < 24 * 60 * 60 * 1000;
+        const canDelete = isMe && isRecent;
+        e.preventDefault();
+        e.stopPropagation();
 
-        if (isMe && isRecent) {
-            e.preventDefault();
-            e.stopPropagation();
+        const menuWidth = 176;
+        const menuHeight = canDelete ? 96 : 52;
+        let x = e.clientX;
+        let y = e.clientY;
 
-            const menuWidth = 160;
-            const menuHeight = 50;
-            let x = e.clientX;
-            let y = e.clientY;
+        if (x + menuWidth > window.innerWidth) x -= menuWidth;
+        if (y + menuHeight > window.innerHeight) y -= menuHeight;
 
-            if (x + menuWidth > window.innerWidth) x -= menuWidth;
-            if (y + menuHeight > window.innerHeight) y -= menuHeight;
-
-            setContextMenu({ id: msg.id, x, y });
-        }
+        setContextMenu({ id: msg.id, x, y, canDelete });
     };
 
     const handleRoomContextMenu = (e: React.MouseEvent, roomId: string) => {
@@ -805,6 +852,7 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
         loadMessages(activeRoomId, true);
         clearUnreadCount(activeRoomId);
         setContextMenu(null);
+        setReplyTarget(null);
         setRealtimeStatus('CONNECTING');
 
         const channel = supabase.channel(`room-listener:${activeRoomId}`)
@@ -869,10 +917,11 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
             });
 
         return () => {
+            clearLongPressTimer();
             supabase.removeChannel(channel);
         };
 
-    }, [activeRoomId, loadMessages, clearUnreadCount]);
+    }, [activeRoomId, loadMessages, clearUnreadCount, clearLongPressTimer]);
 
     useEffect(() => {
         if (!activeRoomId) return;
@@ -917,12 +966,15 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
         if (!newMessage.trim()) return;
 
         const content = newMessage;
+        const activeReply = replyTarget;
+        const replyMetadata = activeReply ? { replyTo: buildReplyMetadata(activeReply) } : undefined;
         setNewMessage('');
         setShowEmojiPicker(false);
+        setReplyTarget(null);
 
         if (activeRoomId) {
             try {
-                const sentMsg = await api.sendMessage(activeRoomId, currentUser.uid, content);
+                const sentMsg = await api.sendMessage(activeRoomId, currentUser.uid, content, replyMetadata);
                 setMessages(prev => {
                     if (prev.some(m => m.id === sentMsg.id)) return prev;
                     return [...prev, sentMsg];
@@ -936,6 +988,7 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
                     type: 'error'
                 });
                 setNewMessage(content);
+                setReplyTarget(activeReply);
             }
         }
     };
@@ -999,7 +1052,8 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
                 fileName: file.name,
                 fileSize: file.size,
                 fileUrl: url,
-                fileType: file.type
+                fileType: file.type,
+                ...(replyTarget ? { replyTo: buildReplyMetadata(replyTarget) } : {})
             };
 
             const sentMsg = await api.sendMessage(
@@ -1012,6 +1066,7 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
                 if (prev.some(m => m.id === sentMsg.id)) return prev;
                 return [...prev, sentMsg];
             });
+            setReplyTarget(null);
             scrollToBottom('smooth');
 
         } catch (error: any) {
@@ -1189,6 +1244,29 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
 
         // Regular text message
         return renderTextWithLinks(msg.content);
+    };
+
+    const renderReplyPreview = (msg: Message, isMe: boolean) => {
+        const reply = msg.metadata?.replyTo;
+        if (!reply) return null;
+
+        return (
+            <button
+                type="button"
+                onClick={() => scrollToMessage(reply.id)}
+                className={`mb-2 w-full text-left rounded-xl border px-3 py-2 transition-colors ${isMe
+                    ? 'border-white/20 bg-white/15 hover:bg-white/20'
+                    : 'border-gray-200 dark:border-gray-600 bg-gray-100/80 dark:bg-gray-800 hover:bg-gray-200/80 dark:hover:bg-gray-700'
+                    }`}
+            >
+                <p className={`text-[11px] font-bold ${isMe ? 'text-pink-100' : 'text-pink-600 dark:text-pink-400'}`}>
+                    Replying to {reply.senderId === currentUser.uid ? 'yourself' : (reply.senderName || 'message')}
+                </p>
+                <p className={`mt-1 line-clamp-2 text-xs ${isMe ? 'text-white/85' : 'text-gray-600 dark:text-gray-300'}`}>
+                    {reply.content}
+                </p>
+            </button>
+        );
     };
 
     return (
@@ -1373,7 +1451,11 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
                                     const sender = allUsers.find(u => u.uid === msg.senderId);
 
                                     return (
-                                        <div key={msg.id} className={`flex group ${isMe ? 'justify-end' : 'justify-start'} relative`}>
+                                        <div
+                                            key={msg.id}
+                                            ref={(node) => { messageRefs.current[msg.id] = node; }}
+                                            className={`flex group ${isMe ? 'justify-end' : 'justify-start'} relative rounded-2xl transition-shadow`}
+                                        >
                                             {!isMe && (
                                                 <div className="relative mr-2 self-end mb-1">
                                                     <img
@@ -1389,13 +1471,29 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
                                             )}
 
                                             <div className="flex flex-col max-w-[85%] sm:max-w-[75%] min-w-0">
+                                                <div className={`mb-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity ${isMe ? 'flex justify-end pr-2' : 'flex justify-start pl-2'}`}>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setReplyTarget(msg);
+                                                            textareaRef.current?.focus();
+                                                        }}
+                                                        className="rounded-full bg-white/90 dark:bg-gray-800 px-2.5 py-1 text-[11px] font-semibold text-pink-600 dark:text-pink-400 shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-pink-50 dark:hover:bg-gray-700 transition-colors"
+                                                    >
+                                                        Reply
+                                                    </button>
+                                                </div>
                                                 <div
+                                                    onTouchStart={() => beginLongPressReply(msg)}
+                                                    onTouchEnd={clearLongPressTimer}
+                                                    onTouchCancel={clearLongPressTimer}
                                                     onContextMenu={(e) => handleContextMenu(e, msg)}
                                                     className={`relative px-4 py-2 shadow-sm rounded-2xl transition duration-200 hover:shadow-lg ${isMe
                                                         ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-br-none cursor-context-menu shadow-md'
                                                         : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-none border border-gray-200 dark:border-gray-600'
                                                         }`}>
                                                     {!isMe && <p className="text-xs text-pink-600 dark:text-pink-400 font-bold mb-1">{sender?.name || 'Unknown'}</p>}
+                                                    {renderReplyPreview(msg, isMe)}
                                                     {renderMessageContent(msg, isMe)}
                                                 </div>
                                                 <div className={`flex items-center gap-1 mt-1 ${isMe ? 'justify-end text-gray-400' : 'justify-start text-gray-400'}`}>
@@ -1459,12 +1557,17 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
                                             <button
                                                 key={index}
                                                 type="button"
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    if (!activeRoom || !currentUser) return;
-                                                    setShowStickerPicker(false);
-                                                    api.sendMessage(activeRoom.id, currentUser.uid, '[Sticker]', { type: 'sticker', url: stickerUrl });
-                                                }}
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                if (!activeRoom || !currentUser) return;
+                                                setShowStickerPicker(false);
+                                                api.sendMessage(activeRoom.id, currentUser.uid, '[Sticker]', {
+                                                    type: 'sticker',
+                                                    url: stickerUrl,
+                                                    ...(replyTarget ? { replyTo: buildReplyMetadata(replyTarget) } : {})
+                                                });
+                                                setReplyTarget(null);
+                                            }}
                                                 className="hover:bg-gray-100 dark:hover:bg-gray-700 p-1 rounded-xl transition-colors outline-none focus:ring-2 focus:ring-pink-500 flex items-center justify-center cursor-pointer"
                                             >
                                                 <img src={stickerUrl} alt={`Sticker ${index}`} className="h-16 w-full object-contain" />
@@ -1478,7 +1581,28 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
                                     </div>
                                 </div>
                             )}
-                            <form onSubmit={handleSendMessage} className="flex items-end space-x-2 max-w-4xl mx-auto">
+                            <div className="max-w-4xl mx-auto">
+                                {replyTarget && (
+                                    <div className="mb-3 flex items-start justify-between gap-3 rounded-2xl border border-pink-200 dark:border-pink-900/40 bg-pink-50 dark:bg-pink-900/15 px-4 py-3">
+                                        <div className="min-w-0">
+                                            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-pink-600 dark:text-pink-400">
+                                                Replying To {replyTarget.senderId === currentUser.uid ? 'Yourself' : (allUsers.find(u => u.uid === replyTarget.senderId)?.name || 'Message')}
+                                            </p>
+                                            <p className="mt-1 line-clamp-2 text-sm text-gray-700 dark:text-gray-200">
+                                                {getReplyPreview(replyTarget)}
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setReplyTarget(null)}
+                                            className="flex-shrink-0 rounded-full p-1 text-gray-500 hover:bg-white/70 dark:hover:bg-gray-800/70 hover:text-gray-800 dark:hover:text-white transition-colors"
+                                            aria-label="Cancel reply"
+                                        >
+                                            <XIcon />
+                                        </button>
+                                    </div>
+                                )}
+                            <form onSubmit={handleSendMessage} className="flex items-end space-x-2">
                                 <button
                                     type="button"
                                     onClick={(e) => {
@@ -1548,6 +1672,7 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
                                     </div>
                                 </div>
                             </form>
+                            </div>
                             <div className="text-center mt-2">
                                 <p className="text-[10px] text-gray-400 dark:text-gray-600">
                                     Press <span className="font-mono bg-gray-200 dark:bg-gray-800 px-1 rounded">Enter</span> to send, <span className="font-mono bg-gray-200 dark:bg-gray-800 px-1 rounded">Shift + Enter</span> for new line
@@ -1597,14 +1722,28 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
                 >
                     <button
                         onClick={() => {
-                            setMessageToDelete(contextMenu.id);
+                            const target = messages.find(m => m.id === contextMenu.id) || null;
+                            setReplyTarget(target);
                             setContextMenu(null);
+                            textareaRef.current?.focus();
                         }}
-                        className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center gap-2 transition-colors"
+                        className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 transition-colors"
                     >
-                        <TrashIcon />
-                        <span className="font-medium">Delete Message</span>
+                        <SendIcon className="rotate-180" />
+                        <span className="font-medium">Reply</span>
                     </button>
+                    {contextMenu.canDelete && (
+                        <button
+                            onClick={() => {
+                                setMessageToDelete(contextMenu.id);
+                                setContextMenu(null);
+                            }}
+                            className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center gap-2 transition-colors"
+                        >
+                            <TrashIcon />
+                            <span className="font-medium">Delete Message</span>
+                        </button>
+                    )}
                 </div>
             )}
 

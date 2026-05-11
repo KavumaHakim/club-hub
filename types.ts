@@ -246,6 +246,14 @@ export interface Message {
   createdAt: string;
   metadata?: {
     readBy?: string[];
+    replyTo?: {
+      id: string;
+      senderId: string;
+      senderName?: string;
+      content: string;
+      type?: string;
+      fileName?: string;
+    };
     [key: string]: any;
   };
 }
