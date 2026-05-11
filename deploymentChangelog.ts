@@ -14,27 +14,26 @@ export interface DeploymentChangelogEntry {
 }
 
 export const LATEST_DEPLOYMENT_CHANGELOG: DeploymentChangelogEntry = {
-  id: 'deploy-a61b8d6',
-  commit: 'a61b8d6',
+  id: 'deploy-8701ba6',
+  commit: '8701ba6',
   deployedAt: '2026-05-11',
-  headline: 'Challenge evaluation and feed activity update',
-  summary: 'This deployment improves challenge submission stability and makes recent activity ordering more reliable.',
+  headline: 'Streak tracking and login updates',
+  summary: 'This deployment adds persistent login streak tracking, grace handling, and a simpler streak badge experience in the app header.',
   items: [
     {
-      title: 'Challenge evaluation is more fault tolerant',
-      details: 'Challenge auto-evaluation now normalizes AI responses before the feedback modal renders.',
-      expectation: 'Submitting a challenge should no longer blank the interface just because the AI returned an unexpected shape.',
+      title: 'Persistent login streaks are now tracked',
+      details: 'User streak data is now stored and updated at login, including streak count, last active date, and grace usage state.',
+      expectation: 'Users should keep a running day streak across sessions instead of relying on temporary browser-only state.',
     },
     {
-      title: 'Recent activity ordering is more consistent',
-      details: 'Feed activity timestamps are now sorted using full timestamps instead of mixed date-only values.',
-      expectation: 'The Recent Activity panel should show the newest activity at the top and older activity below it.',
+      title: 'One late exception is supported',
+      details: 'A missed day can be forgiven once before the streak resets. After the grace is used, a later miss breaks the streak.',
+      expectation: 'Users should see Duolingo-style streak protection behavior, with a warning when grace is consumed or the streak is lost.',
     },
     {
-      title: 'Playground output handling was tightened',
-      details: 'Console output handling was adjusted to preserve formatting more reliably during code execution.',
-      expectation: 'Code output should be easier to read, especially for multiline results.',
+      title: 'Streak UI was simplified to a badge',
+      details: 'The full streak panel was removed from the dashboard, leaving a compact streak badge in the header and a fuller status view in the profile.',
+      expectation: 'Users should see streak status without losing dashboard space, while still being able to inspect more detail in the profile.',
     },
   ],
 };
-
