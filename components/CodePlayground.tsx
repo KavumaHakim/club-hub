@@ -1633,10 +1633,7 @@ asyncio.sleep = custom_sleep_async
         
         const result = await pyodideRef.current.runPythonAsync(asyncCode);
 
-        if (result !== undefined) {
-            pyodideRef.current.globals.set('last_result', result);
-            await pyodideRef.current.runPythonAsync(`print(repr(last_result))`);
-            pyodideRef.current.globals.delete('last_result');
+        if (result !== undefined && result !== null) {
             if (typeof result.destroy === 'function') {
                 result.destroy();
             }
