@@ -107,6 +107,6 @@ For feature requests or bug reports, please contact the **ICT Club Naggalama Tea
 ---
 
 <div align="center">
-  <p>Made with ❤️ by the ICT Club Naggalama Team</p>
+  <p>Made with ❤️ by Hakim</p>
   <p>© 2026 ICT Club Hub</p>
 </div>

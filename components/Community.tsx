@@ -338,22 +338,20 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
                     </Tooltip>
                 </div>
 
-                {currentUser.role === 'PATRON' && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-                        <input
-                            value={teamForm.name}
-                            onChange={(e) => setTeamForm(prev => ({ ...prev, name: e.target.value }))}
-                            placeholder="Team name"
-                            className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm"
-                        />
-                        <input
-                            value={teamForm.description}
-                            onChange={(e) => setTeamForm(prev => ({ ...prev, description: e.target.value }))}
-                            placeholder="Short description"
-                            className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm md:col-span-2"
-                        />
-                    </div>
-                )}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+                    <input
+                        value={teamForm.name}
+                        onChange={(e) => setTeamForm(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="Team name"
+                        className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm"
+                    />
+                    <input
+                        value={teamForm.description}
+                        onChange={(e) => setTeamForm(prev => ({ ...prev, description: e.target.value }))}
+                        placeholder="Short description"
+                        className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm md:col-span-2"
+                    />
+                </div>
 
                 {isLoadingTeams ? (
                     <p className="text-sm text-gray-500 dark:text-gray-400">Loading teams...</p>

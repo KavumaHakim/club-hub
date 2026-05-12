@@ -5,45 +5,45 @@
  */
 
 const getApiKey = (): string => {
-  try {
-    // @ts-ignore
-    return import.meta.env.VITE_HF_TOKEN || import.meta.env.VITE_API_KEY || process.env.API_KEY || '';
-  } catch (e) {
     try {
-      // @ts-ignore
-      return process.env.API_KEY || '';
-    } catch (e2) {
-      return '';
+        // @ts-ignore
+        return import.meta.env.VITE_HF_TOKEN || import.meta.env.VITE_API_KEY || process.env.API_KEY || '';
+    } catch (e) {
+        try {
+            // @ts-ignore
+            return process.env.API_KEY || '';
+        } catch (e2) {
+            return '';
+        }
     }
-  }
 };
 
 const getGeminiKey = (): string => {
-  try {
-    // @ts-ignore
-    return import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || '';
-  } catch {
     try {
-      // @ts-ignore
-      return process.env.GEMINI_API_KEY || '';
+        // @ts-ignore
+        return import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || '';
     } catch {
-      return '';
+        try {
+            // @ts-ignore
+            return process.env.GEMINI_API_KEY || '';
+        } catch {
+            return '';
+        }
     }
-  }
 };
 
 const getGeminiModel = (): string => {
-  try {
-    // @ts-ignore
-    return import.meta.env.VITE_GEMINI_MODEL || process.env.GEMINI_MODEL || 'gemini-1.5-flash';
-  } catch {
     try {
-      // @ts-ignore
-      return process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+        // @ts-ignore
+        return import.meta.env.VITE_GEMINI_MODEL || process.env.GEMINI_MODEL || 'gemini-1.5-flash';
     } catch {
-      return 'gemini-1.5-flash';
+        try {
+            // @ts-ignore
+            return process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+        } catch {
+            return 'gemini-1.5-flash';
+        }
     }
-  }
 };
 
 const getCachedGeminiModel = (): string | null => {
@@ -63,7 +63,7 @@ const setCachedGeminiModel = (model: string) => {
     try {
         localStorage.setItem('gemini_model_resolved', model);
         localStorage.setItem('gemini_model_resolved_at', String(Date.now()));
-    } catch {}
+    } catch { }
 };
 
 const fetchGeminiModels = async (): Promise<string[]> => {
@@ -103,7 +103,7 @@ const parseJSONResponse = (text: string) => {
         .replace(/^```(json)?\s*/, '')
         .replace(/\s*```$/, '')
         .trim();
-    
+
     try {
         return JSON.parse(cleaned);
     } catch (e) {
@@ -116,7 +116,7 @@ const parseJSONResponse = (text: string) => {
                 // If it's still failing, it might be truncated. Try to close it manually if it's an object
                 const segment = jsonMatch[0];
                 if (segment.startsWith('{') && !segment.endsWith('}')) {
-                    try { return JSON.parse(segment + '}'); } catch (e3) {}
+                    try { return JSON.parse(segment + '}'); } catch (e3) { }
                     // Further aggressive recovery could go here, but usually risky
                 }
             }
@@ -323,12 +323,12 @@ export interface CodingTip {
 }
 
 export const getAiTutorResponse = async (
-    history: { role: 'user' | 'model', parts: { text: string }[] }[], 
+    history: { role: 'user' | 'model', parts: { text: string }[] }[],
     message: string,
     clubContext: string = ''
 ) => {
     try {
-        const systemPrompt = `You are a friendly, patient, and wise AI Tutor for a high school ICT Club. 
+        const systemPrompt = `You are a friendly, patient, and wise AI Tutor for St. Joseph's SSS Naggalama Secondary school ICT Club. 
         Your goal is to TEACH, not to do the work for the students. 
         
         DETECT LANGUAGE: Automatically identify if the student is asking about Python or JavaScript.

@@ -1,163 +1,213 @@
 <!DOCTYPE html>
 <html lang="en" class="h-full">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <!-- Updated viewport for mobile native feel: viewport-fit=cover for notches, user-scalable=no to prevent zooming -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="theme-color" content="#EC4899" />
-    <link rel="manifest" href="/manifest.json" />
-    <title>ICT Club Hub Naggalama | Code, Connect, Create</title>
-    <meta name="description" content="ICT Club Hub Naggalama is the ultimate operating system for student developers. Features include an in-browser Python IDE, AI-powered learning roadmaps, real-time chat, and project management." />
-    <meta name="keywords" content="ICT Club, Naggalama, Student Developers, Python IDE, AI Learning, Coding Hub, High School ICT, Programming, Learning Roadmaps" />
-    <meta name="author" content="ICT Club Naggalama Team" />
 
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://clubhub.hakimkavuma.space/" />
-    <meta property="og:title" content="ICT Club Hub Naggalama | Next-Gen Learning OS" />
-    <meta property="og:description" content="The central operating system for student members and patrons of St. Joseph's SSS Naggalama. Connect, Code, and Create with AI-powered assistance and gamified learning " />
-    <meta property="og:image" content="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=1200&h=630&auto=format&fit=crop" />
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <!-- Updated viewport for mobile native feel: viewport-fit=cover for notches, user-scalable=no to prevent zooming -->
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#EC4899" />
+  <link rel="manifest" href="/manifest.json" />
+  <title>ICT Club Hub Naggalama | Code, Connect, Create</title>
+  <meta name="description"
+    content="ICT Club Hub Naggalama is the ultimate operating system for student developers. Features include an in-browser Python IDE, AI-powered learning roadmaps, real-time chat, and project management." />
+  <meta name="keywords"
+    content="ICT Club, Naggalama, Student Developers, Python IDE, AI Learning, Coding Hub, High School ICT, Programming, Learning Roadmaps" />
+  <meta name="author" content="ICT Club Naggalama Team" />
 
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://clubhub.hakimkavuma.space/" />
-    <meta property="twitter:title" content="ICT Club Hub Naggalama" />
-    <meta property="twitter:description" content="The central operating system for student members and patrons of St. Joseph's SSS Naggalama. Connect, Code, and Create with AI-powered assistance and gamified learning " />
-    <meta property="twitter:image" content="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=1200&h=630&auto=format&fit=crop" />
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://clubhub.hakimkavuma.space/" />
+  <meta property="og:title" content="ICT Club Hub Naggalama | Next-Gen Learning OS" />
+  <meta property="og:description"
+    content="The central operating system for student members and patrons of St. Joseph's SSS Naggalama ICT Club. Connect, Code, and Create with AI-powered assistance and gamified learning " />
+  <meta property="og:image"
+    content="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=1200&h=630&auto=format&fit=crop" />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:url" content="https://clubhub.hakimkavuma.space/" />
+  <meta property="twitter:title" content="ICT Club Hub Naggalama" />
+  <meta property="twitter:description"
+    content="The central operating system for student members and patrons of St. Joseph's SSS Naggalama ICT Clubhub. Connect, Code, and Create with AI-powered assistance and gamified learning " />
+  <meta property="twitter:image"
+    content="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=1200&h=630&auto=format&fit=crop" />
 
-    <link rel="stylesheet" href="/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Comic+Neue:wght@400;700&display=swap"
+    rel="stylesheet">
 
-    <style>
-      /* Ensure proper sizing for mobile PWA/Native contexts */
-      html, body, #root {
-        height: 100%;
-        width: 100%;
-        margin: 0;
-        padding: 0;
-        overflow: hidden; /* Prevent body scroll, let app containers handle it */
+  <link rel="stylesheet" href="/styles.css">
+
+  <style>
+    /* Ensure proper sizing for mobile PWA/Native contexts */
+    html,
+    body,
+    #root {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      /* Prevent body scroll, let app containers handle it */
+    }
+
+    /* Safety for notched devices */
+    body {
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+    }
+
+    /* Custom scrollbar styles for Webkit browsers */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 10px;
+    }
+
+    .dark ::-webkit-scrollbar-thumb {
+      background: #4b5563;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    .dark ::-webkit-scrollbar-thumb:hover {
+      background: #6b7280;
+    }
+
+    /* Scroll Animation */
+    .scroll-animate {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+      will-change: opacity, transform;
+    }
+
+    .scroll-animate-fade {
+      opacity: 0;
+      transition: opacity 0.5s ease-out;
+      will-change: opacity;
+    }
+
+    .scroll-animate.is-visible,
+    .scroll-animate-fade.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* PENDING MODAL ANIMATIONS */
+    @keyframes gradient-pan {
+      0% {
+        background-position: 0% 50%;
       }
-      
-      /* Safety for notched devices */
-      body {
-        padding-top: env(safe-area-inset-top);
-        padding-bottom: env(safe-area-inset-bottom);
-        padding-left: env(safe-area-inset-left);
-        padding-right: env(safe-area-inset-right);
-      }
-      
-      /* Custom scrollbar styles for Webkit browsers */
-      ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
+
+      50% {
+        background-position: 100% 50%;
       }
 
-      ::-webkit-scrollbar-track {
-        background: transparent; 
+      100% {
+        background-position: 0% 50%;
+      }
+    }
+
+    @keyframes float {
+      0% {
+        transform: translate(0, 0);
       }
 
-      ::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 10px;
-      }
-      
-      .dark ::-webkit-scrollbar-thumb {
-        background: #4b5563;
+      50% {
+        transform: translate(10px, -10px);
       }
 
-      ::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8; 
+      100% {
+        transform: translate(0, 0);
       }
-      
-      .dark ::-webkit-scrollbar-thumb:hover {
-        background: #6b7280;
-      }
+    }
 
-      /* Scroll Animation */
-      .scroll-animate {
+    @keyframes arrange-letter {
+      from {
         opacity: 0;
-        transform: translateY(20px);
-        transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-        will-change: opacity, transform;
-      }
-      
-      .scroll-animate-fade {
-        opacity: 0;
-        transition: opacity 0.5s ease-out;
-        will-change: opacity;
+        transform: translate(var(--tx, 0), var(--ty, 0)) scale(0.5) rotate(var(--r, 0));
       }
 
-      .scroll-animate.is-visible,
-      .scroll-animate-fade.is-visible {
+      to {
         opacity: 1;
-        transform: translateY(0);
+        transform: translate(0, 0) scale(1) rotate(0);
       }
-      
-      /* PENDING MODAL ANIMATIONS */
-      @keyframes gradient-pan {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-      }
-      @keyframes float {
-        0% { transform: translate(0, 0); }
-        50% { transform: translate(10px, -10px); }
-        100% { transform: translate(0, 0); }
-      }
-      @keyframes arrange-letter {
-        from {
-          opacity: 0;
-          transform: translate(var(--tx, 0), var(--ty, 0)) scale(0.5) rotate(var(--r, 0));
-        }
-        to {
-          opacity: 1;
-          transform: translate(0, 0) scale(1) rotate(0);
-        }
-      }
-      @keyframes sand-flow-top {
-        0% { transform: scaleY(1); transform-origin: top; }
-        100% { transform: scaleY(0); transform-origin: top; }
-      }
-      @keyframes sand-flow-bottom {
-        0% { transform: scaleY(0); transform-origin: bottom; }
-        100% { transform: scaleY(1); transform-origin: bottom; }
-      }
-    </style>
-  </head>
-  <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 antialiased selection:bg-pink-500 selection:text-white">
-    <div id="root"></div>
-    <script src="https://cdn.jsdelivr.net/pyodide/v0.29.0/full/pyodide.js"></script>
-    <script type="module" src="/index.tsx"></script>
-    <script>
-      if ('serviceWorker' in navigator) {
-        const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    }
 
-        if (isLocalhost) {
-          // In dev, ensure no stale SW is registered (prevents React duplication issues).
-          navigator.serviceWorker.getRegistrations().then((registrations) => {
-            registrations.forEach((registration) => registration.unregister());
-          });
-        } else {
-          window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js')
-              .then(registration => {
-                console.log('Service Worker registered:', registration);
-              })
-              .catch(registrationError => {
-                console.log('Service Worker registration failed:', registrationError);
-              });
+    @keyframes sand-flow-top {
+      0% {
+        transform: scaleY(1);
+        transform-origin: top;
+      }
 
-            // Listen for messages from the service worker
-            navigator.serviceWorker.addEventListener('message', (event) => {
-              if (event.data && event.data.type === 'SW_UPDATED') {
-                const toast = document.createElement('div');
-                // Tailwind classes for the toast
-                toast.className = "fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-indigo-600 text-white px-6 py-3 rounded-xl shadow-2xl cursor-pointer z-[9999] flex items-center gap-3 transition-all duration-300 hover:bg-indigo-700 animate-bounce ring-2 ring-white/20";
-                toast.innerHTML = `
+      100% {
+        transform: scaleY(0);
+        transform-origin: top;
+      }
+    }
+
+    @keyframes sand-flow-bottom {
+      0% {
+        transform: scaleY(0);
+        transform-origin: bottom;
+      }
+
+      100% {
+        transform: scaleY(1);
+        transform-origin: bottom;
+      }
+    }
+  </style>
+</head>
+
+<body
+  class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 antialiased selection:bg-pink-500 selection:text-white">
+  <div id="root"></div>
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.29.0/full/pyodide.js"></script>
+  <script type="module" src="/index.tsx"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+
+      if (isLocalhost) {
+        // In dev, ensure no stale SW is registered (prevents React duplication issues).
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          registrations.forEach((registration) => registration.unregister());
+        });
+      } else {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+              console.log('Service Worker registered:', registration);
+            })
+            .catch(registrationError => {
+              console.log('Service Worker registration failed:', registrationError);
+            });
+
+          // Listen for messages from the service worker
+          navigator.serviceWorker.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'SW_UPDATED') {
+              const toast = document.createElement('div');
+              // Tailwind classes for the toast
+              toast.className = "fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-indigo-600 text-white px-6 py-3 rounded-xl shadow-2xl cursor-pointer z-[9999] flex items-center gap-3 transition-all duration-300 hover:bg-indigo-700 animate-bounce ring-2 ring-white/20";
+              toast.innerHTML = `
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                   </svg>
@@ -166,24 +216,25 @@
                     <span class="text-xs text-indigo-100">Click to refresh and apply.</span>
                   </div>
                 `;
-                
-                toast.onclick = () => {
-                  // Tell SW to skip waiting and activate new version
-                  navigator.serviceWorker.ready.then(registration => {
-                    if (registration.waiting) {
-                        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-                    }
-                  });
-                  // Reload page (SW will claim clients on activation)
-                  window.location.reload();
-                };
-                
-                document.body.appendChild(toast);
-              }
-            });
+
+              toast.onclick = () => {
+                // Tell SW to skip waiting and activate new version
+                navigator.serviceWorker.ready.then(registration => {
+                  if (registration.waiting) {
+                    registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+                  }
+                });
+                // Reload page (SW will claim clients on activation)
+                window.location.reload();
+              };
+
+              document.body.appendChild(toast);
+            }
           });
-        }
+        });
       }
-    </script>
-  </body>
+    }
+  </script>
+</body>
+
 </html>

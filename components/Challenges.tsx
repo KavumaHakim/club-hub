@@ -15,6 +15,8 @@ import { PlayIcon } from './icons/PlayIcon';
 import { SparklesIcon } from './icons/SparklesIcon';
 import { ExclamationCircleIcon } from './icons/ExclamationCircleIcon';
 import { LightBulbIcon } from './icons/LightBulbIcon';
+import { ChevronDownIcon } from './icons/ChevronDownIcon';
+import { ChevronUpIcon } from './icons/ChevronUpIcon';
 import { CodeRunnerModal } from './CodeRunnerModal';
 import { FormattedMessage } from './FormattedMessage';
 import Tooltip from './Tooltip';
@@ -152,6 +154,7 @@ const ChallengeCard: React.FC<{
     onOpenReview: (id: string, title: string) => void;
     onMakeSubmission?: (challenge: Challenge) => void;
 }> = ({ challenge, currentUser, onOpenSubmission, onOpenReview, onMakeSubmission }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
     const isPatron = currentUser.role === 'PATRON';
     const hasBadge = currentUser.badges?.includes(challenge.title);
     const today = new Date();
@@ -181,7 +184,7 @@ const ChallengeCard: React.FC<{
     }
 
     return (
-        <div className={`group relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm hover:shadow-xl border border-gray-200 dark:border-gray-700 transition-all duration-300 flex flex-col h-full ${hasBadge ? 'ring-1 ring-green-500/20' : ''}`}>
+        <div className={`group relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm hover:shadow-xl border border-gray-200 dark:border-gray-700 transition-all duration-300 flex flex-col ${isExpanded ? 'h-full scale-[1.02] z-10' : 'h-fit'} ${hasBadge ? 'ring-1 ring-green-500/20' : ''}`}>
             <div className="flex-1">
                 <div className="flex justify-between items-start mb-3">
                     <div className="flex flex-col gap-1.5">
@@ -190,55 +193,72 @@ const ChallengeCard: React.FC<{
                         </span>
                         <DifficultyBadge difficulty={challenge.difficulty} />
                     </div>
-                    {hasBadge && <div className="bg-green-100 dark:bg-green-900/30 p-1.5 rounded-full text-green-600 dark:text-green-400"><BadgeCheckIcon className="w-5 h-5" /></div>}
+                    <div className="flex items-center gap-2">
+                        {hasBadge && <div className="bg-green-100 dark:bg-green-900/30 p-1.5 rounded-full text-green-600 dark:text-green-400"><BadgeCheckIcon className="w-5 h-5" /></div>}
+                        <button 
+                            onClick={() => setIsExpanded(!isExpanded)}
+                            className="p-2 rounded-xl bg-gray-50 dark:bg-gray-900/50 text-gray-500 hover:text-pink-600 dark:hover:text-pink-400 hover:bg-pink-50 dark:hover:bg-pink-900/20 transition-all shadow-sm border border-gray-100 dark:border-gray-700"
+                            title={isExpanded ? "Show Less" : "Show More"}
+                        >
+                            {isExpanded ? <ChevronUpIcon className="w-4 h-4" /> : <ChevronDownIcon className="w-4 h-4" />}
+                        </button>
+                    </div>
                 </div>
 
                 <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2 group-hover:text-pink-600 dark:group-hover:text-pink-400 transition-colors">
                     {challenge.title}
                 </h4>
 
-                <div className="mb-4">
-                    <FormattedMessage text={challenge.description} isUser={false} />
+                <div className={`mb-4 transition-all duration-300 ${!isExpanded ? 'line-clamp-2 overflow-hidden' : ''}`}>
+                    {isExpanded ? (
+                        <FormattedMessage text={challenge.description} isUser={false} />
+                    ) : (
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                            {challenge.description.length > 120 ? challenge.description.substring(0, 120) + '...' : challenge.description}
+                        </p>
+                    )}
                 </div>
             </div>
 
-            <div className="pt-4 border-t border-gray-100 dark:border-gray-700 mt-auto">
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
-                        <CalendarIcon />
-                        <span className="ml-1.5">Due {deadline.toLocaleDateString()}</span>
+            {isExpanded && (
+                <div className="pt-4 border-t border-gray-100 dark:border-gray-700 mt-auto animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
+                            <CalendarIcon />
+                            <span className="ml-1.5">Due {deadline.toLocaleDateString()}</span>
+                        </div>
                     </div>
-                </div>
 
-                {isPatron ? (
-                    <Tooltip text="Review member submissions and approve badges.">
-                        <button
-                            onClick={() => onOpenReview(challenge.id, challenge.title)}
-                            className="w-full py-2.5 rounded-xl text-sm font-semibold bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/20 dark:text-purple-300 dark:hover:bg-purple-900/30 transition-colors flex items-center justify-center gap-2"
-                        >
-                            Review Submissions
-                        </button>
-                    </Tooltip>
-                ) : (
-                    !hasBadge && challenge.status === 'ACTIVE' && !isExpired ? (
-                        <Tooltip text="Submit your solution to earn a badge.">
+                    {isPatron ? (
+                        <Tooltip text="Review member submissions and approve badges.">
                             <button
-                                onClick={() => onMakeSubmission ? onMakeSubmission(challenge) : onOpenSubmission(challenge.id)}
-                                className="w-full py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
+                                onClick={() => onOpenReview(challenge.id, challenge.title)}
+                                className="w-full py-2.5 rounded-xl text-sm font-semibold bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/20 dark:text-purple-300 dark:hover:bg-purple-900/30 transition-colors flex items-center justify-center gap-2"
                             >
-                                {onMakeSubmission ? 'Make a submission' : 'Submit Solution'}
+                                Review Submissions
                             </button>
                         </Tooltip>
                     ) : (
-                        <button
-                            disabled
-                            className="w-full py-2.5 rounded-xl text-sm font-semibold bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500 cursor-not-allowed flex items-center justify-center gap-2"
-                        >
-                            {hasBadge ? 'Badge Earned' : 'Challenge Closed'}
-                        </button>
-                    )
-                )}
-            </div>
+                        !hasBadge && challenge.status === 'ACTIVE' && !isExpired ? (
+                            <Tooltip text="Submit your solution to earn a badge.">
+                                <button
+                                    onClick={() => onMakeSubmission ? onMakeSubmission(challenge) : onOpenSubmission(challenge.id)}
+                                    className="w-full py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
+                                >
+                                    {onMakeSubmission ? 'Make a submission' : 'Submit Solution'}
+                                </button>
+                            </Tooltip>
+                        ) : (
+                            <button
+                                disabled
+                                className="w-full py-2.5 rounded-xl text-sm font-semibold bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500 cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {hasBadge ? 'Badge Earned' : 'Challenge Closed'}
+                            </button>
+                        )
+                    )}
+                </div>
+            )}
         </div>
     );
 };
