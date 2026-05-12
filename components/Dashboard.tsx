@@ -59,6 +59,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile,
     const [featureIntro, setFeatureIntro] = useState<{ tab: Tab; title: string; body: string } | null>(null);
     const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
     const { featureFlags, notificationPrefs } = useData();
+    const [pendingChallenge, setPendingChallenge] = useState<any | null>(null);
 
     useEffect(() => {
         // Check if we have shown the tip today
@@ -222,7 +223,14 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile,
                     <ProjectsBoard currentUser={currentUser} />
                 </TabPanel>
                 <TabPanel active={activeTab === 'playground' && (featureFlags.showPlayground || currentUser.role === 'PATRON')} className="h-full">
-                    <CodePlayground theme={theme} currentUser={currentUser} setActiveTab={setActiveTab} globalActiveTab={activeTab} />
+                    <CodePlayground 
+                        theme={theme} 
+                        currentUser={currentUser} 
+                        setActiveTab={setActiveTab} 
+                        globalActiveTab={activeTab} 
+                        incomingChallenge={pendingChallenge}
+                        onChallengeHandled={() => setPendingChallenge(null)}
+                    />
                 </TabPanel>
                 <TabPanel active={activeTab === 'showcase' && (featureFlags.showShowcase || currentUser.role === 'PATRON')}>
                     <Showcase currentUser={currentUser} setActiveTab={setActiveTab} />
@@ -244,6 +252,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile,
                         currentUser={currentUser} 
                         onMakeSubmission={(challenge) => {
                             sessionStorage.setItem('pending_challenge_context', JSON.stringify(challenge));
+                            setPendingChallenge(challenge);
                             setActiveTab('playground');
                         }}
                     />

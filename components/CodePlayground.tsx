@@ -37,6 +37,8 @@ interface CodePlaygroundProps {
     currentUser: User;
     setActiveTab?: (tab: Tab) => void; 
     globalActiveTab?: Tab;
+    incomingChallenge?: any;
+    onChallengeHandled?: () => void;
 }
 
 interface OutputLine {
@@ -353,7 +355,7 @@ const processCarriageReturns = (text: string) => {
     }).join('\n');
 };
 
-const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, setActiveTab, globalActiveTab }) => {
+const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, setActiveTab, globalActiveTab, incomingChallenge, onChallengeHandled }) => {
   const { fetchShowcaseItems, showToast, teams, allUsers, fetchUsers } = useData();
   const [language, setLanguage] = useState<SingleLanguage>(() => {
       return (localStorage.getItem('playground_lang') as SingleLanguage) || 'python';
@@ -548,9 +550,11 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
 
   useEffect(() => {
       const savedContext = sessionStorage.getItem('pending_challenge_context');
-      if (savedContext && globalActiveTab === 'playground') {
+      const challengeToHandle = incomingChallenge || (savedContext ? JSON.parse(savedContext) : null);
+      
+      if (challengeToHandle && globalActiveTab === 'playground') {
           try {
-              const challenge = JSON.parse(savedContext);
+              const challenge = challengeToHandle;
               setPendingChallenge(challenge);
               
               let challengeIntro = '';
@@ -589,7 +593,6 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
               
               if (challengeIntro) {
                   setCode(prev => {
-                      // If the code is just the default, replace it. Otherwise prepend.
                       const isDefault = !prev || 
                                         prev.trim() === DEFAULT_PYTHON.trim() || 
                                         prev.trim() === DEFAULT_JS.trim() || 
@@ -600,11 +603,12 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                   setActiveTabState('editor');
               }
               sessionStorage.removeItem('pending_challenge_context');
+              if (onChallengeHandled) onChallengeHandled();
           } catch (e) {
               console.error("Error parsing challenge context", e);
           }
       }
-  }, [language, activeTab]);
+  }, [language, globalActiveTab, incomingChallenge]);
 
   useEffect(() => {
       if (!activeProject && language === 'html') {
