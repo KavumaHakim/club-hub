@@ -36,6 +36,7 @@ interface CodePlaygroundProps {
     theme: 'light' | 'dark';
     currentUser: User;
     setActiveTab?: (tab: Tab) => void; 
+    globalActiveTab?: Tab;
 }
 
 interface OutputLine {
@@ -352,7 +353,7 @@ const processCarriageReturns = (text: string) => {
     }).join('\n');
 };
 
-const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, setActiveTab }) => {
+const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, setActiveTab, globalActiveTab }) => {
   const { fetchShowcaseItems, showToast, teams, allUsers, fetchUsers } = useData();
   const [language, setLanguage] = useState<SingleLanguage>(() => {
       return (localStorage.getItem('playground_lang') as SingleLanguage) || 'python';
@@ -521,31 +522,14 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
       loadProjects();
   }, []);
 
-  useEffect(() => {
-      const savedContext = sessionStorage.getItem('pending_challenge_context');
-      if (savedContext) {
-          try {
-              const challenge = JSON.parse(savedContext);
-              setPendingChallenge(challenge);
-              
-              const commentChar = language === 'python' ? '#' : '//';
-              const challengeIntro = `${commentChar} =========================================\n` +
-                                     `${commentChar} CHALLENGE: ${challenge.title}\n` +
-                                     `${commentChar} =========================================\n` +
-                                     challenge.description.split('\n').map((line: string) => `${commentChar} ${line}`).join('\n') +
-                                     `\n\n${commentChar} Write your solution below:\n\n`;
-              
-              setCode(challengeIntro);
-              setActiveTabState('editor');
-              sessionStorage.removeItem('pending_challenge_context');
-          } catch (e) {
-              console.error("Error parsing challenge context", e);
-          }
-      }
-  }, [language]);
 
   useEffect(() => {
       if (!activeProject) {
+          // If there's a pending challenge, we let that useEffect handle the code setting
+          if (sessionStorage.getItem('pending_challenge_context') && globalActiveTab === 'playground') {
+              return;
+          }
+          
           setProjectFiles([]);
           setActiveFile(null);
           setProjectMembers([]);
@@ -560,7 +544,67 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
               else setCode(DEFAULT_HTML);
           }
       }
-  }, [activeProject]);
+  }, [activeProject, globalActiveTab, language]);
+
+  useEffect(() => {
+      const savedContext = sessionStorage.getItem('pending_challenge_context');
+      if (savedContext && globalActiveTab === 'playground') {
+          try {
+              const challenge = JSON.parse(savedContext);
+              setPendingChallenge(challenge);
+              
+              let challengeIntro = '';
+              const deadlineStr = challenge.deadline ? new Date(challenge.deadline).toLocaleDateString() : 'N/A';
+              
+              if (language === 'python') {
+                  challengeIntro = `"""\n` +
+                                   `=========================================\n` +
+                                   `CHALLENGE: ${challenge.title}\n` +
+                                   (challenge.difficulty ? `DIFFICULTY: ${challenge.difficulty}\n` : '') +
+                                   `DEADLINE: ${deadlineStr}\n` +
+                                   `=========================================\n` +
+                                   `${challenge.description}\n` +
+                                   `"""\n\n` +
+                                   `# Write your solution below:\n\n`;
+              } else if (language === 'javascript') {
+                  challengeIntro = `/*\n` +
+                                   `=========================================\n` +
+                                   `CHALLENGE: ${challenge.title}\n` +
+                                   (challenge.difficulty ? `DIFFICULTY: ${challenge.difficulty}\n` : '') +
+                                   `DEADLINE: ${deadlineStr}\n` +
+                                   `=========================================\n` +
+                                   `${challenge.description}\n` +
+                                   `*/\n\n` +
+                                   `// Write your solution below:\n\n`;
+              } else if (language === 'html') {
+                  challengeIntro = `<!--\n` +
+                                   `=========================================\n` +
+                                   `CHALLENGE: ${challenge.title}\n` +
+                                   (challenge.difficulty ? `DIFFICULTY: ${challenge.difficulty}\n` : '') +
+                                   `DEADLINE: ${deadlineStr}\n` +
+                                   `=========================================\n` +
+                                   `${challenge.description}\n` +
+                                   `-->\n\n`;
+              }
+              
+              if (challengeIntro) {
+                  setCode(prev => {
+                      // If the code is just the default, replace it. Otherwise prepend.
+                      const isDefault = !prev || 
+                                        prev.trim() === DEFAULT_PYTHON.trim() || 
+                                        prev.trim() === DEFAULT_JS.trim() || 
+                                        prev.trim() === DEFAULT_HTML.trim() ||
+                                        prev.trim() === '';
+                      return isDefault ? challengeIntro : challengeIntro + prev;
+                  });
+                  setActiveTabState('editor');
+              }
+              sessionStorage.removeItem('pending_challenge_context');
+          } catch (e) {
+              console.error("Error parsing challenge context", e);
+          }
+      }
+  }, [language, activeTab]);
 
   useEffect(() => {
       if (!activeProject && language === 'html') {

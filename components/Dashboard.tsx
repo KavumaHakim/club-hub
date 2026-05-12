@@ -222,7 +222,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile,
                     <ProjectsBoard currentUser={currentUser} />
                 </TabPanel>
                 <TabPanel active={activeTab === 'playground' && (featureFlags.showPlayground || currentUser.role === 'PATRON')} className="h-full">
-                    <CodePlayground theme={theme} currentUser={currentUser} setActiveTab={setActiveTab} />
+                    <CodePlayground theme={theme} currentUser={currentUser} setActiveTab={setActiveTab} globalActiveTab={activeTab} />
                 </TabPanel>
                 <TabPanel active={activeTab === 'showcase' && (featureFlags.showShowcase || currentUser.role === 'PATRON')}>
                     <Showcase currentUser={currentUser} setActiveTab={setActiveTab} />
