@@ -15,6 +15,35 @@ export interface DeploymentChangelogEntry {
 
 export const DEPLOYMENT_CHANGELOGS: DeploymentChangelogEntry[] = [
   {
+    id: 'deploy-challenge-sync',
+    commit: 'working-tree',
+    deployedAt: '2026-05-12',
+    headline: 'Challenge Sync & Playground Enhancements',
+    summary: 'This deployment streamlines the challenge submission workflow with automated prompts, multi-line commenting, and improved playground reliability.',
+    items: [
+      {
+        title: 'Instant Challenge Sync to Playground',
+        details: 'Clicking "Make a submission" now instantly injects the challenge title, difficulty, deadline, and description into the editor as a multi-line comment.',
+        expectation: 'Users should be able to start challenges immediately with all requirements pre-loaded in the editor.',
+      },
+      {
+        title: 'Clean Multi-line Commenting',
+        details: 'Challenges are injected using native block comments: """ for Python, /* */ for JS, and <!-- --> for HTML.',
+        expectation: 'The editor should remain tidy and professional while providing full reference context.',
+      },
+      {
+        title: 'Improved Python Runner (Script Mode)',
+        details: 'The Python runner now operates in "Script Mode," only printing explicit print() calls to prevent docstrings from cluttering the output.',
+        expectation: 'Users should only see the output they explicitly request, making debugging cleaner.',
+      },
+      {
+        title: 'Reactive Challenge Mode',
+        details: 'Challenge mode now activates instantly upon tab switching without requiring a page reload.',
+        expectation: 'The "Submit Challenge" button and context should appear the moment a user switches from a challenge card.',
+      },
+    ],
+  },
+  {
     id: 'deploy-chat-replies',
     commit: 'working-tree',
     deployedAt: '2026-05-11',
