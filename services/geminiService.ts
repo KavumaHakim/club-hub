@@ -353,8 +353,15 @@ export const getAiTutorResponse = async (
         const text = await callAI(chatMessages);
         return cleanResponse(text);
     } catch (error) {
-        console.error("Tutor Error:", error);
-        return "I'm having trouble thinking right now. Ask me again in a moment!";
+        console.warn("Hugging Face tutor error, falling back to Gemini:", error);
+        try {
+            const fallbackPrompt = chatMessages.map(m => `${m.role}: ${m.content}`).join('\n\n');
+            const text = await callGemini(fallbackPrompt);
+            return cleanResponse(text);
+        } catch (geminiError) {
+            console.error("Tutor Error:", geminiError);
+            return "I'm having trouble thinking right now. Ask me again in a moment!";
+        }
     }
 };
 
@@ -397,7 +404,9 @@ export const generateDocumentSummary = async (file: File): Promise<string> => {
         const text = await callAI([{ role: "user", content: prompt }]);
         return cleanResponse(text);
     } catch (error) {
-        throw error;
+        console.warn("Hugging Face document summary error, falling back to Gemini:", error);
+        const text = await callGemini(prompt);
+        return cleanResponse(text);
     }
 };
 
@@ -412,7 +421,9 @@ export const gradeProjectSubmission = async (taskDescription: string, code: stri
         const text = await callAI([{ role: "user", content: prompt }], true);
         return parseJSONResponse(text);
     } catch (error) {
-        throw error;
+        console.warn("Hugging Face grading error, falling back to Gemini:", error);
+        const text = await callGemini(prompt);
+        return parseJSONResponse(text);
     }
 };
 
@@ -422,7 +433,9 @@ export const getAIPlaygroundHint = async (code: string, language: string = 'pyth
         const text = await callAI([{ role: "user", content: prompt }]);
         return cleanResponse(text);
     } catch (error) {
-        throw error;
+        console.warn("Hugging Face playground hint error, falling back to Gemini:", error);
+        const text = await callGemini(prompt);
+        return cleanResponse(text);
     }
 };
 
@@ -432,7 +445,9 @@ export const analyzeChallengeSubmission = async (challengeTitle: string, code: s
         const text = await callAI([{ role: "user", content: prompt }]);
         return cleanResponse(text);
     } catch (error) {
-        throw error;
+        console.warn("Hugging Face challenge analysis error, falling back to Gemini:", error);
+        const text = await callGemini(prompt);
+        return cleanResponse(text);
     }
 };
 
@@ -601,7 +616,13 @@ export const evaluateShortAnswer = async (question: string, userAnswer: string, 
         const text = await callAI([{ role: "user", content: prompt }], true);
         return parseJSONResponse(text);
     } catch (error) {
-        return { correct: false, feedback: "Error validating answer." };
+        console.warn("Hugging Face evaluation error, falling back to Gemini:", error);
+        try {
+            const text = await callGemini(prompt);
+            return parseJSONResponse(text);
+        } catch (geminiError) {
+            return { correct: false, feedback: "Error validating answer." };
+        }
     }
 };
 
@@ -663,7 +684,10 @@ export const generateCodingTip = async (lang: 'python' | 'javascript', skillLeve
         const result = parseJSONResponse(text);
         return { ...result, language: lang };
     } catch (error) {
-        throw error;
+        console.warn("Hugging Face coding tip error, falling back to Gemini:", error);
+        const text = await callGemini(prompt);
+        const result = parseJSONResponse(text);
+        return { ...result, language: lang };
     }
 };
 

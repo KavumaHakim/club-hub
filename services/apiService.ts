@@ -79,6 +79,14 @@ const truncateText = (text: string, maxLen: number) => {
     return text.length > maxLen ? `${text.slice(0, maxLen)}…` : text;
 };
 
+export const sendEmail = async (payload: { to: string | string[]; subject: string; html?: string; text?: string }) => {
+    const { data, error } = await supabase.functions.invoke('send-email', {
+        body: payload
+    });
+    if (error) throw error;
+    return data;
+};
+
 const mapFeatureFlagsFromDb = (row: any): FeatureFlags => ({
     showFeed: row.show_feed,
     showActivities: row.show_activities,
@@ -465,8 +473,34 @@ export const deleteUser = async (uid: string) => {
 };
 
 export const approveMember = async (uid: string) => {
+    // Get user info for email
+    const { data: userData } = await supabase.from('users').select('email, name').eq('uid', uid).single();
+
     const { error } = await supabase.from('users').update({ status: 'APPROVED' }).eq('uid', uid);
     if (error) throw error;
+
+    // Send Approval Email
+    if (userData?.email) {
+        try {
+            await sendEmail({
+                to: userData.email,
+                subject: "Account Approved! Welcome to ICT Club Hub",
+                html: `
+                    <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 12px;">
+                        <h1 style="color: #db2777;">Welcome, ${userData.name}!</h1>
+                        <p>Your account has been <strong>approved</strong> by the club patrons.</p>
+                        <p>You can now log in and explore the ICT Club Hub, participate in challenges, and join the community.</p>
+                        <div style="margin-top: 30px; padding: 20px; background-color: #f9f9f9; border-radius: 8px;">
+                            <p style="margin: 0;">Ready to start? <a href="${window.location.origin}" style="color: #7c3aed; font-weight: bold; text-decoration: none;">Log in now</a></p>
+                        </div>
+                        <p style="font-size: 12px; color: #999; margin-top: 40px;">This is an automated message from St. Joseph's SSS Naggalama ICT Club Hub.</p>
+                    </div>
+                `
+            });
+        } catch (emailErr) {
+            console.warn("Failed to send approval email", emailErr);
+        }
+    }
 
     // Auto-add safely to the "Every one" group chat
     try {
@@ -499,6 +533,25 @@ export const changePassword = async (newPassword: string) => {
 export const sendPasswordResetEmail = async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email);
     if (error) throw error;
+    
+    // Optionally send a secondary notification via Resend to ensure delivery or provide custom branding
+    try {
+        await sendEmail({
+            to: email,
+            subject: "Password Reset Requested",
+            html: `
+                <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 12px;">
+                    <h3 style="color: #7c3aed;">Password Reset Request</h3>
+                    <p>We received a request to reset your password for your ICT Club Hub account.</p>
+                    <p>If you didn't make this request, you can safely ignore this email.</p>
+                    <p>A separate email with a reset code has been sent to you. Please use that code in the app to set a new password.</p>
+                    <p style="font-size: 12px; color: #999; margin-top: 40px;">St. Joseph's SSS Naggalama ICT Club Hub</p>
+                </div>
+            `
+        });
+    } catch (e) {
+        console.warn("Resend secondary reset notification failed", e);
+    }
 };
 
 export const resetPasswordWithOtp = async (email: string, otp: string, newPassword: string) => {
@@ -1336,7 +1389,36 @@ export const sendMessage = async (roomId: string, senderId: string, content: str
         const { data: room } = await supabase.from('rooms').select('title, metadata').eq('id', roomId).single();
         const participants: string[] = room?.metadata?.participants || [];
         const title = room?.title ? ` in ${room.title}` : '';
-        await notifyUsers(participants, `New message${title}: ${truncateText(content, 80)}`, 'chat', senderId);
+        const body = `New message${title}: ${truncateText(content, 80)}`;
+        
+        await notifyUsers(participants, body, 'chat', senderId);
+
+        // Also send email alerts for offline users
+        const recipientUids = participants.filter(uid => uid !== senderId);
+        if (recipientUids.length > 0) {
+            const { data: users } = await supabase.from('users').select('email, name').in('uid', recipientUids);
+            if (users && users.length > 0) {
+                const emails = users.map(u => u.email).filter(Boolean) as string[];
+                if (emails.length > 0) {
+                    await sendEmail({
+                        to: emails,
+                        subject: `New Message Alert${title}`,
+                        html: `
+                            <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 12px;">
+                                <h3 style="color: #7c3aed;">You have a new message!</h3>
+                                <p style="font-size: 16px;"><strong>Room:</strong> ${room?.title || 'Direct Message'}</p>
+                                <div style="margin: 20px 0; padding: 15px; background-color: #f3f4f6; border-left: 4px solid #7c3aed; border-radius: 4px; font-style: italic;">
+                                    "${truncateText(content, 150)}"
+                                </div>
+                                <div style="margin-top: 30px;">
+                                    <a href="${window.location.origin}" style="display: inline-block; padding: 10px 20px; background-color: #db2777; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">View Message</a>
+                                </div>
+                            </div>
+                        `
+                    });
+                }
+            }
+        }
     } catch (notifyErr) {
         console.error("Failed to send message notification", notifyErr);
     }
