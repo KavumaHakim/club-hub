@@ -285,6 +285,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User | n
     setIsLoadingAttendance(true);
     setAttendanceError(null);
     try {
+      if (!currentUser) return;
       const data = await api.getAttendance(currentUser.uid);
       setAttendance(data);
     } catch (e: any) {
@@ -293,7 +294,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User | n
     } finally {
       setIsLoadingAttendance(false);
     }
-  }, [currentUser.uid]);
+  }, [currentUser?.uid]);
 
   const fetchFeedItems = useCallback(async () => {
     setIsLoadingFeed(true);
@@ -354,6 +355,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User | n
     setIsLoadingNotifications(true);
     setNotificationsError(null);
     try {
+      if (!currentUser) return;
       const data = await api.getNotifications(currentUser.uid);
       setNotifications(data);
     } catch (e: any) {
@@ -362,12 +364,13 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User | n
     } finally {
       setIsLoadingNotifications(false);
     }
-  }, [currentUser.uid]);
+  }, [currentUser?.uid]);
 
   const fetchRooms = useCallback(async () => {
     setIsLoadingRooms(true);
     setRoomsError(null);
     try {
+      if (!currentUser) return;
       const data = await api.getRooms(currentUser.uid);
       setRooms(data);
     } catch (e: any) {
@@ -376,7 +379,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User | n
     } finally {
       setIsLoadingRooms(false);
     }
-  }, [currentUser.uid]);
+  }, [currentUser?.uid]);
 
   const fetchShowcaseItems = useCallback(async () => {
     setIsLoadingShowcase(true);
@@ -488,7 +491,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User | n
       showToast('Failed to create voting position', 'error');
       throw e;
     }
-  }, [currentUser.uid, showToast]);
+  }, [currentUser?.uid, showToast]);
 
   const updateVotingPosition = useCallback(async (id: string, updates: Partial<VotingPosition>) => {
     try {
@@ -540,7 +543,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User | n
       }
       throw e;
     }
-  }, [currentUser.uid, currentUser.name, allUsers, votingPositions, showToast]);
+  }, [currentUser?.uid, currentUser?.name, allUsers, votingPositions, showToast]);
 
   const fetchVotingVotes = useCallback(async (positionId: string) => {
     try {
@@ -565,7 +568,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User | n
       }
       throw e;
     }
-  }, [currentUser.uid, showToast]);
+  }, [currentUser?.uid, showToast]);
 
   const deleteVotingPosition = useCallback(async (id: string) => {
     try {
@@ -609,7 +612,7 @@ export const DataProvider: React.FC<{ children: ReactNode; currentUser: User | n
       console.error("Failed to update skill level", e);
       showToast("Failed to update skill level.", "error");
     }
-  }, [currentUser.uid, showToast]);
+  }, [currentUser?.uid, showToast]);
 
   const fetchFeatureFlags = useCallback(async () => {
     try {

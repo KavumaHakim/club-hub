@@ -571,10 +571,10 @@ const App: React.FC = () => {
 
   return (
     <DataProvider currentUser={user}>
-      <div className="min-h-full text-gray-800 dark:text-gray-200 relative" style={{ fontFamily: font }}>
+      <div className="h-full text-gray-800 dark:text-gray-200 relative" style={{ fontFamily: font }}>
         {!isOnline && <OfflineIndicator />}
         <CustomCursor />
-        <div className="relative z-10">
+        <div className="relative z-10 h-full">
           {renderContent()}
         </div>
         <ToastRenderer />
