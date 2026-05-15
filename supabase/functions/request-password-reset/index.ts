@@ -53,7 +53,7 @@ serve(async (req) => {
       type: "recovery",
       email,
       options: {
-        redirectTo: redirectTo || "https://club-hub.vercel.app/reset-password",
+        redirectTo: redirectTo || "https://clubhub.hakimkavuma.space/reset-password",
       },
     });
 

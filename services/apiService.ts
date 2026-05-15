@@ -484,18 +484,11 @@ export const approveMember = async (uid: string) => {
         try {
             await sendEmail({
                 to: userData.email,
-                subject: "Account Approved! Welcome to ICT Club Hub",
-                html: `
-                    <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 12px;">
-                        <h1 style="color: #db2777;">Welcome, ${userData.name}!</h1>
-                        <p>Your account has been <strong>approved</strong> by the club patrons.</p>
-                        <p>You can now log in and explore the ICT Club Hub, participate in challenges, and join the community.</p>
-                        <div style="margin-top: 30px; padding: 20px; background-color: #f9f9f9; border-radius: 8px;">
-                            <p style="margin: 0;">Ready to start? <a href="${window.location.origin}" style="color: #7c3aed; font-weight: bold; text-decoration: none;">Log in now</a></p>
-                        </div>
-                        <p style="font-size: 12px; color: #999; margin-top: 40px;">This is an automated message from St. Joseph's SSS Naggalama ICT Club Hub.</p>
-                    </div>
-                `
+                templateId: 'approval',
+                templateData: {
+                    name: userData.name,
+                    origin: 'https://clubhub.hakimkavuma.space'
+                }
             });
         } catch (emailErr) {
             console.warn("Failed to send approval email", emailErr);
@@ -534,7 +527,7 @@ export const sendPasswordResetEmail = async (email: string) => {
     const { error } = await supabase.functions.invoke('request-password-reset', {
         body: { 
             email,
-            redirectTo: `${window.location.origin}/reset-password`
+            redirectTo: 'https://clubhub.hakimkavuma.space/reset-password'
         }
     });
     if (error) throw error;

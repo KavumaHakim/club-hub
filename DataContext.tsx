@@ -137,8 +137,8 @@ const defaultNotificationPrefs: NotificationPrefs = {
 };
 
 // Create a provider component
-export const DataProvider: React.FC<{ children: ReactNode; currentUser: User }> = ({ children, currentUser: initialUser }) => {
-  const [currentUser, setCurrentUser] = useState(initialUser);
+export const DataProvider: React.FC<{ children: ReactNode; currentUser: User | null }> = ({ children, currentUser: initialUser }) => {
+  const [currentUser, setCurrentUser] = useState<User | null>(initialUser);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);

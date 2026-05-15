@@ -432,21 +432,9 @@ const App: React.FC = () => {
   }, []);
 
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900" style={{ fontFamily: font }}>
-        <div className="flex flex-col items-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-pink-500 mb-4"></div>
-          <p className="text-gray-500 dark:text-gray-400 font-medium">Loading Club Hub...</p>
-        </div>
-      </div>
-    );
-  }
-
   const renderContent = () => {
     if (view === 'dashboard' && user) {
       return (
-        <DataProvider currentUser={user}>
           <div className="flex h-screen bg-gray-100 dark:bg-gray-900 overflow-hidden">
             <Sidebar
               user={user}
@@ -535,11 +523,20 @@ const App: React.FC = () => {
               </main>
             </div>
           </div>
-          <ToastRenderer />
-          <AlertModalRenderer />
-        </DataProvider>
       );
     }
+
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900" style={{ fontFamily: font }}>
+          <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-pink-500 mb-4"></div>
+            <p className="text-gray-500 dark:text-gray-400 font-medium">Loading Club Hub...</p>
+          </div>
+        </div>
+      );
+    }
+
     if (view === 'freeRunner') {
       return <FreeCodeRunner theme={theme} onExit={() => setView('welcome')} />;
     }
@@ -573,34 +570,38 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-full text-gray-800 dark:text-gray-200 relative" style={{ fontFamily: font }}>
-      {!isOnline && <OfflineIndicator />}
-      <CustomCursor />
-      <div className="relative z-10">
-        {renderContent()}
+    <DataProvider currentUser={user}>
+      <div className="min-h-full text-gray-800 dark:text-gray-200 relative" style={{ fontFamily: font }}>
+        {!isOnline && <OfflineIndicator />}
+        <CustomCursor />
+        <div className="relative z-10">
+          {renderContent()}
+        </div>
+        <ToastRenderer />
+        <AlertModalRenderer />
+        <PendingApprovalModal
+          isOpen={showPendingModal}
+          onClose={() => setShowPendingModal(false)}
+        />
+        <FeatureTourModal
+          isOpen={showTourModal}
+          onClose={handleCloseTour}
+        />
+        <DeploymentChangelogModal
+          isOpen={showDeploymentChangelog}
+          latestEntry={LATEST_DEPLOYMENT_CHANGELOG}
+          entries={DEPLOYMENT_CHANGELOGS}
+          onClose={handleCloseDeploymentChangelog}
+        />
+        <StreakNoticeModal
+          isOpen={!!streakNotice}
+          title={streakNotice?.title || ''}
+          message={streakNotice?.message || ''}
+          variant={streakNotice?.variant || 'warning'}
+          onClose={() => setStreakNotice(null)}
+        />
       </div>
-      <PendingApprovalModal
-        isOpen={showPendingModal}
-        onClose={() => setShowPendingModal(false)}
-      />
-      <FeatureTourModal
-        isOpen={showTourModal}
-        onClose={handleCloseTour}
-      />
-      <DeploymentChangelogModal
-        isOpen={showDeploymentChangelog}
-        latestEntry={LATEST_DEPLOYMENT_CHANGELOG}
-        entries={DEPLOYMENT_CHANGELOGS}
-        onClose={handleCloseDeploymentChangelog}
-      />
-      <StreakNoticeModal
-        isOpen={!!streakNotice}
-        title={streakNotice?.title || ''}
-        message={streakNotice?.message || ''}
-        variant={streakNotice?.variant || 'warning'}
-        onClose={() => setStreakNotice(null)}
-      />
-    </div>
+    </DataProvider>
   );
 };
 
