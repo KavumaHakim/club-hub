@@ -15,6 +15,30 @@ export interface DeploymentChangelogEntry {
 
 export const DEPLOYMENT_CHANGELOGS: DeploymentChangelogEntry[] = [
   {
+    id: 'deploy-themed-emails',
+    commit: 'working-tree',
+    deployedAt: '2026-05-15',
+    headline: 'Premium Email Theming & Secure Password Reset',
+    summary: 'This deployment introduces a specialized architecture for transactional emails, focusing on brand alignment and security for password resets.',
+    items: [
+      {
+        title: 'Specialized Password Reset Edge Function',
+        details: 'A dedicated "request-password-reset" function now handles secure token generation (OTP + Link) and themed delivery in one step.',
+        expectation: 'Users should receive a single, beautiful, and functional email with a working reset link and code.',
+      },
+      {
+        title: 'Premium Brand-Aligned Email Design',
+        details: 'Transactional emails (Approval, Password Reset, Chat Alerts) now use a cohesive design system with pink/purple gradients and modern typography.',
+        expectation: 'Emails should look like a professional part of the ICT Club Hub ecosystem instead of generic system notifications.',
+      },
+      {
+        title: 'Centralized Email Engine',
+        details: 'The "send-email" Edge Function was upgraded to support templates, moving all HTML logic away from the frontend for better maintenance.',
+        expectation: 'Email designs can now be updated in one place without touching the frontend code.',
+      },
+    ],
+  },
+  {
     id: 'deploy-challenge-sync',
     commit: 'working-tree',
     deployedAt: '2026-05-12',
