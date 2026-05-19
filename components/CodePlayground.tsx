@@ -31,6 +31,7 @@ import SubmitToChallengeModal from './SubmitToChallengeModal';
 import { useData } from '../DataContext';
 import { FormattedMessage } from './FormattedMessage';
 import { supabase } from '../services/supabaseClient';
+import { runSandboxedJavaScript, runSandboxedPython, type SandboxExecutionController } from '../services/sandboxRunner';
 
 interface CodePlaygroundProps {
     theme: 'light' | 'dark';
@@ -304,42 +305,6 @@ const PYTHON_BUILTINS = [
     'staticmethod', 'str', 'sum', 'super', 'tuple', 'type', 'vars', 'zip'
 ];
 
-const wrapAsyncCalls = (code: string, functionNames: string[]): string => {
-    let newCode = code;
-    for (const funcName of functionNames) {
-        const regex = new RegExp(`\\b(${funcName.replace('.', '\\.')})\\s*\\(`, 'g');
-        let tempCode = '';
-        let lastIndex = 0;
-        let match;
-
-        while ((match = regex.exec(newCode)) !== null) {
-            tempCode += newCode.substring(lastIndex, match.index);
-            const startParenIndex = match.index + match[0].length - 1;
-            let parenCount = 1;
-            let endParenIndex = -1;
-            for (let i = startParenIndex + 1; i < newCode.length; i++) {
-                if (newCode[i] === '(') parenCount++;
-                else if (newCode[i] === ')') parenCount--;
-                if (parenCount === 0) {
-                    endParenIndex = i;
-                    break;
-                }
-            }
-            if (endParenIndex !== -1) {
-                const call = newCode.substring(match.index, endParenIndex + 1);
-                tempCode += `(await ${call})`;
-                lastIndex = endParenIndex + 1;
-            } else {
-                tempCode += newCode.substring(match.index, match.index + match[0].length);
-                lastIndex = match.index + match[0].length;
-            }
-        }
-        tempCode += newCode.substring(lastIndex);
-        newCode = tempCode;
-    }
-    return newCode;
-};
-
 const processCarriageReturns = (text: string) => {
     const lines = text.split('\n');
     return lines.map(line => {
@@ -404,8 +369,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
   
   const [output, setOutput] = useState<OutputLine[]>([{ type: 'log', content: 'Click "Run Code" to see the output here.' }]);
   const [isExecuting, setIsExecuting] = useState<boolean>(false);
-  const pyodideRef = useRef<any | null>(null);
-  const [isPyodideReady, setIsPyodideReady] = useState(false);
+  const [isPyodideReady] = useState(true);
   const [activeTab, setActiveTabState] = useState<'editor' | 'output' | 'preview'>('editor');
   const [isGettingHint, setIsGettingHint] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -440,6 +404,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
   const [evaluationResult, setEvaluationResult] = useState<{ passed: boolean, feedback: string, weaknesses: string, improvements: string } | null>(null);
   const codeRef = useRef(code);
   const activeFileRef = useRef<PlaygroundProjectFile | null>(null);
+  const executionRef = useRef<SandboxExecutionController | null>(null);
   const completionProvidersRef = useRef<any[]>([]);
   const emmetInitializedRef = useRef(false);
   const collabChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -1233,22 +1198,6 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
         handleImportCode(pendingImport);
     }
 
-    const setupPyodide = async () => {
-      try {
-        // @ts-ignore
-        const pyodideInstance = await window.loadPyodide({
-          indexURL: "https://cdn.jsdelivr.net/pyodide/v0.29.0/full/"
-        });
-        (window as any).pyodide = pyodideInstance;
-        pyodideRef.current = pyodideInstance;
-        setIsPyodideReady(true);
-      } catch (error) {
-        console.error("Failed to load Pyodide:", error);
-        setOutput([{ type: 'error', content: "Error: Could not load the Python execution engine. Please refresh." }]);
-      }
-    };
-    setupPyodide();
-
     const handleOpenCode = (e: CustomEvent<string>) => {
         if (e.detail) {
             handleImportCode(e.detail);
@@ -1268,6 +1217,8 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
     return () => {
         window.removeEventListener('open-in-playground' as any, handleOpenCode);
         document.removeEventListener('mousedown', handleClickOutside);
+        executionRef.current?.cancel();
+        executionRef.current = null;
     };
 
   }, []);
@@ -1474,10 +1425,11 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
   };
 
 
-  const runJS = () => {
+  const runJS = async () => {
       setIsExecuting(true);
       setActiveTabState('output');
       setOutput([]);
+      executionRef.current?.cancel();
 
       if (activeProject) {
           api.logPlaygroundActivity({
@@ -1490,35 +1442,21 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
               setOutput(prev => [...prev, { type: 'hint', content: 'JS multi-file imports are not supported in the runner yet. Use a single file or switch to Python for module imports.' }]);
           }
       }
-      
-      const originalLog = console.log;
-      const originalError = console.error;
 
-      // Capture logs
-      console.log = (...args) => {
-          const content = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)).join(' ');
-          setOutput(prev => [...prev, { type: 'log', content }]);
-          scrollToBottom();
-      };
-      
-      console.error = (...args) => {
-          const content = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)).join(' ');
-          setOutput(prev => [...prev, { type: 'error', content }]);
-          scrollToBottom();
-      };
-
-      try {
-          // Standard JS execution
-          eval(code);
-      } catch (err: any) {
-          setOutput(prev => [...prev, { type: 'error', content: err.message }]);
-      } finally {
-          // Restore
-          console.log = originalLog;
-          console.error = originalError;
-          setIsExecuting(false);
-          scrollToBottom();
+      const execution = runSandboxedJavaScript({
+          code,
+          onOutput: (line) => {
+              setOutput(prev => [...prev, line]);
+              scrollToBottom();
+          },
+      });
+      executionRef.current = execution;
+      await execution.finished;
+      if (executionRef.current === execution) {
+          executionRef.current = null;
       }
+      setIsExecuting(false);
+      scrollToBottom();
   };
 
   const runPython = async () => {
@@ -1526,67 +1464,14 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
     setActiveTabState('output');
     setOutput([]);
     setIsWaitingForInput(false);
+    executionRef.current?.cancel();
 
-    if (!pyodideRef.current) {
-        setOutput([{ type: 'error', content: 'Error: Local interpreter (Pyodide) is not ready.' }]);
-        setIsExecuting(false);
-        return;
-    }
-
-    (window as any).playgroundAskForInput = (prompt: string) => {
-        return new Promise((resolve) => {
-            setInputPrompt(prompt);
-            setIsWaitingForInput(true);
-            inputResolverRef.current = resolve;
-            
-            setActiveTabState('output');
-            setTimeout(() => {
-                if (consoleInputRef.current) {
-                    consoleInputRef.current.focus();
-                }
-                scrollToBottom();
-            }, 50);
-        });
-    };
-
-    (window as any).playgroundPrint = (text: string, type: 'log' | 'error') => {
-        if (typeof text !== 'string') return;
-        const normalized = text.replace(/\r\n/g, '\n');
-        const endsWithNewline = normalized.endsWith('\n');
-        const parts = normalized.split('\n');
-        if (endsWithNewline) {
-            parts.pop();
-        }
-        setOutput(prev => {
-            let newOutput = [...prev];
-            if (parts.length === 0) {
-                if (endsWithNewline) {
-                    newOutput.push({ type, content: '' });
-                }
-                return newOutput;
-            }
-            let lastLine = newOutput.length > 0 ? newOutput[newOutput.length - 1] : null;
-            if (lastLine && lastLine.type === type) {
-                lastLine.content += parts[0];
-                newOutput[newOutput.length-1] = { ...lastLine, content: processCarriageReturns(lastLine.content) };
-            } else {
-                newOutput.push({ type, content: processCarriageReturns(parts[0]) });
-            }
-            if (parts.length > 1) {
-                for (let i = 1; i < parts.length; i++) {
-                    newOutput.push({ type, content: parts[i] });
-                }
-            }
-            if (endsWithNewline) {
-                newOutput.push({ type, content: '' });
-            }
-            return newOutput;
-        });
-        scrollToBottom();
-    };
-
+    let filesForExecution: Record<string, string> | undefined;
     if (activeProject) {
-        await preparePythonProjectFiles();
+        filesForExecution = await ensureProjectFilesLoaded();
+        if (activeFile) {
+            filesForExecution = { ...filesForExecution, [activeFile.path]: codeRef.current };
+        }
         api.logPlaygroundActivity({
             projectId: activeProject.id,
             userId: currentUser.uid,
@@ -1595,61 +1480,65 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
         }).catch(() => undefined);
     }
 
-    const setupCode = `
-import sys
-import builtins
-import js
-import time
-import asyncio
-
-class Writer:
-    def __init__(self, stream_type):
-        self.stream_type = stream_type
-    def write(self, text):
-        js.playgroundPrint(text, self.stream_type)
-    def flush(self):
-        pass
-
-sys.stdout = Writer('log')
-sys.stderr = Writer('error')
-
-async def custom_input_async(prompt_text=""):
-    val_proxy = await js.playgroundAskForInput(prompt_text)
-    return str(val_proxy)
-
-builtins.input = custom_input_async
-
-async def custom_sleep_async(seconds):
-    await js.Promise.new(lambda resolve, reject: js.setTimeout(resolve, seconds * 1000))
-
-asyncio.sleep = custom_sleep_async
-    `;
-
-    try {
-        try {
-            await pyodideRef.current.loadPackagesFromImports(code);
-        } catch (error) {
-            console.warn("Package auto-load skipped:", error);
-        }
-        await pyodideRef.current.runPythonAsync(setupCode);
-        
-        const asyncCode = wrapAsyncCalls(code, ['input', 'asyncio.sleep']);
-        
-        const result = await pyodideRef.current.runPythonAsync(asyncCode);
-
-        if (result !== undefined && result !== null) {
-            if (typeof result.destroy === 'function') {
-                result.destroy();
+    const execution = runSandboxedPython({
+        code,
+        files: filesForExecution,
+        projectId: activeProject?.id,
+        onOutput: (line) => {
+            if (typeof line.content !== 'string') return;
+            const normalized = line.content.replace(/\r\n/g, '\n');
+            const endsWithNewline = normalized.endsWith('\n');
+            const parts = normalized.split('\n');
+            if (endsWithNewline) {
+                parts.pop();
             }
-        }
-        
-    } catch (error: any) {
-        (window as any).playgroundPrint(error.message, 'error');
-    } finally {
-        setIsExecuting(false);
-        setIsWaitingForInput(false);
-        scrollToBottom();
+            setOutput(prev => {
+                let newOutput = [...prev];
+                if (parts.length === 0) {
+                    if (endsWithNewline) {
+                        newOutput.push({ type: line.type, content: '' });
+                    }
+                    return newOutput;
+                }
+                const lastLine = newOutput.length > 0 ? newOutput[newOutput.length - 1] : null;
+                if (lastLine && lastLine.type === line.type) {
+                    lastLine.content += parts[0];
+                    newOutput[newOutput.length - 1] = { ...lastLine, content: processCarriageReturns(lastLine.content) };
+                } else {
+                    newOutput.push({ type: line.type, content: processCarriageReturns(parts[0]) });
+                }
+                if (parts.length > 1) {
+                    for (let i = 1; i < parts.length; i++) {
+                        newOutput.push({ type: line.type, content: parts[i] });
+                    }
+                }
+                if (endsWithNewline) {
+                    newOutput.push({ type: line.type, content: '' });
+                }
+                return newOutput;
+            });
+            scrollToBottom();
+        },
+        onInputRequest: (prompt) => {
+            setInputPrompt(prompt);
+            setIsWaitingForInput(true);
+            inputResolverRef.current = (value: string) => execution.provideInput(value);
+            setActiveTabState('output');
+            setTimeout(() => {
+                consoleInputRef.current?.focus();
+                scrollToBottom();
+            }, 50);
+        },
+    });
+    executionRef.current = execution;
+    await execution.finished;
+    if (executionRef.current === execution) {
+        executionRef.current = null;
     }
+    inputResolverRef.current = null;
+    setIsExecuting(false);
+    setIsWaitingForInput(false);
+    scrollToBottom();
   };
 
   const handleRunCode = () => {
@@ -1700,34 +1589,6 @@ asyncio.sleep = custom_sleep_async
       }
       setFileContents(contents);
       return contents;
-  };
-
-  const preparePythonProjectFiles = async () => {
-      if (!activeProject || !pyodideRef.current) return;
-      const contents = await ensureProjectFilesLoaded();
-      const projectDir = `/home/pyodide/projects/${activeProject.id}`;
-      try {
-          pyodideRef.current.FS.mkdirTree(projectDir);
-      } catch {
-          // ignore
-      }
-      Object.entries(contents).forEach(([path, content]) => {
-          const fullPath = `${projectDir}/${path}`;
-          const folder = fullPath.split('/').slice(0, -1).join('/');
-          if (folder) {
-              try {
-                  pyodideRef.current.FS.mkdirTree(folder);
-              } catch {
-                  // ignore
-              }
-          }
-          pyodideRef.current.FS.writeFile(fullPath, content);
-      });
-      await pyodideRef.current.runPythonAsync(`
-import sys
-if "${projectDir}" not in sys.path:
-    sys.path.insert(0, "${projectDir}")
-      `);
   };
 
   const getFileExtension = (path: string) => {

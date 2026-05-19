@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { XIcon } from './icons/XIcon';
 import { PlayIcon } from './icons/PlayIcon';
 import Editor from '@monaco-editor/react';
+import { runSandboxedJavaScript, runSandboxedPython, type SandboxExecutionController } from '../services/sandboxRunner';
 
 interface FreeCodeRunnerProps {
     theme: 'light' | 'dark';
@@ -49,42 +50,6 @@ const PYTHON_BUILTINS = [
     'staticmethod', 'str', 'sum', 'super', 'tuple', 'type', 'vars', 'zip'
 ];
 
-const wrapAsyncCalls = (code: string, functionNames: string[]): string => {
-    let newCode = code;
-    for (const funcName of functionNames) {
-        const regex = new RegExp(`\\b(${funcName.replace('.', '\\.')})\\s*\\(`, 'g');
-        let tempCode = '';
-        let lastIndex = 0;
-        let match;
-
-        while ((match = regex.exec(newCode)) !== null) {
-            tempCode += newCode.substring(lastIndex, match.index);
-            const startParenIndex = match.index + match[0].length - 1;
-            let parenCount = 1;
-            let endParenIndex = -1;
-            for (let i = startParenIndex + 1; i < newCode.length; i++) {
-                if (newCode[i] === '(') parenCount++;
-                else if (newCode[i] === ')') parenCount--;
-                if (parenCount === 0) {
-                    endParenIndex = i;
-                    break;
-                }
-            }
-            if (endParenIndex !== -1) {
-                const call = newCode.substring(match.index, endParenIndex + 1);
-                tempCode += `(await ${call})`;
-                lastIndex = endParenIndex + 1;
-            } else {
-                tempCode += newCode.substring(match.index, match.index + match[0].length);
-                lastIndex = match.index + match[0].length;
-            }
-        }
-        tempCode += newCode.substring(lastIndex);
-        newCode = tempCode;
-    }
-    return newCode;
-};
-
 const processCarriageReturns = (text: string) => {
     const lines = text.split('\n');
     return lines.map(line => {
@@ -105,8 +70,8 @@ const FreeCodeRunner: React.FC<FreeCodeRunnerProps> = ({ theme, onExit }) => {
     const [output, setOutput] = useState<OutputLine[]>([]);
     const [isExecuting, setIsExecuting] = useState(false);
     const [isLoadingPyodide, setIsLoadingPyodide] = useState(false);
-    const pyodideRef = useRef<any | null>(null);
     const outputContainerRef = useRef<HTMLDivElement>(null);
+    const executionRef = useRef<SandboxExecutionController | null>(null);
     
     const [isWaitingForInput, setIsWaitingForInput] = useState(false);
     const [inputPrompt, setInputPrompt] = useState('');
@@ -117,25 +82,11 @@ const FreeCodeRunner: React.FC<FreeCodeRunnerProps> = ({ theme, onExit }) => {
     const editorTheme = theme === 'dark' ? 'vs-dark' : 'light';
 
     useEffect(() => {
-        if (language === 'python' && !pyodideRef.current) {
-            const loadPyodide = async () => {
-                setIsLoadingPyodide(true);
-                try {
-                    // @ts-ignore
-                    const pyodideInstance = await window.loadPyodide({
-                        indexURL: "https://cdn.jsdelivr.net/pyodide/v0.29.0/full/"
-                    });
-                    pyodideRef.current = pyodideInstance;
-                } catch (error) {
-                    console.error("Failed to initialize Python environment:", error);
-                    setOutput([{ type: 'error', content: "Failed to initialize Python environment." }]);
-                } finally {
-                    setIsLoadingPyodide(false);
-                }
-            };
-            loadPyodide();
-        }
-    }, [language]);
+        return () => {
+            executionRef.current?.cancel();
+            executionRef.current = null;
+        };
+    }, []);
 
     const scrollToBottom = () => {
         if (outputContainerRef.current) {
@@ -150,132 +101,78 @@ const FreeCodeRunner: React.FC<FreeCodeRunnerProps> = ({ theme, onExit }) => {
         else runJS();
     };
 
-    const runJS = () => {
+    const runJS = async () => {
         setIsExecuting(true);
         setOutput([]);
-        const originalLog = console.log;
-        const originalError = console.error;
-
-        console.log = (...args) => {
-            const content = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)).join(' ');
-            setOutput(prev => [...prev, { type: 'log', content }]);
-            scrollToBottom();
-        };
-        
-        console.error = (...args) => {
-            const content = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)).join(' ');
-            setOutput(prev => [...prev, { type: 'error', content }]);
-            scrollToBottom();
-        };
-
-        try {
-            eval(code);
-        } catch (err: any) {
-            setOutput(prev => [...prev, { type: 'error', content: err.message }]);
-        } finally {
-            console.log = originalLog;
-            console.error = originalError;
-            setIsExecuting(false);
-            scrollToBottom();
+        executionRef.current?.cancel();
+        const execution = runSandboxedJavaScript({
+            code,
+            onOutput: (line) => {
+                setOutput(prev => [...prev, line]);
+                scrollToBottom();
+            },
+        });
+        executionRef.current = execution;
+        await execution.finished;
+        if (executionRef.current === execution) {
+            executionRef.current = null;
         }
+        setIsExecuting(false);
+        scrollToBottom();
     };
 
     const runPython = async () => {
-        if (!pyodideRef.current) return;
         setIsExecuting(true);
         setOutput([]);
         setIsWaitingForInput(false);
-
-        (window as any).freeRunnerPrint = (text: string, type: 'log' | 'error') => {
-            if (typeof text !== 'string') return;
-            if (type === 'error') {
-                setOutput(prev => [...prev, { type: 'error', content: text }]);
-                scrollToBottom();
-                return;
-            }
-            const parts = text.split('\n');
-            setOutput(prev => {
-                let newOutput = [...prev];
-                let lastLine = newOutput.length > 0 ? newOutput[newOutput.length-1] : null;
-                if (lastLine && lastLine.type === type) {
-                    lastLine.content += parts[0];
-                    newOutput[newOutput.length-1] = { ...lastLine, content: processCarriageReturns(lastLine.content) };
-                } else {
-                    newOutput.push({ type, content: processCarriageReturns(parts[0]) });
+        executionRef.current?.cancel();
+        const execution = runSandboxedPython({
+            code,
+            onLoadingChange: setIsLoadingPyodide,
+            onOutput: (line) => {
+                if (line.type === 'error') {
+                    setOutput(prev => [...prev, line]);
+                    scrollToBottom();
+                    return;
                 }
-                if (parts.length > 1) {
-                    for (let i = 1; i < parts.length; i++) {
-                        newOutput.push({ type, content: parts[i] });
+                const parts = line.content.split('\n');
+                setOutput(prev => {
+                    let newOutput = [...prev];
+                    let lastLine = newOutput.length > 0 ? newOutput[newOutput.length - 1] : null;
+                    if (lastLine && lastLine.type === line.type) {
+                        lastLine.content += parts[0];
+                        newOutput[newOutput.length - 1] = { ...lastLine, content: processCarriageReturns(lastLine.content) };
+                    } else {
+                        newOutput.push({ type: line.type, content: processCarriageReturns(parts[0]) });
                     }
-                }
-                return newOutput;
-            });
-            scrollToBottom();
-        };
-
-        (window as any).freeRunnerAskForInput = (prompt: string) => {
-            return new Promise((resolve) => {
+                    if (parts.length > 1) {
+                        for (let i = 1; i < parts.length; i++) {
+                            newOutput.push({ type: line.type, content: parts[i] });
+                        }
+                    }
+                    return newOutput;
+                });
+                scrollToBottom();
+            },
+            onInputRequest: (prompt) => {
                 setInputPrompt(prompt);
                 setIsWaitingForInput(true);
-                inputResolverRef.current = resolve;
+                inputResolverRef.current = (value: string) => execution.provideInput(value);
                 setTimeout(() => {
                     consoleInputRef.current?.focus();
                     scrollToBottom();
                 }, 50);
-            });
-        };
-
-        const setupCode = `
-import sys
-import builtins
-import js
-import time
-import asyncio
-
-class Writer:
-    def __init__(self, stream_type):
-        self.stream_type = stream_type
-    def write(self, text):
-        js.freeRunnerPrint(text, self.stream_type)
-    def flush(self):
-        pass
-
-sys.stdout = Writer('log')
-sys.stderr = Writer('error')
-
-async def custom_input_async(prompt_text=""):
-    val_proxy = await js.freeRunnerAskForInput(prompt_text)
-    return str(val_proxy)
-
-builtins.input = custom_input_async
-
-async def custom_sleep_async(seconds):
-    await js.Promise.new(lambda resolve, reject: js.setTimeout(resolve, seconds * 1000))
-
-time.sleep = custom_sleep_async
-asyncio.sleep = custom_sleep_async
-        `;
-
-        try {
-            await pyodideRef.current.loadPackagesFromImports(code);
-            await pyodideRef.current.runPythonAsync(setupCode);
-            const asyncCode = wrapAsyncCalls(code, ['input', 'time.sleep', 'asyncio.sleep']);
-            const result = await pyodideRef.current.runPythonAsync(asyncCode);
-            if (result !== undefined) {
-                pyodideRef.current.globals.set('last_result', result);
-                await pyodideRef.current.runPythonAsync("print(repr(last_result))");
-                pyodideRef.current.globals.delete('last_result');
-                if (typeof result.destroy === 'function') {
-                    result.destroy();
-                }
-            }
-        } catch (error: any) {
-            (window as any).freeRunnerPrint(error.message, 'error');
-        } finally {
-            setIsExecuting(false);
-            setIsWaitingForInput(false);
-            scrollToBottom();
+            },
+        });
+        executionRef.current = execution;
+        await execution.finished;
+        if (executionRef.current === execution) {
+            executionRef.current = null;
         }
+        inputResolverRef.current = null;
+        setIsExecuting(false);
+        setIsWaitingForInput(false);
+        scrollToBottom();
     };
 
     const handleConsoleInputEnter = (e: React.KeyboardEvent<HTMLInputElement>) => {
