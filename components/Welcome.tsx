@@ -87,7 +87,7 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToSignUp
           {/* Top Tagline */}
           <div className="mb-8 animate-fade-in-up opacity-0" style={{ animationDelay: '0.1s' }}>
               <span className="px-4 py-1.5 rounded-full text-xs font-bold bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 shadow-lg text-gray-600 dark:text-gray-300 uppercase tracking-widest backdrop-blur-md">
-                  Naggalama
+                  STAHIZA
               </span>
           </div>
 
@@ -203,7 +203,7 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToSignUp
       {/* Footer */}
       <footer className="bg-white dark:bg-gray-900 py-6 text-center border-t border-gray-200 dark:border-gray-700 relative z-10">
         <p className="text-sm text-gray-500 dark:text-gray-400">
-            &copy; {new Date().getFullYear()} ICT Club Hub. Designed & Developed by HAKIM.
+            &copy; {new Date().getFullYear()} ICT Club Hub. Designed & Developed by JOEL.
         </p>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 flex items-center justify-center gap-1.5">
             Made with 
