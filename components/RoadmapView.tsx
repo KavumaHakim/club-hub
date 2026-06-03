@@ -426,28 +426,33 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
     const isPatron = currentUser.role === 'PATRON';
 
     const getRoadmapLanguage = (topic: string) => {
-        const lower = (topic || '').toLowerCase();
-        if (lower.startsWith('python')) return 'Python';
-        if (lower.startsWith('javascript')) return 'JavaScript';
-        if (lower.includes('javascript')) return 'JavaScript';
-        if (lower.includes('python')) return 'Python';
-        return 'Python';
+    const lower = (topic || '').toLowerCase();
+    if (lower.includes('javascript') || lower.includes('js')) return 'JavaScript';
+    if (lower.includes('python') || lower.includes('py')) return 'Python';
+    return 'Python'; // Default fallback
     };
+};
 
     const visibleRoadmaps = useMemo(() => {
     let filtered = roadmaps;
+    
+    // 1. Filter by Level (forcing lowercase comparison)
     if (isPatron) {
-        //  FIXED: Changed skillLevel to skill_level
-        filtered = filtered.filter(r => r.skill_level === activePatronTab);
+        filtered = filtered.filter(r => 
+            r.skill_level?.toLowerCase() === activePatronTab?.toLowerCase()
+        );
     } else {
-        //  FIXED: Changed skillLevel to skill_level
-        filtered = filtered.filter(r => r.skill_level === currentUser.skillLevel);
+        filtered = filtered.filter(r => 
+            r.skill_level?.toLowerCase() === currentUser.skillLevel?.toLowerCase()
+        );
     }
     
-    // Filter by selected language for both members and patrons
-    return filtered.filter(r => getRoadmapLanguage(r.topic) === selectedLanguage);
+    // 2. Filter by Language (forcing lowercase comparison)
+    return filtered.filter(r => 
+        getRoadmapLanguage(r.topic).toLowerCase() === selectedLanguage.toLowerCase()
+    );
 }, [roadmaps, isPatron, activePatronTab, currentUser.skillLevel, selectedLanguage]);
-
+ 
     useEffect(() => {
         if (!isPatron && visibleRoadmaps.length > 0) {
             const loadProgress = async () => {
