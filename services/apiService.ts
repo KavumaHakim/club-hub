@@ -69,7 +69,12 @@ const AddAnnouncement: React.FC<AddAnnouncementProps> = ({ currentUser, onAddAnn
             let finalImageUrl = imageUrl.trim() || undefined;
 
             if (selectedFile) {
-                finalImageUrl = await api.uploadFeedImage(selectedFile);
+                // Catch storage specific errors if the bucket is missing/protected
+                try {
+                    finalImageUrl = await api.uploadFeedImage(selectedFile);
+                } catch (storageErr: any) {
+                    throw new Error(`Storage Error: ${storageErr.message || 'Bucket not found or upload denied.'}`);
+                }
             }
 
             await onAddAnnouncement({
@@ -88,9 +93,19 @@ const AddAnnouncement: React.FC<AddAnnouncementProps> = ({ currentUser, onAddAnn
             setPreviewUrl(null);
             setType('NEWS_UPDATE');
             setPollOptions(['', '']);
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            setErrorMsg('Failed to post announcement. Please try again.');
+            
+            // Unpack explicit Supabase errors dynamically
+            const errorString = error.message || '';
+            
+            if (errorString.includes('row-level security') || errorString.includes('42501')) {
+                setErrorMsg('Database Permission Denied: You do not have permission to insert into notifications/announcements.');
+            } else if (errorString.includes('Storage Error')) {
+                setErrorMsg(errorString); // Displays the storage message custom caught above
+            } else {
+                setErrorMsg('Failed to post announcement. Please verify your connection and try again.');
+            }
         } finally {
             setIsSubmitting(false);
         }

@@ -262,7 +262,7 @@ const AddAnnouncement: React.FC<AddAnnouncementProps> = ({ currentUser, onAddAnn
                             {isValid ? <CheckCircleIcon className="w-4 h-4 text-emerald-500" /> : null}
                             <span>{isValid ? 'Ready to post' : 'Fill the required fields'}</span>
                         </div>
-                        <button type="submit" disabled={isSubmitting || !isValid} className="px-6 py-2 font-bold text-white bg-gradient-to-r from-sky-500 to-indigo-900 hover:from-sky-600 hover:to-purple-700 rounded-full shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 disabled:opacity-50 dark:focus:ring-offset-gray-800 transition-all transform active:scale-95">
+                        <button type="submit" disabled={isSubmitting || !isValid} className="px-6 py-2 font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-full shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 dark:focus:ring-offset-gray-800 transition-all transform active:scale-95">
                             {isSubmitting ? 'Posting...' : 'Post'}
                         </button>
                     </div>
