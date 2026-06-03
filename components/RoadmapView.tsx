@@ -435,16 +435,18 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
     };
 
     const visibleRoadmaps = useMemo(() => {
-        let filtered = roadmaps;
-        if (isPatron) {
-            filtered = filtered.filter(r => r.skillLevel === activePatronTab);
-        } else {
-            filtered = filtered.filter(r => r.skillLevel === currentUser.skillLevel);
-        }
-        
-        // Filter by selected language for both members and patrons
-        return filtered.filter(r => getRoadmapLanguage(r.topic) === selectedLanguage);
-    }, [roadmaps, isPatron, activePatronTab, currentUser.skillLevel, selectedLanguage]);
+    let filtered = roadmaps;
+    if (isPatron) {
+        //  FIXED: Changed skillLevel to skill_level
+        filtered = filtered.filter(r => r.skill_level === activePatronTab);
+    } else {
+        //  FIXED: Changed skillLevel to skill_level
+        filtered = filtered.filter(r => r.skill_level === currentUser.skillLevel);
+    }
+    
+    // Filter by selected language for both members and patrons
+    return filtered.filter(r => getRoadmapLanguage(r.topic) === selectedLanguage);
+}, [roadmaps, isPatron, activePatronTab, currentUser.skillLevel, selectedLanguage]);
 
     useEffect(() => {
         if (!isPatron && visibleRoadmaps.length > 0) {
