@@ -37,13 +37,13 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToSignUp, onNavigateTo
   return (
     <div className="h-full bg-gray-50 dark:bg-gray-900 flex justify-center items-start sm:items-center relative p-4 pt-12 pb-32 sm:py-6 overflow-y-auto">
       {/* Animated Background Blobs */}
-      <div className="absolute top-0 -left-4 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob dark:opacity-20 dark:mix-blend-normal dark:bg-pink-900"></div>
+      <div className="absolute top-0 -left-4 w-72 h-72 bg-sky-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob dark:opacity-20 dark:mix-blend-normal dark:bg-sky-900"></div>
       <div className="absolute top-0 -right-4 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000 dark:opacity-20 dark:mix-blend-normal dark:bg-purple-900"></div>
       <div className="absolute -bottom-8 left-20 w-72 h-72 bg-indigo-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000 dark:opacity-20 dark:mix-blend-normal dark:bg-indigo-900"></div>
 
       <div className="relative w-full max-w-md bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-8 space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600 tracking-tight">
+          <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-indigo-900 tracking-tight">
             ICT Club Hub
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
@@ -66,7 +66,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToSignUp, onNavigateTo
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all shadow-sm"
+                className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all shadow-sm"
                 placeholder="you@example.com"
                 disabled={isLoading}
                 />
@@ -79,7 +79,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToSignUp, onNavigateTo
                 <button 
                     type="button"
                     onClick={() => setIsForgotModalOpen(true)}
-                    className="text-xs font-semibold text-pink-600 hover:text-pink-500 dark:text-pink-400"
+                    className="text-xs font-semibold text-sky-600 hover:text-sky-500 dark:text-sky-400"
                 >
                     Forgot Password?
                 </button>
@@ -96,7 +96,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToSignUp, onNavigateTo
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="block w-full pl-10 pr-10 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all shadow-sm"
+                className="block w-full pl-10 pr-10 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all shadow-sm"
                 placeholder="••••••••"
                 disabled={isLoading}
               />
@@ -120,7 +120,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToSignUp, onNavigateTo
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-sm font-bold text-white bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 disabled:opacity-50 disabled:cursor-not-allowed transform transition-all active:scale-[0.98] dark:focus:ring-offset-gray-800"
+            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-sm font-bold text-white bg-gradient-to-r from-sky-600 to-indigo-900 hover:from-sky-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 disabled:opacity-50 disabled:cursor-not-allowed transform transition-all active:scale-[0.98] dark:focus:ring-offset-gray-800"
           >
             {isLoading ? (
                 <span className="flex items-center gap-2">
@@ -144,7 +144,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToSignUp, onNavigateTo
             <div className="text-center">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                     Don't have an account?{' '}
-                    <button onClick={onNavigateToSignUp} className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-purple-600 hover:opacity-80 transition-opacity">
+                    <button onClick={onNavigateToSignUp} className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-indigo-900 hover:opacity-80 transition-opacity">
                         Sign up for free
                     </button>
                 </p>

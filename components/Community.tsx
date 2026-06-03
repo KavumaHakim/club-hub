@@ -192,12 +192,12 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
     return (
         <>
         <div className="max-w-6xl mx-auto space-y-8">
-            <section className="relative overflow-hidden rounded-3xl border border-gray-200/70 dark:border-gray-700/60 bg-gradient-to-br from-white via-pink-50/60 to-purple-50/50 dark:from-gray-900 dark:via-pink-900/15 dark:to-purple-900/15 p-6 md:p-8 shadow-sm">
-                <div className="absolute -top-16 -right-10 h-40 w-40 rounded-full bg-pink-300/30 blur-3xl"></div>
+            <section className="relative overflow-hidden rounded-3xl border border-gray-200/70 dark:border-gray-700/60 bg-gradient-to-br from-white via-sky-50/60 to-purple-50/50 dark:from-gray-900 dark:via-sky-900/15 dark:to-purple-900/15 p-6 md:p-8 shadow-sm">
+                <div className="absolute -top-16 -right-10 h-40 w-40 rounded-full bg-sky-300/30 blur-3xl"></div>
                 <div className="absolute -bottom-20 -left-10 h-44 w-44 rounded-full bg-purple-300/25 blur-3xl"></div>
                 <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                     <div>
-                        <p className="text-xs uppercase tracking-[0.3em] text-pink-500/80 dark:text-pink-300">Community</p>
+                        <p className="text-xs uppercase tracking-[0.3em] text-sky-500/80 dark:text-sky-300">Community</p>
                         <h2 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">Community Hub</h2>
                         <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 max-w-2xl">
                             Celebrate wins, form teams, and ship together. This is the heartbeat of the club.
@@ -207,7 +207,7 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
                         <Tooltip text="Create a new team and invite members.">
                             <button
                                 onClick={handleCreateTeam}
-                                className="inline-flex items-center gap-2 px-4 py-2.5 bg-pink-600 text-white rounded-xl text-sm font-semibold shadow-md hover:bg-pink-700 transition-all"
+                                className="inline-flex items-center gap-2 px-4 py-2.5 bg-sky-600 text-white rounded-xl text-sm font-semibold shadow-md hover:bg-sky-700 transition-all"
                             >
                                 <PlusCircleIcon className="w-4 h-4" /> Create Team
                             </button>
@@ -251,8 +251,8 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
                         <p className="text-sm text-gray-500 dark:text-gray-400">No recognition data yet. Submit showcases or suggestions to appear here.</p>
                     ) : (
                         <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] gap-4">
-                            <div className="rounded-2xl bg-gradient-to-br from-pink-500/10 via-purple-500/10 to-indigo-500/10 border border-pink-200/60 dark:border-pink-500/30 p-4">
-                                <p className="text-xs uppercase tracking-[0.2em] text-pink-600 dark:text-pink-300">Top Contributor</p>
+                            <div className="rounded-2xl bg-gradient-to-br from-sky-500/10 via-purple-500/10 to-indigo-900/10 border border-sky-200/60 dark:border-sky-500/30 p-4">
+                                <p className="text-xs uppercase tracking-[0.2em] text-sky-600 dark:text-sky-300">Top Contributor</p>
                                 {topMember ? (
                                     <div className="mt-3 flex items-center gap-4">
                                         <img
@@ -263,7 +263,7 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
                                         <div>
                                             <p className="text-lg font-bold text-gray-900 dark:text-white">{topMember.user.name}</p>
                                             <p className="text-xs text-gray-500 dark:text-gray-400">@{topMember.user.username}</p>
-                                            <p className="text-sm font-semibold text-pink-600 dark:text-pink-300 mt-1">{topMember.score} pts</p>
+                                            <p className="text-sm font-semibold text-sky-600 dark:text-sky-300 mt-1">{topMember.score} pts</p>
                                         </div>
                                     </div>
                                 ) : (
@@ -287,7 +287,7 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
                                             <p className="text-xs text-gray-500 dark:text-gray-400">@{entry.user.username}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-sm font-bold text-pink-600 dark:text-pink-400">{entry.score} pts</p>
+                                            <p className="text-sm font-bold text-sky-600 dark:text-sky-400">{entry.score} pts</p>
                                             <p className="text-[11px] text-gray-400">Showcases {entry.showcaseScore} • Ideas {entry.suggestionScore} • Badges {entry.badges}</p>
                                         </div>
                                     </div>
@@ -297,8 +297,8 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
                     )}
                 </div>
 
-                <div className="relative overflow-hidden bg-gradient-to-br from-pink-500/25 via-purple-500/25 to-indigo-500/20 dark:from-pink-500/35 dark:via-purple-500/35 dark:to-indigo-500/25 border border-pink-300/60 dark:border-pink-500/40 rounded-3xl p-6 shadow-[0_20px_60px_-30px_rgba(236,72,153,0.6)]">
-                    <div className="absolute -top-16 -right-12 w-48 h-48 bg-pink-400/20 blur-3xl rounded-full"></div>
+                <div className="relative overflow-hidden bg-gradient-to-br from-sky-500/25 via-purple-500/25 to-indigo-900/20 dark:from-sky-500/35 dark:via-purple-500/35 dark:to-indigo-500/25 border border-sky-300/60 dark:border-sky-500/40 rounded-3xl p-6 shadow-[0_20px_60px_-30px_rgba(236,72,153,0.6)]">
+                    <div className="absolute -top-16 -right-12 w-48 h-48 bg-sky-400/20 blur-3xl rounded-full"></div>
                     <div className="absolute -bottom-20 -left-16 w-56 h-56 bg-purple-500/20 blur-3xl rounded-full"></div>
                     <div className="flex items-center gap-3 mb-4 relative z-10">
                         <SparklesIcon />
@@ -311,7 +311,7 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
                         <div className="relative z-10">
                             <p className="text-xl font-black text-gray-900 dark:text-white">{topMember.user.name}</p>
                             <p className="text-sm text-gray-700 dark:text-gray-300">@{topMember.user.username}</p>
-                            <p className="text-sm text-pink-700 dark:text-pink-200 mt-2">Showcases {topMember.showcaseScore} • Ideas {topMember.suggestionScore} • Badges {topMember.badges}</p>
+                            <p className="text-sm text-sky-700 dark:text-sky-200 mt-2">Showcases {topMember.showcaseScore} • Ideas {topMember.suggestionScore} • Badges {topMember.badges}</p>
                         </div>
                     ) : (
                         <p className="text-sm text-gray-500 dark:text-gray-400">No spotlight yet. Start contributing to appear here.</p>
@@ -331,7 +331,7 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
                     <Tooltip text="Create a new team and invite members.">
                         <button
                             onClick={handleCreateTeam}
-                            className="inline-flex items-center gap-2 px-3 py-2 bg-pink-600 text-white rounded-lg text-sm font-semibold hover:bg-pink-700 transition-colors"
+                            className="inline-flex items-center gap-2 px-3 py-2 bg-sky-600 text-white rounded-lg text-sm font-semibold hover:bg-sky-700 transition-colors"
                         >
                             <PlusCircleIcon className="w-4 h-4" /> Create Team
                         </button>
@@ -400,7 +400,7 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
                                         ) : (
                                             <button
                                                 onClick={() => handleRequestJoin(team.id)}
-                                                className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-pink-600 text-white hover:bg-pink-700"
+                                                className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-sky-600 text-white hover:bg-sky-700"
                                             >
                                                 Request Join
                                             </button>

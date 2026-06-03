@@ -377,7 +377,7 @@ export const CodeRunnerModal: React.FC<CodeRunnerModalProps> = ({ isOpen, onClos
                   <div className="flex bg-gray-200 dark:bg-gray-700 p-1 rounded-lg">
                       <button 
                           onClick={() => setLanguage('python')} 
-                          className={`px-2 py-0.5 text-xs font-bold rounded transition-colors ${language === 'python' ? 'bg-pink-500 text-white' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                          className={`px-2 py-0.5 text-xs font-bold rounded transition-colors ${language === 'python' ? 'bg-sky-500 text-white' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
                       >
                           PY
                       </button>
@@ -517,7 +517,7 @@ export const CodeRunnerModal: React.FC<CodeRunnerModalProps> = ({ isOpen, onClos
               <button 
                   onClick={handleRunCode}
                   disabled={isExecuting || (language === 'python' && isLoadingPyodide)}
-                  className="flex items-center gap-2 px-6 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-pink-500/20 transition-all"
+                  className="flex items-center gap-2 px-6 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-sky-500/20 transition-all"
               >
                   {language === 'python' && isLoadingPyodide ? 'Loading Engine...' : isExecuting ? 'Running...' : (
                       <>

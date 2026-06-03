@@ -129,7 +129,7 @@ const ShareCodeModal: React.FC<ShareCodeModalProps> = ({ isOpen, onClose, code, 
                         type="text" 
                         value={comment}
                         onChange={e => setComment(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500 outline-none"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-sky-500 outline-none"
                         placeholder="Check this out..."
                     />
                 </div>
@@ -139,7 +139,7 @@ const ShareCodeModal: React.FC<ShareCodeModalProps> = ({ isOpen, onClose, code, 
                     placeholder="Search people or groups..." 
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
-                    className="w-full px-3 py-2 mb-4 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500 outline-none"
+                    className="w-full px-3 py-2 mb-4 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-sky-500 outline-none"
                 />
 
                 <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-1">
@@ -150,13 +150,13 @@ const ShareCodeModal: React.FC<ShareCodeModalProps> = ({ isOpen, onClose, code, 
                                 <div 
                                     key={chat.id} 
                                     onClick={() => toggleSelection(chat.id)}
-                                    className={`flex items-center p-2 rounded-lg cursor-pointer border transition-colors ${selectedTargetIds.includes(chat.id) ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20' : 'border-transparent hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
+                                    className={`flex items-center p-2 rounded-lg cursor-pointer border transition-colors ${selectedTargetIds.includes(chat.id) ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/20' : 'border-transparent hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
                                 >
                                     <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-600 dark:text-gray-300 mr-3 flex-shrink-0">
                                         {chat.name.charAt(0)}
                                     </div>
                                     <span className="text-sm font-medium text-gray-800 dark:text-gray-200 flex-1 truncate">{chat.name}</span>
-                                    {selectedTargetIds.includes(chat.id) && <CheckIcon className="text-pink-500 w-5 h-5" />}
+                                    {selectedTargetIds.includes(chat.id) && <CheckIcon className="text-sky-500 w-5 h-5" />}
                                 </div>
                             ))}
                         </div>
@@ -169,11 +169,11 @@ const ShareCodeModal: React.FC<ShareCodeModalProps> = ({ isOpen, onClose, code, 
                                 <div 
                                     key={user.id} 
                                     onClick={() => toggleSelection(user.id)}
-                                    className={`flex items-center p-2 rounded-lg cursor-pointer border transition-colors ${selectedTargetIds.includes(user.id) ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20' : 'border-transparent hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
+                                    className={`flex items-center p-2 rounded-lg cursor-pointer border transition-colors ${selectedTargetIds.includes(user.id) ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/20' : 'border-transparent hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
                                 >
                                     <img src={user.avatarUrl || `https://i.pravatar.cc/40?u=${user.id}`} className="w-8 h-8 rounded-full mr-3 flex-shrink-0" alt={user.name} />
                                     <span className="text-sm font-medium text-gray-800 dark:text-gray-200 flex-1 truncate">{user.name}</span>
-                                    {selectedTargetIds.includes(user.id) && <CheckIcon className="text-pink-500 w-5 h-5" />}
+                                    {selectedTargetIds.includes(user.id) && <CheckIcon className="text-sky-500 w-5 h-5" />}
                                 </div>
                             ))}
                         </div>
@@ -184,7 +184,7 @@ const ShareCodeModal: React.FC<ShareCodeModalProps> = ({ isOpen, onClose, code, 
                     <button 
                         onClick={handleSend}
                         disabled={selectedTargetIds.length === 0 || isSending}
-                        className="w-full py-2 bg-gradient-to-r from-pink-600 to-purple-600 text-white rounded-lg font-bold shadow-md hover:from-pink-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all transform active:scale-95"
+                        className="w-full py-2 bg-gradient-to-r from-sky-600 to-indigo-900 text-white rounded-lg font-bold shadow-md hover:from-sky-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all transform active:scale-95"
                     >
                         {isSending ? 'Sending...' : (
                             <>

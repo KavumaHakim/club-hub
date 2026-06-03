@@ -139,7 +139,7 @@ const ShowcaseCard: React.FC<{
                                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${languageBadge === 'HTML'
                                         ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-200'
                                         : languageBadge === 'PY'
-                                            ? 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-200'
+                                            ? 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-200'
                                             : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-200'
                                     }`}>
                                     {languageBadge}
@@ -157,7 +157,7 @@ const ShowcaseCard: React.FC<{
                     </div>
                     {/* Run Overlay */}
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                        <div className="bg-pink-600 text-white rounded-full p-2 shadow-lg transform scale-90 group-hover:scale-100 transition-transform">
+                        <div className="bg-sky-600 text-white rounded-full p-2 shadow-lg transform scale-90 group-hover:scale-100 transition-transform">
                             <PlayIcon className="h-6 w-6" />
                         </div>
                     </div>
@@ -173,7 +173,7 @@ const ShowcaseCard: React.FC<{
                     <Tooltip text="Like this showcase to support the creator.">
                         <button
                             onClick={() => onLike(item.id, likes)}
-                            className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors ${isLiked ? 'text-pink-500 bg-pink-50 dark:bg-pink-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+                            className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors ${isLiked ? 'text-sky-500 bg-sky-50 dark:bg-sky-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
                         >
                             <HeartIcon className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
                             <span className="text-xs font-medium">{likes.length}</span>
@@ -354,7 +354,7 @@ const Showcase: React.FC<ShowcaseProps> = ({ currentUser, setActiveTab }) => {
     if (isLoadingShowcase) {
         return (
             <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500"></div>
             </div>
         );
     }
@@ -376,7 +376,7 @@ const Showcase: React.FC<ShowcaseProps> = ({ currentUser, setActiveTab }) => {
                         placeholder="Search snippets..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-4 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500"
+                        className="w-full pl-4 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
                     />
                 </div>
             </div>
@@ -391,7 +391,7 @@ const Showcase: React.FC<ShowcaseProps> = ({ currentUser, setActiveTab }) => {
                     <Tooltip text="Open the playground to publish your first showcase.">
                         <button
                             onClick={() => setActiveTab('playground')}
-                            className="mt-4 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors text-sm font-medium"
+                            className="mt-4 px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors text-sm font-medium"
                         >
                             Go to Playground
                         </button>

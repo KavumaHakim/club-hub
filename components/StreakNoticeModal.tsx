@@ -27,7 +27,7 @@ const StreakNoticeModal: React.FC<StreakNoticeModalProps> = ({
     : {
         chip: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
         card: 'border-amber-200 dark:border-amber-900/30',
-        glow: 'from-amber-500/20 to-pink-500/10',
+        glow: 'from-amber-500/20 to-sky-500/10',
       };
 
   return (

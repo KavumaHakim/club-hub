@@ -28,7 +28,7 @@ const FeatureTourModal: React.FC<FeatureTourModalProps> = ({ isOpen, onClose }) 
       title: "Welcome to ICT Club Hub",
       description: "Here’s a detailed tour of every major feature so you can jump in with confidence.",
       icon: <span className="text-6xl animate-icon-bounce-in">🚀</span>,
-      gradient: "from-pink-500 to-purple-600"
+      gradient: "from-sky-500 to-indigo-900"
     },
     {
       title: "Feed & Announcements",
@@ -48,7 +48,7 @@ const FeatureTourModal: React.FC<FeatureTourModalProps> = ({ isOpen, onClose }) 
            <CalendarIcon />
         </div>
       ),
-      gradient: "from-red-400 to-pink-600"
+      gradient: "from-red-400 to-sky-600"
     },
     {
       title: "Projects & Teams",

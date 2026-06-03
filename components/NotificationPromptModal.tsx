@@ -74,7 +74,7 @@ const NotificationPromptModal: React.FC<NotificationPromptModalProps> = ({ isOpe
             <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-2xl max-w-md w-full overflow-hidden relative border border-white/20 animate-fade-in-up">
                 
                 {/* Decorative background elements */}
-                <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-pink-500/20 to-purple-600/20 -z-10" />
+                <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-sky-500/20 to-indigo-900/20 -z-10" />
                 
                 <button 
                     onClick={onClose} 
@@ -87,7 +87,7 @@ const NotificationPromptModal: React.FC<NotificationPromptModalProps> = ({ isOpe
                     {step === 'prompt' && (
                         <>
                             <div className="relative inline-block mb-8">
-                                <div className="w-24 h-24 bg-gradient-to-tr from-pink-500 to-purple-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-pink-500/30 rotate-3 transform transition-transform hover:rotate-0">
+                                <div className="w-24 h-24 bg-gradient-to-tr from-sky-500 to-indigo-900 rounded-3xl flex items-center justify-center shadow-2xl shadow-sky-500/30 rotate-3 transform transition-transform hover:rotate-0">
                                     <BellIcon className="w-12 h-12 text-white" />
                                 </div>
                                 <div className="absolute -top-2 -right-2 bg-yellow-400 p-2 rounded-full shadow-lg animate-pulse">
@@ -99,7 +99,7 @@ const NotificationPromptModal: React.FC<NotificationPromptModalProps> = ({ isOpe
                                 Don't Miss Out!
                             </h3>
                             <p className="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed px-2">
-                                Get instant alerts for <span className="text-pink-600 dark:text-pink-400 font-bold">new challenges</span>, 
+                                Get instant alerts for <span className="text-sky-600 dark:text-sky-400 font-bold">new challenges</span>, 
                                 <span className="text-purple-600 dark:text-purple-400 font-bold"> club announcements</span>, and 
                                 <span className="text-indigo-600 dark:text-indigo-400 font-bold"> chat messages</span> directly on your device.
                             </p>

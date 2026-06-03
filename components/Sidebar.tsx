@@ -51,14 +51,14 @@ const NavLink: React.FC<{
         onClick={() => onClick(tabName)}
         title={isCollapsed ? label : undefined}
         className={`group relative flex items-center w-full px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 ease-out ${isCollapsed ? 'justify-center' : 'space-x-3'} ${isActive
-          ? 'bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow-lg shadow-pink-500/25'
+          ? 'bg-gradient-to-r from-sky-600 to-indigo-900 text-white shadow-lg shadow-sky-500/25'
           : 'text-gray-700 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white'
           }`}
       >
         <div className={`relative flex items-center justify-center transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
           {icon}
           {isCollapsed && badge !== undefined && badge > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-[16px] h-4 text-[9px] font-bold text-white bg-pink-500 rounded-full border border-white dark:border-gray-800 px-0.5 shadow-sm">
+            <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-[16px] h-4 text-[9px] font-bold text-white bg-sky-500 rounded-full border border-white dark:border-gray-800 px-0.5 shadow-sm">
               {badge > 9 ? '!' : badge}
             </span>
           )}
@@ -69,7 +69,7 @@ const NavLink: React.FC<{
         {!isCollapsed && badge !== undefined && badge > 0 && (
           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm ${isActive
             ? 'bg-white/20 text-white'
-            : 'bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400'
+            : 'bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400'
             }`}>
             {badge > 99 ? '99+' : badge}
           </span>
@@ -193,7 +193,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, activeTab, setActiveTab, isOpen
             {!isCollapsed && (
               <div className="flex flex-col">
                 <span className="text-xl font-black tracking-tight text-gray-900 dark:text-white leading-none">
-                  Club<span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600">Hub</span>
+                  Club<span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-indigo-900">Hub</span>
                 </span>
                 <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium tracking-widest uppercase mt-0.5">STAHIZA</span>
               </div>
@@ -240,7 +240,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, activeTab, setActiveTab, isOpen
           <div className="hidden md:flex justify-end">
             <button
               onClick={onToggleCollapse}
-              className="p-1.5 text-gray-500 hover:text-pink-600 dark:text-gray-400 dark:hover:text-pink-400 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 w-full flex justify-center"
+              className="p-1.5 text-gray-500 hover:text-sky-600 dark:text-gray-400 dark:hover:text-sky-400 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 w-full flex justify-center"
               title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
             >
               {isCollapsed ? <ChevronsRightIcon /> : <ChevronsLeftIcon />}

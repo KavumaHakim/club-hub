@@ -302,7 +302,7 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-premium border border-gray-100 dark:border-gray-700 glassmorphism">
                 <div>
                     <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white flex items-center gap-3">
-                        <div className="p-3 bg-pink-100 dark:bg-pink-900/40 rounded-xl text-pink-600 dark:text-pink-400">
+                        <div className="p-3 bg-sky-100 dark:bg-sky-900/40 rounded-xl text-sky-600 dark:text-sky-400">
                             <VoteIcon className="w-7 h-7" />
                         </div>
                         Voting Hub
@@ -315,20 +315,20 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                 <div className="flex p-1 bg-gray-100 dark:bg-gray-700/50 rounded-xl">
                     <button
                         onClick={() => setActiveTab('active')}
-                        className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'active' ? 'bg-white dark:bg-gray-600 text-pink-600 dark:text-pink-300 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
+                        className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'active' ? 'bg-white dark:bg-gray-600 text-sky-600 dark:text-sky-300 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
                     >
                         Active
                     </button>
                     <button
                         onClick={() => setActiveTab('past')}
-                        className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'past' ? 'bg-white dark:bg-gray-600 text-pink-600 dark:text-pink-300 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
+                        className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'past' ? 'bg-white dark:bg-gray-600 text-sky-600 dark:text-sky-300 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
                     >
                         Past
                     </button>
                     {currentUser.role === 'PATRON' && (
                         <button
                             onClick={() => setActiveTab('create')}
-                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'create' ? 'bg-white dark:bg-gray-600 text-pink-600 dark:text-pink-300 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
+                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'create' ? 'bg-white dark:bg-gray-600 text-sky-600 dark:text-sky-300 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
                         >
                             Manage
                         </button>
@@ -336,11 +336,11 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                     {currentUser.role === 'PATRON' && (
                         <button
                             onClick={() => setActiveTab('vetting')}
-                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all relative ${activeTab === 'vetting' ? 'bg-white dark:bg-gray-600 text-pink-600 dark:text-pink-300 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
+                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all relative ${activeTab === 'vetting' ? 'bg-white dark:bg-gray-600 text-sky-600 dark:text-sky-300 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
                         >
                             Vetting
                             {pendingContestants.length > 0 && (
-                                <span className="absolute -top-1 -right-1 w-4 h-4 bg-pink-500 text-white text-[10px] flex items-center justify-center rounded-full animate-pulse">
+                                <span className="absolute -top-1 -right-1 w-4 h-4 bg-sky-500 text-white text-[10px] flex items-center justify-center rounded-full animate-pulse">
                                     {pendingContestants.length}
                                 </span>
                             )}
@@ -349,7 +349,7 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                     {currentUser.role === 'PATRON' && (
                         <button
                             onClick={() => setActiveTab('analytics')}
-                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'analytics' ? 'bg-white dark:bg-gray-600 text-pink-600 dark:text-pink-300 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
+                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'analytics' ? 'bg-white dark:bg-gray-600 text-sky-600 dark:text-sky-300 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
                         >
                             Analytics
                         </button>
@@ -372,7 +372,7 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                 </div>
                 <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
                     <p className="text-xs uppercase tracking-widest text-gray-400 font-semibold">Pending vetting</p>
-                    <p className="text-2xl font-extrabold text-pink-600 dark:text-pink-400 mt-1">{pendingContestants.length}</p>
+                    <p className="text-2xl font-extrabold text-sky-600 dark:text-sky-400 mt-1">{pendingContestants.length}</p>
                 </div>
             </div>
 
@@ -397,12 +397,12 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             placeholder="Search elections by title or description..."
-                            className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                            className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-sky-500"
                         />
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-                            className="px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                            className="px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-sky-500"
                         >
                             <option value="all">All statuses</option>
                             <option value="open">Open now</option>
@@ -445,7 +445,7 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                         </button>
                                     )}
                                 </div>
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 group-hover:text-pink-600 transition-colors">
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 group-hover:text-sky-600 transition-colors">
                                     {pos.title}
                                 </h3>
                                 <p className="text-gray-600 dark:text-gray-300 text-sm line-clamp-3 mb-4 flex-grow">
@@ -482,7 +482,7 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                     <button
                                         onClick={() => handleActionClick(pos, 'vote')}
                                         className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold transition-all text-sm shadow-lg ${isVotingOpen(pos)
-                                            ? 'bg-pink-600 text-white hover:bg-pink-700 shadow-pink-500/25'
+                                            ? 'bg-sky-600 text-white hover:bg-sky-700 shadow-sky-500/25'
                                             : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed shadow-none'}`}
                                     >
                                         <VoteIcon className="w-4 h-4" />
@@ -551,7 +551,7 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Contestant Vetting</h3>
                                 <p className="text-gray-500 text-sm mt-1">Review manifestos and approve candidates for the ballot.</p>
                             </div>
-                            <div className="px-4 py-2 bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 rounded-xl text-xs font-bold uppercase tracking-widest">
+                            <div className="px-4 py-2 bg-sky-50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-400 rounded-xl text-xs font-bold uppercase tracking-widest">
                                 {pendingContestants.length} Pending
                             </div>
                         </div>
@@ -575,7 +575,7 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                                 />
                                                 <div>
                                                     <h4 className="font-bold text-gray-900 dark:text-white">{c.userName}</h4>
-                                                    <span className="text-[10px] font-black text-pink-500 uppercase tracking-tighter bg-pink-50 dark:bg-pink-900/20 px-2 py-0.5 rounded">
+                                                    <span className="text-[10px] font-black text-sky-500 uppercase tracking-tighter bg-sky-50 dark:bg-sky-900/20 px-2 py-0.5 rounded">
                                                         For {pos?.title || 'Unknown Position'}
                                                     </span>
                                                 </div>
@@ -608,8 +608,8 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                 <div className="space-y-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-premium border border-gray-100 dark:border-gray-700 relative overflow-hidden group">
-                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-pink-500/5 rounded-full group-hover:scale-150 transition-transform duration-700" />
-                            <div className="flex items-center gap-3 text-pink-600 mb-4">
+                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-sky-500/5 rounded-full group-hover:scale-150 transition-transform duration-700" />
+                            <div className="flex items-center gap-3 text-sky-600 mb-4">
                                 <BarChart3Icon className="w-6 h-6" />
                                 <h4 className="font-bold text-xs uppercase tracking-widest">Global Participation</h4>
                             </div>
@@ -656,7 +656,7 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                         console.error('Refresh failed', e);
                                     }
                                 }}
-                                className="flex items-center gap-2 px-4 py-2 bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 rounded-xl text-sm font-bold hover:bg-pink-100 dark:hover:bg-pink-900/40 transition-all"
+                                className="flex items-center gap-2 px-4 py-2 bg-sky-50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-400 rounded-xl text-sm font-bold hover:bg-sky-100 dark:hover:bg-sky-900/40 transition-all"
                             >
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                                 Refresh
@@ -729,8 +729,8 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                                                 <div className="h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                                                                     <div
                                                                         className={`h-full rounded-full transition-all duration-700 ease-out ${isLeading
-                                                                            ? 'bg-gradient-to-r from-yellow-400 to-pink-500'
-                                                                            : 'bg-gradient-to-r from-pink-400 to-purple-500'
+                                                                            ? 'bg-gradient-to-r from-yellow-400 to-sky-500'
+                                                                            : 'bg-gradient-to-r from-sky-400 to-purple-500'
                                                                             }`}
                                                                         style={{ width: `${pct}%` }}
                                                                     />
@@ -756,7 +756,7 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                             <input
                                 type="text"
                                 required
-                                className="w-full p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 rounded-2xl focus:ring-2 focus:ring-pink-500 outline-none transition-all dark:text-white"
+                                className="w-full p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 rounded-2xl focus:ring-2 focus:ring-sky-500 outline-none transition-all dark:text-white"
                                 placeholder="e.g. Club President"
                                 value={newPos.title}
                                 onChange={e => setNewPos({ ...newPos, title: e.target.value })}
@@ -765,7 +765,7 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                         <div className="space-y-2">
                             <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Description</label>
                             <textarea
-                                className="w-full p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 rounded-2xl focus:ring-2 focus:ring-pink-500 outline-none transition-all min-h-[120px] dark:text-white"
+                                className="w-full p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 rounded-2xl focus:ring-2 focus:ring-sky-500 outline-none transition-all min-h-[120px] dark:text-white"
                                 placeholder="Describe the responsibilities..."
                                 value={newPos.description}
                                 onChange={e => setNewPos({ ...newPos, description: e.target.value })}
@@ -774,7 +774,7 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                         <div className="space-y-2">
                             <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Contesting Criteria</label>
                             <textarea
-                                className="w-full p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 rounded-2xl focus:ring-2 focus:ring-pink-500 outline-none transition-all min-h-[80px] dark:text-white"
+                                className="w-full p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 rounded-2xl focus:ring-2 focus:ring-sky-500 outline-none transition-all min-h-[80px] dark:text-white"
                                 placeholder="Who is eligible? (e.g. Must be a member for 6 months)"
                                 value={newPos.criteria}
                                 onChange={e => setNewPos({ ...newPos, criteria: e.target.value })}
@@ -786,7 +786,7 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                 <input
                                     type="datetime-local"
                                     required
-                                    className="w-full p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 rounded-2xl focus:ring-2 focus:ring-pink-500 outline-none transition-all dark:text-white"
+                                    className="w-full p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 rounded-2xl focus:ring-2 focus:ring-sky-500 outline-none transition-all dark:text-white"
                                     value={newPos.startDate}
                                     onChange={e => setNewPos({ ...newPos, startDate: e.target.value })}
                                 />
@@ -796,7 +796,7 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                 <input
                                     type="datetime-local"
                                     required
-                                    className="w-full p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 rounded-2xl focus:ring-2 focus:ring-pink-500 outline-none transition-all dark:text-white"
+                                    className="w-full p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 rounded-2xl focus:ring-2 focus:ring-sky-500 outline-none transition-all dark:text-white"
                                     value={newPos.dueDate}
                                     onChange={e => setNewPos({ ...newPos, dueDate: e.target.value })}
                                 />
@@ -804,7 +804,7 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                         </div>
                         <button
                             disabled={isSubmitting}
-                            className="w-full py-4 bg-gradient-to-r from-pink-600 to-purple-600 text-white rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg shadow-pink-500/25 disabled:opacity-50"
+                            className="w-full py-4 bg-gradient-to-r from-sky-600 to-indigo-900 text-white rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg shadow-sky-500/25 disabled:opacity-50"
                         >
                             {isSubmitting ? 'Posting...' : 'Post Position'}
                         </button>
@@ -855,7 +855,7 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                             <div className="space-y-2">
                                 <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Your Manifesto</label>
                                 <textarea
-                                    className="w-full p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 rounded-2xl focus:ring-2 focus:ring-pink-500 outline-none transition-all min-h-[160px] dark:text-white text-sm"
+                                    className="w-full p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 rounded-2xl focus:ring-2 focus:ring-sky-500 outline-none transition-all min-h-[160px] dark:text-white text-sm"
                                     placeholder="Explain why you are the best fit for this role..."
                                     value={manifesto}
                                     onChange={e => setManifesto(e.target.value)}
@@ -872,7 +872,7 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                 <button
                                     disabled={isSubmitting || (selectedPosition.criteria && !criteriaAgreed)}
                                     onClick={handleContest}
-                                    className="flex-[2] py-4 bg-pink-600 text-white rounded-2xl font-bold hover:bg-pink-700 transition-all shadow-lg shadow-pink-500/25 disabled:opacity-50"
+                                    className="flex-[2] py-4 bg-sky-600 text-white rounded-2xl font-bold hover:bg-sky-700 transition-all shadow-lg shadow-sky-500/25 disabled:opacity-50"
                                 >
                                     {isSubmitting ? 'Submitting...' : 'Submit Entry'}
                                 </button>
@@ -922,7 +922,7 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                         />
                                         <div>
                                             <h4 className="font-extrabold text-gray-900 dark:text-white text-lg">{contestant.userName}</h4>
-                                            <p className="text-xs text-pink-600 dark:text-pink-400 font-bold uppercase tracking-widest">Candidate for {selectedPosition.title}</p>
+                                            <p className="text-xs text-sky-600 dark:text-sky-400 font-bold uppercase tracking-widest">Candidate for {selectedPosition.title}</p>
                                         </div>
                                     </div>
                                     <div className="mb-4">
@@ -934,7 +934,7 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                     <button
                                         disabled={isSubmitting || hasUserVoted || !isVotingOpen(selectedPosition)}
                                         onClick={() => handleCastVote(contestant.id)}
-                                        className="w-full py-4 bg-white dark:bg-gray-700 border-2 border-pink-100 dark:border-pink-900/30 text-pink-600 dark:text-pink-400 rounded-2xl font-bold hover:bg-pink-600 hover:text-white dark:hover:bg-pink-600 dark:hover:text-white transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                                        className="w-full py-4 bg-white dark:bg-gray-700 border-2 border-sky-100 dark:border-sky-900/30 text-sky-600 dark:text-sky-400 rounded-2xl font-bold hover:bg-sky-600 hover:text-white dark:hover:bg-sky-600 dark:hover:text-white transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                                     >
                                         {hasUserVoted ? 'Vote Already Cast' : !isVotingOpen(selectedPosition) ? `Vote opens ${new Date(selectedPosition.startDate).toLocaleDateString()}` : `Vote for ${contestant.userName}`}
                                     </button>
@@ -985,7 +985,7 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                         </div>
                                         <div className="h-4 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden p-[2px]">
                                             <div
-                                                className={`h-full rounded-full transition-all duration-1000 ${index === 0 ? 'bg-gradient-to-r from-pink-500 to-purple-600 shadow-sm' : 'bg-gray-300 dark:bg-gray-500'}`}
+                                                className={`h-full rounded-full transition-all duration-1000 ${index === 0 ? 'bg-gradient-to-r from-sky-500 to-indigo-900 shadow-sm' : 'bg-gray-300 dark:bg-gray-500'}`}
                                                 style={{ width: `${percent}%` }}
                                             />
                                         </div>
@@ -993,8 +993,8 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                 );
                             })}
 
-                            <div className="mt-8 p-6 bg-pink-50 dark:bg-pink-900/10 rounded-2xl border border-pink-100 dark:border-pink-900/30">
-                                <div className="flex items-center gap-3 text-pink-700 dark:text-pink-300">
+                            <div className="mt-8 p-6 bg-sky-50 dark:bg-sky-900/10 rounded-2xl border border-sky-100 dark:border-sky-900/30">
+                                <div className="flex items-center gap-3 text-sky-700 dark:text-sky-300">
                                     <CheckIcon className="w-6 h-6" />
                                     <div>
                                         <h5 className="font-bold">Election Finalized</h5>
@@ -1023,7 +1023,7 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                 <span className="text-sm font-bold text-gray-400 uppercase tracking-widest block mb-1">
                                     {statusModalConfig.type === 'upcoming' ? 'Scheduled Start' : 'Ended On'}
                                 </span>
-                                <span className="text-lg font-black text-pink-600 dark:text-pink-400">
+                                <span className="text-lg font-black text-sky-600 dark:text-sky-400">
                                     {new Date(statusModalConfig.date).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
                                 </span>
                             </div>

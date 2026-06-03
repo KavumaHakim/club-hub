@@ -64,7 +64,7 @@ const HackerText: React.FC<{ text: string, className?: string }> = ({ text, clas
 const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToSignUp, onNavigateToPatronLogin, onNavigateToFreeRunner }) => {
   
   return (
-    <div className="bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen flex flex-col font-sans selection:bg-pink-500 selection:text-white overflow-x-hidden">
+    <div className="bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen flex flex-col font-sans selection:bg-sky-500 selection:text-white overflow-x-hidden">
       {/* Hero Section */}
       <header className="min-h-[100dvh] flex flex-col items-center justify-center relative overflow-hidden p-6 bg-gray-50 dark:bg-gray-950">
         
@@ -94,10 +94,10 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToSignUp
           {/* Main Heading with Hacker Effect and Constant Motion Gradient */}
           <h1 className="text-6xl sm:text-8xl md:text-9xl font-black tracking-tighter drop-shadow-2xl pb-4 leading-[1.1]">
             <div className="flex flex-col items-center">
-                <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 bg-clip-text text-transparent animate-gradient-fast">
+                <div className="bg-gradient-to-r from-sky-500 via-purple-500 to-indigo-900 bg-clip-text text-transparent animate-gradient-fast">
                     <HackerText text="ICT CLUB" />
                 </div>
-                <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent animate-gradient-fast mt-[-10px] sm:mt-[-20px]">
+                <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-sky-500 bg-clip-text text-transparent animate-gradient-fast mt-[-10px] sm:mt-[-20px]">
                     <HackerText text="HUB" />
                 </div>
             </div>
@@ -107,14 +107,14 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToSignUp
           <div className="mt-6 flex flex-col sm:flex-row items-center gap-4 w-full justify-center animate-fade-in-up opacity-0" style={{ animationDelay: '0.3s', animationFillMode: 'forwards' }}>
               <button
                 onClick={onNavigateToLogin}
-                className="w-full sm:w-40 px-8 py-4 text-lg font-bold text-gray-700 bg-white/90 backdrop-blur-sm border border-gray-200 dark:text-white dark:bg-gray-800/90 dark:border-gray-700 rounded-xl shadow-lg hover:scale-105 transition-all hover:shadow-xl hover:border-pink-500/50"
+                className="w-full sm:w-40 px-8 py-4 text-lg font-bold text-gray-700 bg-white/90 backdrop-blur-sm border border-gray-200 dark:text-white dark:bg-gray-800/90 dark:border-gray-700 rounded-xl shadow-lg hover:scale-105 transition-all hover:shadow-xl hover:border-sky-500/50"
               >
                 Login
               </button>
               
               <button
                 onClick={onNavigateToSignUp}
-                className="group w-full sm:w-auto px-12 py-4 text-xl font-black text-white rounded-xl shadow-xl shadow-pink-500/30 overflow-hidden transition-all hover:scale-105 hover:shadow-pink-500/50 focus:outline-none focus:ring-4 focus:ring-pink-500/50 shine-effect border-2 border-transparent bg-gradient-to-r from-pink-600 to-purple-600"
+                className="group w-full sm:w-auto px-12 py-4 text-xl font-black text-white rounded-xl shadow-xl shadow-sky-500/30 overflow-hidden transition-all hover:scale-105 hover:shadow-sky-500/50 focus:outline-none focus:ring-4 focus:ring-sky-500/50 shine-effect border-2 border-transparent bg-gradient-to-r from-sky-600 to-indigo-900"
               >
                  <span className="relative flex items-center justify-center gap-2 z-10">
                     Sign Up <span className="group-hover:translate-x-1 transition-transform">🚀</span>
@@ -141,7 +141,7 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToSignUp
           
           <p className="mt-8 text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto animate-fade-in-up opacity-0 leading-relaxed font-light bg-white/30 dark:bg-black/40 p-4 rounded-xl backdrop-blur-md border border-white/20 dark:border-gray-800/50" style={{ animationDelay: '0.7s', animationFillMode: 'forwards' }}>
             Connect. Code. Create. <br/>
-            <span className="text-sm font-mono text-pink-500 mt-2 block">System.Status: ONLINE</span>
+            <span className="text-sm font-mono text-sky-500 mt-2 block">System.Status: ONLINE</span>
           </p>
           
         </div>
@@ -162,8 +162,8 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToSignUp
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {/* Feature 1 */}
                 <AnimatedFeatureCard delay={0}>
-                  <div className="group p-8 h-full rounded-3xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 hover:border-pink-200 dark:hover:border-pink-900 hover:bg-white dark:hover:bg-gray-800/80 transition-all duration-300 transform hover:-translate-y-2">
-                      <div className="w-16 h-16 bg-gradient-to-br from-pink-100 to-purple-100 dark:from-pink-900/50 dark:to-purple-900/50 rounded-2xl flex items-center justify-center text-pink-500 dark:text-pink-400 mb-6 group-hover:scale-110 group-hover:rotate-6 transition-transform">
+                  <div className="group p-8 h-full rounded-3xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 hover:border-sky-200 dark:hover:border-sky-900 hover:bg-white dark:hover:bg-gray-800/80 transition-all duration-300 transform hover:-translate-y-2">
+                      <div className="w-16 h-16 bg-gradient-to-br from-sky-100 to-purple-100 dark:from-sky-900/50 dark:to-purple-900/50 rounded-2xl flex items-center justify-center text-sky-500 dark:text-sky-400 mb-6 group-hover:scale-110 group-hover:rotate-6 transition-transform">
                           <CalendarIcon className="w-8 h-8"/>
                       </div>
                       <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">Activities & Events</h3>
@@ -174,8 +174,8 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToSignUp
                 </AnimatedFeatureCard>
                 {/* Feature 2 */}
                 <AnimatedFeatureCard delay={100}>
-                  <div className="group p-8 h-full rounded-3xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 hover:border-pink-200 dark:hover:border-pink-900 hover:bg-white dark:hover:bg-gray-800/80 transition-all duration-300 transform hover:-translate-y-2">
-                      <div className="w-16 h-16 bg-gradient-to-br from-pink-100 to-purple-100 dark:from-pink-900/50 dark:to-purple-900/50 rounded-2xl flex items-center justify-center text-pink-500 dark:text-pink-400 mb-6 group-hover:scale-110 group-hover:rotate-6 transition-transform">
+                  <div className="group p-8 h-full rounded-3xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 hover:border-sky-200 dark:hover:border-sky-900 hover:bg-white dark:hover:bg-gray-800/80 transition-all duration-300 transform hover:-translate-y-2">
+                      <div className="w-16 h-16 bg-gradient-to-br from-sky-100 to-purple-100 dark:from-sky-900/50 dark:to-purple-900/50 rounded-2xl flex items-center justify-center text-sky-500 dark:text-sky-400 mb-6 group-hover:scale-110 group-hover:rotate-6 transition-transform">
                           <ClipboardListIcon />
                       </div>
                       <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">Project Boards</h3>
@@ -186,8 +186,8 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToSignUp
                 </AnimatedFeatureCard>
                 {/* Feature 3 */}
                 <AnimatedFeatureCard delay={200}>
-                  <div className="group p-8 h-full rounded-3xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 hover:border-pink-200 dark:hover:border-pink-900 hover:bg-white dark:hover:bg-gray-800/80 transition-all duration-300 transform hover:-translate-y-2">
-                      <div className="w-16 h-16 bg-gradient-to-br from-pink-100 to-purple-100 dark:from-pink-900/50 dark:to-purple-900/50 rounded-2xl flex items-center justify-center text-pink-500 dark:text-pink-400 mb-6 group-hover:scale-110 group-hover:rotate-6 transition-transform">
+                  <div className="group p-8 h-full rounded-3xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 hover:border-sky-200 dark:hover:border-sky-900 hover:bg-white dark:hover:bg-gray-800/80 transition-all duration-300 transform hover:-translate-y-2">
+                      <div className="w-16 h-16 bg-gradient-to-br from-sky-100 to-purple-100 dark:from-sky-900/50 dark:to-purple-900/50 rounded-2xl flex items-center justify-center text-sky-500 dark:text-sky-400 mb-6 group-hover:scale-110 group-hover:rotate-6 transition-transform">
                           <ChatBubbleIcon />
                       </div>
                       <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">Real-time Chat</h3>
@@ -207,7 +207,7 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigateToLogin, onNavigateToSignUp
         </p>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 flex items-center justify-center gap-1.5">
             Made with 
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-pink-500 animate-pulse-heart" viewBox="0 0 20 20" fill="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-sky-500 animate-pulse-heart" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
             </svg> 
             and code.

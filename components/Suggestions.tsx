@@ -94,7 +94,7 @@ const AddSuggestionModal: React.FC<{ isOpen: boolean; onClose: () => void; onSub
                             type="text"
                             value={title}
                             onChange={e => setTitle(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500 focus:border-pink-500 outline-none"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-sky-500 focus:border-sky-500 outline-none"
                             placeholder={type === 'FEATURE' ? "e.g., Dark mode support" : "e.g., Login button not working"}
                             required
                         />
@@ -105,7 +105,7 @@ const AddSuggestionModal: React.FC<{ isOpen: boolean; onClose: () => void; onSub
                             value={description}
                             onChange={e => setDescription(e.target.value)}
                             rows={4}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500 focus:border-pink-500 outline-none"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-sky-500 focus:border-sky-500 outline-none"
                             placeholder="Describe your idea or the bug in detail..."
                             required
                         />
@@ -114,7 +114,7 @@ const AddSuggestionModal: React.FC<{ isOpen: boolean; onClose: () => void; onSub
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="w-full py-2.5 bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-lg shadow-md transition-all disabled:opacity-50"
+                            className="w-full py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-lg shadow-md transition-all disabled:opacity-50"
                         >
                             {isSubmitting ? 'Submitting...' : 'Submit'}
                         </button>
@@ -190,7 +190,7 @@ const SuggestionCard: React.FC<{
                         <select
                             value={suggestion.status}
                             onChange={(e) => onStatusChange(suggestion.id, e.target.value as SuggestionStatus)}
-                            className="text-xs bg-gray-100 dark:bg-gray-700 border-none rounded px-2 py-1 focus:ring-1 focus:ring-pink-500"
+                            className="text-xs bg-gray-100 dark:bg-gray-700 border-none rounded px-2 py-1 focus:ring-1 focus:ring-sky-500"
                         >
                             <option value="PENDING">Pending</option>
                             <option value="IN_PROGRESS">In Progress</option>
@@ -201,7 +201,7 @@ const SuggestionCard: React.FC<{
 
                     <button
                         onClick={() => onVote(suggestion.id, upvotes)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium text-sm transition-all ${hasVoted ? 'bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400 ring-1 ring-pink-200 dark:ring-pink-800' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium text-sm transition-all ${hasVoted ? 'bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400 ring-1 ring-sky-200 dark:ring-sky-800' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
                     >
                         <ArrowUpCircleIcon />
                         <span>{upvotes.length}</span>
@@ -281,7 +281,7 @@ const Suggestions: React.FC<SuggestionsProps> = ({ currentUser }) => {
                 <Tooltip text="Create a new feature request or bug report.">
                     <button
                         onClick={() => setIsModalOpen(true)}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-pink-600 hover:bg-pink-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-pink-500/25 transition-all"
+                        className="flex items-center gap-2 px-5 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-sky-500/25 transition-all"
                     >
                         <PlusCircleIcon /> New Suggestion
                     </button>

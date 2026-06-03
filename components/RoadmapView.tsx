@@ -45,7 +45,7 @@ const MilestoneCard: React.FC<{
 }> = ({ milestone, index, isLast, isLocked, isCompleted, isPatron, onTakeQuiz }) => {
     return (
         <div className={`relative pl-8 pb-8 ${isLast ? '' : 'border-l-2 border-gray-200 dark:border-gray-700 ml-4'}`}>
-            <div className={`absolute left-0 top-0 -ml-[9px] w-4 h-4 rounded-full border-2 border-white dark:border-gray-900 z-10 transition-colors ${isCompleted ? 'bg-green-500' : isLocked ? 'bg-gray-300 dark:bg-gray-600' : 'bg-pink-500'}`}>
+            <div className={`absolute left-0 top-0 -ml-[9px] w-4 h-4 rounded-full border-2 border-white dark:border-gray-900 z-10 transition-colors ${isCompleted ? 'bg-green-500' : isLocked ? 'bg-gray-300 dark:bg-gray-600' : 'bg-sky-500'}`}>
                 {isCompleted && <div className="absolute inset-0 flex items-center justify-center text-white"><CheckCircleIcon className="w-2 h-2" /></div>}
             </div>
 
@@ -61,7 +61,7 @@ const MilestoneCard: React.FC<{
 
                 <div className="flex flex-wrap gap-2 mb-4">
                     {milestone.resources.map((res, i) => (
-                        <a key={i} href={res.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-xs hover:bg-pink-100 dark:hover:bg-pink-900/30 transition-colors">
+                        <a key={i} href={res.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-xs hover:bg-sky-100 dark:hover:bg-sky-900/30 transition-colors">
                             <ResourceTypeIcon type={res.type} />
                             {res.title}
                         </a>
@@ -72,7 +72,7 @@ const MilestoneCard: React.FC<{
                     <Tooltip text="Take the assessment to unlock the next milestone.">
                         <button
                             onClick={onTakeQuiz}
-                            className="w-full py-2 bg-pink-600 text-white rounded-lg text-sm font-bold hover:bg-pink-700 transition-all flex items-center justify-center gap-2"
+                            className="w-full py-2 bg-sky-600 text-white rounded-lg text-sm font-bold hover:bg-sky-700 transition-all flex items-center justify-center gap-2"
                         >
                             <SparklesIcon className="w-4 h-4" /> Start Assessment
                         </button>
@@ -159,7 +159,7 @@ const CreateRoadmapModal: React.FC<{
                                 <select
                                     value={language}
                                     onChange={e => setLanguage(e.target.value as any)}
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-sky-500"
                                 >
                                     <option value="Python">Python</option>
                                     <option value="JavaScript">JavaScript</option>
@@ -170,7 +170,7 @@ const CreateRoadmapModal: React.FC<{
                                 <select
                                     value={level}
                                     onChange={e => setLevel(e.target.value as any)}
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-sky-500"
                                 >
                                     <option value="BEGINNER">Beginner</option>
                                     <option value="INTERMEDIATE">Intermediate</option>
@@ -184,7 +184,7 @@ const CreateRoadmapModal: React.FC<{
                                 type="text"
                                 value={topic}
                                 onChange={e => setTopic(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500"
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-sky-500"
                                 placeholder={`e.g., ${language} basics, DOM manipulation, etc.`}
                             />
                         </div>
@@ -193,7 +193,7 @@ const CreateRoadmapModal: React.FC<{
                             <textarea
                                 value={suggestedTopics}
                                 onChange={e => setSuggestedTopics(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500"
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-sky-500"
                                 rows={2}
                             />
                         </div>
@@ -201,7 +201,7 @@ const CreateRoadmapModal: React.FC<{
                             <button
                                 onClick={handleGenerate}
                                 disabled={isGenerating || !topic}
-                                className="w-full py-3 bg-gradient-to-r from-pink-600 to-purple-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
+                                className="w-full py-3 bg-gradient-to-r from-sky-600 to-indigo-900 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
                             >
                                 {isGenerating ? 'Curating Content...' : 'Generate Roadmap'}
                             </button>
@@ -218,7 +218,7 @@ const CreateRoadmapModal: React.FC<{
                                 <div key={ms.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-750">
                                     <div className="flex justify-between items-start mb-2">
                                         <h5 className="font-bold text-gray-800 dark:text-gray-200">{idx + 1}. {ms.title}</h5>
-                                        <span className="text-[10px] font-bold bg-pink-100 text-pink-700 px-2 py-0.5 rounded-full">{ms.duration}</span>
+                                        <span className="text-[10px] font-bold bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full">{ms.duration}</span>
                                     </div>
                                     <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">{ms.description}</p>
                                 </div>
@@ -227,7 +227,7 @@ const CreateRoadmapModal: React.FC<{
                         <div className="mt-6 flex gap-3">
                             <button onClick={() => setGeneratedMilestones(null)} className="flex-1 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium">Edit Input</button>
                             <Tooltip text="Publish this roadmap so members can follow it.">
-                                <button onClick={handleConfirmSave} className="flex-1 py-2 bg-pink-600 text-white rounded-lg font-medium hover:bg-pink-700">Publish Roadmap</button>
+                                <button onClick={handleConfirmSave} className="flex-1 py-2 bg-sky-600 text-white rounded-lg font-medium hover:bg-sky-700">Publish Roadmap</button>
                             </Tooltip>
                         </div>
                     </div>
@@ -308,7 +308,7 @@ const EditRoadmapModal: React.FC<{
                         type="text"
                         value={topic}
                         onChange={e => setTopic(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-sky-500"
                     />
                 </div>
 
@@ -322,7 +322,7 @@ const EditRoadmapModal: React.FC<{
                                         type="text"
                                         value={ms.title}
                                         onChange={e => handleUpdateMilestone(msIdx, 'title', e.target.value)}
-                                        className="w-full px-2 py-1 text-sm border-b border-gray-300 dark:border-gray-600 bg-transparent dark:text-white focus:border-pink-500 outline-none"
+                                        className="w-full px-2 py-1 text-sm border-b border-gray-300 dark:border-gray-600 bg-transparent dark:text-white focus:border-sky-500 outline-none"
                                     />
                                 </div>
                                 <div className="w-24">
@@ -331,7 +331,7 @@ const EditRoadmapModal: React.FC<{
                                         type="text"
                                         value={ms.duration}
                                         onChange={e => handleUpdateMilestone(msIdx, 'duration', e.target.value)}
-                                        className="w-full px-2 py-1 text-sm border-b border-gray-300 dark:border-gray-600 bg-transparent dark:text-white focus:border-pink-500 outline-none"
+                                        className="w-full px-2 py-1 text-sm border-b border-gray-300 dark:border-gray-600 bg-transparent dark:text-white focus:border-sky-500 outline-none"
                                     />
                                 </div>
                             </div>
@@ -341,7 +341,7 @@ const EditRoadmapModal: React.FC<{
                                 <textarea
                                     value={ms.description}
                                     onChange={e => handleUpdateMilestone(msIdx, 'description', e.target.value)}
-                                    className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-transparent dark:text-white focus:border-pink-500 outline-none"
+                                    className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-transparent dark:text-white focus:border-sky-500 outline-none"
                                     rows={2}
                                 />
                             </div>
@@ -349,7 +349,7 @@ const EditRoadmapModal: React.FC<{
                             <div>
                                 <div className="flex justify-between items-center mb-2">
                                     <label className="block text-[10px] font-bold text-gray-400 uppercase">Resources</label>
-                                    <button onClick={() => handleAddResource(msIdx)} className="text-pink-600 text-[10px] font-bold hover:underline flex items-center gap-1">
+                                    <button onClick={() => handleAddResource(msIdx)} className="text-sky-600 text-[10px] font-bold hover:underline flex items-center gap-1">
                                         <PlusCircleIcon className="w-3 h-3" /> Add Resource
                                     </button>
                                 </div>
@@ -398,7 +398,7 @@ const EditRoadmapModal: React.FC<{
                     <button 
                         onClick={handleConfirmSave} 
                         disabled={isSaving}
-                        className="flex-1 py-2 bg-pink-600 text-white rounded-lg font-medium hover:bg-pink-700 disabled:opacity-50"
+                        className="flex-1 py-2 bg-sky-600 text-white rounded-lg font-medium hover:bg-sky-700 disabled:opacity-50"
                     >
                         {isSaving ? 'Saving...' : 'Save Changes'}
                     </button>
@@ -539,7 +539,7 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
     if (isLoadingRoadmaps) {
         return (
             <div className="flex flex-col items-center justify-center h-64 text-gray-500 gap-4">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500"></div>
                 <p>Curating your paths...</p>
             </div>
         );
@@ -550,7 +550,7 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
             {isGeneratingQuiz && (
                 <div className="fixed inset-0 bg-white/50 dark:bg-black/50 backdrop-blur-sm z-[70] flex items-center justify-center">
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-2xl flex flex-col items-center">
-                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-pink-500 mb-3"></div>
+                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-sky-500 mb-3"></div>
                         <p className="font-bold text-gray-800 dark:text-white">Generating Quiz...</p>
                     </div>
                 </div>
@@ -580,13 +580,13 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
                             <button
                                 key={level}
                                 onClick={() => setActivePatronTab(level)}
-                                className={`pb-3 px-4 text-sm font-medium transition-colors relative focus:outline-none ${activePatronTab === level ? 'text-pink-600 dark:text-pink-400 border-b-2 border-pink-600 dark:border-pink-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+                                className={`pb-3 px-4 text-sm font-medium transition-colors relative focus:outline-none ${activePatronTab === level ? 'text-sky-600 dark:text-sky-400 border-b-2 border-sky-600 dark:border-sky-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
                             >
                                 {level.charAt(0) + level.slice(1).toLowerCase()}
                             </button>
                         ))
                     ) : (
-                        <div className="pb-3 px-4 text-sm font-bold text-pink-600 dark:text-pink-400 border-b-2 border-pink-600 dark:border-pink-400">
+                        <div className="pb-3 px-4 text-sm font-bold text-sky-600 dark:text-sky-400 border-b-2 border-sky-600 dark:border-sky-400">
                             {currentUser.skillLevel?.charAt(0) + (currentUser.skillLevel?.slice(1).toLowerCase() || '')} Track
                         </div>
                     )}
@@ -595,13 +595,13 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
                 <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1 mb-3">
                     <button 
                         onClick={() => setSelectedLanguage('Python')}
-                        className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${selectedLanguage === 'Python' ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-pink-400 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
+                        className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${selectedLanguage === 'Python' ? 'bg-white dark:bg-gray-700 text-sky-600 dark:text-sky-400 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
                     >
                         Python
                     </button>
                     <button 
                         onClick={() => setSelectedLanguage('JavaScript')}
-                        className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${selectedLanguage === 'JavaScript' ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-pink-400 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
+                        className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${selectedLanguage === 'JavaScript' ? 'bg-white dark:bg-gray-700 text-sky-600 dark:text-sky-400 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
                     >
                         JavaScript
                     </button>
@@ -628,7 +628,7 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
                                     </h3>
                                     {isPatron && (
                                         <div className="flex gap-2">
-                                            <button onClick={() => openEditModal(roadmap)} className="p-2 text-gray-400 hover:text-pink-600 transition-colors"><PencilIcon className="w-5 h-5" /></button>
+                                            <button onClick={() => openEditModal(roadmap)} className="p-2 text-gray-400 hover:text-sky-600 transition-colors"><PencilIcon className="w-5 h-5" /></button>
                                             <button onClick={() => setDeleteId(roadmap.id!)} className="p-2 text-gray-400 hover:text-red-500 transition-colors"><TrashIcon className="w-5 h-5" /></button>
                                         </div>
                                     )}

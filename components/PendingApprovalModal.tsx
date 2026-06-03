@@ -22,7 +22,7 @@ const PendingApprovalModal: React.FC<PendingApprovalModalProps> = ({ isOpen, onC
         }}
       >
         {/* Floating blobs */}
-        <div className="absolute -top-16 -left-16 w-48 h-48 bg-pink-500/30 rounded-full blur-3xl animate-[float_12s_ease-in-out_infinite]"></div>
+        <div className="absolute -top-16 -left-16 w-48 h-48 bg-sky-500/30 rounded-full blur-3xl animate-[float_12s_ease-in-out_infinite]"></div>
         <div className="absolute -bottom-24 -right-12 w-64 h-64 bg-purple-600/30 rounded-full blur-3xl animate-[float_15s_ease-in-out_infinite_2s]"></div>
         
         <div className="relative z-10">

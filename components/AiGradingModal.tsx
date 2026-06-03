@@ -57,7 +57,7 @@ const AiGradingModal: React.FC<AiGradingModalProps> = ({ isOpen, onClose, taskCo
                 </button>
 
                 <div className="flex items-center gap-3 mb-6">
-                    <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-lg">
+                    <div className="p-3 bg-gradient-to-br from-purple-500 to-sky-500 rounded-xl shadow-lg">
                         <SparklesIcon className="w-6 h-6 text-white" />
                     </div>
                     <div>
@@ -70,9 +70,9 @@ const AiGradingModal: React.FC<AiGradingModalProps> = ({ isOpen, onClose, taskCo
                     {isLoading ? (
                         <div className="flex-1 flex flex-col items-center justify-center space-y-4 py-8">
                             <div className="relative">
-                                <div className="w-12 h-12 rounded-full border-4 border-gray-200 dark:border-gray-700 border-t-pink-500 animate-spin"></div>
+                                <div className="w-12 h-12 rounded-full border-4 border-gray-200 dark:border-gray-700 border-t-sky-500 animate-spin"></div>
                                 <div className="absolute inset-0 flex items-center justify-center">
-                                    <SparklesIcon className="w-4 h-4 text-pink-500 animate-pulse" />
+                                    <SparklesIcon className="w-4 h-4 text-sky-500 animate-pulse" />
                                 </div>
                             </div>
                             <p className="text-gray-600 dark:text-gray-300 font-medium animate-pulse">Analyzing code quality...</p>
@@ -122,7 +122,7 @@ const AiGradingModal: React.FC<AiGradingModalProps> = ({ isOpen, onClose, taskCo
                         </button>
                         <button 
                             onClick={() => onApplyGrade(result.grade, result.feedback)}
-                            className="flex-1 py-2.5 bg-gradient-to-r from-pink-600 to-purple-600 text-white rounded-xl font-bold hover:shadow-lg transition-all transform active:scale-95"
+                            className="flex-1 py-2.5 bg-gradient-to-r from-sky-600 to-indigo-900 text-white rounded-xl font-bold hover:shadow-lg transition-all transform active:scale-95"
                         >
                             Apply Grade
                         </button>

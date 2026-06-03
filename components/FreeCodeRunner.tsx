@@ -209,13 +209,13 @@ const FreeCodeRunner: React.FC<FreeCodeRunnerProps> = ({ theme, onExit }) => {
                     >
                         <XIcon className="w-5 h-5" />
                     </button>
-                    <h1 className="text-xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent hidden sm:block">
+                    <h1 className="text-xl font-bold bg-gradient-to-r from-sky-500 to-indigo-900 bg-clip-text text-transparent hidden sm:block">
                         Free Code Runner
                     </h1>
                     <div className="flex bg-gray-200 dark:bg-gray-700 p-1 rounded-lg">
                         <button 
                             onClick={() => handleLanguageChange('python')} 
-                            className={`px-3 py-1 text-xs font-bold rounded transition-colors ${language === 'python' ? 'bg-white dark:bg-gray-600 shadow text-pink-600' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                            className={`px-3 py-1 text-xs font-bold rounded transition-colors ${language === 'python' ? 'bg-white dark:bg-gray-600 shadow text-sky-600' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
                         >
                             PY
                         </button>
@@ -230,7 +230,7 @@ const FreeCodeRunner: React.FC<FreeCodeRunnerProps> = ({ theme, onExit }) => {
                 <button 
                     onClick={handleRunCode}
                     disabled={isExecuting || (language === 'python' && isLoadingPyodide)}
-                    className="flex items-center gap-2 px-6 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all"
+                    className="flex items-center gap-2 px-6 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all"
                 >
                     {language === 'python' && isLoadingPyodide ? (
                          <span className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full"></span>

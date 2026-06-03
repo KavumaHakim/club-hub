@@ -114,7 +114,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ isOpen, onClose, task, cu
                             onChange={e => setContent(e.target.value)}
                             required
                             rows={3}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500 focus:border-pink-500"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-sky-500 focus:border-sky-500"
                             placeholder="What needs to be done?"
                         />
                     </div>
@@ -125,7 +125,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ isOpen, onClose, task, cu
                             <select
                                 value={priority}
                                 onChange={e => setPriority(e.target.value as TaskPriority)}
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500 focus:border-pink-500"
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-sky-500 focus:border-sky-500"
                             >
                                 <option value="LOW">Low</option>
                                 <option value="MEDIUM">Medium</option>
@@ -138,7 +138,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ isOpen, onClose, task, cu
                                 type="date"
                                 value={dueDate}
                                 onChange={e => setDueDate(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500 focus:border-pink-500"
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-sky-500 focus:border-sky-500"
                             />
                         </div>
                     </div>
@@ -152,13 +152,13 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ isOpen, onClose, task, cu
                                     <div
                                         key={user.uid}
                                         onClick={() => toggleAssignee(user.uid)}
-                                        className={`flex items-center gap-3 p-2 rounded-md cursor-pointer ${isAssigned ? 'bg-pink-50 dark:bg-pink-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                                        className={`flex items-center gap-3 p-2 rounded-md cursor-pointer ${isAssigned ? 'bg-sky-50 dark:bg-sky-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}`}
                                     >
-                                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${isAssigned ? 'bg-pink-500 border-pink-500' : 'border-gray-300 dark:border-gray-500'}`}>
+                                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${isAssigned ? 'bg-sky-500 border-sky-500' : 'border-gray-300 dark:border-gray-500'}`}>
                                             {isAssigned && <CheckIcon className="w-3 h-3 text-white" />}
                                         </div>
                                         <img src={user.avatarUrl} className="w-6 h-6 rounded-full" alt={user.name} />
-                                        <span className={`text-sm ${isAssigned ? 'font-semibold text-pink-800 dark:text-pink-300' : 'text-gray-700 dark:text-gray-300'}`}>{user.name}</span>
+                                        <span className={`text-sm ${isAssigned ? 'font-semibold text-sky-800 dark:text-sky-300' : 'text-gray-700 dark:text-gray-300'}`}>{user.name}</span>
                                     </div>
                                 );
                             })}
@@ -181,14 +181,14 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ isOpen, onClose, task, cu
                             onChange={e => setNewTag(e.target.value)}
                             onKeyDown={handleAddTag}
                             placeholder="Frontend, Bug, etc..."
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500 focus:border-pink-500 text-sm"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-sky-500 focus:border-sky-500 text-sm"
                         />
                     </div>
                 </form>
                 <button
                     onClick={handleSubmit}
                     disabled={isSubmitting}
-                    className="w-full py-2.5 bg-pink-600 hover:bg-pink-700 text-white font-semibold rounded-lg shadow-md transition-all flex items-center justify-center gap-2 mt-4"
+                    className="w-full py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-lg shadow-md transition-all flex items-center justify-center gap-2 mt-4"
                 >
                     {isSubmitting ? 'Saving...' : (
                         <>

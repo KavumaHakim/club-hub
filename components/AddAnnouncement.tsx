@@ -141,7 +141,7 @@ const AddAnnouncement: React.FC<AddAnnouncementProps> = ({ currentUser, onAddAnn
                                 placeholder={type === 'MEMBER_POST' ? "Title (optional)" : "Add a title"}
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
-                                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                             />
                             {isTitleRequired && (
                                 <p className="text-xs text-gray-500 dark:text-gray-400">Title is required for news and event announcements.</p>
@@ -159,7 +159,7 @@ const AddAnnouncement: React.FC<AddAnnouncementProps> = ({ currentUser, onAddAnn
                                         setPreviewUrl(null);
                                     }
                                 }}
-                                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                             />
 
                             <div className="flex flex-col gap-3">
@@ -185,7 +185,7 @@ const AddAnnouncement: React.FC<AddAnnouncementProps> = ({ currentUser, onAddAnn
 
                                 {previewUrl && (
                                     <div className="relative inline-block mt-2 group">
-                                        <img src={previewUrl} alt="Preview" className="w-24 h-24 object-cover rounded-xl border-2 border-pink-500/50 shadow-md" />
+                                        <img src={previewUrl} alt="Preview" className="w-24 h-24 object-cover rounded-xl border-2 border-sky-500/50 shadow-md" />
                                         <button
                                             type="button"
                                             onClick={() => {
@@ -209,7 +209,7 @@ const AddAnnouncement: React.FC<AddAnnouncementProps> = ({ currentUser, onAddAnn
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
                             rows={type === 'POLL' ? 2 : 3}
-                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent resize-none"
+                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent resize-none"
                         ></textarea>
                         <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                             <span>{type === 'POLL' ? 'Make it short and clear.' : 'Keep it concise and helpful.'}</span>
@@ -226,7 +226,7 @@ const AddAnnouncement: React.FC<AddAnnouncementProps> = ({ currentUser, onAddAnn
                                         placeholder={`Option ${index + 1}`}
                                         value={option}
                                         onChange={(e) => handleOptionChange(index, e.target.value)}
-                                        className="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
+                                        className="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent text-sm"
                                     />
                                     {pollOptions.length > 2 && (
                                         <button
@@ -262,7 +262,7 @@ const AddAnnouncement: React.FC<AddAnnouncementProps> = ({ currentUser, onAddAnn
                             {isValid ? <CheckCircleIcon className="w-4 h-4 text-emerald-500" /> : null}
                             <span>{isValid ? 'Ready to post' : 'Fill the required fields'}</span>
                         </div>
-                        <button type="submit" disabled={isSubmitting || !isValid} className="px-6 py-2 font-bold text-white bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 rounded-full shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 disabled:opacity-50 dark:focus:ring-offset-gray-800 transition-all transform active:scale-95">
+                        <button type="submit" disabled={isSubmitting || !isValid} className="px-6 py-2 font-bold text-white bg-gradient-to-r from-sky-500 to-indigo-900 hover:from-sky-600 hover:to-purple-700 rounded-full shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 disabled:opacity-50 dark:focus:ring-offset-gray-800 transition-all transform active:scale-95">
                             {isSubmitting ? 'Posting...' : 'Post'}
                         </button>
                     </div>

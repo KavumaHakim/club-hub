@@ -122,7 +122,7 @@ const ResourceCard: React.FC<ResourceCardProps> = ({ resource, currentUser, onDe
                     <img src={resource.url} alt={resource.title} className="h-40 w-full object-cover" loading="lazy" />
                 ) : (
                     <div className="h-40 w-full bg-gradient-to-br from-slate-800 via-slate-900 to-indigo-900 flex items-center justify-center">
-                        <div className="text-pink-400/90">
+                        <div className="text-sky-400/90">
                             {iconElement && React.cloneElement(iconElement, { className: "w-14 h-14" })}
                         </div>
                     </div>
@@ -141,7 +141,7 @@ const ResourceCard: React.FC<ResourceCardProps> = ({ resource, currentUser, onDe
 
             <div className="p-4 flex flex-col gap-3 flex-1">
                 <div>
-                    <h4 className="font-bold text-gray-900 dark:text-gray-100 text-lg leading-snug line-clamp-2 group-hover:text-pink-600 dark:group-hover:text-pink-400 transition-colors">
+                    <h4 className="font-bold text-gray-900 dark:text-gray-100 text-lg leading-snug line-clamp-2 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
                         {resource.title}
                     </h4>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{resource.description}</p>
@@ -166,7 +166,7 @@ const ResourceCard: React.FC<ResourceCardProps> = ({ resource, currentUser, onDe
                             target={resource.type === 'PYTHON' ? undefined : "_blank"}
                             rel="noopener noreferrer"
                             onClick={handleOpenAction}
-                            className={`px-3 py-1.5 text-xs font-semibold text-white bg-slate-900 dark:bg-slate-700 hover:bg-pink-600 rounded-lg transition-all ${isLoading ? 'opacity-70 cursor-wait' : ''}`}
+                            className={`px-3 py-1.5 text-xs font-semibold text-white bg-slate-900 dark:bg-slate-700 hover:bg-sky-600 rounded-lg transition-all ${isLoading ? 'opacity-70 cursor-wait' : ''}`}
                         >
                             {getActionText()}
                         </a>

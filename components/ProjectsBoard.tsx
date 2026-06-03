@@ -339,14 +339,14 @@ const ProjectsBoard: React.FC<ProjectsBoardProps> = ({ currentUser }) => {
             <div className="flex bg-gray-100 dark:bg-gray-900/50 p-1 rounded-xl">
                 <button
                     onClick={() => setViewMode('board')}
-                    className={`p-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 ${viewMode === 'board' ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-pink-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                    className={`p-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 ${viewMode === 'board' ? 'bg-white dark:bg-gray-700 text-sky-600 dark:text-sky-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
                     title="Board View"
                 >
                     <ViewGridIcon /> <span className="text-sm font-medium pr-2 hidden sm:inline">Board</span>
                 </button>
                 <button
                     onClick={() => setViewMode('assignments')}
-                    className={`p-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 ${viewMode === 'assignments' ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-pink-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                    className={`p-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 ${viewMode === 'assignments' ? 'bg-white dark:bg-gray-700 text-sky-600 dark:text-sky-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
                     title="Assignments View"
                 >
                     <UsersIcon /> <span className="text-sm font-medium pr-2 hidden sm:inline">Assignments</span>
@@ -354,7 +354,7 @@ const ProjectsBoard: React.FC<ProjectsBoardProps> = ({ currentUser }) => {
                 {currentUser.role === 'PATRON' && (
                     <button
                         onClick={() => setViewMode('grading')}
-                        className={`p-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 ${viewMode === 'grading' ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-pink-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                        className={`p-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 ${viewMode === 'grading' ? 'bg-white dark:bg-gray-700 text-sky-600 dark:text-sky-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
                         title="Grading View"
                     >
                         <AcademicCapIcon /> <span className="text-sm font-medium pr-2 hidden sm:inline">Grading</span>
@@ -365,7 +365,7 @@ const ProjectsBoard: React.FC<ProjectsBoardProps> = ({ currentUser }) => {
                  <Tooltip text="Create a new task for the project board.">
                      <button
                         onClick={handleOpenNewTaskModal}
-                        className="flex items-center justify-center space-x-2 px-4 py-2.5 font-semibold text-white bg-pink-600 rounded-lg shadow-md hover:bg-pink-700 transition-all"
+                        className="flex items-center justify-center space-x-2 px-4 py-2.5 font-semibold text-white bg-sky-600 rounded-lg shadow-md hover:bg-sky-700 transition-all"
                       >
                         <PlusCircleIcon />
                         <span className="hidden sm:inline">New Task</span>

@@ -110,7 +110,7 @@ const renderLinks = (text: string, baseKey: string, isUser: boolean) => {
                 target="_blank"
                 rel="noreferrer"
                 className={`underline underline-offset-2 ${
-                    isUser ? 'text-teal-100 hover:text-white' : 'text-pink-600 dark:text-pink-300 hover:opacity-80'
+                    isUser ? 'text-teal-100 hover:text-white' : 'text-sky-600 dark:text-sky-300 hover:opacity-80'
                 }`}
             >
                 {label}
@@ -146,7 +146,7 @@ const formatInline = (text: string, isUser: boolean) => {
                         className={`px-1 py-0.5 rounded font-mono text-xs ${
                             isUser 
                             ? 'bg-teal-700 text-teal-100' 
-                            : 'bg-gray-200 dark:bg-gray-700 text-pink-600 dark:text-pink-300'
+                            : 'bg-gray-200 dark:bg-gray-700 text-sky-600 dark:text-sky-300'
                         }`}
                     >
                         {subPart.slice(1, -1)}
@@ -238,7 +238,7 @@ const renderTextPart = (content: string, isUser: boolean, partIndex: number) => 
         if (trimmed.startsWith('>')) {
             const quoteText = trimmed.replace(/^>\s?/, '');
             nodes.push(
-                <div key={baseKey} className={`border-l-4 pl-3 my-2 ${isUser ? 'border-teal-300 text-teal-50/90' : 'border-pink-400 text-gray-700 dark:text-gray-200'}`}>
+                <div key={baseKey} className={`border-l-4 pl-3 my-2 ${isUser ? 'border-teal-300 text-teal-50/90' : 'border-sky-400 text-gray-700 dark:text-gray-200'}`}>
                     {formatInline(quoteText, isUser)}
                 </div>
             );
@@ -259,7 +259,7 @@ const renderTextPart = (content: string, isUser: boolean, partIndex: number) => 
         if (trimmed.match(/^[-*]\s/)) {
             nodes.push(
                 <div key={baseKey} className="flex gap-2 ml-1 mb-1">
-                    <span className={`text-xs mt-1.5 ${isUser ? 'text-teal-200' : 'text-pink-500'}`}>●</span>
+                    <span className={`text-xs mt-1.5 ${isUser ? 'text-teal-200' : 'text-sky-500'}`}>●</span>
                     <span className="flex-1">{formatInline(trimmed.substring(2), isUser)}</span>
                 </div>
             );
@@ -272,7 +272,7 @@ const renderTextPart = (content: string, isUser: boolean, partIndex: number) => 
         if (orderedMatch) {
             nodes.push(
                 <div key={baseKey} className="flex gap-2 ml-1 mb-1">
-                    <span className={`font-bold text-xs mt-0.5 ${isUser ? 'text-teal-200' : 'text-pink-500'}`}>{orderedMatch[1]}.</span>
+                    <span className={`font-bold text-xs mt-0.5 ${isUser ? 'text-teal-200' : 'text-sky-500'}`}>{orderedMatch[1]}.</span>
                     <span className="flex-1">{formatInline(trimmed.substring(orderedMatch[0].length), isUser)}</span>
                 </div>
             );

@@ -64,15 +64,15 @@ const CalendarView: React.FC<CalendarViewProps> = ({ activities }) => {
       const isToday = todayDate.getDate() === d && todayDate.getMonth() === month && todayDate.getFullYear() === year;
 
       calendarDays.push(
-        <div key={d} className={`bg-white dark:bg-gray-800 min-h-[3rem] md:min-h-[4.5rem] p-1 flex flex-col group transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-750 relative border-t border-l border-gray-100 dark:border-gray-700/50 ${isToday ? 'bg-pink-50/30 dark:bg-pink-900/10' : ''}`}>
-          {isToday && <div className="absolute inset-0 border-2 border-pink-500 pointer-events-none z-0"></div>}
+        <div key={d} className={`bg-white dark:bg-gray-800 min-h-[3rem] md:min-h-[4.5rem] p-1 flex flex-col group transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-750 relative border-t border-l border-gray-100 dark:border-gray-700/50 ${isToday ? 'bg-sky-50/30 dark:bg-sky-900/10' : ''}`}>
+          {isToday && <div className="absolute inset-0 border-2 border-sky-500 pointer-events-none z-0"></div>}
           
           <div className="flex justify-between items-start mb-0.5 z-10 relative">
-             <div className={`text-[10px] sm:text-xs font-semibold h-5 w-5 sm:h-6 sm:w-6 flex items-center justify-center rounded-full transition-colors ${isToday ? 'bg-pink-500 text-white shadow-sm' : 'text-gray-700 dark:text-gray-300'}`}>
+             <div className={`text-[10px] sm:text-xs font-semibold h-5 w-5 sm:h-6 sm:w-6 flex items-center justify-center rounded-full transition-colors ${isToday ? 'bg-sky-500 text-white shadow-sm' : 'text-gray-700 dark:text-gray-300'}`}>
                 {d}
              </div>
              {dayActivities.length > 0 && (
-                 <span className="text-[8px] font-bold text-white bg-pink-500 px-1 py-px rounded-full shadow-sm md:hidden">{dayActivities.length}</span>
+                 <span className="text-[8px] font-bold text-white bg-sky-500 px-1 py-px rounded-full shadow-sm md:hidden">{dayActivities.length}</span>
              )}
           </div>
           
@@ -98,7 +98,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ activities }) => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-center justify-between p-2 sm:p-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 gap-2">
         <h3 className="text-base sm:text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center">
-           <span className="text-pink-600 dark:text-pink-400 mr-2">{monthNames[currentDate.getMonth()]}</span>
+           <span className="text-sky-600 dark:text-sky-400 mr-2">{monthNames[currentDate.getMonth()]}</span>
            <span className="text-gray-500 dark:text-gray-400 font-light">{currentDate.getFullYear()}</span>
         </h3>
         <div className="flex items-center bg-gray-100 dark:bg-gray-700 p-1 rounded-lg scale-90 origin-right">
@@ -107,7 +107,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ activities }) => {
           </button>
           <button 
             onClick={handleToday}
-            className="px-2 py-0.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:text-pink-600 dark:hover:text-pink-400 transition-colors border-x border-gray-200 dark:border-gray-600 mx-1"
+            className="px-2 py-0.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:text-sky-600 dark:hover:text-sky-400 transition-colors border-x border-gray-200 dark:border-gray-600 mx-1"
           >
             Today
           </button>

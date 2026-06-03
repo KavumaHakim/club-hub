@@ -286,7 +286,7 @@ const AdminTools: React.FC<AdminToolsProps> = ({ currentUser }) => {
                                 </div>
                                 <input
                                     type="checkbox"
-                                    className="h-4 w-4 text-pink-600 rounded border-gray-300 focus:ring-pink-500"
+                                    className="h-4 w-4 text-sky-600 rounded border-gray-300 focus:ring-sky-500"
                                     checked={featureFlags[option.key]}
                                     onChange={(e) => updateFeatureFlags({ [option.key]: e.target.checked } as Partial<FeatureFlags>)}
                                 />

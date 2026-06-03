@@ -92,7 +92,7 @@ const Leaderboard: React.FC<{ users: User[] }> = ({ users }) => {
     return (
         <div className="mb-10 bg-gradient-to-br from-gray-900 to-gray-800 dark:from-black dark:to-gray-900 rounded-3xl p-6 md:p-8 text-white shadow-2xl relative overflow-hidden border border-gray-800">
             <div className="absolute top-0 right-0 w-64 h-64 bg-purple-600/20 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-pink-600/20 rounded-full blur-3xl -ml-16 -mb-16 pointer-events-none"></div>
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-sky-600/20 rounded-full blur-3xl -ml-16 -mb-16 pointer-events-none"></div>
 
             <div className="relative z-10">
                 <div className="flex items-center justify-between mb-8">
@@ -197,7 +197,7 @@ const ChallengeCard: React.FC<{
                         {hasBadge && <div className="bg-green-100 dark:bg-green-900/30 p-1.5 rounded-full text-green-600 dark:text-green-400"><BadgeCheckIcon className="w-5 h-5" /></div>}
                         <button 
                             onClick={() => setIsExpanded(!isExpanded)}
-                            className="p-2 rounded-xl bg-gray-50 dark:bg-gray-900/50 text-gray-500 hover:text-pink-600 dark:hover:text-pink-400 hover:bg-pink-50 dark:hover:bg-pink-900/20 transition-all shadow-sm border border-gray-100 dark:border-gray-700"
+                            className="p-2 rounded-xl bg-gray-50 dark:bg-gray-900/50 text-gray-500 hover:text-sky-600 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/20 transition-all shadow-sm border border-gray-100 dark:border-gray-700"
                             title={isExpanded ? "Show Less" : "Show More"}
                         >
                             {isExpanded ? <ChevronUpIcon className="w-4 h-4" /> : <ChevronDownIcon className="w-4 h-4" />}
@@ -205,7 +205,7 @@ const ChallengeCard: React.FC<{
                     </div>
                 </div>
 
-                <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2 group-hover:text-pink-600 dark:group-hover:text-pink-400 transition-colors">
+                <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
                     {challenge.title}
                 </h4>
 
@@ -243,7 +243,7 @@ const ChallengeCard: React.FC<{
                             <Tooltip text="Submit your solution to earn a badge.">
                                 <button
                                     onClick={() => onMakeSubmission ? onMakeSubmission(challenge) : onOpenSubmission(challenge.id)}
-                                    className="w-full py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
+                                    className="w-full py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-sky-600 to-indigo-900 hover:from-sky-700 hover:to-purple-700 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
                                 >
                                     {onMakeSubmission ? 'Make a submission' : 'Submit Solution'}
                                 </button>
@@ -306,11 +306,11 @@ const CreateChallengeModal: React.FC<{
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Challenge Title</label>
-                        <input type="text" value={title} onChange={e => setTitle(e.target.value)} required className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500" placeholder="e.g., Python Sorting Algorithm" />
+                        <input type="text" value={title} onChange={e => setTitle(e.target.value)} required className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-sky-500" placeholder="e.g., Python Sorting Algorithm" />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
-                        <textarea value={description} onChange={e => setDescription(e.target.value)} required rows={4} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500" placeholder="Explain the task..." />
+                        <textarea value={description} onChange={e => setDescription(e.target.value)} required rows={4} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-sky-500" placeholder="Explain the task..." />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -318,7 +318,7 @@ const CreateChallengeModal: React.FC<{
                             <select
                                 value={difficulty}
                                 onChange={e => setDifficulty(e.target.value as any)}
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500"
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-sky-500"
                             >
                                 <option value="BEGINNER">Beginner</option>
                                 <option value="INTERMEDIATE">Intermediate</option>
@@ -327,10 +327,10 @@ const CreateChallengeModal: React.FC<{
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Deadline</label>
-                            <input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} required className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500" />
+                            <input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} required className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-sky-500" />
                         </div>
                     </div>
-                    <button type="submit" disabled={isSubmitting} className="w-full py-2 bg-pink-600 text-white rounded-lg font-medium hover:bg-pink-700 disabled:opacity-50">{isSubmitting ? 'Posting...' : 'Create Challenge'}</button>
+                    <button type="submit" disabled={isSubmitting} className="w-full py-2 bg-sky-600 text-white rounded-lg font-medium hover:bg-sky-700 disabled:opacity-50">{isSubmitting ? 'Posting...' : 'Create Challenge'}</button>
                 </form>
             </div>
         </div>
@@ -377,10 +377,10 @@ const GenerateAIChallengeModal: React.FC<{
                 <button onClick={onClose} className="absolute top-6 right-6 text-gray-500 hover:text-gray-700 dark:text-gray-400 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"><XIcon /></button>
 
                 <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2.5 bg-pink-100 dark:bg-pink-900/30 rounded-xl">
-                        <SparklesIcon className="w-6 h-6 text-pink-600 dark:text-pink-400" />
+                    <div className="p-2.5 bg-sky-100 dark:bg-sky-900/30 rounded-xl">
+                        <SparklesIcon className="w-6 h-6 text-sky-600 dark:text-sky-400" />
                     </div>
-                    <h3 className="text-2xl font-black text-gray-900 dark:text-white">AI Challenge <span className="text-pink-600">Generator</span></h3>
+                    <h3 className="text-2xl font-black text-gray-900 dark:text-white">AI Challenge <span className="text-sky-600">Generator</span></h3>
                 </div>
 
                 <form onSubmit={handleGenerate} className="space-y-5">
@@ -391,7 +391,7 @@ const GenerateAIChallengeModal: React.FC<{
                             onChange={e => setConcepts(e.target.value)}
                             required
                             rows={3}
-                            className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl dark:bg-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500 transition-all outline-none"
+                            className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl dark:bg-gray-900 dark:text-white focus:ring-2 focus:ring-sky-500 transition-all outline-none"
                             placeholder="e.g. For loops, lists, string manipulation..."
                         />
                     </div>
@@ -402,7 +402,7 @@ const GenerateAIChallengeModal: React.FC<{
                             <select
                                 value={skillLevel}
                                 onChange={e => setSkillLevel(e.target.value as any)}
-                                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl dark:bg-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500 outline-none"
+                                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl dark:bg-gray-900 dark:text-white focus:ring-2 focus:ring-sky-500 outline-none"
                             >
                                 <option value="BEGINNER">Beginner</option>
                                 <option value="INTERMEDIATE">Intermediate</option>
@@ -414,7 +414,7 @@ const GenerateAIChallengeModal: React.FC<{
                             <select
                                 value={language}
                                 onChange={e => setLanguage(e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl dark:bg-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500 outline-none"
+                                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl dark:bg-gray-900 dark:text-white focus:ring-2 focus:ring-sky-500 outline-none"
                             >
                                 <option value="Python">Python</option>
                                 <option value="JavaScript">JavaScript</option>
@@ -425,7 +425,7 @@ const GenerateAIChallengeModal: React.FC<{
                     <button
                         type="submit"
                         disabled={isGenerating}
-                        className="w-full py-4 bg-gradient-to-r from-pink-600 to-purple-600 text-white rounded-xl font-bold hover:from-pink-700 hover:to-purple-700 disabled:opacity-50 shadow-lg shadow-pink-500/20 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                        className="w-full py-4 bg-gradient-to-r from-sky-600 to-indigo-900 text-white rounded-xl font-bold hover:from-sky-700 hover:to-purple-700 disabled:opacity-50 shadow-lg shadow-sky-500/20 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
                     >
                         {isGenerating ? (
                             <>
@@ -469,9 +469,9 @@ const SubmitSolutionModal: React.FC<{ isOpen: boolean, onClose: () => void, onSu
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Solution (Text, Code, or Link)</label>
-                        <textarea value={content} onChange={e => setContent(e.target.value)} required rows={6} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500 font-mono text-sm" placeholder="Paste your code or a link to your project here..." />
+                        <textarea value={content} onChange={e => setContent(e.target.value)} required rows={6} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-sky-500 font-mono text-sm" placeholder="Paste your code or a link to your project here..." />
                     </div>
-                    <button type="submit" disabled={isSubmitting} className="w-full py-2 bg-pink-600 text-white rounded-lg font-medium hover:bg-pink-700 disabled:opacity-50">{isSubmitting ? 'Submitting...' : 'Submit'}</button>
+                    <button type="submit" disabled={isSubmitting} className="w-full py-2 bg-sky-600 text-white rounded-lg font-medium hover:bg-sky-700 disabled:opacity-50">{isSubmitting ? 'Submitting...' : 'Submit'}</button>
                 </form>
             </div>
         </div>
@@ -497,13 +497,13 @@ const AnalysisModal: React.FC<{
                 <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-1 rounded-full transition-colors"><XIcon /></button>
 
                 <div className="flex items-center gap-4 mb-6">
-                    <div className={`p-3 rounded-xl ${passed ? 'bg-green-100 dark:bg-green-900/30' : passed === false ? 'bg-red-100 dark:bg-red-900/30' : 'bg-pink-100 dark:bg-pink-900/30'}`}>
+                    <div className={`p-3 rounded-xl ${passed ? 'bg-green-100 dark:bg-green-900/30' : passed === false ? 'bg-red-100 dark:bg-red-900/30' : 'bg-sky-100 dark:bg-sky-900/30'}`}>
                         {passed ? (
                             <TrophyIcon className="w-8 h-8 text-green-600 dark:text-green-400" />
                         ) : passed === false ? (
                             <ExclamationCircleIcon className="w-8 h-8 text-red-600 dark:text-red-400" />
                         ) : (
-                            <SparklesIcon className="w-8 h-8 text-pink-600 dark:text-pink-400" />
+                            <SparklesIcon className="w-8 h-8 text-sky-600 dark:text-sky-400" />
                         )}
                     </div>
                     <div>
@@ -517,14 +517,14 @@ const AnalysisModal: React.FC<{
                 <div className="flex-1 overflow-y-auto custom-scrollbar space-y-6">
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500"></div>
                             <p className="text-gray-500 animate-pulse font-medium">Analyzing submission...</p>
                         </div>
                     ) : (
                         <>
                             <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700/50">
                                 <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                                    <SparklesIcon className="w-4 h-4 text-pink-500" />
+                                    <SparklesIcon className="w-4 h-4 text-sky-500" />
                                     Verdict & Feedback
                                 </h4>
                                 <FormattedMessage text={content} isUser={false} />
@@ -882,7 +882,7 @@ const Challenges: React.FC<ChallengesProps> = ({ currentUser, onMakeSubmission }
 
     if (isLoadingChallenges) return (
         <div className="flex flex-col items-center justify-center h-64 text-gray-500 gap-4">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500"></div>
             <p>Loading challenges...</p>
         </div>
     );
@@ -907,13 +907,13 @@ const Challenges: React.FC<ChallengesProps> = ({ currentUser, onMakeSubmission }
                                 onClick={() => setIsAIModalOpen(true)}
                                 className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
                             >
-                                <SparklesIcon className="w-5 h-5 text-pink-600" /> Generate with AI
+                                <SparklesIcon className="w-5 h-5 text-sky-600" /> Generate with AI
                             </button>
                         </Tooltip>
                         <Tooltip text="Post a custom challenge with title, description, and deadline.">
                             <button
                                 onClick={() => { setPrefillData(null); setIsCreateModalOpen(true); }}
-                                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
+                                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-sky-600 to-indigo-900 hover:from-sky-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
                             >
                                 <PlusCircleIcon /> Create Challenge
                             </button>
@@ -928,19 +928,19 @@ const Challenges: React.FC<ChallengesProps> = ({ currentUser, onMakeSubmission }
                 <div className="flex border-b border-gray-200 dark:border-gray-700 space-x-1">
                     <button
                         onClick={() => setActiveTab('ACTIVE')}
-                        className={`pb-3 px-4 sm:px-6 text-sm sm:text-base font-medium transition-colors relative focus:outline-none ${activeTab === 'ACTIVE' ? 'text-pink-600 dark:text-pink-400 border-b-2 border-pink-600 dark:border-pink-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+                        className={`pb-3 px-4 sm:px-6 text-sm sm:text-base font-medium transition-colors relative focus:outline-none ${activeTab === 'ACTIVE' ? 'text-sky-600 dark:text-sky-400 border-b-2 border-sky-600 dark:border-sky-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
                     >
                         Active Challenges
                     </button>
                     <button
                         onClick={() => setActiveTab('COMPLETED')}
-                        className={`pb-3 px-4 sm:px-6 text-sm sm:text-base font-medium transition-colors relative focus:outline-none ${activeTab === 'COMPLETED' ? 'text-pink-600 dark:text-pink-400 border-b-2 border-pink-600 dark:border-pink-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+                        className={`pb-3 px-4 sm:px-6 text-sm sm:text-base font-medium transition-colors relative focus:outline-none ${activeTab === 'COMPLETED' ? 'text-sky-600 dark:text-sky-400 border-b-2 border-sky-600 dark:border-sky-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
                     >
                         Completed ({currentUser.badges?.length || 0})
                     </button>
                     <button
                         onClick={() => setActiveTab('ALL')}
-                        className={`pb-3 px-4 sm:px-6 text-sm sm:text-base font-medium transition-colors relative focus:outline-none ${activeTab === 'ALL' ? 'text-pink-600 dark:text-pink-400 border-b-2 border-pink-600 dark:border-pink-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+                        className={`pb-3 px-4 sm:px-6 text-sm sm:text-base font-medium transition-colors relative focus:outline-none ${activeTab === 'ALL' ? 'text-sky-600 dark:text-sky-400 border-b-2 border-sky-600 dark:border-sky-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
                     >
                         All History
                     </button>

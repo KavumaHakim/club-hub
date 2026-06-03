@@ -123,7 +123,7 @@ const RoadmapQuizModal: React.FC<RoadmapQuizModalProps> = ({ isOpen, onClose, qu
                     value={userAnswer}
                     onChange={(e) => setUserAnswer(e.target.value)}
                     placeholder="Type your answer here..."
-                    className="w-full p-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500 focus:outline-none resize-none"
+                    className="w-full p-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900 dark:text-white focus:ring-2 focus:ring-sky-500 focus:outline-none resize-none"
                     rows={3}
                     disabled={!!feedback || isChecking}
                 />
@@ -140,7 +140,7 @@ const RoadmapQuizModal: React.FC<RoadmapQuizModalProps> = ({ isOpen, onClose, qu
                             disabled={!!feedback || isChecking}
                             className={`flex-1 py-4 rounded-xl font-bold border-2 transition-all ${
                                 userAnswer === opt
-                                ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-300 shadow-md'
+                                ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/20 text-sky-700 dark:text-sky-300 shadow-md'
                                 : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 text-gray-700 dark:text-gray-300'
                             }`}
                         >
@@ -161,7 +161,7 @@ const RoadmapQuizModal: React.FC<RoadmapQuizModalProps> = ({ isOpen, onClose, qu
                         disabled={!!feedback || isChecking}
                         className={`w-full p-4 rounded-xl border-2 text-left transition-all flex items-center ${
                             userAnswer === opt
-                            ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-300 shadow-md'
+                            ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/20 text-sky-700 dark:text-sky-300 shadow-md'
                             : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 text-gray-700 dark:text-gray-300'
                         }`}
                     >
@@ -213,10 +213,10 @@ const RoadmapQuizModal: React.FC<RoadmapQuizModalProps> = ({ isOpen, onClose, qu
                 {/* Header */}
                 <div className="flex justify-between items-center mb-6">
                     <div className="flex flex-col">
-                        <span className="text-xs font-bold text-pink-600 dark:text-pink-400 uppercase tracking-wider mb-1">Question {currentIndex + 1} of {totalQuestions}</span>
+                        <span className="text-xs font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider mb-1">Question {currentIndex + 1} of {totalQuestions}</span>
                         <div className="w-32 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                             <div 
-                                className="h-full bg-pink-500 transition-all duration-500 ease-out" 
+                                className="h-full bg-sky-500 transition-all duration-500 ease-out" 
                                 style={{ width: `${((currentIndex + 1) / totalQuestions) * 100}%` }}
                             />
                         </div>
@@ -283,7 +283,7 @@ const RoadmapQuizModal: React.FC<RoadmapQuizModalProps> = ({ isOpen, onClose, qu
                     ) : (
                         <button 
                             onClick={handleNext}
-                            className="w-full py-3 bg-pink-600 hover:bg-pink-700 text-white rounded-xl font-bold shadow-lg shadow-pink-500/30 transition-all transform active:scale-95"
+                            className="w-full py-3 bg-sky-600 hover:bg-sky-700 text-white rounded-xl font-bold shadow-lg shadow-sky-500/30 transition-all transform active:scale-95"
                         >
                             {currentIndex < totalQuestions - 1 ? "Next Question" : "Finish Quiz"}
                         </button>

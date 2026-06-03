@@ -228,7 +228,7 @@ const PublishModal: React.FC<{
                             value={title} 
                             onChange={e => setTitle(e.target.value)} 
                             required={!includeProject || !projectName}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500" 
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-sky-500" 
                             placeholder="My Awesome Script"
                         />
                     </div>
@@ -239,7 +239,7 @@ const PublishModal: React.FC<{
                             onChange={e => setDesc(e.target.value)} 
                             required={!includeProject || !projectName}
                             rows={3}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500" 
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-sky-500" 
                             placeholder="What does this code do?"
                         />
                     </div>
@@ -250,7 +250,7 @@ const PublishModal: React.FC<{
                                     type="checkbox"
                                     checked={includeProject}
                                     onChange={(e) => setIncludeProject(e.target.checked)}
-                                    className="rounded border-gray-300 text-pink-600 focus:ring-pink-500"
+                                    className="rounded border-gray-300 text-sky-600 focus:ring-sky-500"
                                 />
                                 Include project details
                             </label>
@@ -260,7 +260,7 @@ const PublishModal: React.FC<{
                                         type="checkbox"
                                         checked={showcaseAsTeam}
                                         onChange={(e) => setShowcaseAsTeam(e.target.checked)}
-                                        className="rounded border-gray-300 text-pink-600 focus:ring-pink-500"
+                                        className="rounded border-gray-300 text-sky-600 focus:ring-sky-500"
                                     />
                                     Showcase as team ({teamName})
                                 </label>
@@ -270,7 +270,7 @@ const PublishModal: React.FC<{
                     <button 
                         type="submit" 
                         disabled={isPublishing}
-                        className="w-full py-2 bg-pink-600 text-white rounded-lg font-medium hover:bg-pink-700 disabled:opacity-50"
+                        className="w-full py-2 bg-sky-600 text-white rounded-lg font-medium hover:bg-sky-700 disabled:opacity-50"
                     >
                         {isPublishing ? 'Publishing...' : 'Publish'}
                     </button>
@@ -1755,7 +1755,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                   </select>
                   <button
                       onClick={handleCreateProject}
-                      className="w-full px-3 py-2 text-xs font-semibold rounded-lg bg-pink-600 text-white hover:bg-pink-700"
+                      className="w-full px-3 py-2 text-xs font-semibold rounded-lg bg-sky-600 text-white hover:bg-sky-700"
                   >
                       Create Project
                   </button>
@@ -1775,7 +1775,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                                       onClick={() => openProject(project)}
                                       className={`flex-1 text-left px-3 py-2 rounded-lg border text-xs transition-colors ${
                                           activeProject?.id === project.id
-                                              ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-200'
+                                              ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/20 text-sky-700 dark:text-sky-200'
                                               : 'border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800'
                                       }`}
                                   >
@@ -1911,7 +1911,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                                           )}
                                       </div>
                                       <div className="flex flex-wrap gap-1">
-                                          {member.isOwner && <span className="px-2 py-0.5 text-[9px] rounded-full bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-200">Owner</span>}
+                                          {member.isOwner && <span className="px-2 py-0.5 text-[9px] rounded-full bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-200">Owner</span>}
                                           {member.isTeamMember && <span className="px-2 py-0.5 text-[9px] rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-200">Team</span>}
                                           {member.isInvited && !member.isTeamMember && !member.isOwner && (
                                               <span className="px-2 py-0.5 text-[9px] rounded-full bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200">Invited</span>
@@ -2019,7 +2019,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
 
       {/* Challenge Mode Banner */}
       {pendingChallenge && (
-        <div className="bg-gradient-to-r from-pink-600 to-purple-600 text-white px-4 py-2 flex items-center justify-between shadow-md z-20">
+        <div className="bg-gradient-to-r from-sky-600 to-indigo-900 text-white px-4 py-2 flex items-center justify-between shadow-md z-20">
           <div className="flex items-center gap-3">
             <div className="bg-white/20 p-1.5 rounded-lg">
               <TrophyIcon className="w-5 h-5 text-yellow-300" />
@@ -2053,7 +2053,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                 <ViewGridIcon />
              </button>
              <div className="flex bg-gray-200 dark:bg-gray-700 p-0.5 rounded-lg">
-                <button onClick={() => handleLanguageChange('python')} className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${language === 'python' ? 'bg-white dark:bg-gray-600 shadow text-pink-600 dark:text-pink-400' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'} ${isProjectMode ? 'opacity-60 cursor-not-allowed' : ''}`}>PY</button>
+                <button onClick={() => handleLanguageChange('python')} className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${language === 'python' ? 'bg-white dark:bg-gray-600 shadow text-sky-600 dark:text-sky-400' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'} ${isProjectMode ? 'opacity-60 cursor-not-allowed' : ''}`}>PY</button>
                 <button onClick={() => handleLanguageChange('javascript')} className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${language === 'javascript' ? 'bg-white dark:bg-gray-600 shadow text-yellow-600 dark:text-yellow-400' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'} ${isProjectMode ? 'opacity-60 cursor-not-allowed' : ''}`}>JS</button>
                 <button onClick={() => handleLanguageChange('html')} className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${language === 'html' ? 'bg-white dark:bg-gray-600 shadow text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'} ${isProjectMode ? 'opacity-60 cursor-not-allowed' : ''}`}>HTML</button>
              </div>
@@ -2124,7 +2124,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                      <button 
                         onClick={handleAutoEvaluate} 
                         disabled={isExecuting || isEvaluating || (language === 'python' && !isPyodideReady) || isWaitingForInput}
-                        className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white px-4 py-1.5 rounded-md text-xs font-bold flex items-center gap-2 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="bg-gradient-to-r from-sky-600 to-indigo-900 hover:from-sky-700 hover:to-purple-700 text-white px-4 py-1.5 rounded-md text-xs font-bold flex items-center gap-2 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                      >
                         {isEvaluating ? (
                             <span className="animate-spin h-3 w-3 border-2 border-white/30 border-t-white rounded-full"></span>
@@ -2160,7 +2160,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
       </div>
 
       {showFirstLoginTips && (
-        <div className="mx-3 mt-3 mb-1 bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-700/40 text-pink-700 dark:text-pink-200 rounded-xl p-3 text-xs flex items-start justify-between gap-3">
+        <div className="mx-3 mt-3 mb-1 bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-700/40 text-sky-700 dark:text-sky-200 rounded-xl p-3 text-xs flex items-start justify-between gap-3">
           <div>
             <div className="font-semibold">Playground Tips</div>
             <ul className="mt-1 space-y-1 text-[11px]">
@@ -2171,7 +2171,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
           </div>
           <button
             onClick={dismissPlaygroundTips}
-            className="px-3 py-1 rounded-lg bg-white/70 dark:bg-gray-800 text-pink-700 dark:text-pink-200 border border-pink-200/70 dark:border-pink-700/40"
+            className="px-3 py-1 rounded-lg bg-white/70 dark:bg-gray-800 text-sky-700 dark:text-sky-200 border border-sky-200/70 dark:border-sky-700/40"
           >
             Got it
           </button>
@@ -2368,12 +2368,12 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                                 placeholder={`filename.${language === 'python' ? 'py' : language === 'javascript' ? 'js' : 'html'}`} 
                                 value={saveFileName}
                                 onChange={(e) => setSaveFileName(e.target.value)}
-                                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
                            />
                            <button 
                                 onClick={handleCloudSave}
                                 disabled={isSaving}
-                                className="px-4 py-2 bg-pink-600 text-white rounded-md text-sm font-medium hover:bg-pink-700 disabled:opacity-50"
+                                className="px-4 py-2 bg-sky-600 text-white rounded-md text-sm font-medium hover:bg-sky-700 disabled:opacity-50"
                            >
                                {isSaving ? 'Saving...' : 'Save'}
                            </button>
@@ -2473,9 +2473,9 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
           <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[110] flex items-center justify-center p-4">
               <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 flex flex-col items-center gap-4 border border-gray-200 dark:border-gray-700">
                   <div className="relative">
-                      <div className="w-16 h-16 border-4 border-pink-100 dark:border-pink-900/30 rounded-full"></div>
-                      <div className="absolute top-0 left-0 w-16 h-16 border-4 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
-                      <SparklesIcon className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-pink-500" />
+                      <div className="w-16 h-16 border-4 border-sky-100 dark:border-sky-900/30 rounded-full"></div>
+                      <div className="absolute top-0 left-0 w-16 h-16 border-4 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
+                      <SparklesIcon className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-sky-500" />
                   </div>
                   <div className="text-center">
                       <h3 className="text-lg font-bold text-gray-900 dark:text-white">Analyzing Solution</h3>

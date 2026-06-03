@@ -94,7 +94,7 @@ const Members: React.FC<MembersProps> = ({ currentUser }) => {
                             placeholder="Search members..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
+                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all"
                         />
                     </div>
                 </div>
@@ -105,7 +105,7 @@ const Members: React.FC<MembersProps> = ({ currentUser }) => {
                         onClick={() => setActiveTab('active')}
                         className={`pb-3 px-6 text-sm font-medium transition-colors relative focus:outline-none ${
                             activeTab === 'active' 
-                            ? 'text-pink-600 dark:text-pink-400 border-b-2 border-pink-600 dark:border-pink-400' 
+                            ? 'text-sky-600 dark:text-sky-400 border-b-2 border-sky-600 dark:border-sky-400' 
                             : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
                         }`}
                     >
@@ -118,7 +118,7 @@ const Members: React.FC<MembersProps> = ({ currentUser }) => {
                         onClick={() => setActiveTab('pending')}
                         className={`pb-3 px-6 text-sm font-medium transition-colors relative focus:outline-none ${
                             activeTab === 'pending' 
-                            ? 'text-pink-600 dark:text-pink-400 border-b-2 border-pink-600 dark:border-pink-400' 
+                            ? 'text-sky-600 dark:text-sky-400 border-b-2 border-sky-600 dark:border-sky-400' 
                             : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
                         }`}
                     >

@@ -1074,11 +1074,11 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
         <div className="max-w-6xl mx-auto space-y-8">
             <section className="relative overflow-hidden rounded-3xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-8 shadow-sm">
                 <div className="absolute inset-0 opacity-70">
-                    <div className="absolute -top-20 -right-24 h-64 w-64 bg-gradient-to-br from-pink-400/40 to-purple-500/10 blur-3xl"></div>
+                    <div className="absolute -top-20 -right-24 h-64 w-64 bg-gradient-to-br from-sky-400/40 to-purple-500/10 blur-3xl"></div>
                     <div className="absolute -bottom-24 -left-10 h-64 w-64 bg-gradient-to-br from-blue-400/30 to-cyan-400/10 blur-3xl"></div>
                 </div>
                 <div className="relative z-10">
-                    <p className="text-xs uppercase tracking-[0.35em] text-pink-500 font-semibold">Club Arcade</p>
+                    <p className="text-xs uppercase tracking-[0.35em] text-sky-500 font-semibold">Club Arcade</p>
                     <h2 className="text-3xl font-bold text-gray-900 dark:text-white mt-2">Games Lounge</h2>
                     <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 max-w-2xl">
                         Short, focused coding games to reset your brain between deep work sessions. Scores are local to this device so you can keep things casual.
@@ -1102,7 +1102,7 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                 onClick={() => setLeaderboardGameKey(item.key as keyof typeof gameMeta)}
                                 className={`w-full text-left rounded-xl border px-3 py-2 text-sm transition-all ${
                                     leaderboardGameKey === item.key
-                                        ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-200'
+                                        ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/20 text-sky-700 dark:text-sky-200'
                                         : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-900/40'
                                 }`}
                             >
@@ -1123,7 +1123,7 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                             </div>
                             <button
                                 onClick={() => loadLeaderboard(leaderboardGameKey)}
-                                className="text-xs text-pink-500 hover:text-pink-600"
+                                className="text-xs text-sky-500 hover:text-sky-600"
                             >
                                 Refresh
                             </button>
@@ -1172,7 +1172,7 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                     </div>
                     <button
                         onClick={() => setShowHelp(prev => !prev)}
-                        className="text-xs text-pink-500 hover:text-pink-600"
+                        className="text-xs text-sky-500 hover:text-sky-600"
                     >
                         {showHelp ? 'Hide tips' : 'Show tips'}
                     </button>
@@ -1220,7 +1220,7 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                         <Tooltip text="Start a new reaction test.">
                             <button
                                 onClick={startReaction}
-                                className="px-4 py-2 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 text-white text-sm font-semibold shadow-sm hover:opacity-90"
+                                className="px-4 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-900 text-white text-sm font-semibold shadow-sm hover:opacity-90"
                             >
                                 Start Run
                             </button>
@@ -1261,7 +1261,7 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={startMathTimer}
-                                className="px-3 py-1.5 rounded-lg bg-pink-600 text-white text-xs font-semibold hover:bg-pink-700"
+                                className="px-3 py-1.5 rounded-lg bg-sky-600 text-white text-xs font-semibold hover:bg-sky-700"
                             >
                                 Start
                             </button>
@@ -1283,7 +1283,7 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                             value={mathAnswer}
                             onChange={(e) => setMathAnswer(e.target.value)}
                             type="number"
-                            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/60 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/60 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
                             placeholder="Type your answer"
                             disabled={!mathIsRunning || mathTimeLeft === 0}
                         />
@@ -1384,7 +1384,7 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                         <p className="text-xs text-gray-500 dark:text-gray-400">Puzzle {sequenceIndex + 1} of {sequencePuzzles.length}</p>
                         <button
                             onClick={() => setSequenceIndex(prev => nextIndex(prev, sequencePuzzles.length))}
-                            className="text-xs text-pink-500 hover:text-pink-600"
+                            className="text-xs text-sky-500 hover:text-sky-600"
                         >
                             New Map
                         </button>
@@ -1403,8 +1403,8 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                 if (isObstacle) className += ' bg-gray-200 dark:bg-gray-700 text-gray-500';
                                 else if (isGoal) className += ' bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600';
                                 else if (isStart) className += ' bg-blue-100 dark:bg-blue-900/40 text-blue-600';
-                                else if (isVisited) className += ' bg-pink-50 dark:bg-pink-900/20 text-pink-500';
-                                if (isBot) className += ' ring-2 ring-pink-500';
+                                else if (isVisited) className += ' bg-sky-50 dark:bg-sky-900/20 text-sky-500';
+                                if (isBot) className += ' ring-2 ring-sky-500';
                                 return (
                                     <div key={key} className={className}>
                                         {isBot ? 'R' : isGoal ? 'G' : isStart ? 'S' : isObstacle ? 'X' : ''}
@@ -1457,7 +1457,7 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                     <div className="flex justify-end">
                         <button
                             onClick={runSequence}
-                            className="px-3 py-2 rounded-xl bg-pink-500 text-white text-sm font-semibold hover:bg-pink-600"
+                            className="px-3 py-2 rounded-xl bg-sky-500 text-white text-sm font-semibold hover:bg-sky-600"
                         >
                             Run
                         </button>
@@ -1475,7 +1475,7 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                             <p className="text-lg font-semibold text-gray-900 dark:text-white">{loopStreak} / {loopBest}</p>
                             <button
                                 onClick={nextLoop}
-                                className="text-xs text-pink-500 hover:text-pink-600"
+                                className="text-xs text-sky-500 hover:text-sky-600"
                             >
                                 New Loop
                             </button>
@@ -1539,7 +1539,7 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                             <p className="text-lg font-semibold text-gray-900 dark:text-white">{functionStreak} / {functionBest}</p>
                             <button
                                 onClick={nextFunctionPuzzle}
-                                className="text-xs text-pink-500 hover:text-pink-600"
+                                className="text-xs text-sky-500 hover:text-sky-600"
                             >
                                 New Puzzle
                             </button>
@@ -1660,7 +1660,7 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                     />
                     <button
                         type="submit"
-                        className="px-4 py-2 rounded-lg bg-pink-600 text-white text-sm font-semibold hover:bg-pink-700"
+                        className="px-4 py-2 rounded-lg bg-sky-600 text-white text-sm font-semibold hover:bg-sky-700"
                     >
                         Submit
                     </button>
@@ -1675,7 +1675,7 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                 <button
                                     key={`${x}-${y}`}
                                     onClick={() => handleCoordClick(x, y)}
-                                    className="h-8 w-8 rounded-md border border-gray-200 dark:border-gray-700 text-[10px] text-gray-500 hover:bg-pink-50 dark:hover:bg-pink-900/20"
+                                    className="h-8 w-8 rounded-md border border-gray-200 dark:border-gray-700 text-[10px] text-gray-500 hover:bg-sky-50 dark:hover:bg-sky-900/20"
                                 >
                                     {coordShowLabels ? `${x},${displayY}` : ''}
                                 </button>
@@ -1719,7 +1719,7 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={startOutputTimer}
-                                className="px-3 py-1.5 rounded-lg bg-pink-600 text-white text-xs font-semibold hover:bg-pink-700"
+                                className="px-3 py-1.5 rounded-lg bg-sky-600 text-white text-xs font-semibold hover:bg-sky-700"
                             >
                                 Start
                             </button>
@@ -1794,7 +1794,7 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={startBugTimer}
-                                className="px-3 py-1.5 rounded-lg bg-pink-600 text-white text-xs font-semibold hover:bg-pink-700"
+                                className="px-3 py-1.5 rounded-lg bg-sky-600 text-white text-xs font-semibold hover:bg-sky-700"
                             >
                                 Start
                             </button>

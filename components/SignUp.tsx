@@ -71,12 +71,12 @@ const SignUp: React.FC<SignUpProps> = ({ onSignUp, onNavigateToLogin }) => {
   return (
     <div className="h-full bg-gray-50 dark:bg-gray-900 flex justify-center items-start sm:items-center relative p-4 pt-12 pb-32 sm:py-6 overflow-y-auto">
       {/* Animated Background Blobs */}
-      <div className="absolute top-0 -left-4 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob dark:opacity-20 dark:mix-blend-normal dark:bg-pink-900"></div>
+      <div className="absolute top-0 -left-4 w-72 h-72 bg-sky-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob dark:opacity-20 dark:mix-blend-normal dark:bg-sky-900"></div>
       <div className="absolute bottom-0 -right-4 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000 dark:opacity-20 dark:mix-blend-normal dark:bg-purple-900"></div>
 
       <div className="relative w-full max-w-md bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-8 space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600 tracking-tight">
+          <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-indigo-900 tracking-tight">
             Create Account
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
@@ -97,7 +97,7 @@ const SignUp: React.FC<SignUpProps> = ({ onSignUp, onNavigateToLogin }) => {
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all"
                 placeholder="John Doe"
                 disabled={isLoading || isSignedUp}
                 />
@@ -116,7 +116,7 @@ const SignUp: React.FC<SignUpProps> = ({ onSignUp, onNavigateToLogin }) => {
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all"
                 placeholder="johndoe"
                 disabled={isLoading || isSignedUp}
                 />
@@ -135,7 +135,7 @@ const SignUp: React.FC<SignUpProps> = ({ onSignUp, onNavigateToLogin }) => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all"
                 placeholder="you@example.com"
                 disabled={isLoading || isSignedUp}
                 />
@@ -155,7 +155,7 @@ const SignUp: React.FC<SignUpProps> = ({ onSignUp, onNavigateToLogin }) => {
                     required
                     value={studentClass}
                     onChange={(e) => setStudentClass(e.target.value)}
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all"
                     placeholder="Senior 3"
                     disabled={isLoading || isSignedUp}
                     />
@@ -174,7 +174,7 @@ const SignUp: React.FC<SignUpProps> = ({ onSignUp, onNavigateToLogin }) => {
                     required
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all"
                     placeholder="+1 234..."
                     disabled={isLoading || isSignedUp}
                     autoComplete="tel"
@@ -192,7 +192,7 @@ const SignUp: React.FC<SignUpProps> = ({ onSignUp, onNavigateToLogin }) => {
                         id="skill-level"
                         value={skillLevel}
                         onChange={(e) => setSkillLevel(e.target.value as 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED')}
-                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all appearance-none"
+                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all appearance-none"
                         disabled={isLoading || isSignedUp}
                     >
                         <option value="BEGINNER">Beginner</option>
@@ -215,7 +215,7 @@ const SignUp: React.FC<SignUpProps> = ({ onSignUp, onNavigateToLogin }) => {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="block w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
+                className="block w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all"
                 placeholder="••••••••"
                 disabled={isLoading || isSignedUp}
               />
@@ -230,14 +230,14 @@ const SignUp: React.FC<SignUpProps> = ({ onSignUp, onNavigateToLogin }) => {
             </div>
           </div>
 
-          {message && <div className="p-3 rounded-lg bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 text-sm text-center font-medium">{message}</div>}
+          {message && <div className="p-3 rounded-lg bg-sky-50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-400 text-sm text-center font-medium">{message}</div>}
           {error && <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm text-center font-medium">{error}</div>}
 
           {!isSignedUp && (
             <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-sm font-bold text-white bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 disabled:opacity-50 disabled:cursor-not-allowed transform transition-all active:scale-[0.98] dark:focus:ring-offset-gray-800 mt-2"
+                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-sm font-bold text-white bg-gradient-to-r from-sky-600 to-indigo-900 hover:from-sky-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 disabled:opacity-50 disabled:cursor-not-allowed transform transition-all active:scale-[0.98] dark:focus:ring-offset-gray-800 mt-2"
             >
                 {isLoading ? 'Creating Account...' : 'Sign Up'}
             </button>
@@ -246,7 +246,7 @@ const SignUp: React.FC<SignUpProps> = ({ onSignUp, onNavigateToLogin }) => {
         <div className="text-center pt-2">
             <p className="text-sm text-gray-600 dark:text-gray-400">
             Already have an account?{' '}
-            <button onClick={onNavigateToLogin} className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-purple-600 hover:opacity-80 transition-opacity">
+            <button onClick={onNavigateToLogin} className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-indigo-900 hover:opacity-80 transition-opacity">
                 Log in
             </button>
             </p>

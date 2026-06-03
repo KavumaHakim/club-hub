@@ -57,7 +57,7 @@ const AttendeesModal: React.FC<AttendeesModalProps> = ({ isOpen, onClose, activi
                 <div className="mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white pr-8">{activity.title}</h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2 mt-1">
-                        <span className="bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 px-2 py-0.5 rounded-full text-xs font-bold">
+                        <span className="bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 px-2 py-0.5 rounded-full text-xs font-bold">
                             {attendees.length} Attendees
                         </span>
                     </p>
@@ -288,7 +288,7 @@ const Activities: React.FC<ActivitiesProps> = ({ currentUser }) => {
                             onClick={() => setViewMode('LIST')}
                             className={`p-2 rounded-lg transition-all duration-200 flex items-center justify-center ${
                                 viewMode === 'LIST'
-                                    ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-pink-400 shadow-sm'
+                                    ? 'bg-white dark:bg-gray-700 text-sky-600 dark:text-sky-400 shadow-sm'
                                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                             }`}
                         >
@@ -300,7 +300,7 @@ const Activities: React.FC<ActivitiesProps> = ({ currentUser }) => {
                             onClick={() => setViewMode('CALENDAR')}
                             className={`p-2 rounded-lg transition-all duration-200 flex items-center justify-center ${
                                 viewMode === 'CALENDAR'
-                                    ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-pink-400 shadow-sm'
+                                    ? 'bg-white dark:bg-gray-700 text-sky-600 dark:text-sky-400 shadow-sm'
                                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                             }`}
                         >
@@ -318,7 +318,7 @@ const Activities: React.FC<ActivitiesProps> = ({ currentUser }) => {
                                 onClick={() => setFilter(f)}
                                 className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap ${
                                     filter === f
-                                        ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-pink-400 shadow-sm'
+                                        ? 'bg-white dark:bg-gray-700 text-sky-600 dark:text-sky-400 shadow-sm'
                                         : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                                 }`}
                             >

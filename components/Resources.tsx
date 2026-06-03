@@ -333,7 +333,7 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 placeholder="Search resources, authors, topics..."
-                                className="w-full sm:w-80 px-4 py-2.5 rounded-xl bg-white/10 text-white placeholder:text-indigo-200 border border-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400"
+                                className="w-full sm:w-80 px-4 py-2.5 rounded-xl bg-white/10 text-white placeholder:text-indigo-200 border border-white/20 focus:outline-none focus:ring-2 focus:ring-sky-400"
                             />
                         </div>
                         <select
@@ -354,7 +354,7 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
                             onClick={() => setSelectedCategory(cat as any)}
                             className={`px-4 py-2 rounded-full text-xs font-semibold transition-colors ${
                                 selectedCategory === cat
-                                    ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/30'
+                                    ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/30'
                                     : 'bg-white/10 text-indigo-100 hover:bg-white/20'
                             }`}
                         >
@@ -383,7 +383,7 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
                 <div className="mb-8 p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
                         <div>
-                            <p className="text-xs uppercase tracking-[0.3em] text-pink-500 font-semibold">Upload Center</p>
+                            <p className="text-xs uppercase tracking-[0.3em] text-sky-500 font-semibold">Upload Center</p>
                             <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Share a New Resource</h3>
                             <p className="text-sm text-gray-500 dark:text-gray-400">Add links, videos, Python scripts, or documents for the club.</p>
                         </div>
@@ -400,7 +400,7 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
                                     onClick={() => setType(option.key)}
                                     className={`px-4 py-2 rounded-full text-xs font-semibold transition-colors ${
                                         type === option.key
-                                            ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/30'
+                                            ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/30'
                                             : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
                                     }`}
                                 >
@@ -419,12 +419,12 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
                                     value={title}
                                     onChange={e => setTitle(e.target.value)}
                                     required
-                                    className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500"
+                                    className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
                                 />
                             </div>
                             <div>
                                 <label htmlFor="category-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
-                                <select id="category-select" value={category} onChange={e => setCategory(e.target.value as ResourceCategory)} className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500">
+                                <select id="category-select" value={category} onChange={e => setCategory(e.target.value as ResourceCategory)} className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500">
                                     <option value="Documentation">Documentation</option>
                                     <option value="Tutorial">Tutorial</option>
                                     <option value="Tool">Tool</option>
@@ -441,7 +441,7 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
                                 onChange={e => setDescription(e.target.value)}
                                 required
                                 rows={3}
-                                className="mt-1 w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500"
+                                className="mt-1 w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
                             />
                             {type === 'DOCUMENT' && selectedFile && (
                                 <Tooltip text="Summarize the document into a short description.">
@@ -464,7 +464,7 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label htmlFor="type-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Resource Type</label>
-                                <select id="type-select" value={type} onChange={e => setType(e.target.value as ResourceType)} className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500">
+                                <select id="type-select" value={type} onChange={e => setType(e.target.value as ResourceType)} className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500">
                                     <option value="LINK">Link</option>
                                     <option value="VIDEO">Video</option>
                                     <option value="PYTHON">Python File</option>
@@ -491,12 +491,12 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
                                             onDrop={handleDrop}
                                             className={`cursor-pointer flex items-center justify-between w-full px-3 py-2.5 border border-dashed rounded-xl transition-colors ${
                                                 isDragging
-                                                    ? 'border-pink-500 bg-pink-100/80 dark:bg-pink-900/40'
-                                                    : 'border-pink-300 dark:border-pink-500/50 bg-pink-50/50 dark:bg-pink-900/20 hover:bg-pink-50 dark:hover:bg-pink-900/30'
+                                                    ? 'border-sky-500 bg-sky-100/80 dark:bg-sky-900/40'
+                                                    : 'border-sky-300 dark:border-sky-500/50 bg-sky-50/50 dark:bg-sky-900/20 hover:bg-sky-50 dark:hover:bg-sky-900/30'
                                             }`}
                                         >
                                             <div className="flex items-center gap-2 truncate">
-                                                {selectedFile && (type === 'PYTHON' ? <CodeIcon className="h-5 w-5 text-pink-500 flex-shrink-0" /> : <DocumentTextIcon className="h-5 w-5 text-pink-500 flex-shrink-0" />)}
+                                                {selectedFile && (type === 'PYTHON' ? <CodeIcon className="h-5 w-5 text-sky-500 flex-shrink-0" /> : <DocumentTextIcon className="h-5 w-5 text-sky-500 flex-shrink-0" />)}
                                                 <div className="truncate">
                                                     <span className="text-gray-600 dark:text-gray-300 truncate">
                                                         {selectedFile ? selectedFile.name : 'Choose a file...'}
@@ -508,7 +508,7 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
                                         </label>
                                     </div>
                                 ) : (
-                                    <input id="url-input" type="url" placeholder="https://example.com" value={url} onChange={e => setUrl(e.target.value)} required className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500" />
+                                    <input id="url-input" type="url" placeholder="https://example.com" value={url} onChange={e => setUrl(e.target.value)} required className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" />
                                 )}
                             </div>
                         </div>
@@ -527,7 +527,7 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
                                             href={previewData.displayUrl}
                                             target="_blank"
                                             rel="noreferrer"
-                                            className="text-xs text-pink-500 hover:text-pink-600"
+                                            className="text-xs text-sky-500 hover:text-sky-600"
                                         >
                                             Open link
                                         </a>
@@ -574,11 +574,11 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
                         {error && <div className="p-3 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300 rounded-md text-sm">{error}</div>}
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                             <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                                <SparklesIcon className="h-4 w-4 text-pink-500" />
+                                <SparklesIcon className="h-4 w-4 text-sky-500" />
                                 <span>Pro tip: add a short summary to help members pick quickly.</span>
                             </div>
                             <Tooltip text="Publish this resource to the club library.">
-                                <button type="submit" disabled={isSubmitting} className="inline-flex items-center justify-center space-x-2 px-5 py-2.5 font-semibold text-white bg-pink-600 rounded-xl shadow-md hover:bg-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                                <button type="submit" disabled={isSubmitting} className="inline-flex items-center justify-center space-x-2 px-5 py-2.5 font-semibold text-white bg-sky-600 rounded-xl shadow-md hover:bg-sky-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                                     <PlusCircleIcon />
                                     <span>{isSubmitting ? 'Uploading...' : 'Add Resource'}</span>
                                 </button>

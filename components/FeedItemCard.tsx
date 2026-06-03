@@ -25,8 +25,8 @@ const badgeConfig: { [key in FeedItemType]: {
     },
     MEMBER_POST: {
         text: 'Discussion',
-        bgClass: 'bg-pink-100 dark:bg-pink-500/20',
-        textClass: 'text-pink-700 dark:text-pink-300',
+        bgClass: 'bg-sky-100 dark:bg-sky-500/20',
+        textClass: 'text-sky-700 dark:text-sky-300',
     },
     NEWS_UPDATE: {
         text: 'News',
@@ -443,7 +443,7 @@ const FeedItemCard: React.FC<FeedItemCardProps> = ({ item, currentUser, onDelete
 
                         <button
                             onClick={handleBookmark}
-                            className={`flex items-center gap-1.5 transition-colors ${isBookmarked ? 'text-pink-600 dark:text-pink-400' : 'text-gray-500 dark:text-gray-400 hover:text-pink-600 dark:hover:text-pink-400'}`}
+                            className={`flex items-center gap-1.5 transition-colors ${isBookmarked ? 'text-sky-600 dark:text-sky-400' : 'text-gray-500 dark:text-gray-400 hover:text-sky-600 dark:hover:text-sky-400'}`}
                             title={isBookmarked ? "Remove Bookmark" : "Bookmark"}
                         >
                             <BookmarkIcon className="w-5 h-5" filled={isBookmarked} />

@@ -197,7 +197,7 @@ const NewChatModal: React.FC<{
                             <div
                                 key={user.uid}
                                 onClick={() => toggleUser(user.uid)}
-                                className={`flex items-center p-2 rounded-lg cursor-pointer border ${selectedUserIds.includes(user.uid) ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20' : 'border-transparent hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                                className={`flex items-center p-2 rounded-lg cursor-pointer border ${selectedUserIds.includes(user.uid) ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/20' : 'border-transparent hover:bg-gray-100 dark:hover:bg-gray-700'}`}
                             >
                                 <div className="relative mr-3">
                                     <img src={user.avatarUrl || `https://i.pravatar.cc/40?u=${user.username}`} className="w-8 h-8 rounded-full" alt={user.name} />
@@ -206,7 +206,7 @@ const NewChatModal: React.FC<{
                                     )}
                                 </div>
                                 <span className="text-gray-800 dark:text-gray-200 font-medium">{user.name}</span>
-                                {selectedUserIds.includes(user.uid) && <span className="ml-auto text-pink-500">✓</span>}
+                                {selectedUserIds.includes(user.uid) && <span className="ml-auto text-sky-500">✓</span>}
                             </div>
                         );
                     })}
@@ -215,7 +215,7 @@ const NewChatModal: React.FC<{
                 <button
                     disabled={selectedUserIds.length === 0}
                     onClick={handleSubmit}
-                    className="w-full py-2 px-4 bg-pink-600 text-white rounded-md font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full py-2 px-4 bg-sky-600 text-white rounded-md font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {selectedUserIds.length > 1 ? 'Create Group' : 'Chat'}
                 </button>
@@ -344,7 +344,7 @@ const RoomDetailsModal: React.FC<{
                     {isCreator && !isAddingMode && (
                         <button
                             onClick={() => setIsAddingMode(true)}
-                            className="flex items-center gap-1 text-xs font-medium text-pink-600 hover:text-pink-700 dark:text-pink-400 hover:bg-pink-50 dark:hover:bg-pink-900/20 px-2 py-1 rounded transition-colors"
+                            className="flex items-center gap-1 text-xs font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/20 px-2 py-1 rounded transition-colors"
                         >
                             <UserAddIcon className="h-4 w-4" /> Add
                         </button>
@@ -367,7 +367,7 @@ const RoomDetailsModal: React.FC<{
                                 placeholder="Search users..."
                                 value={userSearchTerm}
                                 onChange={(e) => setUserSearchTerm(e.target.value)}
-                                className="w-full px-3 py-2 mb-2 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-900 text-sm focus:outline-none focus:ring-1 focus:ring-pink-500"
+                                className="w-full px-3 py-2 mb-2 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-900 text-sm focus:outline-none focus:ring-1 focus:ring-sky-500"
                             />
                             {availableUsers.length === 0 ? (
                                 <p className="text-center text-gray-500 text-sm py-4">No users found to add.</p>
@@ -376,11 +376,11 @@ const RoomDetailsModal: React.FC<{
                                     <div
                                         key={user.uid}
                                         onClick={() => toggleUserSelection(user.uid)}
-                                        className={`flex items-center p-2 rounded-lg cursor-pointer border ${selectedUsersToAdd.includes(user.uid) ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20' : 'border-transparent hover:bg-gray-50 dark:hover:bg-gray-750'}`}
+                                        className={`flex items-center p-2 rounded-lg cursor-pointer border ${selectedUsersToAdd.includes(user.uid) ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/20' : 'border-transparent hover:bg-gray-50 dark:hover:bg-gray-750'}`}
                                     >
                                         <img src={user.avatarUrl || `https://i.pravatar.cc/40?u=${user.username}`} className="w-8 h-8 rounded-full mr-3" alt={user.name} />
                                         <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{user.name}</span>
-                                        {selectedUsersToAdd.includes(user.uid) && <span className="ml-auto text-pink-500"><CheckIcon /></span>}
+                                        {selectedUsersToAdd.includes(user.uid) && <span className="ml-auto text-sky-500"><CheckIcon /></span>}
                                     </div>
                                 ))
                             )}
@@ -424,7 +424,7 @@ const RoomDetailsModal: React.FC<{
                     <div className="mt-4 pt-2 border-t border-gray-100 dark:border-gray-700">
                         <button
                             onClick={handleSubmitAddMembers}
-                            className="w-full py-2 bg-pink-600 text-white rounded-lg font-medium text-sm hover:bg-pink-700 transition-colors"
+                            className="w-full py-2 bg-sky-600 text-white rounded-lg font-medium text-sm hover:bg-sky-700 transition-colors"
                         >
                             Add Selected ({selectedUsersToAdd.length})
                         </button>
@@ -573,9 +573,9 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
         const node = messageRefs.current[messageId];
         if (!node) return;
         node.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        node.classList.add('ring-2', 'ring-pink-400');
+        node.classList.add('ring-2', 'ring-sky-400');
         window.setTimeout(() => {
-            node.classList.remove('ring-2', 'ring-pink-400');
+            node.classList.remove('ring-2', 'ring-sky-400');
         }, 1500);
     }, []);
 
@@ -1259,7 +1259,7 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
                     : 'border-gray-200 dark:border-gray-600 bg-gray-100/80 dark:bg-gray-800 hover:bg-gray-200/80 dark:hover:bg-gray-700'
                     }`}
             >
-                <p className={`text-[11px] font-bold ${isMe ? 'text-pink-100' : 'text-pink-600 dark:text-pink-400'}`}>
+                <p className={`text-[11px] font-bold ${isMe ? 'text-sky-100' : 'text-sky-600 dark:text-sky-400'}`}>
                     Replying to {reply.senderId === currentUser.uid ? 'yourself' : (reply.senderName || 'message')}
                 </p>
                 <p className={`mt-1 line-clamp-2 text-xs ${isMe ? 'text-white/85' : 'text-gray-600 dark:text-gray-300'}`}>
@@ -1276,7 +1276,7 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
                 <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 space-y-3">
                     <div className="flex justify-between items-center">
                         <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200">Messages</h2>
-                        <button onClick={() => setIsModalOpen(true)} className="text-pink-600 hover:text-pink-700 dark:text-pink-400 p-2 hover:bg-pink-50 dark:hover:bg-pink-900/20 rounded-full transition-colors">
+                        <button onClick={() => setIsModalOpen(true)} className="text-sky-600 hover:text-sky-700 dark:text-sky-400 p-2 hover:bg-sky-50 dark:hover:bg-sky-900/20 rounded-full transition-colors">
                             <PlusCircleIcon />
                         </button>
                     </div>
@@ -1294,7 +1294,7 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
                                 value={roomSearch}
                                 onChange={(e) => setRoomSearch(e.target.value)}
                                 placeholder="Search chats..."
-                                className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                             />
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -1303,8 +1303,8 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
                                     <button
                                         onClick={() => setRoomFilter(option.value)}
                                         className={`px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors ${roomFilter === option.value
-                                            ? 'bg-pink-600 text-white border-pink-600'
-                                            : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-pink-300 hover:text-pink-600'
+                                            ? 'bg-sky-600 text-white border-sky-600'
+                                            : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-sky-300 hover:text-sky-600'
                                             }`}
                                     >
                                         {option.label}
@@ -1321,7 +1321,7 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
                         <div className="p-8 text-center text-gray-500 dark:text-gray-400">
                             <ChatBubbleIcon />
                             <p className="mt-2">No conversations yet.</p>
-                            <button onClick={() => setIsModalOpen(true)} className="mt-4 text-pink-600 hover:underline">Start a chat</button>
+                            <button onClick={() => setIsModalOpen(true)} className="mt-4 text-sky-600 hover:underline">Start a chat</button>
                         </div>
                     ) : filteredRooms.length === 0 ? (
                         <div className="p-8 text-center text-gray-500 dark:text-gray-400 space-y-2">
@@ -1348,13 +1348,13 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
                                     key={room.id}
                                     onClick={() => switchToRoom(room.id)}
                                     onContextMenu={(e) => handleRoomContextMenu(e, room.id)}
-                                    className={`p-4 flex items-center cursor-pointer transition-colors border-b border-gray-100 dark:border-gray-800/50 ${isActive ? 'bg-white dark:bg-gray-700 shadow-sm border-l-4 border-l-pink-500' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 border-l-4 border-l-transparent'}`}
+                                    className={`p-4 flex items-center cursor-pointer transition-colors border-b border-gray-100 dark:border-gray-800/50 ${isActive ? 'bg-white dark:bg-gray-700 shadow-sm border-l-4 border-l-sky-500' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 border-l-4 border-l-transparent'}`}
                                 >
                                     <div className="relative flex-shrink-0 mr-3">
                                         {avatar ? (
                                             <img src={avatar} alt={roomName} className="w-12 h-12 rounded-full object-cover shadow-sm" />
                                         ) : (
-                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-white font-bold text-lg shadow-sm">
+                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-sky-400 to-purple-500 flex items-center justify-center text-white font-bold text-lg shadow-sm">
                                                 {roomName.charAt(0)}
                                             </div>
                                         )}
@@ -1366,7 +1366,7 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
                                         <div className="flex justify-between items-center">
                                             <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{roomName}</h3>
                                             {unreadCount > 0 && (
-                                                <span className="bg-pink-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-2 shadow-sm">
+                                                <span className="bg-sky-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-2 shadow-sm">
                                                     {unreadCount > 99 ? '99+' : unreadCount}
                                                 </span>
                                             )}
@@ -1395,7 +1395,7 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
                                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                                 </button>
                                 <div className="flex flex-col cursor-pointer" onClick={() => setIsRoomDetailsOpen(true)}>
-                                    <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200 leading-tight hover:text-pink-600 transition-colors flex items-center gap-2">
+                                    <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200 leading-tight hover:text-sky-600 transition-colors flex items-center gap-2">
                                         {getRoomName(activeRoom, allUsers, currentUser.uid)}
                                     </h2>
                                     <div className="flex items-center space-x-2 mt-0.5">
@@ -1478,7 +1478,7 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
                                                             setReplyTarget(msg);
                                                             textareaRef.current?.focus();
                                                         }}
-                                                        className="rounded-full bg-white/90 dark:bg-gray-800 px-2.5 py-1 text-[11px] font-semibold text-pink-600 dark:text-pink-400 shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-pink-50 dark:hover:bg-gray-700 transition-colors"
+                                                        className="rounded-full bg-white/90 dark:bg-gray-800 px-2.5 py-1 text-[11px] font-semibold text-sky-600 dark:text-sky-400 shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-sky-50 dark:hover:bg-gray-700 transition-colors"
                                                     >
                                                         Reply
                                                     </button>
@@ -1489,10 +1489,10 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
                                                     onTouchCancel={clearLongPressTimer}
                                                     onContextMenu={(e) => handleContextMenu(e, msg)}
                                                     className={`relative px-4 py-2 shadow-sm rounded-2xl transition duration-200 hover:shadow-lg ${isMe
-                                                        ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-br-none cursor-context-menu shadow-md'
+                                                        ? 'bg-gradient-to-r from-sky-500 to-indigo-900 text-white rounded-br-none cursor-context-menu shadow-md'
                                                         : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-none border border-gray-200 dark:border-gray-600'
                                                         }`}>
-                                                    {!isMe && <p className="text-xs text-pink-600 dark:text-pink-400 font-bold mb-1">{sender?.name || 'Unknown'}</p>}
+                                                    {!isMe && <p className="text-xs text-sky-600 dark:text-sky-400 font-bold mb-1">{sender?.name || 'Unknown'}</p>}
                                                     {renderReplyPreview(msg, isMe)}
                                                     {renderMessageContent(msg, isMe)}
                                                 </div>
@@ -1544,13 +1544,13 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
                                             placeholder="Search stickers..."
                                             value={stickerSearchQuery}
                                             onChange={(e) => setStickerSearchQuery(e.target.value)}
-                                            className="w-full px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500 focus:outline-none placeholder-gray-400"
+                                            className="w-full px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-sky-500 focus:outline-none placeholder-gray-400"
                                         />
                                     </div>
                                     <div className="flex-1 p-3 grid grid-cols-3 gap-2 overflow-y-auto bg-white dark:bg-gray-800">
                                         {isSearchingStickers && stickerResults.length === 0 ? (
                                             <div className="col-span-3 flex flex-col justify-center items-center h-full text-gray-400 space-y-2">
-                                                <div className="w-5 h-5 border-2 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
+                                                <div className="w-5 h-5 border-2 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
                                                 <p className="text-xs">Searching...</p>
                                             </div>
                                         ) : stickerResults.map((stickerUrl, index) => (
@@ -1568,7 +1568,7 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
                                                 });
                                                 setReplyTarget(null);
                                             }}
-                                                className="hover:bg-gray-100 dark:hover:bg-gray-700 p-1 rounded-xl transition-colors outline-none focus:ring-2 focus:ring-pink-500 flex items-center justify-center cursor-pointer"
+                                                className="hover:bg-gray-100 dark:hover:bg-gray-700 p-1 rounded-xl transition-colors outline-none focus:ring-2 focus:ring-sky-500 flex items-center justify-center cursor-pointer"
                                             >
                                                 <img src={stickerUrl} alt={`Sticker ${index}`} className="h-16 w-full object-contain" />
                                             </button>
@@ -1583,9 +1583,9 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
                             )}
                             <div className="max-w-4xl mx-auto">
                                 {replyTarget && (
-                                    <div className="mb-3 flex items-start justify-between gap-3 rounded-2xl border border-pink-200 dark:border-pink-900/40 bg-pink-50 dark:bg-pink-900/15 px-4 py-3">
+                                    <div className="mb-3 flex items-start justify-between gap-3 rounded-2xl border border-sky-200 dark:border-sky-900/40 bg-sky-50 dark:bg-sky-900/15 px-4 py-3">
                                         <div className="min-w-0">
-                                            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-pink-600 dark:text-pink-400">
+                                            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-sky-600 dark:text-sky-400">
                                                 Replying To {replyTarget.senderId === currentUser.uid ? 'Yourself' : (allUsers.find(u => u.uid === replyTarget.senderId)?.name || 'Message')}
                                             </p>
                                             <p className="mt-1 line-clamp-2 text-sm text-gray-700 dark:text-gray-200">
@@ -1609,7 +1609,7 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
                                         e.stopPropagation();
                                         setShowEmojiPicker(!showEmojiPicker);
                                     }}
-                                    className="p-3 text-gray-400 dark:text-gray-500 hover:text-pink-500 dark:hover:text-pink-400 transition-colors rounded-full hover:bg-white dark:hover:bg-gray-800 shadow-sm border border-transparent hover:border-gray-200 dark:hover:border-gray-700"
+                                    className="p-3 text-gray-400 dark:text-gray-500 hover:text-sky-500 dark:hover:text-sky-400 transition-colors rounded-full hover:bg-white dark:hover:bg-gray-800 shadow-sm border border-transparent hover:border-gray-200 dark:hover:border-gray-700"
                                     aria-label="Insert Emoji"
                                 >
                                     <FaceSmileIcon />
@@ -1651,7 +1651,7 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
                                         onChange={e => setNewMessage(e.target.value)}
                                         rows={1}
                                         placeholder="Type a message..."
-                                        className="w-full max-h-32 min-h-[3rem] py-3 pl-4 pr-12 border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent resize-none transition-all shadow-sm focus:shadow-md overflow-hidden"
+                                        className="w-full max-h-32 min-h-[3rem] py-3 pl-4 pr-12 border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent resize-none transition-all shadow-sm focus:shadow-md overflow-hidden"
                                         onKeyDown={(e) => {
                                             if (e.key === 'Enter' && !e.shiftKey) {
                                                 e.preventDefault();
@@ -1664,7 +1664,7 @@ const Chat: React.FC<ChatProps> = ({ currentUser, setActiveTab, theme }) => {
                                             <button
                                                 type="submit"
                                                 disabled={!newMessage.trim()}
-                                                className="p-2 bg-pink-500 text-white rounded-xl hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center"
+                                                className="p-2 bg-sky-500 text-white rounded-xl hover:bg-sky-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center"
                                             >
                                                 <SendIcon className="h-4 w-4 transform rotate-90" />
                                             </button>

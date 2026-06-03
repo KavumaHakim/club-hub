@@ -14,7 +14,7 @@ interface AttendanceProps {
 }
 
 const statusColors: { [key in AttendanceStatus]: string } = {
-  'Present': 'bg-pink-100 text-pink-800 dark:bg-pink-900/50 dark:text-pink-300',
+  'Present': 'bg-sky-100 text-sky-800 dark:bg-sky-900/50 dark:text-sky-300',
   'Absent': 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
   'Excused': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300',
 };
@@ -401,7 +401,7 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
               <button
                 onClick={handleQuickAttendance}
                 disabled={isQuickCreating}
-                className="flex items-center space-x-2 px-5 py-3 font-semibold text-white bg-pink-600 rounded-xl shadow-md hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="flex items-center space-x-2 px-5 py-3 font-semibold text-white bg-sky-600 rounded-xl shadow-md hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 <Tooltip text="Create a quick attendance session for today.">
                   <span className="flex items-center space-x-2">
@@ -432,7 +432,7 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
                   name="patronActivityId"
                   value={patronActivityId}
                   onChange={(e) => setPatronActivityId(e.target.value)}
-                  className="block w-full pl-3 pr-10 py-2.5 text-base border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-pink-500 focus:border-pink-500 sm:text-sm rounded-xl"
+                  className="block w-full pl-3 pr-10 py-2.5 text-base border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm rounded-xl"
                 >
                   <option value="" disabled>Select an activity...</option>
                   {activities.map(act => (
@@ -483,7 +483,7 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
                     value={memberSearch}
                     onChange={(e) => setMemberSearch(e.target.value)}
                     placeholder="Search members..."
-                    className="px-3 py-1.5 text-xs rounded-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    className="px-3 py-1.5 text-xs rounded-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-sky-500"
                   />
                 </div>
               </div>

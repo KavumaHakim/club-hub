@@ -24,7 +24,7 @@ const DeploymentChangelogModal: React.FC<DeploymentChangelogModalProps> = ({ isO
         </button>
 
         <div className="px-6 sm:px-8 pt-7 pb-5 border-b border-gray-100 dark:border-gray-700">
-          <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-pink-600 dark:text-pink-400">
+          <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-sky-600 dark:text-sky-400">
             Latest Deployment
           </p>
           <h2 className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">
@@ -48,7 +48,7 @@ const DeploymentChangelogModal: React.FC<DeploymentChangelogModalProps> = ({ isO
             <section
               key={entry.id}
               className={`rounded-2xl border p-4 sm:p-5 ${entryIndex === 0
-                ? 'border-pink-200 dark:border-pink-900/30 bg-pink-50/60 dark:bg-pink-900/10'
+                ? 'border-sky-200 dark:border-sky-900/30 bg-sky-50/60 dark:bg-sky-900/10'
                 : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40'
                 }`}
             >
@@ -81,7 +81,7 @@ const DeploymentChangelogModal: React.FC<DeploymentChangelogModalProps> = ({ isO
                     className="rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-4 py-3"
                   >
                     <div className="flex items-start gap-3">
-                      <div className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-pink-600 text-white text-xs font-bold flex-shrink-0">
+                      <div className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-sky-600 text-white text-xs font-bold flex-shrink-0">
                         {index + 1}
                       </div>
                       <div className="min-w-0">

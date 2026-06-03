@@ -301,13 +301,13 @@ const CustomCursor: React.FC = () => {
           case 'heart':
               return (
                   <>
-                    <div ref={cursorRef} className="fixed top-0 left-0 pointer-events-none z-[9999] -ml-2.5 -mt-2.5 text-pink-500">
+                    <div ref={cursorRef} className="fixed top-0 left-0 pointer-events-none z-[9999] -ml-2.5 -mt-2.5 text-sky-500">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border border-pink-400/50 rounded-full transition-all duration-150 ease-out
-                        ${hovering ? 'scale-150 bg-pink-500/10 border-pink-500' : 'scale-100'}`}
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border border-sky-400/50 rounded-full transition-all duration-150 ease-out
+                        ${hovering ? 'scale-150 bg-sky-500/10 border-sky-500' : 'scale-100'}`}
                     />
                   </>
               );
@@ -528,13 +528,13 @@ const CustomCursor: React.FC = () => {
           case 'brush':
               return (
                   <>
-                    <div ref={cursorRef} className="fixed top-0 left-0 pointer-events-none z-[9999] -ml-1 -mt-5 text-pink-600">
+                    <div ref={cursorRef} className="fixed top-0 left-0 pointer-events-none z-[9999] -ml-1 -mt-5 text-sky-600">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M7 14c-1.66 0-3 1.34-3 3 0 1.31-1.16 2-2 2 .92 1.22 2.49 2 4 2 2.21 0 4-1.79 4-4 0-1.66-1.34-3-3-3zm13.71-9.37l-1.34-1.34a.996.996 0 00-1.41 0L9 12.25 11.75 15l8.96-8.96a.996.996 0 000-1.41z"/></svg>
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-3 -mt-3 w-6 h-6 bg-pink-500/30 rounded-full blur-sm transition-all duration-75
-                        ${hovering ? 'w-10 h-10 -ml-5 -mt-5 bg-pink-500/50' : ''}`}
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-3 -mt-3 w-6 h-6 bg-sky-500/30 rounded-full blur-sm transition-all duration-75
+                        ${hovering ? 'w-10 h-10 -ml-5 -mt-5 bg-sky-500/50' : ''}`}
                     />
                   </>
               );
@@ -554,12 +554,12 @@ const CustomCursor: React.FC = () => {
           case 'flower':
               return (
                   <>
-                    <div ref={cursorRef} className="fixed top-0 left-0 pointer-events-none z-[9999] -ml-3 -mt-3 text-pink-400">
+                    <div ref={cursorRef} className="fixed top-0 left-0 pointer-events-none z-[9999] -ml-3 -mt-3 text-sky-400">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c4.97 0 9-4.03 9-9-4.97 0-9 4.03-9 9zM5.6 10.25a2.5 2.5 0 003.92 2.06l.02-.01a2.5 2.5 0 00-1.42-4.53c-.51 0-1.02.15-1.46.44-.44.29-.78.71-.96 1.2l-.1.84zm8.53-3.93a2.5 2.5 0 001.94-4.21 2.5 2.5 0 00-3.88 2.11c0 .78.36 1.51.99 1.98.28.21.6.32.95.12zM12 13c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z"/></svg>
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 bg-pink-400/20 rounded-full transition-all duration-150 ease-out
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 bg-sky-400/20 rounded-full transition-all duration-150 ease-out
                         ${hovering ? 'scale-125 rotate-45' : 'scale-100'}`}
                     />
                   </>
@@ -760,19 +760,19 @@ const CustomCursor: React.FC = () => {
                     <div 
                         ref={followerRef}
                         className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-6 -mt-6 w-12 h-12 border border-gray-400/30 rounded-full transition-all duration-100
-                        ${hovering ? 'scale-110 border-2 border-pink-500/50' : 'scale-100'}`}
+                        ${hovering ? 'scale-110 border-2 border-sky-500/50' : 'scale-100'}`}
                     />
                   </>
               );
           case 'palette':
               return (
                   <>
-                    <div ref={cursorRef} className="fixed top-0 left-0 pointer-events-none z-[9999] -ml-3 -mt-3 text-pink-500">
+                    <div ref={cursorRef} className="fixed top-0 left-0 pointer-events-none z-[9999] -ml-3 -mt-3 text-sky-500">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a9 9 0 000 18c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
                     </div>
                     <div 
                         ref={followerRef}
-                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 bg-gradient-to-tr from-pink-400 via-purple-400 to-blue-400 rounded-full opacity-20 transition-all duration-150
+                        className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 bg-gradient-to-tr from-sky-400 via-purple-400 to-blue-400 rounded-full opacity-20 transition-all duration-150
                         ${hovering ? 'scale-150 opacity-40' : 'scale-100'}`}
                     />
                   </>
@@ -952,7 +952,7 @@ const CustomCursor: React.FC = () => {
                   <>
                     <div 
                         ref={cursorRef}
-                        className="fixed top-0 left-0 w-3 h-3 bg-pink-500 pointer-events-none z-[9999] -ml-1.5 -mt-1.5 shadow-[0_0_6px_rgba(236,72,153,0.8)]"
+                        className="fixed top-0 left-0 w-3 h-3 bg-sky-500 pointer-events-none z-[9999] -ml-1.5 -mt-1.5 shadow-[0_0_6px_rgba(236,72,153,0.8)]"
                     />
                     <div 
                         ref={followerRef}
@@ -960,7 +960,7 @@ const CustomCursor: React.FC = () => {
                         ${hovering ? 'scale-110' : 'scale-100'}`}
                     >
                         <div className="absolute inset-0 border border-cyan-400/50 translate-x-0.5 -translate-y-0.5"></div>
-                        <div className="absolute inset-0 border border-pink-500/50 -translate-x-0.5 translate-y-0.5"></div>
+                        <div className="absolute inset-0 border border-sky-500/50 -translate-x-0.5 translate-y-0.5"></div>
                     </div>
                   </>
               );
@@ -969,13 +969,13 @@ const CustomCursor: React.FC = () => {
                   <>
                     <div 
                         ref={cursorRef}
-                        className="fixed top-0 left-0 w-2.5 h-2.5 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full pointer-events-none z-[9999] -ml-1.5 -mt-1.5 shadow-[0_0_10px_rgba(236,72,153,0.5)]"
+                        className="fixed top-0 left-0 w-2.5 h-2.5 bg-gradient-to-r from-sky-500 to-indigo-900 rounded-full pointer-events-none z-[9999] -ml-1.5 -mt-1.5 shadow-[0_0_10px_rgba(236,72,153,0.5)]"
                     />
                     <div 
                         ref={followerRef}
                         className={`fixed top-0 left-0 pointer-events-none z-[9998] -ml-5 -mt-5 w-10 h-10 border-2 rounded-full transition-all duration-150 ease-out flex items-center justify-center
                         ${hovering 
-                            ? 'border-pink-500/80 bg-pink-500/10 dark:border-pink-400/80 dark:bg-pink-400/10 scale-125' 
+                            ? 'border-sky-500/80 bg-sky-500/10 dark:border-sky-400/80 dark:bg-sky-400/10 scale-125' 
                             : 'border-gray-400/60 dark:border-gray-500/60 scale-75'}`}
                     />
                   </>

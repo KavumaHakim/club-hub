@@ -25,7 +25,7 @@ const formatDate = (dateString: string) => {
 
 const categoryStyles = {
     'WORKSHOP': 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300 border-blue-200 dark:border-blue-800',
-    'SOCIAL': 'bg-pink-100 text-pink-800 dark:bg-pink-900/50 dark:text-pink-300 border-pink-200 dark:border-pink-800',
+    'SOCIAL': 'bg-sky-100 text-sky-800 dark:bg-sky-900/50 dark:text-sky-300 border-sky-200 dark:border-sky-800',
     'COMPETITION': 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300 border-amber-200 dark:border-amber-800',
     'GUEST_SPEAKER': 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300 border-purple-200 dark:border-purple-800',
     'OTHER': 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300 border-gray-200 dark:border-gray-700',
@@ -66,7 +66,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({ activity, currentUser, onTo
     <div 
       ref={cardRef}
       onContextMenu={onContextMenu}
-      className="scroll-animate group bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm hover:shadow-xl border border-gray-200 dark:border-gray-700 transition-all duration-300 transform hover:-translate-y-1 hover:border-pink-200 dark:hover:border-pink-900/50 relative overflow-hidden flex flex-col h-full"
+      className="scroll-animate group bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm hover:shadow-xl border border-gray-200 dark:border-gray-700 transition-all duration-300 transform hover:-translate-y-1 hover:border-sky-200 dark:hover:border-sky-900/50 relative overflow-hidden flex flex-col h-full"
     >
       
       {/* Category Badge */}
@@ -78,7 +78,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({ activity, currentUser, onTo
 
       <div className="relative z-10 flex-1">
           <div className="mb-4 pr-16"> {/* pr-16 to avoid overlapping with absolute badge */}
-             <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 leading-tight group-hover:text-pink-600 dark:group-hover:text-pink-400 transition-colors mb-2">
+             <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 leading-tight group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors mb-2">
                  {activity.title}
             </h3>
              <span className="text-xs font-bold text-gray-500 dark:text-gray-400 block">
@@ -93,8 +93,8 @@ const ActivityCard: React.FC<ActivityCardProps> = ({ activity, currentUser, onTo
             className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-4 bg-gray-50 dark:bg-gray-750 p-2 rounded-lg inline-flex max-w-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group/location"
             title="View on Google Maps"
           >
-              <svg className="w-4 h-4 mr-2 text-pink-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-              <span className="font-medium truncate group-hover/location:text-pink-600 dark:group-hover/location:text-pink-400 underline decoration-dotted decoration-gray-400 underline-offset-2">{activity.location}</span>
+              <svg className="w-4 h-4 mr-2 text-sky-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+              <span className="font-medium truncate group-hover/location:text-sky-600 dark:group-hover/location:text-sky-400 underline decoration-dotted decoration-gray-400 underline-offset-2">{activity.location}</span>
           </a>
           <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-sm line-clamp-3 group-hover:line-clamp-none transition-all duration-300 mb-4">{activity.description}</p>
       </div>

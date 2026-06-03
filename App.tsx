@@ -453,7 +453,7 @@ const App: React.FC = () => {
                     <MenuIcon />
                   </button>
                   {/* Mobile Title */}
-                  <h1 className="md:hidden text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600">
+                  <h1 className="md:hidden text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-indigo-900">
                     ICT Club Hub
                   </h1>
                   {/* Desktop Title */}
@@ -505,7 +505,7 @@ const App: React.FC = () => {
                     <img
                       src={user.avatarUrl || `https://i.pravatar.cc/40?u=${user.username}`}
                       alt={user.name}
-                      className="w-8 h-8 rounded-full border-2 border-white dark:border-gray-700 group-hover:border-pink-500 dark:group-hover:border-pink-500 transition-colors object-cover"
+                      className="w-8 h-8 rounded-full border-2 border-white dark:border-gray-700 group-hover:border-sky-500 dark:group-hover:border-sky-500 transition-colors object-cover"
                     />
                   </button>
                 </div>
@@ -530,7 +530,7 @@ const App: React.FC = () => {
       return (
         <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900" style={{ fontFamily: font }}>
           <div className="flex flex-col items-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-pink-500 mb-4"></div>
+            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-sky-500 mb-4"></div>
             <p className="text-gray-500 dark:text-gray-400 font-medium">Loading Club Hub...</p>
           </div>
         </div>

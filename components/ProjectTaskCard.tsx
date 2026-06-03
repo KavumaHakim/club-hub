@@ -33,7 +33,7 @@ interface ProjectTaskCardProps {
   onDeleteSubmission: (taskId: string, userId: string, filePath: string) => Promise<void>;
 }
 
-const DRAGGING_CLASSES = ['opacity-75', 'ring-2', 'ring-pink-500', 'rotate-3', 'scale-105', 'shadow-2xl'];
+const DRAGGING_CLASSES = ['opacity-75', 'ring-2', 'ring-sky-500', 'rotate-3', 'scale-105', 'shadow-2xl'];
 
 const PriorityBadge: React.FC<{ priority: string }> = ({ priority }) => {
     let colorClass = "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400";
@@ -142,7 +142,7 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = (props) => {
         data-task-id={task.id}
         data-dragging={isBeingDragged}
         className={`scroll-animate bg-white dark:bg-gray-800 p-4 rounded-md border transform transition-all duration-300 shadow-sm relative group ${
-            isPatron ? 'cursor-grab hover:border-pink-300 dark:hover:border-pink-700' : ''
+            isPatron ? 'cursor-grab hover:border-sky-300 dark:hover:border-sky-700' : ''
         } ${
             isBeingDragged ? 'opacity-40' : ''
         } ${
@@ -239,7 +239,7 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = (props) => {
                     <button
                         onClick={() => fileInputRef.current?.click()}
                         disabled={isSubmitting}
-                        className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700/80 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 hover:border-pink-500 dark:hover:border-pink-500 transition-all disabled:opacity-50"
+                        className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700/80 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 hover:border-sky-500 dark:hover:border-sky-500 transition-all disabled:opacity-50"
                     >
                         {isSubmitting ? (
                             <>
@@ -309,13 +309,13 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = (props) => {
                                             <div 
                                                 key={user.uid}
                                                 onClick={() => onToggleTaskAssignee(task.id, user.uid)}
-                                                className={`px-3 py-2 flex items-center gap-2 text-sm cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 ${isAssigned ? 'bg-pink-50 dark:bg-pink-900/10' : ''}`}
+                                                className={`px-3 py-2 flex items-center gap-2 text-sm cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 ${isAssigned ? 'bg-sky-50 dark:bg-sky-900/10' : ''}`}
                                             >
-                                                <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${isAssigned ? 'bg-pink-500 border-pink-500' : 'border-gray-300 dark:border-gray-500'}`}>
+                                                <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${isAssigned ? 'bg-sky-500 border-sky-500' : 'border-gray-300 dark:border-gray-500'}`}>
                                                     {isAssigned && <CheckIcon className="w-3 h-3 text-white" />}
                                                 </div>
                                                 <img src={user.avatarUrl || `https://i.pravatar.cc/20?u=${user.username}`} className="w-5 h-5 rounded-full object-cover" alt="" />
-                                                <span className={`truncate ${isAssigned ? 'text-pink-700 dark:text-pink-300 font-medium' : 'text-gray-700 dark:text-gray-300'}`}>
+                                                <span className={`truncate ${isAssigned ? 'text-sky-700 dark:text-sky-300 font-medium' : 'text-gray-700 dark:text-gray-300'}`}>
                                                     {user.name}
                                                 </span>
                                             </div>

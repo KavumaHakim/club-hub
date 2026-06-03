@@ -38,7 +38,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             </button>
             <button 
                 onClick={() => { onConfirm(); onClose(); }}
-                className={`flex-1 px-4 py-2 text-white rounded-lg font-medium shadow-sm transition-colors ${isDangerous ? 'bg-red-600 hover:bg-red-700' : 'bg-pink-600 hover:bg-pink-700'}`}
+                className={`flex-1 px-4 py-2 text-white rounded-lg font-medium shadow-sm transition-colors ${isDangerous ? 'bg-red-600 hover:bg-red-700' : 'bg-sky-600 hover:bg-sky-700'}`}
             >
                 {confirmText}
             </button>

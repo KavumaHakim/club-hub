@@ -97,8 +97,8 @@ const Notifications: React.FC<NotificationsProps> = ({ currentUser, setActiveTab
                 <BellIcon />
                 {unreadCount > 0 && (
                     <span className="absolute top-0 right-0 flex h-4 w-4">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-4 w-4 bg-pink-500 text-white text-[10px] items-center justify-center shadow-sm">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-4 w-4 bg-sky-500 text-white text-[10px] items-center justify-center shadow-sm">
                             {unreadCount}
                         </span>
                     </span>
@@ -122,7 +122,7 @@ const Notifications: React.FC<NotificationsProps> = ({ currentUser, setActiveTab
                                 </button>
                             )}
                             {unreadCount > 0 && (
-                                <button onClick={handleMarkAllRead} className="text-xs text-pink-600 hover:underline dark:text-pink-400">
+                                <button onClick={handleMarkAllRead} className="text-xs text-sky-600 hover:underline dark:text-sky-400">
                                     Mark all read
                                 </button>
                             )}
@@ -138,9 +138,9 @@ const Notifications: React.FC<NotificationsProps> = ({ currentUser, setActiveTab
                                 <button
                                     key={n.id}
                                     onClick={() => handleNotificationClick(n)}
-                                    className={`w-full text-left p-3 flex items-start gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors border-b border-gray-100 dark:border-gray-700 ${!n.isRead ? 'bg-pink-50 dark:bg-pink-900/20' : ''}`}
+                                    className={`w-full text-left p-3 flex items-start gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors border-b border-gray-100 dark:border-gray-700 ${!n.isRead ? 'bg-sky-50 dark:bg-sky-900/20' : ''}`}
                                 >
-                                    {!n.isRead && <div className="w-2 h-2 rounded-full bg-pink-500 mt-1.5 flex-shrink-0"></div>}
+                                    {!n.isRead && <div className="w-2 h-2 rounded-full bg-sky-500 mt-1.5 flex-shrink-0"></div>}
                                     <div className={n.isRead ? 'pl-5' : ''}>
                                         <p className="text-sm text-gray-700 dark:text-gray-300">{n.message}</p>
                                         <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{n.createdAt}</p>

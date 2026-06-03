@@ -212,7 +212,7 @@ const GradingView: React.FC<GradingViewProps> = ({ data, allUsers, onGrade }) =>
                                                             </button>
                                                             <button
                                                                 onClick={() => handleAiGradeClick(task, submission, userId)}
-                                                                className="p-1.5 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-full shadow-sm hover:shadow-md hover:scale-105 transition-all"
+                                                                className="p-1.5 bg-gradient-to-r from-sky-500 to-indigo-900 text-white rounded-full shadow-sm hover:shadow-md hover:scale-105 transition-all"
                                                                 title="Auto-Grade with AI"
                                                             >
                                                                 <SparklesIcon className="w-3 h-3" />
@@ -244,7 +244,7 @@ const GradingView: React.FC<GradingViewProps> = ({ data, allUsers, onGrade }) =>
                                             onChange={(e) => handleFeedbackChange(task.id, userId, e.target.value)}
                                             onBlur={() => handleFeedbackBlur(task.id, userId, submission.grade)}
                                             placeholder="Write constructive feedback for the student..."
-                                            className="w-full p-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-pink-500 focus:border-transparent min-h-[60px]"
+                                            className="w-full p-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-sky-500 focus:border-transparent min-h-[60px]"
                                         />
                                     </div>
                                 </div>

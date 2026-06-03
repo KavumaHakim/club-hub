@@ -142,13 +142,13 @@ const SubmitToChallengeModal: React.FC<SubmitToChallengeModalProps> = ({ isOpen,
                                 onClick={() => setSelectedChallengeId(challenge.id)}
                                 className={`p-3 rounded-xl border-2 cursor-pointer transition-all ${
                                     selectedChallengeId === challenge.id 
-                                    ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20' 
-                                    : 'border-gray-200 dark:border-gray-700 hover:border-pink-300 dark:hover:border-pink-700 bg-gray-50 dark:bg-gray-700/30'
+                                    ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/20' 
+                                    : 'border-gray-200 dark:border-gray-700 hover:border-sky-300 dark:hover:border-sky-700 bg-gray-50 dark:bg-gray-700/30'
                                 }`}
                             >
                                 <div className="flex justify-between items-center mb-1">
                                     <h4 className="font-bold text-gray-800 dark:text-gray-200 text-sm">{challenge.title}</h4>
-                                    {selectedChallengeId === challenge.id && <CheckIcon className="text-pink-500 w-5 h-5" />}
+                                    {selectedChallengeId === challenge.id && <CheckIcon className="text-sky-500 w-5 h-5" />}
                                 </div>
                                 <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-2">{challenge.description}</p>
                                 <div className="flex justify-between items-center">
@@ -164,7 +164,7 @@ const SubmitToChallengeModal: React.FC<SubmitToChallengeModalProps> = ({ isOpen,
                 <button 
                     onClick={handleSubmit}
                     disabled={!selectedChallengeId || isSubmitting}
-                    className="w-full py-2 bg-gradient-to-r from-pink-600 to-purple-600 text-white rounded-lg font-bold shadow-md hover:from-pink-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    className="w-full py-2 bg-gradient-to-r from-sky-600 to-indigo-900 text-white rounded-lg font-bold shadow-md hover:from-sky-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                     {isSubmitting ? 'Submitting...' : 'Submit Solution'}
                 </button>
@@ -178,13 +178,13 @@ const SubmitToChallengeModal: React.FC<SubmitToChallengeModalProps> = ({ isOpen,
                         </button>
                         
                         <div className="flex items-center gap-4 mb-6">
-                            <div className={`p-3 rounded-xl ${aiFeedback.passed ? 'bg-green-100 dark:bg-green-900/30' : aiFeedback.passed === false ? 'bg-red-100 dark:bg-red-900/30' : 'bg-pink-100 dark:bg-pink-900/30'}`}>
+                            <div className={`p-3 rounded-xl ${aiFeedback.passed ? 'bg-green-100 dark:bg-green-900/30' : aiFeedback.passed === false ? 'bg-red-100 dark:bg-red-900/30' : 'bg-sky-100 dark:bg-sky-900/30'}`}>
                                 {aiFeedback.passed ? (
                                     <TrophyIcon className="w-8 h-8 text-green-600 dark:text-green-400" />
                                 ) : aiFeedback.passed === false ? (
                                     <ExclamationCircleIcon className="w-8 h-8 text-red-600 dark:text-red-400" />
                                 ) : (
-                                    <SparklesIcon className="w-8 h-8 text-pink-600 dark:text-pink-400" />
+                                    <SparklesIcon className="w-8 h-8 text-sky-600 dark:text-sky-400" />
                                 )}
                             </div>
                             <div>
@@ -200,14 +200,14 @@ const SubmitToChallengeModal: React.FC<SubmitToChallengeModalProps> = ({ isOpen,
                         <div className="flex-1 overflow-y-auto custom-scrollbar space-y-6">
                             {aiFeedback.isLoading ? (
                                 <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
+                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500"></div>
                                     <p className="text-gray-500 animate-pulse font-medium">Analyzing your code against challenge requirements...</p>
                                 </div>
                             ) : (
                                 <>
                                     <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700/50">
                                         <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                                            <SparklesIcon className="w-4 h-4 text-pink-500" />
+                                            <SparklesIcon className="w-4 h-4 text-sky-500" />
                                             Verdict & Feedback
                                         </h4>
                                         <FormattedMessage text={aiFeedback.content} isUser={false} />

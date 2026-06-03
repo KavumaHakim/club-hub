@@ -64,7 +64,7 @@ const AlertModal: React.FC<AlertModalProps> = ({
             case 'warning': return 'bg-amber-600 hover:bg-amber-700 shadow-amber-500/25';
             case 'error': return 'bg-red-600 hover:bg-red-700 shadow-red-500/25';
             case 'confirm': return 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/25';
-            default: return 'bg-pink-600 hover:bg-pink-700 shadow-pink-500/25';
+            default: return 'bg-sky-600 hover:bg-sky-700 shadow-sky-500/25';
         }
     };
 

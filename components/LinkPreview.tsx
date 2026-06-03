@@ -58,13 +58,13 @@ const LinkPreview: React.FC<LinkPreviewProps> = ({ url, onImageClick, size = 'no
             `}
             onClick={(e) => e.stopPropagation()}
         >
-            <div className={`rounded-lg text-gray-500 dark:text-gray-300 group-hover:text-pink-500 dark:group-hover:text-pink-400 transition-colors flex-shrink-0 shadow-sm
+            <div className={`rounded-lg text-gray-500 dark:text-gray-300 group-hover:text-sky-500 dark:group-hover:text-sky-400 transition-colors flex-shrink-0 shadow-sm
                 ${isCompact ? 'p-2 bg-white/50 dark:bg-gray-700/50' : 'p-3 bg-white dark:bg-gray-700'}
             `}>
                 <LinkIcon />
             </div>
             <div className="flex-1 min-w-0 overflow-hidden text-left">
-                <p className={`font-semibold text-gray-900 dark:text-gray-200 truncate group-hover:text-pink-600 dark:group-hover:text-pink-400 transition-colors ${isCompact ? 'text-xs' : 'text-sm'}`}>{url}</p>
+                <p className={`font-semibold text-gray-900 dark:text-gray-200 truncate group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors ${isCompact ? 'text-xs' : 'text-sm'}`}>{url}</p>
                 <p className={`text-gray-500 dark:text-gray-400 truncate mt-0.5 flex items-center ${isCompact ? 'text-[10px]' : 'text-xs'}`}>
                     <span className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500 mr-1.5"></span>
                     {domain}

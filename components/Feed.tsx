@@ -291,7 +291,7 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
     return (
         <div className="flex flex-col items-center justify-center py-20 space-y-4 h-full">
             <div className="relative">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500"></div>
                 <div className="absolute top-0 left-0 h-12 w-12 rounded-full border-t-2 border-purple-500 animate-ping opacity-30"></div>
             </div>
             <p className="text-gray-500 dark:text-gray-400 font-medium tracking-wide">Fetching latest updates...</p>
@@ -321,7 +321,7 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
        {/* Background */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0 fixed">
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-300 dark:bg-purple-900/10 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-30 animate-blob"></div>
-          <div className="absolute top-0 right-1/4 w-96 h-96 bg-pink-300 dark:bg-pink-900/10 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+          <div className="absolute top-0 right-1/4 w-96 h-96 bg-sky-300 dark:bg-sky-900/10 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
           <div className="absolute -bottom-32 left-1/3 w-96 h-96 bg-indigo-300 dark:bg-indigo-900/10 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
       </div>
 
@@ -337,7 +337,7 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
                     {currentUser.role === 'PATRON' && (
                         <button 
                             onClick={() => setIsMobileComposeOpen(!isMobileComposeOpen)}
-                            className="p-2 bg-pink-600 text-white rounded-full shadow-lg hover:bg-pink-700 transition-colors"
+                            className="p-2 bg-sky-600 text-white rounded-full shadow-lg hover:bg-sky-700 transition-colors"
                             aria-label={isMobileComposeOpen ? 'Close post form' : 'Open post form'}
                         >
                             <PlusCircleIcon className="w-6 h-6" />
@@ -356,7 +356,7 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
                                 placeholder="Search posts, authors, or keywords..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="block w-full pl-10 pr-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 shadow-sm transition-all"
+                                className="block w-full pl-10 pr-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-sm transition-all"
                             />
                         </div>
                         
@@ -418,7 +418,7 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
                                             alt={activity.userName}
                                             className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-700 object-cover"
                                         />
-                                        <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-pink-500 border-2 border-white dark:border-gray-800"></span>
+                                        <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-sky-500 border-2 border-white dark:border-gray-800"></span>
                                     </div>
                                     <div className="min-w-0">
                                         <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">
@@ -505,7 +505,7 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
                                         <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{user.name}</p>
                                         <p className="text-xs text-gray-500 dark:text-gray-400 truncate">@{user.username}</p>
                                     </div>
-                                    <span className="text-xs font-semibold px-2 py-1 rounded-full bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-200">
+                                    <span className="text-xs font-semibold px-2 py-1 rounded-full bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-200">
                                         {user.badgeCount} wins
                                     </span>
                                 </li>
@@ -544,7 +544,7 @@ const Feed: React.FC<FeedProps> = ({ currentUser }) => {
                             {filter !== 'ALL' && (
                                 <button 
                                     onClick={() => { setFilter('ALL'); setSearchTerm(''); }}
-                                    className="mt-4 text-pink-600 dark:text-pink-400 font-semibold hover:underline"
+                                    className="mt-4 text-sky-600 dark:text-sky-400 font-semibold hover:underline"
                                 >
                                     Clear Filters
                                 </button>

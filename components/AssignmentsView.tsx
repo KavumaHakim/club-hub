@@ -71,7 +71,7 @@ const AssignmentsView: React.FC<AssignmentsViewProps> = (props) => {
                 onDragOver={(e) => { e.preventDefault(); setOverZoneId('unassigned'); }}
                 onDragLeave={() => setOverZoneId(null)}
                 onDrop={(e) => { e.preventDefault(); handleDrop(null); setOverZoneId(null); }}
-                className={`p-4 rounded-lg transition-colors border-2 ${overZoneId === 'unassigned' ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20 border-dashed' : 'border-transparent'} bg-gray-50 dark:bg-gray-800/50 h-fit`}
+                className={`p-4 rounded-lg transition-colors border-2 ${overZoneId === 'unassigned' ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/20 border-dashed' : 'border-transparent'} bg-gray-50 dark:bg-gray-800/50 h-fit`}
             >
                 <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-lg">?</div>
@@ -110,7 +110,7 @@ const AssignmentsView: React.FC<AssignmentsViewProps> = (props) => {
                     onDragOver={(e) => { e.preventDefault(); setOverZoneId(member.uid); }}
                     onDragLeave={() => setOverZoneId(null)}
                     onDrop={(e) => { e.preventDefault(); handleDrop(member.uid); setOverZoneId(null); }}
-                    className={`p-4 rounded-lg transition-colors border-2 ${overZoneId === member.uid ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20 border-dashed' : 'border-transparent'} bg-gray-50 dark:bg-gray-800/50 h-fit`}
+                    className={`p-4 rounded-lg transition-colors border-2 ${overZoneId === member.uid ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/20 border-dashed' : 'border-transparent'} bg-gray-50 dark:bg-gray-800/50 h-fit`}
                 >
                     <div className="flex items-center gap-3 mb-4">
                         <img src={member.avatarUrl || `https://i.pravatar.cc/40?u=${member.username}`} alt={member.name} className="w-10 h-10 rounded-full" />

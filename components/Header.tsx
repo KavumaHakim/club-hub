@@ -17,7 +17,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout, theme, onToggleTheme })
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex-shrink-0">
-            <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600">
+            <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-indigo-900">
               ICT Club Hub
             </h1>
           </div>
@@ -34,7 +34,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout, theme, onToggleTheme })
             </button>
             <button
               onClick={onLogout}
-              className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-pink-600 dark:hover:text-pink-500 transition-colors focus:outline-none"
+              className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-sky-600 dark:hover:text-sky-500 transition-colors focus:outline-none"
               aria-label="Logout"
             >
               <LogoutIcon />

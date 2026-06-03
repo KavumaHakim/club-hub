@@ -34,7 +34,7 @@ const AvatarSelectionModal: React.FC<{
                         <button
                             key={index}
                             onClick={() => onSelect(url)}
-                            className="rounded-full aspect-square p-1 ring-2 ring-transparent hover:ring-pink-500 focus:ring-pink-500 focus:outline-none transition-all"
+                            className="rounded-full aspect-square p-1 ring-2 ring-transparent hover:ring-sky-500 focus:ring-sky-500 focus:outline-none transition-all"
                             aria-label={`Select avatar ${index + 1}`}
                         >
                             <img src={url} alt={`Avatar ${index + 1}`} className="w-full h-full rounded-full object-cover bg-gray-200 dark:bg-gray-700" />
@@ -140,7 +140,7 @@ const ChangePasswordForm: React.FC<{ currentUser: User }> = ({ currentUser }) =>
                 <div>
                     <label htmlFor="new-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">New Password</label>
                     <div className="relative mt-1">
-                        <input type={isNewPasswordVisible ? 'text' : 'password'} id="new-password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="block w-full p-2 pr-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500" required />
+                        <input type={isNewPasswordVisible ? 'text' : 'password'} id="new-password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="block w-full p-2 pr-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-sky-500" required />
                         <button
                             type="button"
                             className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -154,7 +154,7 @@ const ChangePasswordForm: React.FC<{ currentUser: User }> = ({ currentUser }) =>
                 <div>
                     <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Confirm New Password</label>
                     <div className="relative mt-1">
-                        <input type={isConfirmPasswordVisible ? 'text' : 'password'} id="confirm-password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="block w-full p-2 pr-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500" required />
+                        <input type={isConfirmPasswordVisible ? 'text' : 'password'} id="confirm-password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="block w-full p-2 pr-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-sky-500" required />
                         <button
                             type="button"
                             className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -247,7 +247,7 @@ const AppearanceSettings: React.FC = () => {
             name: 'Modern Gradient',
             preview: (
                 <div className="relative w-12 h-12 flex items-center justify-center">
-                    <div className="w-2.5 h-2.5 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full shadow-sm z-10"></div>
+                    <div className="w-2.5 h-2.5 bg-gradient-to-r from-sky-500 to-indigo-900 rounded-full shadow-sm z-10"></div>
                     <div className="absolute w-8 h-8 border-2 border-gray-400/60 rounded-full"></div>
                 </div>
             )
@@ -307,7 +307,7 @@ const AppearanceSettings: React.FC = () => {
             name: 'Glitch',
             preview: (
                 <div className="relative w-12 h-12 flex items-center justify-center">
-                    <div className="w-2.5 h-2.5 bg-pink-500"></div>
+                    <div className="w-2.5 h-2.5 bg-sky-500"></div>
                     <div className="absolute w-8 h-8 border border-cyan-400/60 translate-x-0.5 -translate-y-0.5"></div>
                 </div>
             )
@@ -338,17 +338,17 @@ const AppearanceSettings: React.FC = () => {
                             onClick={() => handleCursorSelect(cursor.id)}
                             className={`relative flex flex-col items-center justify-center p-6 rounded-xl border-2 transition-all duration-200 group
                             ${selectedCursor === cursor.id
-                                    ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/10'
-                                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-pink-300 dark:hover:border-pink-700'}`}
+                                    ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/10'
+                                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-sky-300 dark:hover:border-sky-700'}`}
                         >
                             <div className="mb-4 transform group-hover:scale-110 transition-transform duration-200">
                                 {cursor.preview}
                             </div>
-                            <span className={`font-medium text-sm ${selectedCursor === cursor.id ? 'text-pink-700 dark:text-pink-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                            <span className={`font-medium text-sm ${selectedCursor === cursor.id ? 'text-sky-700 dark:text-sky-400' : 'text-gray-700 dark:text-gray-300'}`}>
                                 {cursor.name}
                             </span>
                             {selectedCursor === cursor.id && (
-                                <div className="absolute top-3 right-3 text-pink-500">
+                                <div className="absolute top-3 right-3 text-sky-500">
                                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
                                 </div>
                             )}
@@ -370,17 +370,17 @@ const AppearanceSettings: React.FC = () => {
                             onClick={() => handleFontSelect(font.value)}
                             className={`relative flex flex-col items-center justify-center p-6 rounded-xl border-2 transition-all duration-200 group
                             ${selectedFont === font.value
-                                    ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/10'
-                                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-pink-300 dark:hover:border-pink-700'}`}
+                                    ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/10'
+                                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-sky-300 dark:hover:border-sky-700'}`}
                         >
                             <div className="mb-3 text-2xl" style={{ fontFamily: font.value }}>
                                 Aa
                             </div>
-                            <span className={`font-medium text-sm ${selectedFont === font.value ? 'text-pink-700 dark:text-pink-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                            <span className={`font-medium text-sm ${selectedFont === font.value ? 'text-sky-700 dark:text-sky-400' : 'text-gray-700 dark:text-gray-300'}`}>
                                 {font.name}
                             </span>
                             {selectedFont === font.value && (
-                                <div className="absolute top-3 right-3 text-pink-500">
+                                <div className="absolute top-3 right-3 text-sky-500">
                                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
                                 </div>
                             )}
@@ -554,7 +554,7 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
                     <button
                         onClick={() => setActiveTab('details')}
                         className={`flex-1 py-4 text-sm font-medium text-center transition-colors focus:outline-none ${activeTab === 'details'
-                            ? 'text-pink-600 dark:text-pink-400 border-b-2 border-pink-600 dark:border-pink-400 bg-gray-50 dark:bg-gray-800'
+                            ? 'text-sky-600 dark:text-sky-400 border-b-2 border-sky-600 dark:border-sky-400 bg-gray-50 dark:bg-gray-800'
                             : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                             }`}
                     >
@@ -563,7 +563,7 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
                     <button
                         onClick={() => setActiveTab('appearance')}
                         className={`flex-1 py-4 text-sm font-medium text-center transition-colors focus:outline-none ${activeTab === 'appearance'
-                            ? 'text-pink-600 dark:text-pink-400 border-b-2 border-pink-600 dark:border-pink-400 bg-gray-50 dark:bg-gray-800'
+                            ? 'text-sky-600 dark:text-sky-400 border-b-2 border-sky-600 dark:border-sky-400 bg-gray-50 dark:bg-gray-800'
                             : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                             }`}
                     >
@@ -572,7 +572,7 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
                     <button
                         onClick={() => setActiveTab('notifications')}
                         className={`flex-1 py-4 text-sm font-medium text-center transition-colors focus:outline-none ${activeTab === 'notifications'
-                            ? 'text-pink-600 dark:text-pink-400 border-b-2 border-pink-600 dark:border-pink-400 bg-gray-50 dark:bg-gray-800'
+                            ? 'text-sky-600 dark:text-sky-400 border-b-2 border-sky-600 dark:border-sky-400 bg-gray-50 dark:bg-gray-800'
                             : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                             }`}
                     >
@@ -588,7 +588,7 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
                                     <Tooltip text="Change your profile picture.">
                                         <button
                                             onClick={() => setIsAvatarModalOpen(true)}
-                                            className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-full ring-4 ring-pink-500/50 focus:outline-none focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-900 focus:ring-pink-500 disabled:cursor-not-allowed"
+                                            className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-full ring-4 ring-sky-500/50 focus:outline-none focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-900 focus:ring-sky-500 disabled:cursor-not-allowed"
                                             aria-label="Change profile picture"
                                             disabled={isUpdatingAvatar}
                                         >
@@ -668,7 +668,7 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
                                             value={studentClass}
                                             onChange={(e) => setStudentClass(e.target.value)}
                                             maxLength={80}
-                                            className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/60 p-3 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                                            className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/60 p-3 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
                                             placeholder="Senior 3"
                                         />
                                     </div>
@@ -696,7 +696,7 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
                                     onChange={(e) => setBio(e.target.value)}
                                     rows={3}
                                     maxLength={240}
-                                    className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/60 p-3 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                                    className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/60 p-3 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
                                     placeholder="Write a short bio or about phrase for your portfolio..."
                                 />
                                 <div className="mt-3">
@@ -721,7 +721,7 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
                                             <button
                                                 onClick={handleSaveBio}
                                                 disabled={isSavingBio}
-                                                className="px-4 py-2 text-xs font-semibold rounded-lg bg-pink-600 text-white hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="px-4 py-2 text-xs font-semibold rounded-lg bg-sky-600 text-white hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 {isSavingBio ? 'Saving...' : 'Save Bio'}
                                             </button>
@@ -782,7 +782,7 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
                                                 label="Present"
                                                 value={attendanceSummary.Present}
                                                 percentage={getPercentage(attendanceSummary.Present)}
-                                                color="text-pink-500"
+                                                color="text-sky-500"
                                             />
                                             <StatCard
                                                 icon={<XCircleIcon />}

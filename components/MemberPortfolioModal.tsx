@@ -119,7 +119,7 @@ const MemberPortfolioModal: React.FC<MemberPortfolioModalProps> = ({ isOpen, use
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="relative overflow-hidden border-b border-gray-200 dark:border-gray-800">
-                    <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 via-purple-500/10 to-indigo-500/10 dark:from-pink-500/20 dark:via-purple-500/20 dark:to-indigo-500/20"></div>
+                    <div className="absolute inset-0 bg-gradient-to-br from-sky-500/10 via-purple-500/10 to-indigo-900/10 dark:from-sky-500/20 dark:via-purple-500/20 dark:to-indigo-500/20"></div>
                     <div className="relative p-6 flex items-start justify-between gap-6">
                         <div className="flex items-center gap-4">
                             <img
@@ -132,7 +132,7 @@ const MemberPortfolioModal: React.FC<MemberPortfolioModalProps> = ({ isOpen, use
                                 <p className="text-sm text-gray-500 dark:text-gray-400">@{user.username}</p>
                                 <div className="flex flex-wrap gap-2 mt-3">
                                     <StatPill label="Badges" value={user.badges?.length || 0} tone="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-200" />
-                                    <StatPill label="Showcases" value={memberShowcases.length} tone="bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-200" />
+                                    <StatPill label="Showcases" value={memberShowcases.length} tone="bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-200" />
                                     <StatPill label="Suggestions" value={memberSuggestions.length} tone="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-200" />
                                     <StatPill label="Teams" value={memberTeams.length} tone="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200" />
                                 </div>
@@ -216,7 +216,7 @@ const MemberPortfolioModal: React.FC<MemberPortfolioModalProps> = ({ isOpen, use
                     <div className="space-y-6">
                         <section className="bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
                             <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
-                                <UsersIcon className="w-4 h-4 text-pink-500" />
+                                <UsersIcon className="w-4 h-4 text-sky-500" />
                                 Teams
                             </h4>
                             {memberTeams.length === 0 ? (
