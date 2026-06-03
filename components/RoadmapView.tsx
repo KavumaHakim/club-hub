@@ -14,7 +14,6 @@ import { LockClosedIcon } from './icons/LockClosedIcon';
 import { CheckCircleIcon } from './icons/CheckCircleIcon';
 import { TrophyIcon } from './icons/TrophyIcon';
 import { PencilIcon } from './icons/PencilIcon';
-// FIX: Added missing SparklesIcon import
 import { SparklesIcon } from './icons/SparklesIcon';
 import ConfirmationModal from './ConfirmationModal';
 import RoadmapQuizModal from './RoadmapQuizModal';
@@ -33,7 +32,6 @@ const ResourceTypeIcon: React.FC<{ type: string }> = ({ type }) => {
     }
 };
 
-// FIX: MilestoneCard was missing from the file. Added here.
 const MilestoneCard: React.FC<{
     milestone: Milestone;
     index: number;
@@ -60,7 +58,7 @@ const MilestoneCard: React.FC<{
                 <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">{milestone.description}</p>
 
                 <div className="flex flex-wrap gap-2 mb-4">
-                    {milestone.resources.map((res, i) => (
+                    {milestone.resources?.map((res, i) => (
                         <a key={i} href={res.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-xs hover:bg-sky-100 dark:hover:bg-sky-900/30 transition-colors">
                             <ResourceTypeIcon type={res.type} />
                             {res.title}
@@ -208,23 +206,25 @@ const CreateRoadmapModal: React.FC<{
                         </Tooltip>
                     </div>
                 ) : (
-                    <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
-                        <div className="mb-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-100 dark:border-purple-800 text-center">
-                            <h4 className="font-bold text-purple-800 dark:text-purple-300">{language}: {topic}</h4>
-                            <p className="text-sm text-purple-600 dark:text-purple-400 capitalize">{level.toLowerCase()} Track</p>
-                        </div>
-                        <div className="space-y-4">
-                            {generatedMilestones.map((ms, idx) => (
-                                <div key={ms.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-750">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h5 className="font-bold text-gray-800 dark:text-gray-200">{idx + 1}. {ms.title}</h5>
-                                        <span className="text-[10px] font-bold bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full">{ms.duration}</span>
+                    <div className="flex-1 flex flex-col overflow-hidden">
+                        <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 mb-4">
+                            <div className="mb-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-100 dark:border-purple-800 text-center">
+                                <h4 className="font-bold text-purple-800 dark:text-purple-300">{language}: {topic}</h4>
+                                <p className="text-sm text-purple-600 dark:text-purple-400 capitalize">{level.toLowerCase()} Track</p>
+                            </div>
+                            <div className="space-y-4">
+                                {generatedMilestones.map((ms, idx) => (
+                                    <div key={ms.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-750">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <h5 className="font-bold text-gray-800 dark:text-gray-200">{idx + 1}. {ms.title}</h5>
+                                            <span className="text-[10px] font-bold bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full">{ms.duration}</span>
+                                        </div>
+                                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">{ms.description}</p>
                                     </div>
-                                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">{ms.description}</p>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
-                        <div className="mt-6 flex gap-3">
+                        <div className="mt-auto flex gap-3">
                             <button onClick={() => setGeneratedMilestones(null)} className="flex-1 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium">Edit Input</button>
                             <Tooltip text="Publish this roadmap so members can follow it.">
                                 <button onClick={handleConfirmSave} className="flex-1 py-2 bg-sky-600 text-white rounded-lg font-medium hover:bg-sky-700">Publish Roadmap</button>
@@ -262,6 +262,9 @@ const EditRoadmapModal: React.FC<{
 
     const handleAddResource = (msIdx: number) => {
         const newMilestones = [...milestones];
+        if (!newMilestones[msIdx].resources) {
+            newMilestones[msIdx].resources = [];
+        }
         newMilestones[msIdx].resources.push({ title: 'New Resource', type: 'ARTICLE', url: '' });
         setMilestones(newMilestones);
     };
@@ -354,7 +357,7 @@ const EditRoadmapModal: React.FC<{
                                     </button>
                                 </div>
                                 <div className="space-y-2">
-                                    {ms.resources.map((res, resIdx) => (
+                                    {ms.resources?.map((res, resIdx) => (
                                         <div key={resIdx} className="flex gap-2 items-start bg-white dark:bg-gray-800 p-2 rounded-lg border border-gray-200 dark:border-gray-700">
                                             <select
                                                 value={res.type}
@@ -426,32 +429,31 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
     const isPatron = currentUser.role === 'PATRON';
 
     const getRoadmapLanguage = (topic: string) => {
-    const lower = (topic || '').toLowerCase();
-    if (lower.includes('javascript') || lower.includes('js')) return 'JavaScript';
-    if (lower.includes('python') || lower.includes('py')) return 'Python';
-    return 'Python'; // Default fallback
+        const lower = (topic || '').toLowerCase();
+        if (lower.includes('javascript') || lower.includes('js')) return 'JavaScript';
+        if (lower.includes('python') || lower.includes('py')) return 'Python';
+        return 'Python'; 
     };
-};
 
     const visibleRoadmaps = useMemo(() => {
-    let filtered = roadmaps;
-    
-    // 1. Filter by Level (forcing lowercase comparison)
-    if (isPatron) {
-        filtered = filtered.filter(r => 
-            r.skill_level?.toLowerCase() === activePatronTab?.toLowerCase()
+        let filtered = roadmaps;
+        
+        if (isPatron) {
+            filtered = filtered.filter(r => 
+                r.skill_level?.toLowerCase() === activePatronTab?.toLowerCase() ||
+                r.skillLevel?.toLowerCase() === activePatronTab?.toLowerCase()
+            );
+        } else {
+            filtered = filtered.filter(r => 
+                r.skill_level?.toLowerCase() === currentUser.skillLevel?.toLowerCase() ||
+                r.skillLevel?.toLowerCase() === currentUser.skillLevel?.toLowerCase()
+            );
+        }
+        
+        return filtered.filter(r => 
+            getRoadmapLanguage(r.topic).toLowerCase() === selectedLanguage.toLowerCase()
         );
-    } else {
-        filtered = filtered.filter(r => 
-            r.skill_level?.toLowerCase() === currentUser.skillLevel?.toLowerCase()
-        );
-    }
-    
-    // 2. Filter by Language (forcing lowercase comparison)
-    return filtered.filter(r => 
-        getRoadmapLanguage(r.topic).toLowerCase() === selectedLanguage.toLowerCase()
-    );
-}, [roadmaps, isPatron, activePatronTab, currentUser.skillLevel, selectedLanguage]);
+    }, [roadmaps, isPatron, activePatronTab, currentUser.skillLevel, selectedLanguage]);
  
     useEffect(() => {
         if (!isPatron && visibleRoadmaps.length > 0) {
@@ -516,7 +518,7 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
         setIsGeneratingQuiz(true);
         try {
             const language = getRoadmapLanguage(roadmapTopic);
-            const questions = await generateMilestoneQuiz(milestone.title, milestone.description, language, milestone.resources);
+            const questions = await generateMilestoneQuiz(milestone.title, milestone.description, language, milestone.resources || []);
             setQuizQuestions(questions);
             setActiveRoadmapId(roadmapId);
             setActiveMilestoneIndex(milestoneIndex);
@@ -553,7 +555,7 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
     }
 
     return (
-        <div className="max-w-5xl mx-auto relative">
+        <div className="max-w-5xl mx-auto relative text-gray-900 dark:text-white">
             {isGeneratingQuiz && (
                 <div className="fixed inset-0 bg-white/50 dark:bg-black/50 backdrop-blur-sm z-[70] flex items-center justify-center">
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-2xl flex flex-col items-center">
@@ -602,81 +604,113 @@ const RoadmapView: React.FC<RoadmapViewProps> = ({ currentUser }) => {
                 <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1 mb-3">
                     <button 
                         onClick={() => setSelectedLanguage('Python')}
-                        className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${selectedLanguage === 'Python' ? 'bg-white dark:bg-gray-700 text-sky-600 dark:text-sky-400 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
+                        className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${selectedLanguage === 'Python' ? 'bg-white dark:bg-gray-700 text-sky-600 dark:text-sky-400 shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}
                     >
                         Python
                     </button>
                     <button 
                         onClick={() => setSelectedLanguage('JavaScript')}
-                        className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${selectedLanguage === 'JavaScript' ? 'bg-white dark:bg-gray-700 text-sky-600 dark:text-sky-400 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
+                        className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${selectedLanguage === 'JavaScript' ? 'bg-white dark:bg-gray-700 text-sky-600 dark:text-sky-400 shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}
                     >
                         JavaScript
                     </button>
                 </div>
             </div>
 
-            {visibleRoadmaps.length === 0 ? (
-                <div className="text-center py-20 bg-gray-50 dark:bg-gray-800/50 rounded-3xl border-2 border-dashed border-gray-200 dark:border-gray-700">
-                    <MapIcon className="h-16 w-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No {selectedLanguage} Paths Active</h3>
-                    <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">Patrons haven't published a {selectedLanguage} roadmap for this level yet.</p>
-                </div>
-            ) : (
-                <div className="grid gap-12">
-                    {visibleRoadmaps.map(roadmap => {
-                        const userCompletedIndices = progress[roadmap.id!] || [];
-                        const milestones = roadmap.milestones || [];
-
+            <div className="space-y-8">
+                {visibleRoadmaps.length === 0 ? (
+                    <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                        <MapIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                        <p className="text-gray-500 dark:text-gray-400">No maps found for this configuration.</p>
+                    </div>
+                ) : (
+                    visibleRoadmaps.map((roadmap) => {
+                        const roadmapId = roadmap.id || '';
+                        const completedIndices = progress[roadmapId] || [];
                         return (
-                            <div key={roadmap.id} className="relative">
-                                <div className="flex justify-between items-center mb-6">
-                                    <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-3">
-                                        {roadmap.topic}
-                                    </h3>
+                            <div key={roadmapId} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+                                <div className="p-6 bg-gray-50 dark:bg-gray-850 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
+                                    <div>
+                                        <h3 className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">{roadmap.topic}</h3>
+                                        <span className="inline-block mt-1 text-[10px] font-bold bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 px-2.5 py-0.5 rounded-full capitalize">
+                                            {(roadmap.skill_level || roadmap.skillLevel || '').toLowerCase()} Track
+                                        </span>
+                                    </div>
                                     {isPatron && (
                                         <div className="flex gap-2">
-                                            <button onClick={() => openEditModal(roadmap)} className="p-2 text-gray-400 hover:text-sky-600 transition-colors"><PencilIcon className="w-5 h-5" /></button>
-                                            <button onClick={() => setDeleteId(roadmap.id!)} className="p-2 text-gray-400 hover:text-red-500 transition-colors"><TrashIcon className="w-5 h-5" /></button>
+                                            <button onClick={() => openEditModal(roadmap)} className="p-2 text-gray-500 hover:text-sky-600 dark:hover:text-sky-400 transition-colors bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                                <PencilIcon className="w-4 h-4" />
+                                            </button>
+                                            <button onClick={() => setDeleteId(roadmapId)} className="p-2 text-gray-500 hover:text-red-500 transition-colors bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                                <TrashIcon className="w-4 h-4" />
+                                            </button>
                                         </div>
                                     )}
                                 </div>
-
-                                <div className="relative">
-                                    {milestones.map((ms, idx) => {
-                                        const isCompleted = userCompletedIndices.includes(idx);
-                                        const isLocked = idx > 0 && !userCompletedIndices.includes(idx - 1) && !isPatron;
-
-                                        return (
-                                            <MilestoneCard
-                                                key={idx}
-                                                milestone={ms}
-                                                index={idx}
-                                                isLast={idx === milestones.length - 1}
-                                                isLocked={isLocked}
-                                                isCompleted={isCompleted}
-                                                isPatron={isPatron}
-                                                onTakeQuiz={() => handleTakeQuiz(roadmap.id!, idx, ms, roadmap.topic)}
-                                            />
-                                        );
-                                    })}
+                                <div className="p-6 bg-transparent">
+                                    <div className="mt-4">
+                                        {roadmap.milestones?.map((milestone, idx) => {
+                                            const isCompleted = completedIndices.includes(idx);
+                                            const isLocked = !isPatron && idx > 0 && !completedIndices.includes(idx - 1);
+                                            return (
+                                                <MilestoneCard
+                                                    key={milestone.id || idx}
+                                                    milestone={milestone}
+                                                    index={idx}
+                                                    isLast={idx === (roadmap.milestones?.length || 0) - 1}
+                                                    isLocked={isLocked}
+                                                    isCompleted={isCompleted}
+                                                    isPatron={isPatron}
+                                                    onTakeQuiz={() => handleTakeQuiz(roadmapId, idx, milestone, roadmap.topic)}
+                                                />
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             </div>
                         );
-                    })}
-                </div>
-            )}
+                    })
+                )}
+            </div>
 
-            <CreateRoadmapModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} onSave={handleCreate} initialLevel={activePatronTab} />
-            {editingRoadmap && (
+            <CreateRoadmapModal 
+                isOpen={isCreateModalOpen} 
+                onClose={() => setIsCreateModalOpen(false)} 
+                onSave={handleCreate}
+                initialLevel={activePatronTab}
+            />
+
+            {isEditModalOpen && editingRoadmap && (
                 <EditRoadmapModal 
                     isOpen={isEditModalOpen} 
-                    onClose={() => setIsEditModalOpen(false)} 
-                    onSave={handleEdit} 
-                    roadmap={editingRoadmap} 
+                    onClose={() => {
+                        setIsEditModalOpen(false);
+                        setEditingRoadmap(null);
+                    }} 
+                    onSave={handleEdit}
+                    roadmap={editingRoadmap}
                 />
             )}
-            <ConfirmationModal isOpen={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={handleDelete} title="Delete Path" message="This will remove the roadmap for all students." confirmText="Delete" isDangerous />
-            <RoadmapQuizModal isOpen={quizModalOpen} onClose={() => setQuizModalOpen(false)} quizQuestions={quizQuestions} onPass={handleQuizPass} />
+
+            <ConfirmationModal 
+                isOpen={deleteId !== null} 
+                onClose={() => setDeleteId(null)} 
+                onConfirm={handleDelete} 
+                title="Delete Learning Roadmap?"
+                message="This will permanently drop this path and wipe tracking telemetry for all members."
+            />
+
+            {quizModalOpen && quizQuestions && (
+                <RoadmapQuizModal 
+                    isOpen={quizModalOpen}
+                    onClose={() => {
+                        setQuizModalOpen(false);
+                        setQuizQuestions(null);
+                    }}
+                    questions={quizQuestions}
+                    onPass={handleQuizPass}
+                />
+            )}
         </div>
     );
 };
