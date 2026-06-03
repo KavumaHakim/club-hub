@@ -161,12 +161,16 @@ const normalizeChallengeEvaluation = (value: any): {
 };
 
 const callAI = async (messages: any[], jsonMode: boolean = false): Promise<string> => {
-    if (!apiKey) throw new Error("AI Service missing API Key");
+    // 1. Force a fresh read of the environment key on every call
+    const currentApiKey = getApiKey(); 
+    
+    if (!currentApiKey) throw new Error("AI Service missing API Key");
 
     const response = await fetch(API_ENDPOINT, {
         method: 'POST',
         headers: {
-            'Authorization': `Bearer ${apiKey}`,
+            // 2. Pass the fresh token key here
+            'Authorization': `Bearer ${currentApiKey}`, 
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
