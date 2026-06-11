@@ -22,6 +22,7 @@ import { GamepadIcon } from './icons/GamepadIcon';
 import { VoteIcon } from './icons/VoteIcon';
 import { useData } from '../DataContext';
 import MatrixRain from './MatrixRain';
+import { Swords } from 'lucide-react';
 
 
 interface SidebarProps {
@@ -128,6 +129,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, activeTab, setActiveTab, isOpen
         ...((featureFlags.showCommunity || user.role === 'PATRON') ? [{ tab: 'community' as Tab, label: 'Community', icon: <UsersIcon /> }] : []),
         ...((featureFlags.showChat || user.role === 'PATRON') ? [{ tab: 'chat' as Tab, label: 'Messages', icon: <ChatBubbleIcon />, badge: totalUnread }] : []),
         ...((featureFlags.showChallenges || user.role === 'PATRON') ? [{ tab: 'challenges' as Tab, label: 'Challenges', icon: <TrophyIcon />, badge: notificationCounts['challenges'] }] : []),
+        ...((featureFlags.showChallenges || user.role === 'PATRON') ? [{ tab: 'arena' as Tab, label: 'Duel Arena', icon: <Swords className="h-5 w-5" /> }] : []),
         ...((featureFlags.showSuggestions || user.role === 'PATRON') ? [{ tab: 'suggestions' as Tab, label: 'Suggestions', icon: <LightBulbIcon /> }] : []),
         ...((featureFlags.showVoting || user.role === 'PATRON') ? [{ tab: 'voting' as Tab, label: 'Voting', icon: <VoteIcon /> }] : []),
       ]

@@ -90,7 +90,7 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>(() => {
     if (typeof window !== 'undefined') {
       const savedTab = localStorage.getItem('active_tab') as Tab;
-      const validTabs: Tab[] = ['feed', 'activities', 'attendance', 'projects', 'profile', 'members', 'playground', 'resources', 'chat', 'showcase', 'suggestions', 'challenges', 'roadmap', 'community', 'games', 'admin', 'voting'];
+      const validTabs: Tab[] = ['feed', 'activities', 'attendance', 'projects', 'profile', 'members', 'playground', 'resources', 'chat', 'showcase', 'suggestions', 'challenges', 'arena', 'roadmap', 'community', 'games', 'admin', 'voting'];
       return validTabs.includes(savedTab) ? savedTab : 'feed';
     }
     return 'feed';
@@ -512,7 +512,7 @@ const App: React.FC = () => {
               </header>
 
               {/* Conditionally apply padding and overflow for chat/playground to allow full height */}
-              <main className={`flex-1 h-full w-full ${(activeTab === 'chat' || activeTab === 'playground') ? 'overflow-hidden' : `${activeTab === 'feed' ? 'pt-0 px-4 sm:px-6 lg:px-8 pb-6' : 'p-4 sm:p-6 lg:p-8'} overflow-y-auto scroll-smooth custom-scrollbar`}`}>
+              <main className={`flex-1 h-full w-full ${(activeTab === 'chat' || activeTab === 'playground' || activeTab === 'arena') ? 'overflow-hidden' : `${activeTab === 'feed' ? 'pt-0 px-4 sm:px-6 lg:px-8 pb-6' : 'p-4 sm:p-6 lg:p-8'} overflow-y-auto scroll-smooth custom-scrollbar`}`}>
                 <Dashboard
                   activeTab={activeTab}
                   setActiveTab={handleTabChange}

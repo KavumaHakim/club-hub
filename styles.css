@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -197,6 +199,52 @@
 
   .feed-side-panel {
     display: none;
+  }
+
+  .arena-grid {
+    background-image:
+      linear-gradient(rgba(34, 211, 238, 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(34, 211, 238, 0.08) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(circle at center, black 45%, transparent 100%);
+  }
+
+  .arena-panel {
+    box-shadow:
+      0 20px 60px rgba(2, 8, 23, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  }
+
+  .terminal-pulse {
+    animation: terminal-pulse 1.6s ease-out;
+  }
+
+  @keyframes terminal-pulse {
+    0% { opacity: 0.3; transform: translateY(6px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  .glitch-defeat {
+    position: relative;
+  }
+
+  .glitch-defeat::before,
+  .glitch-defeat::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  .glitch-defeat::before {
+    border: 1px solid rgba(244, 63, 94, 0.15);
+    transform: translate(2px, -1px);
+  }
+
+  .glitch-defeat::after {
+    border: 1px solid rgba(168, 85, 247, 0.18);
+    transform: translate(-2px, 1px);
   }
 
   @media (min-width: 1280px) {

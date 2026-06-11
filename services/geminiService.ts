@@ -160,7 +160,7 @@ const normalizeChallengeEvaluation = (value: any): {
     };
 };
 
-const callAI = async (messages: any[], jsonMode: boolean = false): Promise<string> => {
+const callAI = async (messages: any[], jsonMode: boolean = false, options?: { maxTokens?: number; temperature?: number }): Promise<string> => {
     if (!apiKey) throw new Error("AI Service missing API Key");
 
     const response = await fetch(API_ENDPOINT, {
@@ -172,8 +172,8 @@ const callAI = async (messages: any[], jsonMode: boolean = false): Promise<strin
         body: JSON.stringify({
             model: MODEL_NAME,
             messages: messages,
-            temperature: 0.7,
-            max_tokens: 4096,
+            temperature: options?.temperature ?? 0.7,
+            max_tokens: options?.maxTokens ?? 4096,
         })
     });
 
@@ -182,7 +182,14 @@ const callAI = async (messages: any[], jsonMode: boolean = false): Promise<strin
     }
 
     const data = await response.json();
-    return data.choices?.[0]?.message?.content || "";
+    const message = data.choices?.[0]?.message;
+    // Reasoning models (e.g. gpt-oss) can exhaust max_tokens mid-thought and
+    // return an empty content with the answer stuck in reasoning_content.
+    const text = message?.content || message?.reasoning_content || message?.reasoning || "";
+    if (!text.trim()) {
+        throw new Error("AI returned an empty response");
+    }
+    return text;
 };
 
 const pickPreferredModel = (models: string[], preferred: string | null): string | null => {
@@ -692,3 +699,269 @@ export const generateCodingTip = async (lang: 'python' | 'javascript', skillLeve
 };
 
 export const generatePythonTip = (skillLevel: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' = 'BEGINNER') => generateCodingTip('python', skillLevel);
+
+// --- Code Duel Arena: AI problem generation + AI judging ---
+
+export type DuelSkillLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+
+export interface DuelGeneratedTestCase {
+    id: string;
+    input: string;
+    expectedOutput: string;
+    explanation?: string;
+    hidden: boolean;
+}
+
+export interface DuelGeneratedProblem {
+    title: string;
+    difficulty: 'Easy' | 'Medium' | 'Hard';
+    statementMarkdown: string;
+    constraints: string[];
+    tags: string[];
+    starterCode: string;
+    estimatedMinutes: number;
+    targetLevel: DuelSkillLevel;
+    testCases: DuelGeneratedTestCase[];
+}
+
+export interface DuelJudgeCaseResult {
+    id: string;
+    passed: boolean;
+    actualOutput?: string;
+    note?: string;
+}
+
+export interface DuelJudgeResult {
+    verdict: 'Accepted' | 'Wrong Answer' | 'Time Limit Exceeded' | 'Runtime Error';
+    passed: number;
+    total: number;
+    caseResults: DuelJudgeCaseResult[];
+    summary: string;
+    hiddenFailureReason?: string;
+    efficiencyScore: number;
+    estimatedRuntimeMs: number;
+}
+
+const LEVEL_ORDER: DuelSkillLevel[] = ['BEGINNER', 'INTERMEDIATE', 'ADVANCED'];
+
+// Duels target the average of the two players' levels so neither side is overwhelmed.
+export const averageSkillLevel = (levels: Array<DuelSkillLevel | undefined>): DuelSkillLevel => {
+    const known = levels.filter((l): l is DuelSkillLevel => !!l && LEVEL_ORDER.includes(l));
+    if (known.length === 0) return 'BEGINNER';
+    const avg = known.reduce((sum, l) => sum + LEVEL_ORDER.indexOf(l), 0) / known.length;
+    return LEVEL_ORDER[Math.round(avg)];
+};
+
+const DUEL_LEVEL_GUIDANCE: Record<DuelSkillLevel, string> = {
+    BEGINNER: `Use ONE core idea: lists, strings, dictionaries, sets, counting, or simple loops.
+Acceptable stdlib: collections.Counter, math, string methods. No recursion, no graphs.
+Solvable by a motivated beginner in 10-15 minutes with basic Python syntax.`,
+    INTERMEDIATE: `Combine TWO ideas: sorting with keys, two pointers, stacks/queues, hash maps, prefix sums, or simple recursion.
+Acceptable stdlib: collections (Counter, defaultdict, deque), heapq, itertools, math, bisect.
+Solvable in 15-20 minutes; requires choosing the right data structure, not advanced theory.`,
+    ADVANCED: `Use a real algorithmic insight: heaps, binary search on answer, BFS/DFS on grids or graphs, dynamic programming (1D/simple 2D), or greedy with proof.
+Acceptable stdlib: heapq, collections, itertools, functools, bisect, math.
+Solvable in 20-25 minutes by a strong student; hidden tests punish brute force.`,
+};
+
+const normalizeDuelTestCases = (raw: any, publicCount: number): DuelGeneratedTestCase[] => {
+    if (!Array.isArray(raw)) return [];
+    return raw
+        .filter((tc: any) => tc && typeof tc.input !== 'undefined' && typeof tc.expectedOutput !== 'undefined')
+        .map((tc: any, index: number) => ({
+            id: `tc-${index + 1}`,
+            input: toSafeText(tc.input),
+            expectedOutput: toSafeText(tc.expectedOutput),
+            explanation: tc.explanation ? toSafeText(tc.explanation) : undefined,
+            hidden: index >= publicCount,
+        }));
+};
+
+export const generateDuelProblem = async (
+    levels: Array<DuelSkillLevel | undefined>,
+    publicTestCount: number = 5,
+    minTotalTests: number = 20
+): Promise<DuelGeneratedProblem> => {
+    const targetLevel = averageSkillLevel(levels);
+
+    const prompt = `You are the problem setter for a 1v1 competitive coding duel between two high-school club members.
+
+Create ONE original Python 3 problem at the ${targetLevel} level.
+
+LEVEL RULES (follow strictly):
+${DUEL_LEVEL_GUIDANCE[targetLevel]}
+
+THEME RULES:
+- Data Structures & Algorithms in Python, wrapped in a short, fun scenario (2-3 sentences max).
+- The solution must exercise clear Python syntax and idiomatic use of common standard library modules.
+- Input/output contract: the player writes a function solve(input_text: str) -> str.
+  input_text is the raw test input (may span multiple lines); the return value is compared to the expected output EXACTLY (trailing whitespace ignored).
+
+TEST CASE RULES:
+- Provide EXACTLY ${Math.max(minTotalTests, 22)} test cases in one array, simplest first.
+- The FIRST ${publicTestCount} are public samples: small, easy to trace by hand, each with a one-line explanation.
+- The remaining cases are hidden: cover edge cases (minimum input, duplicates, ties, larger inputs, tricky orderings). No "explanation" field for hidden cases.
+- Keep every input and expectedOutput a SHORT string (single line where possible) so the JSON stays compact.
+- Every expectedOutput must be exactly what a correct solve() returns for that input. Double-check each one.
+
+OUTPUT RULES:
+- Keep statementMarkdown under 180 words.
+- Do NOT think out loud. Output the JSON object directly and nothing else.
+- Never mention AI, language models, or how the problem was created in any text field. Write as "the arena".
+
+Return ONLY a JSON object:
+{
+  "title": "Short catchy title",
+  "difficulty": "Easy" | "Medium" | "Hard",
+  "statementMarkdown": "Scenario, task, and input/output format in Markdown. Be precise about the format of input_text and the returned string.",
+  "constraints": ["3-5 short constraint strings"],
+  "tags": ["2-4 DSA topic tags, e.g. 'Hash Map', 'Stacks'"],
+  "starterCode": "def solve(input_text: str) -> str:\\n    # parse input_text\\n    ...\\n",
+  "estimatedMinutes": number,
+  "testCases": [{ "input": "...", "expectedOutput": "...", "explanation": "only for the first ${publicTestCount}" }]
+}`;
+
+    // Try HF twice, then Gemini, then the built-in problem bank.
+    // Accepting a duel must never hard-fail on a flaky AI response.
+    const attempts: Array<() => Promise<string>> = [
+        () => callAI([{ role: 'user', content: prompt }], true, { maxTokens: 12288, temperature: 0.7 }),
+        () => callAI([{ role: 'user', content: prompt }], true, { maxTokens: 12288, temperature: 0.4 }),
+        () => callGemini(prompt),
+    ];
+
+    let parsed: any = null;
+    let testCases: DuelGeneratedTestCase[] = [];
+    for (const attempt of attempts) {
+        try {
+            parsed = parseJSONResponse(await attempt());
+            testCases = normalizeDuelTestCases(parsed?.testCases, publicTestCount);
+            if (testCases.length >= Math.min(minTotalTests, 12)) break;
+            console.warn(`Duel problem attempt returned only ${testCases.length} test cases; retrying.`);
+            parsed = null;
+        } catch (error) {
+            console.warn('Duel problem generation attempt failed:', error);
+            parsed = null;
+        }
+    }
+
+    if (!parsed) {
+        console.warn('All AI duel problem attempts failed. Using built-in problem bank.');
+        const { buildBankProblem } = await import('./duelProblemBank');
+        return buildBankProblem(targetLevel, publicTestCount);
+    }
+
+    return {
+        title: toSafeText(parsed?.title, 'Untitled Duel Problem'),
+        difficulty: ['Easy', 'Medium', 'Hard'].includes(parsed?.difficulty) ? parsed.difficulty : 'Medium',
+        statementMarkdown: toSafeText(parsed?.statementMarkdown, ''),
+        constraints: Array.isArray(parsed?.constraints) ? parsed.constraints.map((c: any) => toSafeText(c)) : [],
+        tags: Array.isArray(parsed?.tags) ? parsed.tags.map((t: any) => toSafeText(t)) : ['DSA', 'Python'],
+        starterCode: toSafeText(parsed?.starterCode, 'def solve(input_text: str) -> str:\n    # parse input_text and return the answer as a string\n    return ""\n'),
+        estimatedMinutes: Number(parsed?.estimatedMinutes) > 0 ? Math.min(30, Number(parsed.estimatedMinutes)) : 18,
+        targetLevel,
+        testCases,
+    };
+};
+
+export const judgeDuelSubmission = async (
+    problemTitle: string,
+    statementMarkdown: string,
+    code: string,
+    testCases: DuelGeneratedTestCase[]
+): Promise<DuelJudgeResult> => {
+    const caseBlock = testCases
+        .map((tc) => `- id: ${tc.id}${tc.hidden ? ' (hidden)' : ''}\n  input: ${JSON.stringify(tc.input)}\n  expected: ${JSON.stringify(tc.expectedOutput)}`)
+        .join('\n');
+
+    const prompt = `You are a strict, deterministic Python 3 judge for a competitive coding duel.
+
+Problem: "${problemTitle}"
+${statementMarkdown}
+
+The player's submission (their solve(input_text) is called once per test case):
+\`\`\`python
+${code}
+\`\`\`
+
+Test cases:
+${caseBlock}
+
+JUDGING RULES:
+1. Mentally execute the code EXACTLY as Python 3 would. Do not be charitable: off-by-one errors, wrong parsing, type errors, and unhandled edge cases must fail.
+2. A case passes only if str(solve(input)) matches expected output after stripping trailing whitespace.
+3. If the code would raise an exception on a case, that case fails (this counts toward "Runtime Error" if it happens on any case before producing output).
+4. Verdict: "Accepted" only if ALL cases pass. "Runtime Error" if any case raises. "Time Limit Exceeded" if the approach is grossly inefficient for the stated constraints (e.g. exponential where linear is expected). Otherwise "Wrong Answer".
+5. efficiencyScore (0-100): algorithmic quality and Python idiom. estimatedRuntimeMs: rough realistic estimate for the full suite (50-2000).
+6. hiddenFailureReason: ONE sentence describing the category of hidden case that fails, WITHOUT revealing exact inputs or expected outputs. Omit if accepted.
+7. Do NOT think out loud. Output the JSON object directly and nothing else. Keep notes terse.
+8. Never mention AI, language models, or how judging is implemented in summary, notes, or hiddenFailureReason. Speak as "the judge".
+
+Return ONLY JSON:
+{
+  "verdict": "Accepted" | "Wrong Answer" | "Time Limit Exceeded" | "Runtime Error",
+  "caseResults": [{ "id": "tc-1", "passed": boolean, "actualOutput": "what the code actually returns (only for NON-hidden cases)", "note": "short note for failed non-hidden cases only" }],
+  "summary": "2-3 sentence verdict explanation a student can learn from, without revealing hidden inputs",
+  "hiddenFailureReason": "one sentence or omit",
+  "efficiencyScore": number,
+  "estimatedRuntimeMs": number
+}`;
+
+    const judgeAttempts: Array<() => Promise<string>> = [
+        () => callAI([{ role: 'user', content: prompt }], true, { maxTokens: 10240, temperature: 0.1 }),
+        () => callAI([{ role: 'user', content: prompt }], true, { maxTokens: 10240, temperature: 0 }),
+        () => callGemini(prompt),
+    ];
+
+    let parsed: any = null;
+    let lastError: unknown = null;
+    for (const attempt of judgeAttempts) {
+        try {
+            parsed = parseJSONResponse(await attempt());
+            break;
+        } catch (error) {
+            lastError = error;
+            console.warn('Duel judging attempt failed:', error);
+        }
+    }
+    if (!parsed) {
+        throw lastError instanceof Error ? lastError : new Error('Judge unavailable');
+    }
+
+    const byId = new Map<string, any>(
+        Array.isArray(parsed?.caseResults)
+            ? parsed.caseResults.filter((r: any) => r && r.id).map((r: any) => [String(r.id), r])
+            : []
+    );
+
+    const caseResults: DuelJudgeCaseResult[] = testCases.map((tc) => {
+        const r = byId.get(tc.id);
+        const passed = typeof r?.passed === 'boolean' ? r.passed : false;
+        return {
+            id: tc.id,
+            passed,
+            actualOutput: !tc.hidden && r?.actualOutput != null ? toSafeText(r.actualOutput) : undefined,
+            note: !tc.hidden && r?.note ? toSafeText(r.note) : undefined,
+        };
+    });
+
+    const passed = caseResults.filter((r) => r.passed).length;
+    const total = testCases.length;
+    const verdictRaw = String(parsed?.verdict || '');
+    const verdict: DuelJudgeResult['verdict'] =
+        passed === total
+            ? 'Accepted'
+            : (['Wrong Answer', 'Time Limit Exceeded', 'Runtime Error'].includes(verdictRaw)
+                ? (verdictRaw as DuelJudgeResult['verdict'])
+                : 'Wrong Answer');
+
+    return {
+        verdict,
+        passed,
+        total,
+        caseResults,
+        summary: toSafeText(parsed?.summary, verdict === 'Accepted' ? 'All test cases passed.' : 'Some test cases failed.'),
+        hiddenFailureReason: verdict === 'Accepted' ? undefined : (parsed?.hiddenFailureReason ? toSafeText(parsed.hiddenFailureReason) : undefined),
+        efficiencyScore: Math.max(0, Math.min(100, Number(parsed?.efficiencyScore) || (verdict === 'Accepted' ? 85 : 50))),
+        estimatedRuntimeMs: Math.max(20, Math.min(5000, Number(parsed?.estimatedRuntimeMs) || 250)),
+    };
+};

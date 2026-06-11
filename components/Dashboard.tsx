@@ -19,6 +19,7 @@ const Chat = lazy(() => import('./Chat'));
 const Showcase = lazy(() => import('./Showcase'));
 const Suggestions = lazy(() => import('./Suggestions'));
 const Challenges = lazy(() => import('./Challenges'));
+const CodeDuelArena = lazy(() => import('./CodeDuelArena'));
 const RoadmapView = lazy(() => import('./RoadmapView'));
 const Community = lazy(() => import('./Community'));
 const Games = lazy(() => import('./Games'));
@@ -135,6 +136,10 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile,
             title: 'Challenges',
             body: `Test your skills and earn badges.\n\n- Solve challenges and submit solutions.\n- Get instant AI feedback on submissions.\n- Patrons can create or generate AI challenges by level.`
         },
+        arena: {
+            title: 'Code Duel Arena',
+            body: `Enter ClubHub's high-pressure coding battleground.\n\n- Queue ranked duels or challenge friends.\n- Track live opponent pressure without exposing code.\n- Submit under timer tension with anti-cheat monitoring and match results.`
+        },
         roadmap: {
             title: 'Roadmaps',
             body: `Personalized learning paths.\n\n- Ebgae in Roadmaps by topic and level.\n- Each milestone includes resources and quizzes.\n- Track progress as you grow.`
@@ -195,7 +200,10 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile,
         if (!featureFlags.showChat) disabledTabs.add('chat');
         if (!featureFlags.showShowcase) disabledTabs.add('showcase');
         if (!featureFlags.showSuggestions) disabledTabs.add('suggestions');
-        if (!featureFlags.showChallenges) disabledTabs.add('challenges');
+        if (!featureFlags.showChallenges) {
+            disabledTabs.add('challenges');
+            disabledTabs.add('arena');
+        }
         if (!featureFlags.showRoadmap) disabledTabs.add('roadmap');
         if (!featureFlags.showCommunity) disabledTabs.add('community');
         if (!featureFlags.showPlayground) disabledTabs.add('playground');
@@ -208,7 +216,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile,
     }, [activeTab, featureFlags, setActiveTab, currentUser.role]);
 
     return (
-        <div className={(activeTab === 'chat' || activeTab === 'playground') ? 'h-full' : ''}>
+        <div className={(activeTab === 'chat' || activeTab === 'playground' || activeTab === 'arena') ? 'h-full' : ''}>
             <Suspense fallback={<LoadingIndicator />}>
                 <TabPanel active={activeTab === 'feed' && (featureFlags.showFeed || currentUser.role === 'PATRON')}>
                     <Feed currentUser={currentUser} />
@@ -256,6 +264,9 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile,
                             setActiveTab('playground');
                         }}
                     />
+                </TabPanel>
+                <TabPanel active={activeTab === 'arena' && (featureFlags.showChallenges || currentUser.role === 'PATRON')} className="h-full">
+                    <CodeDuelArena currentUser={currentUser} theme={theme} />
                 </TabPanel>
                 {/* FIX: Removed invalid 'bottom_roadmap' comparison as it is not a valid member of the Tab type union. */}
                 <TabPanel active={activeTab === 'roadmap' && (featureFlags.showRoadmap || currentUser.role === 'PATRON')}>
