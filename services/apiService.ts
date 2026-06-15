@@ -1,6 +1,6 @@
 
 import { supabase } from './supabaseClient';
-import { User, Activity, AttendanceRecord, AttendanceStatus, FeedItem, ProjectData, ProjectTask, Resource, AppNotification, Room, ShowcaseItem, Suggestion, Challenge, ChallengeSubmission, FeedComment, SuggestionType, SuggestionStatus, SubmissionStatus, ActivityCategory, FeedItemType, TaskPriority, ResourceCategory, ResourceType, Tab, Roadmap, RoadmapProgress, ShowcaseComment, Message, Team, TeamChallenge, TeamChallengeSubmission, PlaygroundProject, PlaygroundProjectFile, PlaygroundProjectActivity, PlaygroundProjectMember, FeatureFlags, GameLeaderboardEntry } from '../types';
+import { User, Activity, AttendanceRecord, AttendanceStatus, FeedItem, ProjectData, ProjectTask, Resource, AppNotification, Room, ShowcaseItem, GalleryItem, Suggestion, Challenge, ChallengeSubmission, FeedComment, SuggestionType, SuggestionStatus, SubmissionStatus, ActivityCategory, FeedItemType, TaskPriority, ResourceCategory, ResourceType, Tab, Roadmap, RoadmapProgress, ShowcaseComment, Message, Team, TeamChallenge, TeamChallengeSubmission, PlaygroundProject, PlaygroundProjectFile, PlaygroundProjectActivity, PlaygroundProjectMember, FeatureFlags, GameLeaderboardEntry } from '../types';
 
 // --- Helper for Notifications ---
 const insertNotifications = async (notifications: Array<{ user_uid: string; message: string; is_read: boolean; link_to: Tab }>) => {
@@ -92,6 +92,7 @@ const mapFeatureFlagsFromDb = (row: any): FeatureFlags => ({
     showActivities: row.show_activities,
     showAttendance: row.show_attendance,
     showProjects: row.show_projects,
+    showGallery: row.show_gallery ?? true,
     showResources: row.show_resources,
     showChat: row.show_chat,
     showShowcase: row.show_showcase,
@@ -118,6 +119,7 @@ const mapFeatureFlagsToDb = (updates: Partial<FeatureFlags>) => {
     if (typeof updates.showRoadmap === 'boolean') payload.show_roadmap = updates.showRoadmap;
     if (typeof updates.showCommunity === 'boolean') payload.show_community = updates.showCommunity;
     if (typeof updates.showPlayground === 'boolean') payload.show_playground = updates.showPlayground;
+    if (typeof updates.showGallery === 'boolean') payload.show_gallery = updates.showGallery;
     if (typeof updates.showGames === 'boolean') payload.show_games = updates.showGames;
     if (typeof updates.showVoting === 'boolean') payload.show_voting = updates.showVoting;
     payload.updated_at = new Date().toISOString();

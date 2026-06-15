@@ -1,6 +1,6 @@
 
 
-export type Tab = 'feed' | 'activities' | 'attendance' | 'projects' | 'profile' | 'members' | 'playground' | 'resources' | 'chat' | 'showcase' | 'suggestions' | 'challenges' | 'roadmap' | 'community' | 'games' | 'admin' | 'voting';
+export type Tab = 'feed' | 'activities' | 'attendance' | 'projects' | 'gallery' | 'profile' | 'members' | 'playground' | 'resources' | 'chat' | 'showcase' | 'suggestions' | 'challenges' | 'roadmap' | 'community' | 'games' | 'admin' | 'voting';
 
 export interface FeatureFlags {
   showFeed: boolean;
@@ -9,6 +9,7 @@ export interface FeatureFlags {
   showProjects: boolean;
   showResources: boolean;
   showChat: boolean;
+  showGallery: boolean;
   showShowcase: boolean;
   showSuggestions: boolean;
   showChallenges: boolean;
@@ -279,6 +280,17 @@ export interface ShowcaseItem {
   codeContent: string;
   likes?: string[]; // Array of user IDs who liked the post
   commentCount?: number;
+}
+
+export interface GalleryItem {
+  id: string;
+  createdAt: string;
+  userUid: string;
+  userName: string;
+  userAvatarUrl?: string;
+  imageUrl: string;
+  title?: string;
+  description?: string;
 }
 
 export interface ShowcaseComment {

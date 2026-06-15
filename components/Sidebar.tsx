@@ -137,6 +137,7 @@ function Sidebar({ user, activeTab, setActiveTab, isOpen, onClose, isCollapsed, 
       title: "Learn & Share",
       items: [
         ...((featureFlags.showRoadmap || user.role === 'PATRON') ? [{ tab: 'roadmap' as Tab, label: 'Roadmap', icon: <MapIcon />, badge: notificationCounts['roadmap'] }] : []),
+        ...((featureFlags.showGallery || user.role === 'PATRON') ? [{ tab: 'gallery' as Tab, label: 'Gallery', icon: <CameraIcon /> }] : []),
         ...((featureFlags.showResources || user.role === 'PATRON') ? [{ tab: 'resources' as Tab, label: 'Resources', icon: <BookOpenIcon /> }] : []),
         ...((featureFlags.showPlayground || user.role === 'PATRON') ? [{ tab: 'playground' as Tab, label: 'Playground', icon: <CodeIcon /> }] : []),
         ...((featureFlags.showGames || user.role === 'PATRON') ? [{ tab: 'games' as Tab, label: 'Games', icon: <GamepadIcon /> }] : []),

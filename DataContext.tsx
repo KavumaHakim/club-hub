@@ -119,6 +119,7 @@ const defaultFeatureFlags: FeatureFlags = {
   showActivities: true,
   showAttendance: true,
   showProjects: true,
+  showGallery: true,
   showResources: true,
   showChat: true,
   showShowcase: true,
