@@ -852,14 +852,20 @@ export const uploadGalleryImage = async (file: File): Promise<string> => {
     return publicUrl;
 };
 
-export const addGalleryItem = async (userId: string, title: string, description: string, imageUrl: string) => {
-    const { error } = await supabase.from('gallery_items').insert({
-        user_uid: userId,
-        title,
-        description,
-        image_url: imageUrl,
-    });
-    if (error) throw error;
+export const addGalleryItem = async (
+  userId: string,
+  title: string,
+  description: string,
+  imageUrl: string
+) => {
+  const { error } = await supabase.from('gallery_items').insert({
+    uploaded_by: userId,
+    title,
+    description,
+    image_url: imageUrl,
+  });
+
+  if (error) throw error;
 };
 
 export const deleteFeedItem = async (id: string) => {
