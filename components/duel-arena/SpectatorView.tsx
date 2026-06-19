@@ -92,9 +92,51 @@ const PlayerScreen: React.FC<ScreenProps> = ({ player, code, isWinner, accent })
   );
 };
 
+const QuizScoreCard: React.FC<{ player: ArenaParticipant; total: number; isWinner: boolean; accent: 'cyan' | 'fuchsia' }> = ({
+  player,
+  total,
+  isWinner,
+  accent,
+}) => {
+  const accentText = accent === 'cyan' ? 'text-cyan-300' : 'text-fuchsia-300';
+  return (
+    <Card
+      className={cn(
+        'arena-panel flex h-full min-h-0 flex-col items-center justify-center gap-4 p-6 text-center',
+        isWinner && 'border-emerald-400/40 shadow-[0_0_40px_rgba(16,185,129,0.18)]',
+      )}
+    >
+      <Avatar className="h-16 w-16 rounded-2xl">
+        <AvatarImage src={player.avatarUrl || `https://i.pravatar.cc/96?u=${player.handle}`} alt={player.name} />
+        <AvatarFallback>{player.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+      </Avatar>
+      <div>
+        <div className="flex items-center justify-center gap-1.5">
+          <p className="text-lg font-semibold text-white">{player.name}</p>
+          {isWinner ? <Trophy className="h-4 w-4 text-emerald-300" /> : null}
+        </div>
+        <p className={cn('text-xs', accentText)}>
+          {player.rank} {player.division} · {player.rating}
+        </p>
+      </div>
+      <div className="flex items-baseline gap-1">
+        <span className="font-mono text-5xl font-bold text-white">{player.testCasesPassed}</span>
+        <span className="text-lg text-slate-500">/ {total}</span>
+      </div>
+      <p className="text-xs uppercase tracking-[0.2em] text-slate-500">correct</p>
+      <div className="w-full max-w-xs">
+        <Progress value={player.progress} className="h-1.5" />
+        <p className="mt-2 text-sm text-slate-400">{player.estimatedStatus}</p>
+      </div>
+    </Card>
+  );
+};
+
 export const SpectatorView: React.FC = () => {
   const session = useDuelArenaStore((state) => state.session);
   const liveCode = useDuelArenaStore((state) => state.liveCode);
+  const isQuiz = useDuelArenaStore((state) => state.isQuiz);
+  const totalQuestions = useDuelArenaStore((state) => state.questions.length);
   const leaveMatch = useDuelArenaStore((state) => state.leaveMatch);
   const [mobileSide, setMobileSide] = useState<'left' | 'right'>('left');
 
@@ -156,10 +198,18 @@ export const SpectatorView: React.FC = () => {
       {/* Screens: side-by-side on desktop, one-at-a-time on mobile */}
       <div className="grid min-h-0 flex-1 gap-2.5 sm:gap-3 lg:grid-cols-2">
         <div className={cn('min-h-0', mobileSide === 'left' ? 'block' : 'hidden', 'lg:block')}>
-          <PlayerScreen player={left} code={liveCode[left.id] || ''} isWinner={winnerId === left.id} accent="cyan" />
+          {isQuiz ? (
+            <QuizScoreCard player={left} total={totalQuestions} isWinner={winnerId === left.id} accent="cyan" />
+          ) : (
+            <PlayerScreen player={left} code={liveCode[left.id] || ''} isWinner={winnerId === left.id} accent="cyan" />
+          )}
         </div>
         <div className={cn('min-h-0', mobileSide === 'right' ? 'block' : 'hidden', 'lg:block')}>
-          <PlayerScreen player={right} code={liveCode[right.id] || ''} isWinner={winnerId === right.id} accent="fuchsia" />
+          {isQuiz ? (
+            <QuizScoreCard player={right} total={totalQuestions} isWinner={winnerId === right.id} accent="fuchsia" />
+          ) : (
+            <PlayerScreen player={right} code={liveCode[right.id] || ''} isWinner={winnerId === right.id} accent="fuchsia" />
+          )}
         </div>
       </div>
     </div>

@@ -729,6 +729,44 @@ export interface DuelGeneratedProblem {
     testCases: DuelGeneratedTestCase[];
 }
 
+// --- 15-question mixed duel ("quiz duel") ---
+
+export type DuelQuestionKind = 'quiz' | 'coding';
+
+/** A quick quiz question: multiple-choice, true/false, or short-answer. */
+export interface DuelQuizCard {
+    id: string;
+    kind: 'quiz';
+    type: 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'SHORT_ANSWER';
+    question: string;
+    options?: string[];
+    correctAnswer: string;
+    /** Extra answers accepted as correct for SHORT_ANSWER (normalized match). */
+    acceptedAnswers?: string[];
+    /** Per-question time budget in seconds. */
+    seconds: number;
+}
+
+/** A short coding question graded deterministically in Pyodide (solve(input_text)). */
+export interface DuelCodingCard {
+    id: string;
+    kind: 'coding';
+    question: string;
+    starterCode: string;
+    testCases: DuelGeneratedTestCase[];
+    seconds: number;
+}
+
+export type DuelQuizQuestion = DuelQuizCard | DuelCodingCard;
+
+export interface DuelQuizSet {
+    title: string;
+    difficulty: 'Easy' | 'Medium' | 'Hard';
+    tags: string[];
+    targetLevel: DuelSkillLevel;
+    questions: DuelQuizQuestion[];
+}
+
 export interface DuelJudgeCaseResult {
     id: string;
     passed: boolean;
@@ -969,4 +1007,184 @@ Return ONLY JSON:
         efficiencyScore: Math.max(0, Math.min(100, Number(parsed?.efficiencyScore) || (verdict === 'Accepted' ? 85 : 50))),
         estimatedRuntimeMs: Math.max(20, Math.min(5000, Number(parsed?.estimatedRuntimeMs) || 250)),
     };
+};
+
+// --- 15-question mixed duel generation ---
+
+const QUIZ_QUESTION_SECONDS = 20;
+const CODING_QUESTION_SECONDS = 60;
+const QUIZ_TARGET_COUNT = 15;
+const QUIZ_CODING_COUNT = 3;
+
+const normalizeQuizCard = (q: any, index: number): DuelQuizCard | null => {
+    const type = ['MULTIPLE_CHOICE', 'TRUE_FALSE', 'SHORT_ANSWER'].includes(q?.type) ? q.type : null;
+    const question = toSafeText(q?.question).trim();
+    const correctAnswer = toSafeText(q?.correctAnswer).trim();
+    if (!type || !question || !correctAnswer) return null;
+
+    const options = Array.isArray(q?.options)
+        ? q.options.map((o: any) => toSafeText(o).trim()).filter(Boolean).slice(0, 4)
+        : undefined;
+
+    if (type === 'MULTIPLE_CHOICE' && (!options || options.length < 2 || !options.includes(correctAnswer))) return null;
+    if (type === 'TRUE_FALSE') {
+        const norm = correctAnswer.toLowerCase();
+        if (norm !== 'true' && norm !== 'false') return null;
+    }
+
+    const acceptedAnswers = Array.isArray(q?.acceptedAnswers)
+        ? q.acceptedAnswers.map((a: any) => toSafeText(a).trim()).filter(Boolean)
+        : undefined;
+
+    return {
+        id: `quiz-${index + 1}`,
+        kind: 'quiz',
+        type,
+        question,
+        options: type === 'MULTIPLE_CHOICE' ? options : undefined,
+        correctAnswer: type === 'TRUE_FALSE' ? (correctAnswer.toLowerCase() === 'true' ? 'True' : 'False') : correctAnswer,
+        acceptedAnswers: acceptedAnswers && acceptedAnswers.length ? acceptedAnswers : undefined,
+        seconds: QUIZ_QUESTION_SECONDS,
+    };
+};
+
+// Derive each coding question's expected outputs by running the AI's reference
+// solution in Pyodide, so a correct player solution can always pass.
+const buildCodingCard = async (
+    q: any,
+    index: number,
+    runRef: (code: string, inputs: string[]) => Promise<(string | null)[]>
+): Promise<DuelCodingCard | null> => {
+    const question = toSafeText(q?.question).trim();
+    const reference = toSafeText(q?.referenceSolution).trim();
+    const starterCode = toSafeText(q?.starterCode, 'def solve(input_text: str) -> str:\n    return ""\n');
+    const inputs = Array.isArray(q?.inputs) ? q.inputs.map((i: any) => toSafeText(i)).slice(0, 6) : [];
+    if (!question || !reference || inputs.length < 2) return null;
+
+    let outputs: (string | null)[];
+    try {
+        outputs = await runRef(reference, inputs);
+    } catch {
+        return null;
+    }
+
+    const testCases: DuelGeneratedTestCase[] = [];
+    inputs.forEach((input: string, i: number) => {
+        if (outputs[i] != null) {
+            testCases.push({
+                id: `code${index + 1}-${testCases.length + 1}`,
+                input,
+                expectedOutput: outputs[i] as string,
+                hidden: testCases.length >= 1, // first derived case is the visible sample
+            });
+        }
+    });
+    if (testCases.length < 2) return null;
+
+    return { id: `code-${index + 1}`, kind: 'coding', question, starterCode, testCases, seconds: CODING_QUESTION_SECONDS };
+};
+
+// Spread coding questions through the set (roughly every 5th) instead of clustering them.
+const interleaveQuestions = (quiz: DuelQuizQuestion[], coding: DuelQuizQuestion[]): DuelQuizQuestion[] => {
+    const out: DuelQuizQuestion[] = [];
+    let qi = 0;
+    let ci = 0;
+    const total = quiz.length + coding.length;
+    for (let i = 0; i < total; i += 1) {
+        if ((i + 1) % 5 === 0 && ci < coding.length) out.push(coding[ci++]);
+        else if (qi < quiz.length) out.push(quiz[qi++]);
+        else if (ci < coding.length) out.push(coding[ci++]);
+    }
+    return out;
+};
+
+export const generateDuelQuizSet = async (
+    levels: Array<DuelSkillLevel | undefined>,
+    total: number = QUIZ_TARGET_COUNT
+): Promise<DuelQuizSet> => {
+    const targetLevel = averageSkillLevel(levels);
+    const codingCount = QUIZ_CODING_COUNT;
+    const quizCount = total - codingCount;
+
+    const prompt = `You are the question setter for a fast 1v1 quiz duel between two high-school coding club members.
+
+Create a mixed question set at the ${targetLevel} level about Python programming and basic data structures & algorithms.
+
+LEVEL RULES (follow strictly):
+${DUEL_LEVEL_GUIDANCE[targetLevel]}
+
+Produce:
+- ${quizCount} quick quiz questions: a varied mix of MULTIPLE_CHOICE, TRUE_FALSE, and SHORT_ANSWER.
+- ${codingCount} short coding questions, each solvable in well under a minute.
+
+QUIZ RULES:
+- Each question must be answerable in ~20 seconds.
+- MULTIPLE_CHOICE: EXACTLY 4 options; correctAnswer MUST be exactly one of the options (copied verbatim).
+- TRUE_FALSE: correctAnswer is exactly "True" or "False".
+- SHORT_ANSWER: correctAnswer is ONE short token/term (a keyword, function name, or number). Add "acceptedAnswers" listing common equivalent spellings.
+
+CODING RULES:
+- The player writes solve(input_text: str) -> str. Keep each problem tiny.
+- Provide "starterCode" (the signature plus a short hint comment) and a COMPLETE, correct "referenceSolution".
+- Provide "inputs": 3-5 raw input strings (the FIRST is a simple sample). Do NOT provide expected outputs — they are computed by running your referenceSolution.
+
+OUTPUT RULES:
+- Output the JSON object directly and nothing else. No markdown fences, no commentary.
+- Never mention AI, language models, or how the questions were created.
+
+Return ONLY a JSON object:
+{
+  "title": "short catchy title",
+  "difficulty": "Easy" | "Medium" | "Hard",
+  "tags": ["2-4 topic tags"],
+  "quizQuestions": [{ "type": "MULTIPLE_CHOICE"|"TRUE_FALSE"|"SHORT_ANSWER", "question": "...", "options": ["..."], "correctAnswer": "...", "acceptedAnswers": ["..."] }],
+  "codingQuestions": [{ "question": "...", "starterCode": "...", "referenceSolution": "...", "inputs": ["...", "..."] }]
+}`;
+
+    const attempts: Array<() => Promise<string>> = [
+        () => callAI([{ role: 'user', content: prompt }], true, { maxTokens: 8192, temperature: 0.7 }),
+        () => callAI([{ role: 'user', content: prompt }], true, { maxTokens: 8192, temperature: 0.4 }),
+        () => callGemini(prompt),
+    ];
+
+    const { runReference } = await import('./duelRunner');
+
+    for (const attempt of attempts) {
+        let parsed: any = null;
+        try {
+            parsed = parseJSONResponse(await attempt());
+        } catch (error) {
+            console.warn('Duel quiz generation attempt failed:', error);
+            continue;
+        }
+
+        const quizCards = (Array.isArray(parsed?.quizQuestions) ? parsed.quizQuestions : [])
+            .map((q: any, i: number) => normalizeQuizCard(q, i))
+            .filter((q: DuelQuizCard | null): q is DuelQuizCard => !!q)
+            .slice(0, quizCount);
+
+        const codingRaw = Array.isArray(parsed?.codingQuestions) ? parsed.codingQuestions : [];
+        const codingCards: DuelCodingCard[] = [];
+        for (let i = 0; i < codingRaw.length && codingCards.length < codingCount; i += 1) {
+            const card = await buildCodingCard(codingRaw[i], i, runReference);
+            if (card) codingCards.push(card);
+        }
+
+        // Require a healthy set; otherwise try the next provider, then the bank.
+        if (quizCards.length + codingCards.length >= 12) {
+            const questions = interleaveQuestions(quizCards, codingCards).slice(0, total);
+            return {
+                title: toSafeText(parsed?.title, 'Code Duel: Rapid Round'),
+                difficulty: ['Easy', 'Medium', 'Hard'].includes(parsed?.difficulty) ? parsed.difficulty : 'Medium',
+                tags: Array.isArray(parsed?.tags) ? parsed.tags.map((t: any) => toSafeText(t)).slice(0, 4) : ['Python', 'Quiz'],
+                targetLevel,
+                questions,
+            };
+        }
+        console.warn(`Duel quiz attempt yielded only ${quizCards.length + codingCards.length} usable questions; retrying.`);
+    }
+
+    console.warn('All AI duel quiz attempts failed. Using built-in quiz bank.');
+    const { buildBankQuizSet } = await import('./duelQuizBank');
+    return buildBankQuizSet(targetLevel);
 };

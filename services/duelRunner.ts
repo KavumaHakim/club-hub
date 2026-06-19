@@ -70,6 +70,60 @@ const buildHarness = (playerCode: string, cases: DuelGeneratedTestCase[]): strin
     `print("${SENTINEL}" + __json.dumps(__run_duel(__src, __cases)))`,
   ].join('\n');
 
+/**
+ * Run a reference solve() over a list of inputs in Pyodide and return the produced
+ * outputs, in order. Used at generation time to derive the *true* expected output for
+ * each coding question, so AI-authored cases can't mark a correct solution wrong.
+ * Returns null for any input where the reference raised (so the caller can drop it).
+ */
+export const runReference = (
+  code: string,
+  inputs: string[],
+  timeoutMs = 15000,
+): Promise<(string | null)[]> =>
+  new Promise((resolve, reject) => {
+    const cases: DuelGeneratedTestCase[] = inputs.map((input, i) => ({
+      id: `ref-${i + 1}`,
+      input,
+      expectedOutput: '',
+      hidden: false,
+    }));
+    const lines: string[] = [];
+    let timedOut = false;
+    const controller = runSandboxedPython({
+      code: buildHarness(code, cases),
+      timeoutMs,
+      onOutput: (line) => {
+        lines.push(line.content);
+        if (line.type === 'error' && line.content.includes('Execution stopped after')) timedOut = true;
+      },
+    });
+    controller.finished.then(() => {
+      const raw = lines.find((l) => l.includes(SENTINEL));
+      if (!raw) {
+        if (timedOut) {
+          resolve(inputs.map(() => null));
+          return;
+        }
+        reject(new Error('The Python sandbox could not run the reference solution.'));
+        return;
+      }
+      let parsed: any[] = [];
+      try {
+        parsed = JSON.parse(raw.slice(raw.indexOf(SENTINEL) + SENTINEL.length));
+      } catch {
+        parsed = [];
+      }
+      resolve(
+        cases.map((c) => {
+          const r = parsed.find((x) => x?.id === c.id);
+          // The harness records `actual` only when solve() returned without raising.
+          return r && r.error == null && typeof r.actual === 'string' ? r.actual : null;
+        }),
+      );
+    });
+  });
+
 /** Run the player's solve() against the given cases in Pyodide and return structured pass/fail. */
 export const runDuelTests = (
   code: string,

@@ -11,6 +11,7 @@ import { Separator } from '../ui/separator';
 import { RANK_STYLES } from './mockData';
 import { ArenaSession } from './types';
 import { getIntegrityTone } from './utils';
+import { useDuelArenaStore } from './useDuelArenaStore';
 import { cn } from '../../lib/utils';
 
 interface OpponentPanelProps {
@@ -31,6 +32,8 @@ export const OpponentPanel: React.FC<OpponentPanelProps> = ({ session, onSendQui
   const [message, setMessage] = useState('');
   const [showExtras, setShowExtras] = useState(false);
   const opponentRankStyle = RANK_STYLES[session.opponent.rank];
+  const isQuiz = useDuelArenaStore((s) => s.isQuiz);
+  const totalQuestions = useDuelArenaStore((s) => s.questions.length);
 
   const duelMetrics = useMemo(
     () => [
@@ -108,12 +111,12 @@ export const OpponentPanel: React.FC<OpponentPanelProps> = ({ session, onSendQui
                 </div>
               </div>
               <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-3">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Tests passed</p>
-                <p className="mt-2 text-sm font-semibold text-white">{session.opponent.testCasesPassed}/8</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{isQuiz ? 'Correct' : 'Tests passed'}</p>
+                <p className="mt-2 text-sm font-semibold text-white">{session.opponent.testCasesPassed}{isQuiz ? `/${totalQuestions}` : '/8'}</p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-3">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Compiles</p>
-                <p className="mt-2 text-sm font-semibold text-white">{session.opponent.compileAttempts}</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{isQuiz ? 'Answered' : 'Compiles'}</p>
+                <p className="mt-2 text-sm font-semibold text-white">{isQuiz ? `${Math.round(session.opponent.progress)}%` : session.opponent.compileAttempts}</p>
               </div>
             </div>
           </div>

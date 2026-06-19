@@ -6,6 +6,7 @@ import { QUICK_TAUNTS, createDuelFiles, DEFAULT_EDITOR_SETTINGS } from './mockDa
 import {
   DuelGeneratedTestCase,
   DuelJudgeResult,
+  DuelQuizQuestion,
 } from '../../services/geminiService';
 import { judgeDuelTestsLocally } from '../../services/duelRunner';
 import {
@@ -46,6 +47,7 @@ import {
   ArenaEdgeCaseResult,
   ArenaLadderEntry,
   ArenaParticipant,
+  ArenaQuizFeedback,
   ArenaResultSummary,
   ArenaSession,
   ArenaSubmissionFeedback,
@@ -109,6 +111,23 @@ interface DuelArenaStoreState {
   liveBanner: string;
   lastUserEditAt: number;
 
+  // quiz duel
+  isQuiz: boolean;
+  questions: DuelQuizQuestion[];
+  quizIndex: number;
+  selfCorrect: number;
+  answeredCount: number;
+  questionDeadlineMs: number;
+  advanceAtMs: number;
+  answerLocked: boolean;
+  gradingAnswer: boolean;
+  answerFeedback: ArenaQuizFeedback | null;
+  codingDraft: string;
+  selfFinished: boolean;
+  selfFinishedAtMs: number;
+  opponentFinished: boolean;
+  opponentFinishedAtMs: number;
+
   // actions
   hydrate: (user: User) => void;
   refreshLobby: () => Promise<void>;
@@ -134,6 +153,8 @@ interface DuelArenaStoreState {
   setMobilePanel: (panel: MobileArenaPanel) => void;
   runCode: () => void;
   submitCode: () => void;
+  submitAnswer: (answer: string) => void;
+  setCodingDraft: (content: string) => void;
   sendChatMessage: (message: string, kind?: 'chat' | 'taunt') => void;
   sendQuickTaunt: () => void;
   dismissIntegrityOverlay: () => void;
@@ -374,6 +395,12 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
     set((current) => {
       if (!current.session) return current;
       const result = current.role === 'player' ? buildResult(victory, ratingDelta, xpEarned, current.session) : null;
+      if (result && current.isQuiz) {
+        result.outcome = isDraw ? 'draw' : victory ? 'victory' : 'defeat';
+        result.selfCorrect = current.session.player.testCasesPassed;
+        result.opponentCorrect = current.session.opponent.testCasesPassed;
+        result.totalQuestions = current.questions.length;
+      }
       return {
         ...current,
         session: {
@@ -387,15 +414,21 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
             ? winnerUid
               ? `Match over — ${winnerUid === current.session.player.id ? current.session.player.name : current.session.opponent.name} wins!`
               : 'Match over — draw.'
-            : victory
-              ? reason === 'accepted'
-                ? 'Accepted! You won the duel.'
-                : 'Time! You held the lead and won.'
-              : isDraw
-                ? 'Time! The duel ends in a draw.'
-                : reason === 'accepted'
-                  ? 'Your opponent got Accepted first.'
-                  : 'Time! Your opponent held the lead.',
+            : current.isQuiz
+              ? victory
+                ? 'You answered the most correctly — you win!'
+                : isDraw
+                  ? 'Dead heat — the duel ends in a draw.'
+                  : 'Your opponent answered more correctly.'
+              : victory
+                ? reason === 'accepted'
+                  ? 'Accepted! You won the duel.'
+                  : 'Time! You held the lead and won.'
+                : isDraw
+                  ? 'Time! The duel ends in a draw.'
+                  : reason === 'accepted'
+                    ? 'Your opponent got Accepted first.'
+                    : 'Time! Your opponent held the lead.',
       };
     });
   };
@@ -446,8 +479,15 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
           if (!isOpponentUpdate && !isPlayerUpdate) return current;
           const key = isOpponentUpdate ? 'opponent' : 'player';
           const target = current.session[key];
+          // Track the opponent finishing a quiz duel (for the finish handshake / tie-break).
+          const opponentFinishedUpdate =
+            isOpponentUpdate && payload.finished
+              ? { opponentFinished: true, opponentFinishedAtMs: payload.finishedAtMs || Date.now() }
+              : {};
+
           return {
             ...current,
+            ...opponentFinishedUpdate,
             liveCode: payload.code != null ? { ...current.liveCode, [payload.userUid]: payload.code } : current.liveCode,
             session: {
               ...current.session,
@@ -464,6 +504,11 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
             },
           };
         });
+        // Both players done → resolve (the first finisher's write wins the race).
+        const after = get();
+        if (after.isQuiz && after.role === 'player' && after.selfFinished && after.opponentFinished) {
+          void resolveQuiz();
+        }
       },
       onChat: (payload) => {
         set((current) => {
@@ -763,6 +808,131 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
     }
   };
 
+  // --- Quiz duel helpers ---
+
+  const normalizeAnswer = (value: string) => value.trim().toLowerCase().replace(/\s+/g, ' ');
+
+  const gradeQuizCard = (card: Extract<DuelQuizQuestion, { kind: 'quiz' }>, answer: string): boolean => {
+    if (card.type === 'SHORT_ANSWER') {
+      const candidates = [card.correctAnswer, ...(card.acceptedAnswers || [])].map(normalizeAnswer);
+      return candidates.includes(normalizeAnswer(answer));
+    }
+    return normalizeAnswer(answer) === normalizeAnswer(card.correctAnswer);
+  };
+
+  const broadcastQuizProgress = (finished = false) => {
+    const state = get();
+    if (!state.session || state.role !== 'player' || !state.currentUser) return;
+    broadcastToDuel(matchChannel, 'progress', {
+      userUid: state.currentUser.uid,
+      progressPercent: state.session.player.progress,
+      testCasesPassed: state.session.player.testCasesPassed,
+      compileAttempts: 0,
+      statusLabel: finished ? 'Finished all questions' : `Answered ${state.answeredCount}/${state.questions.length}`,
+      liveTyping: false,
+      questionIndex: state.quizIndex,
+      finished,
+      finishedAtMs: finished ? state.selfFinishedAtMs : undefined,
+    });
+  };
+
+  // Fresh per-question UI state (resets the timer and any locked answer).
+  const questionStartState = (index: number) => {
+    const q = get().questions[index];
+    const seconds = q?.seconds ?? 25;
+    return {
+      quizIndex: index,
+      questionDeadlineMs: Date.now() + seconds * 1000,
+      advanceAtMs: 0,
+      answerLocked: false,
+      gradingAnswer: false,
+      answerFeedback: null as ArenaQuizFeedback | null,
+      codingDraft: q && q.kind === 'coding' ? q.starterCode || 'def solve(input_text: str) -> str:\n    return ""\n' : '',
+    };
+  };
+
+  const recordAnswer = (correct: boolean, feedback: ArenaQuizFeedback, advanceDelayMs: number) => {
+    set((current) => {
+      if (!current.session) return current;
+      const selfCorrect = current.selfCorrect + (correct ? 1 : 0);
+      const answeredCount = current.answeredCount + 1;
+      const total = Math.max(1, current.questions.length);
+      return {
+        ...current,
+        selfCorrect,
+        answeredCount,
+        answerLocked: true,
+        gradingAnswer: false,
+        answerFeedback: feedback,
+        advanceAtMs: Date.now() + advanceDelayMs,
+        session: {
+          ...current.session,
+          player: {
+            ...current.session.player,
+            testCasesPassed: selfCorrect,
+            progress: clamp(Math.round((answeredCount / total) * 100), 0, 100),
+            estimatedStatus: `Answered ${answeredCount}/${current.questions.length}`,
+          },
+        },
+      };
+    });
+    broadcastQuizProgress();
+  };
+
+  const handleQuestionTimeout = () => {
+    const state = get();
+    const q = state.questions[state.quizIndex];
+    if (!q) return;
+    recordAnswer(false, { correct: false, message: "Time's up — no answer locked in.", expected: q.kind === 'quiz' ? q.correctAnswer : undefined }, 1200);
+  };
+
+  const resolveQuiz = async () => {
+    const state = get();
+    if (!state.session || !state.matchId || state.session.status === 'finished' || state.role !== 'player') return;
+    const selfScore = state.session.player.testCasesPassed;
+    const oppScore = state.session.opponent.testCasesPassed;
+    let winnerUid: string | null;
+    if (selfScore !== oppScore) {
+      winnerUid = selfScore > oppScore ? state.session.player.id : state.session.opponent.id;
+    } else {
+      // Tie on correct answers → whoever finished sooner; identical → draw.
+      const selfAt = state.selfFinishedAtMs || Number.POSITIVE_INFINITY;
+      const oppAt = state.opponentFinishedAtMs || Number.POSITIVE_INFINITY;
+      winnerUid = selfAt === oppAt ? null : selfAt < oppAt ? state.session.player.id : state.session.opponent.id;
+    }
+    const delta = winnerUid && state.session.matchType !== 'Casual'
+      ? Math.abs(computeRatingDelta(state.session.player.rating, state.session.opponent.rating, true))
+      : 0;
+    // Conditional DB update guarantees only the first finisher's write lands.
+    const wrote = await finishMatchRecord(state.matchId, winnerUid, delta);
+    if (wrote) {
+      if (state.selfParticipantId) {
+        const isWinner = winnerUid === state.session.player.id;
+        void markParticipantResult(state.selfParticipantId, isWinner, state.session.player.rating + (isWinner ? delta : 0), isWinner ? state.session.problem.xpReward : 0);
+      }
+      broadcastToDuel(matchChannel, 'finish', { winnerUid, reason: 'timeout', ratingDelta: delta });
+      await applyFinish(winnerUid, 'timeout', delta);
+    }
+    // If we lost the race (wrote === false), the other client's finish broadcast resolves us.
+  };
+
+  const finishSelf = () => {
+    const state = get();
+    if (state.selfFinished) return;
+    set({ selfFinished: true, selfFinishedAtMs: Date.now(), answerLocked: true, answerFeedback: null, advanceAtMs: 0 });
+    broadcastQuizProgress(true);
+    if (get().opponentFinished) void resolveQuiz();
+  };
+
+  const advanceQuestion = () => {
+    const state = get();
+    if (state.quizIndex < state.questions.length - 1) {
+      set(questionStartState(state.quizIndex + 1));
+    } else {
+      finishSelf();
+    }
+  };
+
   return {
     hasHydrated: false,
     initializedUserId: null,
@@ -808,6 +978,22 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
     resultModalOpen: false,
     liveBanner: 'Welcome to the Duel Arena',
     lastUserEditAt: Date.now(),
+
+    isQuiz: false,
+    questions: [],
+    quizIndex: 0,
+    selfCorrect: 0,
+    answeredCount: 0,
+    questionDeadlineMs: 0,
+    advanceAtMs: 0,
+    answerLocked: false,
+    gradingAnswer: false,
+    answerFeedback: null,
+    codingDraft: '',
+    selfFinished: false,
+    selfFinishedAtMs: 0,
+    opponentFinished: false,
+    opponentFinishedAtMs: 0,
 
     hydrate: (user) => {
       const current = get();
@@ -984,9 +1170,29 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
             session.status === 'countdown'
               ? 'Duel starting soon...'
               : actualRole === 'spectator'
-                ? 'Spectating live — both screens update in real time.'
-                : 'Duel live. Run the samples when you are ready.',
+                ? 'Spectating live — the score updates in real time.'
+                : 'Duel live. Answer fast — most correct wins.',
           lastUserEditAt: Date.now(),
+
+          // quiz duel state
+          isQuiz: bundle.problem.format === 'QUIZ',
+          questions: bundle.problem.questions || [],
+          quizIndex: 0,
+          selfCorrect: 0,
+          answeredCount: 0,
+          questionDeadlineMs: 0,
+          advanceAtMs: 0,
+          answerLocked: false,
+          gradingAnswer: false,
+          answerFeedback: null,
+          codingDraft:
+            bundle.problem.questions?.[0]?.kind === 'coding'
+              ? (bundle.problem.questions[0] as Extract<DuelQuizQuestion, { kind: 'coding' }>).starterCode
+              : '',
+          selfFinished: false,
+          selfFinishedAtMs: 0,
+          opponentFinished: false,
+          opponentFinishedAtMs: 0,
         });
 
         connectToMatch(matchId, user.uid, actualRole);
@@ -1019,6 +1225,21 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
         activeSubmission: null,
         resultModalOpen: false,
         liveBanner: 'Welcome back to the lobby',
+        isQuiz: false,
+        questions: [],
+        quizIndex: 0,
+        selfCorrect: 0,
+        answeredCount: 0,
+        questionDeadlineMs: 0,
+        advanceAtMs: 0,
+        answerLocked: false,
+        gradingAnswer: false,
+        answerFeedback: null,
+        codingDraft: '',
+        selfFinished: false,
+        selfFinishedAtMs: 0,
+        opponentFinished: false,
+        opponentFinishedAtMs: 0,
       });
       void get().refreshLobby();
     },
@@ -1091,6 +1312,50 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
     },
     submitCode: () => {
       void executeJudging('submit');
+    },
+
+    setCodingDraft: (content) => set({ codingDraft: content }),
+
+    submitAnswer: (answer) => {
+      const state = get();
+      if (!state.isQuiz || state.role !== 'player' || !state.session) return;
+      if (state.answerLocked || state.selfFinished) return;
+      if (!['live', 'overtime', 'sudden-death'].includes(state.session.status)) return;
+      const q = state.questions[state.quizIndex];
+      if (!q) return;
+
+      if (q.kind === 'coding') {
+        const code = state.codingDraft;
+        if (!code.trim()) {
+          set({ answerFeedback: { correct: false, message: 'Write your solve() function first.' } });
+          return;
+        }
+        // Lock immediately (pauses the per-question timer) while Pyodide judges.
+        set({ answerLocked: true, gradingAnswer: true, answerFeedback: { correct: false, message: 'Running your code against the tests…' } });
+        void (async () => {
+          let correct = false;
+          let message = '';
+          try {
+            const judge = await judgeDuelTestsLocally(code, q.testCases);
+            correct = judge.verdict === 'Accepted';
+            message = correct
+              ? `Accepted — ${judge.passed}/${judge.total} tests passed.`
+              : `${judge.verdict} — ${judge.passed}/${judge.total} tests passed.`;
+          } catch {
+            correct = false;
+            message = 'Could not run your code in time.';
+          }
+          recordAnswer(correct, { correct, message }, 1900);
+        })();
+        return;
+      }
+
+      const correct = gradeQuizCard(q, answer);
+      recordAnswer(
+        correct,
+        { correct, message: correct ? 'Correct!' : 'Not quite.', expected: correct ? undefined : q.correctAnswer },
+        1400,
+      );
     },
 
     sendChatMessage: (message, kind = 'chat') => {
@@ -1230,6 +1495,43 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
 
       const timeRemaining = Math.max(0, Math.round(current.matchDurationSec - elapsedSec));
       const wasCountdown = current.session.status === 'countdown';
+
+      // --- Quiz duel flow (per-question timer, score-based finish) ---
+      if (current.isQuiz) {
+        set({
+          session: { ...current.session, status: wasCountdown ? 'live' : current.session.status, countdown: 0, timeRemaining },
+          liveBanner: wasCountdown
+            ? current.role === 'spectator'
+              ? 'Duel is live — watch the score climb.'
+              : 'GO! Answer fast — most correct wins.'
+            : current.liveBanner,
+        });
+
+        if (current.role === 'player' && !current.selfFinished) {
+          const live = ['live', 'overtime', 'sudden-death'].includes(get().session!.status);
+          if (live) {
+            if (current.questionDeadlineMs === 0) {
+              // Round just went live — arm the timer for the first question.
+              set(questionStartState(current.quizIndex));
+            } else if (current.answerLocked) {
+              if (!current.gradingAnswer && current.advanceAtMs && now >= current.advanceAtMs) {
+                advanceQuestion();
+              }
+            } else if (now >= current.questionDeadlineMs) {
+              handleQuestionTimeout();
+            }
+          }
+        }
+
+        // Whole-duel backstop: force a finish so nobody hangs on a stalled opponent.
+        if (timeRemaining === 0 && current.role === 'player') {
+          if (!get().selfFinished) finishSelf();
+          void resolveQuiz();
+        }
+        return;
+      }
+
+      // --- Legacy single-problem flow ---
       const liveTyping = now - current.lastUserEditAt < 2000 && current.role === 'player';
       const shouldAutosave = current.autoSaveState === 'dirty' && now - current.lastUserEditAt > 2500;
 

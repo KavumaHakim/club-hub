@@ -6,6 +6,7 @@ import { DuelLobby } from './duel-arena/DuelLobby';
 import { CodeEditorPanel } from './duel-arena/CodeEditorPanel';
 import { OpponentPanel } from './duel-arena/OpponentPanel';
 import { ProblemPanel } from './duel-arena/ProblemPanel';
+import { QuizPanel } from './duel-arena/QuizPanel';
 import { ResultModal } from './duel-arena/ResultModal';
 import { SpectatorView } from './duel-arena/SpectatorView';
 import { Button } from './ui/button';
@@ -28,6 +29,9 @@ const CodeDuelArena: React.FC<CodeDuelArenaProps> = ({ currentUser }) => {
   const preparingLabel = useDuelArenaStore((state) => state.preparingLabel);
   const session = useDuelArenaStore((state) => state.session);
   const role = useDuelArenaStore((state) => state.role);
+  const isQuiz = useDuelArenaStore((state) => state.isQuiz);
+  const quizIndex = useDuelArenaStore((state) => state.quizIndex);
+  const totalQuestions = useDuelArenaStore((state) => state.questions.length);
   const activeLanguage = useDuelArenaStore((state) => state.activeLanguage);
   const resultModalOpen = useDuelArenaStore((state) => state.resultModalOpen);
   const liveBanner = useDuelArenaStore((state) => state.liveBanner);
@@ -112,11 +116,19 @@ const CodeDuelArena: React.FC<CodeDuelArenaProps> = ({ currentUser }) => {
                   </span>
                   <div className="text-right">
                     <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">
-                      {session!.status === 'countdown' ? 'Starts in' : session!.status === 'finished' ? 'Final' : 'Time left'}
+                      {isQuiz
+                        ? session!.status === 'countdown' ? 'Starts in' : session!.status === 'finished' ? 'Final' : 'Question'
+                        : session!.status === 'countdown' ? 'Starts in' : session!.status === 'finished' ? 'Final' : 'Time left'}
                     </p>
-                    <p className={cn('font-mono text-xl font-semibold leading-none', getTimerTone(session!.status, session!.timeRemaining), session!.timeRemaining <= 60 && session!.status !== 'finished' && 'animate-pulse')}>
-                      {session!.status === 'countdown' ? `${session!.countdown}s` : formatTimer(session!.timeRemaining)}
-                    </p>
+                    {isQuiz && session!.status !== 'countdown' ? (
+                      <p className="font-mono text-xl font-semibold leading-none text-cyan-100">
+                        {Math.min(quizIndex + 1, totalQuestions)}/{totalQuestions}
+                      </p>
+                    ) : (
+                      <p className={cn('font-mono text-xl font-semibold leading-none', getTimerTone(session!.status, session!.timeRemaining), session!.timeRemaining <= 60 && session!.status !== 'finished' && 'animate-pulse')}>
+                        {session!.status === 'countdown' ? `${session!.countdown}s` : formatTimer(session!.timeRemaining)}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -130,7 +142,7 @@ const CodeDuelArena: React.FC<CodeDuelArenaProps> = ({ currentUser }) => {
                   <div key={p.id}>
                     <div className="mb-1 flex items-center justify-between gap-2 text-[11px]">
                       <span className={cn('truncate font-medium', accent === 'cyan' ? 'text-cyan-200' : 'text-rose-200')}>{label}</span>
-                      <span className="shrink-0 text-slate-400">{p.testCasesPassed} passed{p.liveTyping ? ' · typing' : ''}</span>
+                      <span className="shrink-0 text-slate-400">{isQuiz ? `${p.testCasesPassed} correct` : `${p.testCasesPassed} passed${p.liveTyping ? ' · typing' : ''}`}</span>
                     </div>
                     <Progress value={p.progress} className="h-1.5" />
                   </div>
@@ -143,9 +155,9 @@ const CodeDuelArena: React.FC<CodeDuelArenaProps> = ({ currentUser }) => {
             {/* Mobile panel switcher */}
             <div className="shrink-0 xl:hidden">
               <Tabs value={activeMobilePanel} onValueChange={(value) => setMobilePanel(value as any)} className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="problem">Problem</TabsTrigger>
-                  <TabsTrigger value="editor">Editor</TabsTrigger>
+                <TabsList className={cn('grid w-full', isQuiz ? 'grid-cols-2' : 'grid-cols-3')}>
+                  {!isQuiz && <TabsTrigger value="problem">Problem</TabsTrigger>}
+                  <TabsTrigger value="editor">{isQuiz ? 'Quiz' : 'Editor'}</TabsTrigger>
                   <TabsTrigger value="intel">Opponent</TabsTrigger>
                 </TabsList>
               </Tabs>
@@ -153,29 +165,42 @@ const CodeDuelArena: React.FC<CodeDuelArenaProps> = ({ currentUser }) => {
 
             {/* Desktop panel toggles */}
             <div className="hidden shrink-0 items-center justify-end gap-2 xl:flex">
-              <Button variant="secondary" size="sm" onClick={() => togglePanel('left')}>
-                <LayoutPanelLeft className="mr-1 h-4 w-4" />
-                {leftCollapsed ? 'Show Problem' : 'Hide Problem'}
-              </Button>
+              {!isQuiz && (
+                <Button variant="secondary" size="sm" onClick={() => togglePanel('left')}>
+                  <LayoutPanelLeft className="mr-1 h-4 w-4" />
+                  {leftCollapsed ? 'Show Problem' : 'Hide Problem'}
+                </Button>
+              )}
               <Button variant="secondary" size="sm" onClick={() => togglePanel('right')}>
                 <MonitorPlay className="mr-1 h-4 w-4" />
                 {rightCollapsed ? 'Show Intel' : 'Hide Intel'}
               </Button>
             </div>
 
-            <div className="grid min-h-0 flex-1 gap-2.5 sm:gap-3 xl:grid-cols-[minmax(280px,330px)_minmax(0,1fr)_minmax(280px,330px)]">
-              <div className={`${activeMobilePanel === 'problem' ? 'flex flex-col' : 'hidden'} min-h-0 xl:flex xl:flex-col ${leftCollapsed ? 'xl:hidden' : ''}`}>
-                <ProblemPanel session={session!} activeLanguage={activeLanguage} onLanguageChange={setActiveLanguage} />
+            {isQuiz ? (
+              <div className="grid min-h-0 flex-1 gap-2.5 sm:gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(300px,360px)]">
+                <div className={`${activeMobilePanel !== 'intel' ? 'flex flex-col' : 'hidden'} min-h-0 xl:flex xl:flex-col`}>
+                  <QuizPanel />
+                </div>
+                <div className={`${activeMobilePanel === 'intel' ? 'flex flex-col' : 'hidden'} min-h-0 xl:flex xl:flex-col ${rightCollapsed ? 'xl:hidden' : ''}`}>
+                  <OpponentPanel session={session!} onSendQuickTaunt={sendQuickTaunt} onSendChatMessage={sendChatMessage} />
+                </div>
               </div>
+            ) : (
+              <div className="grid min-h-0 flex-1 gap-2.5 sm:gap-3 xl:grid-cols-[minmax(280px,330px)_minmax(0,1fr)_minmax(280px,330px)]">
+                <div className={`${activeMobilePanel === 'problem' ? 'flex flex-col' : 'hidden'} min-h-0 xl:flex xl:flex-col ${leftCollapsed ? 'xl:hidden' : ''}`}>
+                  <ProblemPanel session={session!} activeLanguage={activeLanguage} onLanguageChange={setActiveLanguage} />
+                </div>
 
-              <div className={`${activeMobilePanel === 'editor' ? 'flex flex-col' : 'hidden'} min-h-0 xl:flex xl:flex-col`}>
-                <CodeEditorPanel />
-              </div>
+                <div className={`${activeMobilePanel === 'editor' ? 'flex flex-col' : 'hidden'} min-h-0 xl:flex xl:flex-col`}>
+                  <CodeEditorPanel />
+                </div>
 
-              <div className={`${activeMobilePanel === 'intel' ? 'flex flex-col' : 'hidden'} min-h-0 xl:flex xl:flex-col ${rightCollapsed ? 'xl:hidden' : ''}`}>
-                <OpponentPanel session={session!} onSendQuickTaunt={sendQuickTaunt} onSendChatMessage={sendChatMessage} />
+                <div className={`${activeMobilePanel === 'intel' ? 'flex flex-col' : 'hidden'} min-h-0 xl:flex xl:flex-col ${rightCollapsed ? 'xl:hidden' : ''}`}>
+                  <OpponentPanel session={session!} onSendQuickTaunt={sendQuickTaunt} onSendChatMessage={sendChatMessage} />
+                </div>
               </div>
-            </div>
+            )}
           </div>
         ) : null}
       </div>

@@ -18,9 +18,12 @@ export const ResultModal: React.FC<ResultModalProps> = ({ session, open, onClose
   if (!result) return null;
 
   const isVictory = result.outcome === 'victory';
+  const isDraw = result.outcome === 'draw';
+  const isQuiz = result.totalQuestions != null;
 
   const handleShare = async () => {
-    const summary = `${session.player.name} ${isVictory ? 'won' : 'lost'} a ${session.matchType.toLowerCase()} Code Duel Arena match. Rating ${result.ratingDelta >= 0 ? '+' : ''}${result.ratingDelta}, XP +${result.xpEarned}.`;
+    const scoreLine = isQuiz ? ` Score ${result.selfCorrect}–${result.opponentCorrect} of ${result.totalQuestions}.` : '';
+    const summary = `${session.player.name} ${isVictory ? 'won' : isDraw ? 'drew' : 'lost'} a ${session.matchType.toLowerCase()} Code Duel.${scoreLine} Rating ${result.ratingDelta >= 0 ? '+' : ''}${result.ratingDelta}, XP +${result.xpEarned}.`;
     try {
       await navigator.clipboard.writeText(summary);
     } catch {
@@ -35,17 +38,25 @@ export const ResultModal: React.FC<ResultModalProps> = ({ session, open, onClose
         <div className="relative p-6 sm:p-8">
           <DialogHeader>
             <div className="flex items-center gap-3">
-              <Badge variant={isVictory ? 'success' : 'danger'}>{isVictory ? 'Victory' : 'Defeat'}</Badge>
+              <Badge variant={isVictory ? 'success' : isDraw ? 'secondary' : 'danger'}>
+                {isVictory ? 'Victory' : isDraw ? 'Draw' : 'Defeat'}
+              </Badge>
               <Badge variant="secondary">{session.matchType}</Badge>
             </div>
             <DialogTitle className="mt-3 flex items-center gap-3 text-3xl">
               {isVictory ? <Sparkles className="h-7 w-7 text-emerald-300" /> : <Sword className="h-7 w-7 text-rose-300" />}
-              {isVictory ? 'Arena cleared' : 'The chamber fights back'}
+              {isVictory ? 'Arena cleared' : isDraw ? 'A dead heat' : 'The chamber fights back'}
             </DialogTitle>
             <DialogDescription className="max-w-2xl text-slate-300">
-              {isVictory
-                ? 'Accepted under pressure. Your route planner held when hidden tests turned hostile.'
-                : 'Pressure data captured. Review the replay, tighten the state pruning, and queue again.'}
+              {isQuiz
+                ? isVictory
+                  ? 'You answered the most correctly. Sharp and fast.'
+                  : isDraw
+                    ? 'Tied on correct answers — neither duelist blinked.'
+                    : 'Edged out on correct answers. Rematch and reclaim it.'
+                : isVictory
+                  ? 'Accepted under pressure. Your route planner held when hidden tests turned hostile.'
+                  : 'Pressure data captured. Review the replay, tighten the state pruning, and queue again.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -64,12 +75,16 @@ export const ResultModal: React.FC<ResultModalProps> = ({ session, open, onClose
                   <p className="mt-2 text-2xl font-semibold text-cyan-100">+{result.xpEarned}</p>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-3">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Accuracy</p>
-                  <p className="mt-2 text-2xl font-semibold text-white">{result.accuracy}%</p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{isQuiz ? 'Your score' : 'Accuracy'}</p>
+                  <p className="mt-2 text-2xl font-semibold text-white">
+                    {isQuiz ? `${result.selfCorrect}/${result.totalQuestions}` : `${result.accuracy}%`}
+                  </p>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-3">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Typing Speed</p>
-                  <p className="mt-2 text-2xl font-semibold text-white">{result.typingSpeed} wpm</p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{isQuiz ? 'Opponent' : 'Typing Speed'}</p>
+                  <p className="mt-2 text-2xl font-semibold text-white">
+                    {isQuiz ? `${result.opponentCorrect}/${result.totalQuestions}` : `${result.typingSpeed} wpm`}
+                  </p>
                 </div>
               </div>
             </motion.div>
@@ -81,8 +96,8 @@ export const ResultModal: React.FC<ResultModalProps> = ({ session, open, onClose
               </div>
               <div className="mt-4 space-y-3">
                 <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3">
-                  <span className="text-sm text-slate-400">Runtime</span>
-                  <span className="text-sm font-semibold text-white">{result.runtimeMs}ms</span>
+                  <span className="text-sm text-slate-400">{isQuiz ? 'Correct answers' : 'Runtime'}</span>
+                  <span className="text-sm font-semibold text-white">{isQuiz ? `${result.selfCorrect}/${result.totalQuestions}` : `${result.runtimeMs}ms`}</span>
                 </div>
                 <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3">
                   <span className="text-sm text-slate-400">Streak shift</span>
@@ -92,8 +107,8 @@ export const ResultModal: React.FC<ResultModalProps> = ({ session, open, onClose
                   </span>
                 </div>
                 <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3">
-                  <span className="text-sm text-slate-400">Opponent runtime</span>
-                  <span className="text-sm font-semibold text-white">{session.opponent.runtimeMs}ms</span>
+                  <span className="text-sm text-slate-400">{isQuiz ? 'Opponent correct' : 'Opponent runtime'}</span>
+                  <span className="text-sm font-semibold text-white">{isQuiz ? `${result.opponentCorrect}/${result.totalQuestions}` : `${session.opponent.runtimeMs}ms`}</span>
                 </div>
               </div>
             </motion.div>

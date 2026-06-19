@@ -183,7 +183,7 @@ export interface ArenaSubmissionHistoryItem {
 }
 
 export interface ArenaResultSummary {
-  outcome: 'victory' | 'defeat';
+  outcome: 'victory' | 'defeat' | 'draw';
   ratingDelta: number;
   xpEarned: number;
   streakDelta: number;
@@ -191,6 +191,17 @@ export interface ArenaResultSummary {
   runtimeMs: number;
   typingSpeed: number;
   achievements: string[];
+  /** Quiz duel scores. */
+  selfCorrect?: number;
+  opponentCorrect?: number;
+  totalQuestions?: number;
+}
+
+export interface ArenaQuizFeedback {
+  correct: boolean;
+  message: string;
+  /** Shown when wrong: the expected answer (quiz) or pass summary (coding). */
+  expected?: string;
 }
 
 export interface ArenaEditorSettings {

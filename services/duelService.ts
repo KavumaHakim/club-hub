@@ -3,10 +3,10 @@ import { supabase } from './supabaseClient';
 import { notifyUsers } from './apiService';
 import { User } from '../types';
 import {
-  DuelGeneratedProblem,
   DuelGeneratedTestCase,
+  DuelQuizQuestion,
   DuelSkillLevel,
-  generateDuelProblem,
+  generateDuelQuizSet,
 } from './geminiService';
 import { DuelRank } from '../components/duel-arena/types';
 
@@ -68,6 +68,9 @@ export interface DuelProblemRecord {
   testCases: DuelGeneratedTestCase[];
   xpReward: number;
   averageCompletionSeconds: number;
+  /** 'QUIZ' = 15-question mixed duel (questions populated); 'CODING' = legacy single problem. */
+  format: 'CODING' | 'QUIZ';
+  questions: DuelQuizQuestion[];
 }
 
 export interface DuelMatchRecord {
@@ -358,9 +361,9 @@ export const subscribeToInviteEvents = (
   };
 };
 
-// --- Match creation (invite acceptance generates the AI problem) ---
+// --- Match creation (invite acceptance generates the AI question set) ---
 
-const DIFFICULTY_TO_DB: Record<DuelGeneratedProblem['difficulty'], 'EASY' | 'MEDIUM' | 'HARD'> = {
+const DIFFICULTY_TO_DB: Record<'Easy' | 'Medium' | 'Hard', 'EASY' | 'MEDIUM' | 'HARD'> = {
   Easy: 'EASY',
   Medium: 'MEDIUM',
   Hard: 'HARD',
@@ -379,30 +382,34 @@ export const acceptInviteAndCreateMatch = async (
     .single();
   if (senderError) throw senderError;
 
-  onStage?.('Crafting a fresh Python problem...');
-  const problem = await generateDuelProblem([
+  onStage?.('Building a fresh 15-question duel...');
+  const quizSet = await generateDuelQuizSet([
     (senderRow?.skill_level as DuelSkillLevel) || 'BEGINNER',
     accepter.skillLevel || 'BEGINNER',
   ]);
 
   onStage?.('Setting up the duel chamber...');
-  const publicCases = problem.testCases.filter((tc) => !tc.hidden);
+  const totalQuestionSeconds = quizSet.questions.reduce((sum, q) => sum + (q.seconds || 30), 0);
+  const codingCount = quizSet.questions.filter((q) => q.kind === 'coding').length;
+
   const { data: problemRow, error: problemError } = await supabase
     .from('duel_problems')
     .insert({
       slug: `duel-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      title: problem.title,
-      difficulty: DIFFICULTY_TO_DB[problem.difficulty],
-      statement_markdown: problem.statementMarkdown,
-      constraints_json: problem.constraints,
-      examples_json: publicCases,
-      test_cases_json: problem.testCases,
-      public_test_count: publicCases.length,
-      starter_code: problem.starterCode,
-      target_level: problem.targetLevel,
-      tags: problem.tags,
-      xp_reward: problem.difficulty === 'Hard' ? 420 : problem.difficulty === 'Medium' ? 300 : 180,
-      average_completion_seconds: problem.estimatedMinutes * 60,
+      title: quizSet.title,
+      difficulty: DIFFICULTY_TO_DB[quizSet.difficulty],
+      statement_markdown: `A ${quizSet.questions.length}-question rapid duel — most correct answers wins.`,
+      format: 'QUIZ',
+      questions_json: quizSet.questions,
+      constraints_json: [],
+      examples_json: [],
+      test_cases_json: [],
+      public_test_count: 0,
+      starter_code: '',
+      target_level: quizSet.targetLevel,
+      tags: quizSet.tags,
+      xp_reward: quizSet.difficulty === 'Hard' ? 420 : quizSet.difficulty === 'Medium' ? 300 : 180,
+      average_completion_seconds: totalQuestionSeconds,
       is_ranked_pool: false,
       created_by: accepter.uid,
     })
@@ -411,7 +418,9 @@ export const acceptInviteAndCreateMatch = async (
   if (problemError) throw problemError;
 
   const countdownSeconds = 10;
-  const durationSeconds = Math.max(600, Math.min(1800, problem.estimatedMinutes * 60 + 300));
+  // Backstop window: every question's budget + the coding warm-up + grace, so a finished
+  // player never waits forever on a disconnected opponent.
+  const durationSeconds = totalQuestionSeconds + codingCount * 5 + 60;
   const startedAt = new Date(Date.now() + countdownSeconds * 1000).toISOString();
 
   const { data: matchRow, error: matchError } = await supabase
@@ -469,6 +478,8 @@ const mapProblem = (row: any): DuelProblemRecord => ({
   testCases: Array.isArray(row.test_cases_json) ? row.test_cases_json : [],
   xpReward: row.xp_reward ?? 0,
   averageCompletionSeconds: row.average_completion_seconds ?? 0,
+  format: row.format === 'QUIZ' ? 'QUIZ' : 'CODING',
+  questions: Array.isArray(row.questions_json) ? row.questions_json : [],
 });
 
 const mapParticipant = (row: any): DuelParticipantRecord => ({
@@ -700,6 +711,12 @@ export interface DuelProgressPayload {
   verdict?: string;
   /** Latest solution source, sent so spectators can watch both screens live. */
   code?: string;
+  /** Quiz duel: which question (0-based) the player is on, for spectators. */
+  questionIndex?: number;
+  /** Quiz duel: set once the player has answered all questions. */
+  finished?: boolean;
+  /** Quiz duel: client clock (ms) when the player finished — used for tie-breaks. */
+  finishedAtMs?: number;
 }
 
 export interface DuelChatPayload {

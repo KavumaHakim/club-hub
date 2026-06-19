@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Bell, Eye, Flame, Loader2, Search, Swords, Trophy, X } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Bell, Eye, Flame, Loader2, Search, Swords, Trophy, X, Zap } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -15,6 +16,8 @@ interface DuelLobbyProps {
 }
 
 const initials = (name: string) => name.slice(0, 2).toUpperCase();
+
+const HERO_PHRASES = ['Think fast.', 'Code faster.', 'Outscore your rival.', 'Claim the throne.'];
 
 export const DuelLobby: React.FC<DuelLobbyProps> = ({ currentUser }) => {
   const profile = useDuelArenaStore((state) => state.profile);
@@ -38,6 +41,19 @@ export const DuelLobby: React.FC<DuelLobbyProps> = ({ currentUser }) => {
   const [members, setMembers] = useState<User[]>([]);
   const [memberSearch, setMemberSearch] = useState('');
   const [membersLoading, setMembersLoading] = useState(false);
+  const [phraseIdx, setPhraseIdx] = useState(0);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  // Cycle the daring tagline under the hero headline.
+  useEffect(() => {
+    const id = window.setInterval(() => setPhraseIdx((i) => (i + 1) % HERO_PHRASES.length), 2200);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const scrollToChallenge = () => {
+    document.getElementById('duel-challenge')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    window.setTimeout(() => searchRef.current?.focus(), 450);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -74,53 +90,137 @@ export const DuelLobby: React.FC<DuelLobbyProps> = ({ currentUser }) => {
       ? Math.round((profile.seasonWins / (profile.seasonWins + profile.seasonLosses)) * 100)
       : 0;
 
+  const statChips: Array<{ label: string; value: React.ReactNode; text: string; ring: string; icon?: React.ReactNode }> = [
+    { label: 'Rank', value: profile ? `${profile.rankTier} ${profile.division}` : '—', text: rankStyle.text, ring: rankStyle.ring },
+    { label: 'Rating', value: profile?.rating ?? '—', text: 'text-white', ring: 'border-white/10' },
+    { label: 'W / L', value: profile ? `${profile.seasonWins}/${profile.seasonLosses}` : '—', text: 'text-white', ring: 'border-white/10' },
+    {
+      label: 'Streak',
+      value: profile?.currentStreak ?? 0,
+      text: 'text-amber-100',
+      ring: 'border-amber-400/20',
+      icon: <Flame className="h-3.5 w-3.5" />,
+    },
+  ];
+
   return (
     <div className="mx-auto w-full max-w-6xl space-y-4 p-3 sm:p-5">
-      {/* Header / own profile */}
-      <Card className="arena-panel overflow-hidden p-5 sm:p-6">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-400/30 bg-cyan-500/10">
-              <Swords className="h-6 w-6 text-cyan-200" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-semibold text-white sm:text-3xl" style={{ fontFamily: '"Space Grotesk", system-ui, sans-serif' }}>
-                Code Duel Arena
-              </h2>
-              <p className="mt-1 text-sm text-slate-400">
-                1v1 Python battles. A fresh DSA problem every match, instant verdicts, live spectating.
-              </p>
-            </div>
-          </div>
+      {/* Hero banner */}
+      <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: 'easeOut' }}>
+        <Card className="arena-panel relative overflow-hidden p-6 sm:p-8">
+          {/* Animated ambient glows */}
+          <motion.div
+            aria-hidden
+            animate={{ opacity: [0.35, 0.65, 0.35], scale: [1, 1.12, 1] }}
+            transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+            className="pointer-events-none absolute -left-24 -top-28 h-72 w-72 rounded-full bg-cyan-500/20 blur-3xl"
+          />
+          <motion.div
+            aria-hidden
+            animate={{ opacity: [0.25, 0.55, 0.25], scale: [1.12, 1, 1.12] }}
+            transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+            className="pointer-events-none absolute -bottom-24 -right-20 h-72 w-72 rounded-full bg-fuchsia-500/20 blur-3xl"
+          />
 
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <div className={cn('rounded-2xl border bg-white/5 px-3 py-2 text-center', rankStyle.ring)}>
-              <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Rank</p>
-              <p className={cn('text-sm font-semibold', rankStyle.text)}>
-                {profile ? `${profile.rankTier} ${profile.division}` : '—'}
+          <div className="relative flex flex-col gap-7 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-xl">
+              <motion.span
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.15 }}
+                className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/30 bg-cyan-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-200"
+              >
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+                Season open · live now
+              </motion.span>
+
+              <h1
+                className="mt-4 text-4xl font-black leading-[1.05] sm:text-5xl"
+                style={{ fontFamily: '"Space Grotesk", system-ui, sans-serif' }}
+              >
+                <span className="bg-gradient-to-r from-cyan-300 via-sky-200 to-fuchsia-300 bg-clip-text text-transparent">Enter the</span>
+                <br />
+                <span className="text-white">Code Duel Arena</span>
+              </h1>
+
+              {/* Rotating daring tagline */}
+              <div className="mt-3 flex h-7 items-center gap-2 text-lg font-bold">
+                <Zap className="h-5 w-5 shrink-0 text-amber-300" />
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={phraseIdx}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.3 }}
+                    className="bg-gradient-to-r from-amber-200 to-rose-200 bg-clip-text text-transparent"
+                  >
+                    {HERO_PHRASES[phraseIdx]}
+                  </motion.span>
+                </AnimatePresence>
+              </div>
+
+              <p className="mt-3 max-w-md text-sm text-slate-300 sm:text-base">
+                15 rapid-fire questions — quiz <span className="text-white">and</span> code, head-to-head. Every question is timed.
+                Outscore your rival and climb the ranks. <span className="font-semibold text-cyan-200">Most correct wins.</span>
               </p>
+
+              <div className="mt-5 flex flex-wrap items-center gap-3">
+                <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
+                  <Button size="lg" onClick={scrollToChallenge} className="shadow-[0_0_30px_rgba(34,211,238,0.25)]">
+                    <Swords className="h-5 w-5" />
+                    Find an opponent
+                  </Button>
+                </motion.div>
+                {liveMatches.length > 0 ? (
+                  <Button variant="secondary" size="lg" onClick={() => void spectateMatch(liveMatches[0].id)}>
+                    <Eye className="h-5 w-5" />
+                    Watch a live duel
+                  </Button>
+                ) : null}
+              </div>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-center">
-              <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Rating</p>
-              <p className="text-sm font-semibold text-white">{profile?.rating ?? '—'}</p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-center">
-              <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400">W / L</p>
-              <p className="text-sm font-semibold text-white">
-                {profile ? `${profile.seasonWins} / ${profile.seasonLosses}` : '—'}
-                <span className="ml-1 text-xs text-slate-400">({winRate}%)</span>
-              </p>
-            </div>
-            <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-3 py-2 text-center">
-              <p className="text-[11px] uppercase tracking-[0.2em] text-amber-200/80">Streak</p>
-              <p className="flex items-center justify-center gap-1 text-sm font-semibold text-amber-100">
-                <Flame className="h-3.5 w-3.5" />
-                {profile?.currentStreak ?? 0}
-              </p>
+
+            {/* Animated emblem + stat chips */}
+            <div className="flex shrink-0 flex-col items-center gap-5">
+              <motion.div
+                animate={{ rotate: [0, -6, 6, 0], scale: [1, 1.06, 1] }}
+                transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+                className="relative flex h-24 w-24 items-center justify-center"
+              >
+                <motion.span
+                  aria-hidden
+                  animate={{ opacity: [0.4, 0.85, 0.4], scale: [1, 1.25, 1] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                  className="absolute inset-0 rounded-3xl bg-cyan-500/25 blur-xl"
+                />
+                <div className="relative flex h-24 w-24 items-center justify-center rounded-3xl border border-cyan-400/30 bg-slate-950/60">
+                  <Swords className="h-12 w-12 text-cyan-200" />
+                </div>
+              </motion.div>
+
+              <div className="grid w-full grid-cols-2 gap-2">
+                {statChips.map((chip, i) => (
+                  <motion.div
+                    key={chip.label}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.25 + i * 0.08 }}
+                    className={cn('rounded-2xl border bg-white/5 px-3 py-2 text-center', chip.ring)}
+                  >
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400">{chip.label}</p>
+                    <p className={cn('flex items-center justify-center gap-1 text-sm font-semibold', chip.text)}>
+                      {chip.icon}
+                      {chip.value}
+                      {chip.label === 'W / L' ? <span className="ml-1 text-xs text-slate-400">({winRate}%)</span> : null}
+                    </p>
+                  </motion.div>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+      </motion.div>
 
       {lobbyNotice ? (
         <div className="flex items-center justify-between gap-3 rounded-2xl border border-cyan-400/25 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-100">
@@ -254,18 +354,20 @@ export const DuelLobby: React.FC<DuelLobbyProps> = ({ currentUser }) => {
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         {/* Challenge a member */}
-        <Card className="arena-panel p-5">
+        <Card id="duel-challenge" className="arena-panel p-5">
           <h3 className="mb-1 flex items-center gap-2 text-lg font-semibold text-white">
             <Swords className="h-4 w-4 text-cyan-300" />
             Challenge a Member
           </h3>
           <p className="mb-4 text-sm text-slate-400">
-            Every duel gets a fresh Python DSA problem matched to the average of both your levels. 5 sample tests are revealed; the rest stay hidden.
+            Pick a rival and fire off a challenge. Each duel is 15 rapid questions — quiz and code — matched to the average of both your
+            levels. Answer fastest and most correctly to win.
           </p>
 
           <div className="relative mb-4">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
             <input
+              ref={searchRef}
               value={memberSearch}
               onChange={(e) => setMemberSearch(e.target.value)}
               placeholder="Search members..."
