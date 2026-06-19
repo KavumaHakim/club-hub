@@ -635,6 +635,28 @@ export const finishMatchRecord = async (
   return (data || []).length > 0;
 };
 
+/** Latest submitted source per participant, used to seed a spectator's screens on join. */
+export const fetchLatestSubmissionCode = async (matchId: string): Promise<Record<string, string>> => {
+  const { data, error } = await supabase
+    .from('duel_submissions')
+    .select('source_code, created_at, duel_match_participants:participant_id(user_uid)')
+    .eq('match_id', matchId)
+    .order('created_at', { ascending: false })
+    .limit(40);
+  if (error) {
+    console.warn('Failed to seed spectator code', error);
+    return {};
+  }
+  const byUid: Record<string, string> = {};
+  for (const row of data || []) {
+    const uid = (row as any).duel_match_participants?.user_uid;
+    if (uid && !(uid in byUid)) {
+      byUid[uid] = (row as any).source_code || '';
+    }
+  }
+  return byUid;
+};
+
 export const markParticipantResult = async (participantId: string, isWinner: boolean, ratingAfter: number, xpEarned: number): Promise<void> => {
   const { error } = await supabase
     .from('duel_match_participants')
@@ -676,6 +698,8 @@ export interface DuelProgressPayload {
   liveTyping: boolean;
   runtimeMs?: number;
   verdict?: string;
+  /** Latest solution source, sent so spectators can watch both screens live. */
+  code?: string;
 }
 
 export interface DuelChatPayload {

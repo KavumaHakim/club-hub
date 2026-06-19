@@ -1,15 +1,14 @@
-import React, { memo, useEffect, useMemo, useRef } from 'react';
+import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
 import Editor, { OnMount } from '@monaco-editor/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { initVimMode } from 'monaco-vim';
-import { CheckCircle2, Code2, Expand, LoaderCircle, Minimize2, Play, Send, TerminalSquare, Zap } from 'lucide-react';
+import { CheckCircle2, Code2, Expand, LoaderCircle, Minimize2, Play, Send, Settings2, TerminalSquare, Zap } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
 import { Progress } from '../ui/progress';
 import { ScrollArea } from '../ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { cn } from '../../lib/utils';
 import { useDuelArenaStore } from './useDuelArenaStore';
 
@@ -111,18 +110,30 @@ export const CodeEditorPanel: React.FC = memo(() => {
   const editorRef = useRef<any>(null);
   const vimInstanceRef = useRef<any>(null);
   const vimStatusRef = useRef<HTMLDivElement | null>(null);
+  const settingsRef = useRef<HTMLDivElement | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const readOnly = session?.mode === 'spectator' || !!activeFile?.readOnly;
 
   const shortcutHints = useMemo(
     () => [
-      'Ctrl/Cmd + Enter -> Run',
-      'Shift + Enter -> Submit',
-      'Alt + 1 -> Problem',
-      'Alt + 2 -> Intel',
+      'Ctrl / Cmd + Enter — Run',
+      'Shift + Enter — Submit',
     ],
     [],
   );
+
+  // Close the settings menu on outside click.
+  useEffect(() => {
+    if (!settingsOpen) return undefined;
+    const handle = (event: MouseEvent) => {
+      if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
+        setSettingsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
+  }, [settingsOpen]);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -182,14 +193,14 @@ export const CodeEditorPanel: React.FC = memo(() => {
       onPasteCapture={recordClipboardWarning}
     >
       <div className="border-b border-white/10 bg-slate-950/90 px-4 py-3 backdrop-blur-xl">
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
             {files.map((file) => (
               <button
                 key={file.id}
                 onClick={() => setActiveFile(file.id)}
                 className={cn(
-                  'rounded-2xl border px-3 py-2 text-sm transition',
+                  'rounded-xl border px-3 py-1.5 text-sm transition',
                   file.id === activeFileId
                     ? 'border-cyan-400/30 bg-cyan-500/10 text-cyan-100 shadow-[0_0_24px_rgba(34,211,238,0.08)]'
                     : 'border-white/10 bg-white/5 text-slate-300 hover:border-cyan-400/20 hover:text-white',
@@ -200,61 +211,119 @@ export const CodeEditorPanel: React.FC = memo(() => {
             ))}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Select value={editorSettings.themePreset} onValueChange={(value) => setEditorTheme(value as any)}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {editorThemes.map((theme) => (
-                  <SelectItem key={theme.value} value={theme.value}>
-                    {theme.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button variant="secondary" size="sm" onClick={() => adjustFontSize('down')}>
-              A-
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => adjustFontSize('up')}>
-              A+
-            </Button>
-            <Button variant={editorSettings.vimMode ? 'outline' : 'secondary'} size="sm" onClick={toggleVimMode}>
-              Vim
-            </Button>
-            <Button variant={editorSettings.minimap ? 'outline' : 'secondary'} size="sm" onClick={toggleMinimap}>
-              Minimap
-            </Button>
+          <div className="flex shrink-0 items-center gap-1.5">
+            {/* Always mounted so monaco-vim can write status even when the menu is closed. */}
+            <span
+              ref={vimStatusRef}
+              className={cn(
+                'rounded-md border border-cyan-400/30 bg-cyan-500/10 px-2 py-0.5 text-[11px] uppercase tracking-[0.2em] text-cyan-100',
+                editorSettings.vimMode ? 'inline-block' : 'hidden',
+              )}
+            >
+              INSERT
+            </span>
+            <span
+              className={cn(
+                'hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] sm:flex',
+                autoSaveState === 'dirty' ? 'border-amber-400/30 text-amber-200' : 'border-white/10 text-slate-400',
+              )}
+              title={lastSavedLabel}
+            >
+              <span className={cn('h-1.5 w-1.5 rounded-full', autoSaveState === 'dirty' ? 'bg-amber-400' : 'bg-emerald-400')} />
+              {autoSaveState === 'dirty' ? 'Unsaved' : 'Saved'}
+            </span>
+
+            <div className="relative" ref={settingsRef}>
+              <Button
+                variant={settingsOpen ? 'outline' : 'secondary'}
+                size="icon"
+                onClick={() => setSettingsOpen((open) => !open)}
+                aria-label="Editor settings"
+                aria-expanded={settingsOpen}
+              >
+                <Settings2 className="h-4 w-4" />
+              </Button>
+
+              <AnimatePresence>
+                {settingsOpen ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                    transition={{ duration: 0.14 }}
+                    className="absolute right-0 z-30 mt-2 w-72 rounded-2xl border border-white/10 bg-slate-950/95 p-4 shadow-[0_20px_60px_rgba(2,8,23,0.6)] backdrop-blur-xl"
+                  >
+                    <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Editor settings</p>
+
+                    <div className="space-y-3">
+                      <div>
+                        <p className="mb-1.5 text-xs text-slate-400">Theme</p>
+                        <Select value={editorSettings.themePreset} onValueChange={(value) => setEditorTheme(value as any)}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {editorThemes.map((theme) => (
+                              <SelectItem key={theme.value} value={theme.value}>
+                                {theme.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-slate-400">Font size</p>
+                        <div className="flex items-center gap-1.5">
+                          <Button variant="secondary" size="sm" onClick={() => adjustFontSize('down')}>
+                            A-
+                          </Button>
+                          <span className="w-6 text-center text-sm text-slate-200">{editorSettings.fontSize}</span>
+                          <Button variant="secondary" size="sm" onClick={() => adjustFontSize('up')}>
+                            A+
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-slate-400">Vim mode</p>
+                        <Button variant={editorSettings.vimMode ? 'outline' : 'secondary'} size="sm" onClick={toggleVimMode}>
+                          {editorSettings.vimMode ? 'On' : 'Off'}
+                        </Button>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-slate-400">Minimap</p>
+                        <Button variant={editorSettings.minimap ? 'outline' : 'secondary'} size="sm" onClick={toggleMinimap}>
+                          {editorSettings.minimap ? 'On' : 'Off'}
+                        </Button>
+                      </div>
+
+                      <div className="border-t border-white/10 pt-3">
+                        <p className="mb-2 text-xs text-slate-400">Shortcuts</p>
+                        <div className="space-y-1.5">
+                          {shortcutHints.map((hint) => (
+                            <div key={hint} className="flex items-center justify-between text-[11px] text-slate-300">
+                              <span>{hint.split(' — ')[1]}</span>
+                              <span className="rounded-md border border-white/10 bg-white/5 px-2 py-0.5 font-mono">{hint.split(' — ')[0]}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+            </div>
+
             <Button variant="secondary" size="icon" onClick={toggleFullscreen} aria-label={editorFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}>
               {editorFullscreen ? <Minimize2 className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
             </Button>
           </div>
         </div>
-
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3 text-xs text-slate-500">
-            <span className="rounded-full border border-white/10 px-2 py-1 uppercase tracking-[0.2em]">{autoSaveState}</span>
-            <span>{lastSavedLabel}</span>
-            <span ref={vimStatusRef} className="rounded-full border border-white/10 px-2 py-1 uppercase tracking-[0.2em]">
-              INSERT
-            </span>
-          </div>
-          <TooltipProvider>
-            <div className="flex flex-wrap items-center gap-2">
-              {shortcutHints.map((hint) => (
-                <Tooltip key={hint}>
-                  <TooltipTrigger asChild>
-                    <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[11px] text-slate-400">{hint.split(' -> ')[0]}</span>
-                  </TooltipTrigger>
-                  <TooltipContent>{hint}</TooltipContent>
-                </Tooltip>
-              ))}
-            </div>
-          </TooltipProvider>
-        </div>
       </div>
 
-      <div className="grid flex-1 grid-rows-[minmax(0,1fr)_240px] overflow-hidden xl:grid-rows-[minmax(0,1fr)_220px]">
+      <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_210px] overflow-hidden sm:grid-rows-[minmax(0,1fr)_230px] xl:grid-rows-[minmax(0,1fr)_220px]">
         <div className="relative overflow-hidden">
           <Editor
             height="100%"
@@ -301,13 +370,13 @@ export const CodeEditorPanel: React.FC = memo(() => {
           ) : null}
         </div>
 
-        <div className="grid gap-4 border-t border-white/10 bg-slate-950/70 p-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-          <Tabs defaultValue="terminal" className="min-w-0">
+        <div className="grid gap-3 overflow-y-auto custom-scrollbar border-t border-white/10 bg-slate-950/70 p-3 sm:p-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <Tabs defaultValue="terminal" className="order-2 min-w-0 xl:order-none">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="terminal">Output Terminal</TabsTrigger>
               <TabsTrigger value="input">Custom Input</TabsTrigger>
             </TabsList>
-            <TabsContent value="terminal" className="h-[155px]">
+            <TabsContent value="terminal" className="h-[110px] sm:h-[150px]">
               <ScrollArea className="h-full rounded-2xl border border-white/10 bg-slate-950/80">
                 <div className="space-y-2 p-4 font-mono text-sm">
                   {terminalOutput.map((line, index) => (
@@ -318,7 +387,7 @@ export const CodeEditorPanel: React.FC = memo(() => {
                 </div>
               </ScrollArea>
             </TabsContent>
-            <TabsContent value="input" className="h-[155px]">
+            <TabsContent value="input" className="h-[110px] sm:h-[150px]">
               <textarea
                 value={customInput}
                 onChange={(event) => setCustomInput(event.target.value)}
@@ -328,7 +397,7 @@ export const CodeEditorPanel: React.FC = memo(() => {
             </TabsContent>
           </Tabs>
 
-          <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
+          <div className="order-1 rounded-[1.5rem] border border-white/10 bg-white/5 p-3 sm:p-4 xl:order-none">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Execution Controls</p>

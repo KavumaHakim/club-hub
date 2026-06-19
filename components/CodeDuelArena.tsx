@@ -1,17 +1,19 @@
 import React, { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertTriangle, ArrowLeft, Eye, LayoutPanelLeft, Loader2, MonitorPlay, Swords, Users } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, LayoutPanelLeft, Loader2, MonitorPlay, Swords, Users } from 'lucide-react';
 import { User } from '../types';
 import { DuelLobby } from './duel-arena/DuelLobby';
 import { CodeEditorPanel } from './duel-arena/CodeEditorPanel';
-import { MatchStatusBanner } from './duel-arena/MatchStatusBanner';
 import { OpponentPanel } from './duel-arena/OpponentPanel';
 import { ProblemPanel } from './duel-arena/ProblemPanel';
 import { ResultModal } from './duel-arena/ResultModal';
+import { SpectatorView } from './duel-arena/SpectatorView';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
+import { Progress } from './ui/progress';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
+import { formatTimer, getTimerTone } from './duel-arena/utils';
 import { useArenaRuntime, useDuelArenaStore } from './duel-arena/useDuelArenaStore';
 import { cn } from '../lib/utils';
 
@@ -48,17 +50,23 @@ const CodeDuelArena: React.FC<CodeDuelArenaProps> = ({ currentUser }) => {
     hydrate(currentUser);
   }, [currentUser, hydrate]);
 
+  const isPlayerArena = phase === 'arena' && session && role === 'player';
+  const isSpectatorArena = phase === 'arena' && session && role === 'spectator';
+  // Lobby scrolls internally; the live arena is a fixed, full-height layout.
+  const scrollable = phase === 'lobby' || phase === 'preparing' || phase === 'loading';
+
   return (
-    <div className="relative flex min-h-full flex-col overflow-y-auto bg-[#020617] text-white custom-scrollbar">
+    <div className={cn('relative flex h-full flex-col bg-gradient-to-b from-slate-950 via-[#0a0f24] to-slate-950 text-white', scrollable ? 'overflow-y-auto custom-scrollbar' : 'overflow-hidden')}>
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="arena-grid absolute inset-0 opacity-50" />
-        <div className="absolute left-[12%] top-[-6rem] h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl" />
-        <div className="absolute right-[8%] top-[18%] h-64 w-64 rounded-full bg-fuchsia-500/10 blur-3xl" />
+        <div className="arena-grid absolute inset-0 opacity-40" />
+        <div className="absolute left-[10%] top-[-7rem] h-72 w-72 rounded-full bg-cyan-500/15 blur-3xl" />
+        <div className="absolute right-[6%] top-[14%] h-72 w-72 rounded-full bg-fuchsia-500/15 blur-3xl" />
+        <div className="absolute bottom-[-6rem] left-[35%] h-72 w-72 rounded-full bg-violet-600/10 blur-3xl" />
       </div>
 
-      <div className="relative flex-1">
+      <div className="relative flex min-h-0 flex-1 flex-col">
         {phase === 'loading' ? (
-          <div className="flex h-full min-h-[400px] items-center justify-center">
+          <div className="flex flex-1 items-center justify-center">
             <div className="text-center">
               <Swords className="mx-auto h-8 w-8 text-cyan-300" />
               <p className="mt-3 text-sm text-slate-300">Opening the Duel Arena...</p>
@@ -69,7 +77,7 @@ const CodeDuelArena: React.FC<CodeDuelArenaProps> = ({ currentUser }) => {
         {phase === 'lobby' ? <DuelLobby currentUser={currentUser} /> : null}
 
         {phase === 'preparing' ? (
-          <div className="flex h-full min-h-[400px] items-center justify-center p-4">
+          <div className="flex flex-1 items-center justify-center p-4">
             <Card className="arena-panel w-full max-w-md p-8 text-center">
               <Loader2 className="mx-auto h-10 w-10 animate-spin text-cyan-300" />
               <h3 className="mt-5 text-xl font-semibold text-white">Preparing your duel</h3>
@@ -81,50 +89,70 @@ const CodeDuelArena: React.FC<CodeDuelArenaProps> = ({ currentUser }) => {
           </div>
         ) : null}
 
-        {phase === 'arena' && session ? (
-          <div className="flex flex-col gap-3 p-2.5 sm:gap-4 sm:p-4 lg:p-5">
-            {/* Slim match header */}
-            <Card className="arena-panel flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-              <div className="flex items-center gap-3">
-                <Button variant="ghost" size="sm" onClick={() => void leaveMatch()}>
-                  <ArrowLeft className="h-4 w-4" />
-                  <span className="hidden sm:inline">Lobby</span>
-                </Button>
-                <div className="flex items-center gap-2">
-                  <Swords className="h-4 w-4 text-cyan-300" />
-                  <span className="text-sm font-semibold text-white">{session.problem.title}</span>
-                  <Badge variant="secondary" className="hidden sm:inline-flex">{session.matchType}</Badge>
+        {isSpectatorArena ? <SpectatorView /> : null}
+
+        {isPlayerArena ? (
+          <div className="flex min-h-0 flex-1 flex-col gap-2.5 p-2.5 sm:gap-3 sm:p-4">
+            {/* Compact match bar (replaces the tall banner so everything fits without scrolling) */}
+            <Card className="arena-panel shrink-0 px-3 py-2.5 sm:px-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => void leaveMatch()}>
+                    <ArrowLeft className="h-4 w-4" />
+                    <span className="hidden sm:inline">Lobby</span>
+                  </Button>
+                  <Swords className="h-4 w-4 shrink-0 text-cyan-300" />
+                  <span className="truncate text-sm font-semibold text-white">{session!.problem.title}</span>
+                  <Badge variant="secondary" className="hidden shrink-0 sm:inline-flex">{session!.matchType}</Badge>
+                </div>
+                <div className="flex shrink-0 items-center gap-3">
+                  <span className="hidden items-center gap-1 text-xs text-slate-400 sm:flex">
+                    <Users className="h-3.5 w-3.5" />
+                    {session!.spectators}
+                  </span>
+                  <div className="text-right">
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">
+                      {session!.status === 'countdown' ? 'Starts in' : session!.status === 'finished' ? 'Final' : 'Time left'}
+                    </p>
+                    <p className={cn('font-mono text-xl font-semibold leading-none', getTimerTone(session!.status, session!.timeRemaining), session!.timeRemaining <= 60 && session!.status !== 'finished' && 'animate-pulse')}>
+                      {session!.status === 'countdown' ? `${session!.countdown}s` : formatTimer(session!.timeRemaining)}
+                    </p>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-xs text-slate-400">
-                {role === 'spectator' ? (
-                  <Badge variant="secondary">
-                    <Eye className="mr-1 h-3 w-3" />
-                    Spectating
-                  </Badge>
-                ) : null}
-                <span className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-1">
-                  <Users className="h-3 w-3" />
-                  {session.spectators} watching
-                </span>
+
+              {/* Dual progress: you vs opponent */}
+              <div className="mt-2.5 grid grid-cols-2 gap-2.5 sm:gap-3">
+                {[
+                  { p: session!.player, label: 'You', accent: 'cyan' as const },
+                  { p: session!.opponent, label: session!.opponent.name, accent: 'rose' as const },
+                ].map(({ p, label, accent }) => (
+                  <div key={p.id}>
+                    <div className="mb-1 flex items-center justify-between gap-2 text-[11px]">
+                      <span className={cn('truncate font-medium', accent === 'cyan' ? 'text-cyan-200' : 'text-rose-200')}>{label}</span>
+                      <span className="shrink-0 text-slate-400">{p.testCasesPassed} passed{p.liveTyping ? ' · typing' : ''}</span>
+                    </div>
+                    <Progress value={p.progress} className="h-1.5" />
+                  </div>
+                ))}
               </div>
+
+              <p className="mt-2 truncate text-center text-xs text-slate-400">{liveBanner}</p>
             </Card>
 
-            <MatchStatusBanner session={session} liveBanner={liveBanner} />
-
             {/* Mobile panel switcher */}
-            <div className="xl:hidden">
+            <div className="shrink-0 xl:hidden">
               <Tabs value={activeMobilePanel} onValueChange={(value) => setMobilePanel(value as any)} className="w-full">
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="problem">Problem</TabsTrigger>
-                  <TabsTrigger value="editor">{role === 'spectator' ? 'Match' : 'Editor'}</TabsTrigger>
+                  <TabsTrigger value="editor">Editor</TabsTrigger>
                   <TabsTrigger value="intel">Opponent</TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>
 
             {/* Desktop panel toggles */}
-            <div className="hidden items-center justify-end gap-2 xl:flex">
+            <div className="hidden shrink-0 items-center justify-end gap-2 xl:flex">
               <Button variant="secondary" size="sm" onClick={() => togglePanel('left')}>
                 <LayoutPanelLeft className="mr-1 h-4 w-4" />
                 {leftCollapsed ? 'Show Problem' : 'Hide Problem'}
@@ -135,17 +163,17 @@ const CodeDuelArena: React.FC<CodeDuelArenaProps> = ({ currentUser }) => {
               </Button>
             </div>
 
-            <div className="grid flex-1 gap-3 sm:gap-4 xl:grid-cols-[minmax(280px,350px)_minmax(0,1fr)_minmax(280px,350px)] xl:min-h-[680px]">
-              <div className={`${activeMobilePanel === 'problem' ? 'flex flex-col' : 'hidden'} min-h-[60vh] xl:min-h-0 xl:flex xl:flex-col ${leftCollapsed ? 'xl:hidden' : ''} h-full`}>
-                <ProblemPanel session={session} activeLanguage={activeLanguage} onLanguageChange={setActiveLanguage} />
+            <div className="grid min-h-0 flex-1 gap-2.5 sm:gap-3 xl:grid-cols-[minmax(280px,330px)_minmax(0,1fr)_minmax(280px,330px)]">
+              <div className={`${activeMobilePanel === 'problem' ? 'flex flex-col' : 'hidden'} min-h-0 xl:flex xl:flex-col ${leftCollapsed ? 'xl:hidden' : ''}`}>
+                <ProblemPanel session={session!} activeLanguage={activeLanguage} onLanguageChange={setActiveLanguage} />
               </div>
 
-              <div className={`${activeMobilePanel === 'editor' ? 'flex flex-col' : 'hidden'} min-h-[70vh] xl:min-h-0 xl:flex xl:flex-col h-full`}>
+              <div className={`${activeMobilePanel === 'editor' ? 'flex flex-col' : 'hidden'} min-h-0 xl:flex xl:flex-col`}>
                 <CodeEditorPanel />
               </div>
 
-              <div className={`${activeMobilePanel === 'intel' ? 'flex flex-col' : 'hidden'} min-h-[60vh] xl:min-h-0 xl:flex xl:flex-col ${rightCollapsed ? 'xl:hidden' : ''} h-full`}>
-                <OpponentPanel session={session} onSendQuickTaunt={sendQuickTaunt} onSendChatMessage={sendChatMessage} />
+              <div className={`${activeMobilePanel === 'intel' ? 'flex flex-col' : 'hidden'} min-h-0 xl:flex xl:flex-col ${rightCollapsed ? 'xl:hidden' : ''}`}>
+                <OpponentPanel session={session!} onSendQuickTaunt={sendQuickTaunt} onSendChatMessage={sendChatMessage} />
               </div>
             </div>
           </div>
@@ -153,22 +181,22 @@ const CodeDuelArena: React.FC<CodeDuelArenaProps> = ({ currentUser }) => {
       </div>
 
       <AnimatePresence>
-        {phase === 'arena' && session?.antiCheat.overlayVisible ? (
+        {isPlayerArena && session!.antiCheat.overlayVisible ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 z-40 flex items-center justify-center bg-slate-950/85 px-4 backdrop-blur-sm"
+            className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/85 px-4 backdrop-blur-sm"
           >
             <Card className="max-w-lg border-amber-400/20 bg-slate-950/95 p-6 text-center">
               <AlertTriangle className="mx-auto h-10 w-10 text-amber-300" />
               <h3 className="mt-4 text-2xl font-semibold text-white">Fair play check</h3>
               <p className="mt-3 text-sm text-slate-300">
-                {session.antiCheat.overlayMessage || 'The arena noticed unusual activity. Keep the duel fair and continue.'}
+                {session!.antiCheat.overlayMessage || 'The arena noticed unusual activity. Keep the duel fair and continue.'}
               </p>
               <div className="mt-5 flex flex-wrap items-center justify-center gap-3 text-sm text-slate-300">
-                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-2">Trust score: {session.antiCheat.trustScore}%</span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-2">Focus warnings: {session.antiCheat.focusWarnings}</span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-2">Trust score: {session!.antiCheat.trustScore}%</span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-2">Focus warnings: {session!.antiCheat.focusWarnings}</span>
               </div>
               <div className="mt-6 flex justify-center">
                 <Button onClick={dismissIntegrityOverlay}>Back to the duel</Button>

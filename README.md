@@ -27,7 +27,7 @@ Built with **React, TypeScript, and Supabase**, the hub empowers students to lea
 
 ### 🤖 AI-Powered Mentorship (Hugging Face & Gemini)
 The platform integrates advanced AI (primarily via Hugging Face Router with Gemini fallbacks) to provide 24/7 guidance:
-*   **AI Tutor:** A context-aware assistant (GPT-OSS via HF) that answers coding questions and provides club information.
+*   **AI Tutor:** A context-aware assistant (Gemma 4 via HF) that answers coding questions and provides club information.
 *   **Smart Roadmaps:** Generates personalized learning paths (Beginner to Advanced) for any tech topic.
 *   **Milestone Quizzes:** Dynamically generates quizzes to test knowledge after completing roadmap milestones.
 *   **AI Challenge Generator:** Patrons can describe concepts, and the AI crafts creative, scenario-based coding challenges tailored to different skill levels.
@@ -92,7 +92,7 @@ npm run dev
 ## 🏗️ Tech Stack
 *   **Frontend:** React 18, Vite, Tailwind CSS, Lucide Icons, Headless UI.
 *   **Backend:** Supabase (Auth, Postgres, Real-time, Storage).
-*   **AI:** Hugging Face Router (GPT-OSS), Google Gemini API (Flash/Pro).
+*   **AI:** Hugging Face Router (Gemma 4 26B-A4B via Novita), Google Gemini API (Flash/Pro).
 *   **Runtime:** Pyodide (for in-browser Python execution).
 *   **Deployment:** Vercel / Netlify.
 
