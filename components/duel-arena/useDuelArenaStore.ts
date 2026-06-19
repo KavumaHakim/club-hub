@@ -6,8 +6,8 @@ import { QUICK_TAUNTS, createDuelFiles, DEFAULT_EDITOR_SETTINGS } from './mockDa
 import {
   DuelGeneratedTestCase,
   DuelJudgeResult,
-  judgeDuelSubmission,
 } from '../../services/geminiService';
+import { judgeDuelTestsLocally } from '../../services/duelRunner';
 import {
   DuelInviteRecord,
   DuelMatchBundle,
@@ -23,6 +23,7 @@ import {
   fetchDuelLadder,
   fetchDuelProfiles,
   fetchInvitesForUser,
+  fetchLatestSubmissionCode,
   fetchLiveMatches,
   fetchMatchBundle,
   finishMatchRecord,
@@ -87,6 +88,8 @@ interface DuelArenaStoreState {
   matchDurationSec: number;
   testCases: DuelGeneratedTestCase[];
   session: ArenaSession | null;
+  /** Live solution source per participant uid — populated for spectators. */
+  liveCode: Record<string, string>;
 
   // editor
   activeLanguage: DuelLanguage;
@@ -445,6 +448,7 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
           const target = current.session[key];
           return {
             ...current,
+            liveCode: payload.code != null ? { ...current.liveCode, [payload.userUid]: payload.code } : current.liveCode,
             session: {
               ...current.session,
               [key]: {
@@ -536,6 +540,7 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
       liveTyping: extra?.liveTyping ?? false,
       runtimeMs: extra?.runtimeMs,
       verdict: extra?.verdict,
+      code: state.files.find((file) => file.id === 'solver')?.content ?? '',
     });
   };
 
@@ -580,7 +585,9 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
       terminalOutput: [
         ...current.terminalOutput.slice(-12),
         `$ ${kind === 'run' ? 'run samples' : 'submit solution'}`,
-        'Sending code to the judge...',
+        kind === 'run'
+          ? 'Executing your code against the sample tests...'
+          : 'Executing your code against the full test suite...',
       ],
     }));
 
@@ -596,12 +603,11 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
 
     let judge: DuelJudgeResult;
     try {
-      judge = await judgeDuelSubmission(
-        state.session.problem.title,
-        state.session.problem.statementMarkdown,
-        solverFile.content,
-        cases
-      );
+      // Both Run (public samples) and Submit (full suite incl. hidden) are judged
+      // deterministically in-browser via Pyodide — instant, free, and free of AI
+      // variance or prompt-injection. Hidden test inputs are already shipped to the
+      // client in the match bundle, so running them locally leaks nothing new.
+      judge = await judgeDuelTestsLocally(solverFile.content, cases);
     } catch (error) {
       window.clearTimeout(stageTimer);
       console.error('Duel judging failed', error);
@@ -784,6 +790,7 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
     matchDurationSec: 0,
     testCases: [],
     session: null,
+    liveCode: {},
 
     activeLanguage: 'python',
     files: createDuelFiles('def solve(input_text: str) -> str:\n    return ""\n'),
@@ -945,8 +952,10 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
 
         const startedAtMs = bundle.match.startedAt ? new Date(bundle.match.startedAt).getTime() : Date.now();
 
+        let seededCode: Record<string, string> = {};
         if (actualRole === 'spectator') {
           void registerSpectator(matchId, user.uid);
+          seededCode = await fetchLatestSubmissionCode(matchId).catch(() => ({}));
         }
 
         set({
@@ -959,12 +968,13 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
           matchStartAtMs: startedAtMs,
           matchDurationSec: bundle.match.totalDurationSeconds,
           testCases: bundle.problem.testCases,
+          liveCode: seededCode,
           session,
           files: createDuelFiles(bundle.problem.starterCode),
           activeFileId: 'solver',
           activeLanguage: 'python',
           customInput: '',
-          terminalOutput: actualRole === 'spectator' ? ['$ spectator feed connected', 'Player code is hidden during live duels.'] : ['$ duel chamber ready', 'Implement solve(input_text) and Run the samples.'],
+          terminalOutput: actualRole === 'spectator' ? ['$ spectator feed connected', 'Watching both screens live.'] : ['$ duel chamber ready', 'Implement solve(input_text) and Run the samples.'],
           activeSubmission: null,
           autoSaveState: 'saved',
           lastSavedLabel: 'synced',
@@ -974,7 +984,7 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
             session.status === 'countdown'
               ? 'Duel starting soon...'
               : actualRole === 'spectator'
-                ? 'Spectating live. Code stays hidden; progress is public.'
+                ? 'Spectating live — both screens update in real time.'
                 : 'Duel live. Run the samples when you are ready.',
           lastUserEditAt: Date.now(),
         });
@@ -1005,6 +1015,7 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
         opponentUid: null,
         opponentPresent: false,
         testCases: [],
+        liveCode: {},
         activeSubmission: null,
         resultModalOpen: false,
         liveBanner: 'Welcome back to the lobby',
@@ -1037,10 +1048,11 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
           : current.session,
       });
 
-      // Lightweight typing signal for the opponent/spectators (throttled).
+      // Typing signal + live code for the opponent/spectators (throttled).
       const now = Date.now();
-      if (now - lastTypingBroadcastAt > 2500 && current.session && current.currentUser) {
+      if (now - lastTypingBroadcastAt > 2000 && current.session && current.currentUser) {
         lastTypingBroadcastAt = now;
+        const solverContent = files.find((file) => file.id === 'solver')?.content ?? content;
         broadcastToDuel(matchChannel, 'progress', {
           userUid: current.currentUser.uid,
           progressPercent: current.session.player.progress,
@@ -1048,6 +1060,7 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
           compileAttempts: current.session.player.compileAttempts,
           statusLabel: 'Typing...',
           liveTyping: true,
+          code: solverContent,
         });
       }
     },

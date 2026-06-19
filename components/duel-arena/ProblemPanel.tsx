@@ -19,14 +19,18 @@ interface ProblemPanelProps {
 }
 
 const markdownComponents = {
-  p: ({ children }: any) => <p className="mb-3 leading-7 text-slate-300">{children}</p>,
-  ul: ({ children }: any) => <ul className="mb-3 list-disc space-y-2 pl-5 text-slate-300">{children}</ul>,
-  li: ({ children }: any) => <li>{children}</li>,
+  p: ({ children }: any) => <p className="mb-3 break-words leading-7 text-slate-200">{children}</p>,
+  ul: ({ children }: any) => <ul className="mb-3 list-disc space-y-2 break-words pl-5 text-slate-200">{children}</ul>,
+  ol: ({ children }: any) => <ol className="mb-3 list-decimal space-y-2 break-words pl-5 text-slate-200">{children}</ol>,
+  li: ({ children }: any) => <li className="break-words">{children}</li>,
+  h1: ({ children }: any) => <h2 className="mb-2 mt-1 text-lg font-semibold text-white">{children}</h2>,
+  h2: ({ children }: any) => <h3 className="mb-2 mt-1 text-base font-semibold text-white">{children}</h3>,
+  h3: ({ children }: any) => <h4 className="mb-2 mt-1 text-base font-semibold text-white">{children}</h4>,
   code: ({ inline, children }: any) =>
     inline ? (
-      <code className="rounded-md bg-white/10 px-1.5 py-0.5 font-mono text-sm text-cyan-100">{children}</code>
+      <code className="break-words rounded-md bg-white/10 px-1.5 py-0.5 font-mono text-[13px] text-cyan-100">{children}</code>
     ) : (
-      <pre className="mb-3 overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/70 p-4 font-mono text-sm text-cyan-100">
+      <pre className="mb-3 max-w-full overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/70 p-4 font-mono text-[13px] text-cyan-100">
         <code>{children}</code>
       </pre>
     ),
@@ -51,58 +55,54 @@ export const ProblemPanel: React.FC<ProblemPanelProps> = ({ session, activeLangu
 
   return (
     <Card className="arena-panel flex h-full min-h-0 flex-col overflow-hidden">
-      <div className="sticky top-0 z-10 border-b border-white/10 bg-slate-950/90 px-5 py-4 backdrop-blur-xl">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <Badge variant={difficulty.badgeVariant}>{difficulty.label}</Badge>
-              <Badge variant="secondary">Sticky briefing</Badge>
-            </div>
-            <h3 className="mt-2 text-xl font-semibold text-white">{session.problem.title}</h3>
-            <p className="mt-1 text-sm text-slate-400">A fresh problem, created just for this duel.</p>
+      <div className="sticky top-0 z-10 border-b border-white/10 bg-slate-950/90 px-4 py-3 backdrop-blur-xl">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <Badge variant={difficulty.badgeVariant}>{difficulty.label}</Badge>
+            <h3 className="mt-1.5 truncate text-lg font-semibold text-white">{session.problem.title}</h3>
           </div>
-          <div>
-            <p className="mb-2 text-xs uppercase tracking-[0.2em] text-slate-500">Language</p>
-            <Badge variant="secondary" className="px-3 py-1.5 text-sm">
-              {LANGUAGE_LABELS[activeLanguage] || 'Python'} 3
-            </Badge>
-          </div>
-        </div>
 
-        <div className="mt-4 grid gap-2 sm:grid-cols-3">
-          {stats.map((stat) => {
-            const Icon = stat.icon;
-            return (
-              <div key={stat.label} className="rounded-2xl border border-white/10 bg-white/5 p-3">
-                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-slate-500">
-                  <Icon className="h-3.5 w-3.5" />
-                  {stat.label}
-                </div>
-                <p className="mt-2 text-lg font-semibold text-white">{stat.value}</p>
-              </div>
-            );
-          })}
+          {/* Compact metrics, fixed in the top-right corner */}
+          <div className="flex shrink-0 flex-col items-end gap-1.5">
+            <Badge variant="secondary" className="text-[11px]">{LANGUAGE_LABELS[activeLanguage] || 'Python'} 3</Badge>
+            <div className="flex items-center gap-1">
+              {stats.map((stat) => {
+                const Icon = stat.icon;
+                return (
+                  <span
+                    key={stat.label}
+                    title={stat.label}
+                    className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[11px] font-medium text-slate-200"
+                  >
+                    <Icon className="h-3 w-3 text-slate-400" />
+                    {stat.value}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
 
       <ScrollArea className="flex-1">
-        <div className="space-y-5 px-5 py-5">
-          <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
-            <div className="mb-3 flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-cyan-300/80">
+        <div className="space-y-5 px-4 py-4">
+          <div>
+            <div className="mb-2 flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-cyan-300/80">
               <ScrollText className="h-3.5 w-3.5" />
               Problem Statement
             </div>
-            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-              {session.problem.statementMarkdown}
-            </ReactMarkdown>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {session.problem.tags.map((tag) => (
-              <Badge key={tag} variant="secondary">
-                {tag}
-              </Badge>
-            ))}
+            <div className="min-w-0 break-words text-[15px] leading-7">
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                {session.problem.statementMarkdown}
+              </ReactMarkdown>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {session.problem.tags.map((tag) => (
+                <Badge key={tag} variant="secondary">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
           </div>
 
           {session.problem.sections.map((section) => {

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Activity, BrainCircuit, Copy, Crown, MessageSquareText, Radar, ShieldAlert, Sparkles, Timer, Trophy, Users } from 'lucide-react';
+import { Activity, BrainCircuit, Copy, Crown, Menu, MessageSquareText, Radar, ShieldAlert, Sparkles, Timer, Trophy, Users } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -10,7 +10,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { Separator } from '../ui/separator';
 import { RANK_STYLES } from './mockData';
 import { ArenaSession } from './types';
-import { formatTimer, getIntegrityTone } from './utils';
+import { getIntegrityTone } from './utils';
 import { cn } from '../../lib/utils';
 
 interface OpponentPanelProps {
@@ -29,6 +29,7 @@ const reactionAccent = {
 
 export const OpponentPanel: React.FC<OpponentPanelProps> = ({ session, onSendQuickTaunt, onSendChatMessage }) => {
   const [message, setMessage] = useState('');
+  const [showExtras, setShowExtras] = useState(false);
   const opponentRankStyle = RANK_STYLES[session.opponent.rank];
 
   const duelMetrics = useMemo(
@@ -43,13 +44,21 @@ export const OpponentPanel: React.FC<OpponentPanelProps> = ({ session, onSendQui
 
   return (
     <Card className="arena-panel flex h-full min-h-0 flex-col overflow-hidden">
-      <div className="border-b border-white/10 bg-slate-950/90 px-5 py-4 backdrop-blur-xl">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-500">Opponent Tracking</p>
-            <h3 className="mt-1 text-xl font-semibold text-white">Pressure telemetry</h3>
+      <div className="border-b border-white/10 bg-slate-950/90 px-4 py-3 backdrop-blur-xl">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-base font-semibold text-white">Opponent</h3>
+          <div className="flex items-center gap-1.5">
+            <Badge variant="secondary" className="text-[11px]">{session.mode === 'spectator' ? 'Delayed' : 'Live'}</Badge>
+            <Button
+              variant={showExtras ? 'outline' : 'secondary'}
+              size="icon"
+              onClick={() => setShowExtras((value) => !value)}
+              aria-label={showExtras ? 'Hide match details' : 'Show match details'}
+              aria-expanded={showExtras}
+            >
+              <Menu className="h-4 w-4" />
+            </Button>
           </div>
-          <Badge variant="secondary">{session.mode === 'spectator' ? 'Delayed feed' : 'Live feed'}</Badge>
         </div>
       </div>
 
@@ -109,6 +118,8 @@ export const OpponentPanel: React.FC<OpponentPanelProps> = ({ session, onSendQui
             </div>
           </div>
 
+          {showExtras && (
+          <>
           <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
             <div className="mb-4 flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-slate-500">
               <Activity className="h-3.5 w-3.5" />
@@ -246,6 +257,9 @@ export const OpponentPanel: React.FC<OpponentPanelProps> = ({ session, onSendQui
             </div>
           </div>
 
+          </>
+          )}
+
           <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
             <div className="mb-4 flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-slate-500">
               <MessageSquareText className="h-3.5 w-3.5" />
@@ -299,6 +313,8 @@ export const OpponentPanel: React.FC<OpponentPanelProps> = ({ session, onSendQui
             </div>
           </div>
 
+          {showExtras && (
+          <>
           <Separator />
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -336,12 +352,10 @@ export const OpponentPanel: React.FC<OpponentPanelProps> = ({ session, onSendQui
             </div>
             <Progress className="mt-4" value={(session.xpCurrent / session.xpTarget) * 100} />
           </div>
+          </>
+          )}
         </div>
       </ScrollArea>
-
-      <div className="border-t border-white/10 bg-slate-950/90 px-5 py-3 text-xs text-slate-500">
-        Spectator count {session.spectators} · status {session.status} · chamber timer {formatTimer(session.timeRemaining)}
-      </div>
     </Card>
   );
 };

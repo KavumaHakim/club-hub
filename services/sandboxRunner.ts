@@ -56,8 +56,26 @@ const wrapAsyncCalls = (code, functionNames) => {
     let lastIndex = 0;
     let match;
 
+    const isQualified = funcName.indexOf('.') !== -1;
+
     while ((match = regex.exec(newCode)) !== null) {
       tempCode += newCode.substring(lastIndex, match.index);
+
+      // Skip occurrences we must not wrap:
+      //  - already preceded by "await " (wrapped on an earlier pass), or
+      //  - an attribute access (e.g. the "sleep(" inside "time.sleep(") when the
+      //    current name is unqualified — that call is handled by its qualified
+      //    entry, so wrapping it again would corrupt it into "time.(await sleep(...))".
+      const charBefore = match.index > 0 ? newCode[match.index - 1] : '';
+      const sliceBefore = newCode.substring(Math.max(0, match.index - 7), match.index);
+      const precededByAwait = sliceBefore.endsWith('await ') || sliceBefore.endsWith('await(');
+      const isAttributeAccess = !isQualified && charBefore === '.';
+      if (precededByAwait || isAttributeAccess) {
+        tempCode += newCode.substring(match.index, match.index + match[0].length);
+        lastIndex = match.index + match[0].length;
+        continue;
+      }
+
       const startParenIndex = match.index + match[0].length - 1;
       let parenCount = 1;
       let endParenIndex = -1;

@@ -1,6 +1,6 @@
 
 /**
- * AI Service using Hugging Face Router (GPT-OSS)
+ * AI Service using Hugging Face Router (Gemma 4)
  * Reverted from Gemini as per user request.
  */
 
@@ -80,7 +80,11 @@ const fetchGeminiModels = async (): Promise<string[]> => {
 
 const apiKey = getApiKey();
 const geminiKey = getGeminiKey();
-const MODEL_NAME = "openai/gpt-oss-20b";
+// Gemma 4 26B-A4B (instruction-tuned) via Novita. This is a Mixture-of-Experts:
+// 26B total but only ~4B active params per token, so it's fast/low-load — the medium
+// pick over the largest gemma-4-31B-it. The router needs a provider suffix (":novita");
+// the dense 12B/E4B variants aren't deployed by any provider, so they aren't routable.
+const MODEL_NAME = "google/gemma-4-26B-A4B-it:novita";
 const API_ENDPOINT = `https://router.huggingface.co/v1/chat/completions`;
 const GEMINI_MODEL = getGeminiModel();
 
@@ -174,6 +178,7 @@ const callAI = async (messages: any[], jsonMode: boolean = false, options?: { ma
             messages: messages,
             temperature: options?.temperature ?? 0.7,
             max_tokens: options?.maxTokens ?? 4096,
+            stream: false,
         })
     });
 
@@ -183,8 +188,8 @@ const callAI = async (messages: any[], jsonMode: boolean = false, options?: { ma
 
     const data = await response.json();
     const message = data.choices?.[0]?.message;
-    // Reasoning models (e.g. gpt-oss) can exhaust max_tokens mid-thought and
-    // return an empty content with the answer stuck in reasoning_content.
+    // Gemma returns the answer in `content`. The reasoning_content/reasoning
+    // fallbacks are kept defensively in case the router serves a reasoning model.
     const text = message?.content || message?.reasoning_content || message?.reasoning || "";
     if (!text.trim()) {
         throw new Error("AI returned an empty response");
