@@ -817,23 +817,28 @@ export const uploadFeedImage = async (file: File): Promise<string> => {
 export const getGalleryItems = async (): Promise<GalleryItem[]> => {
     const { data, error } = await supabase
         .from('gallery_items')
-        .select(`*, users(uid, name, avatar_url)`)
+        // FIX: Explicitly join via the 'uploaded_by' foreign key column identifier
+        .select(`*, users!uploaded_by(uid, name, avatar_url)`)
         .order('created_at', { ascending: false });
 
-    if (error || !data) return [];
+    if (error) {
+        console.error("Error fetching gallery items:", error);
+        return [];
+    }
+    if (!data) return [];
 
     return data.map((item: any) => ({
         id: String(item.id),
         createdAt: item.created_at,
-        userUid: item.user_uid,
-        userName: item.users?.name || 'Unknown',
+        // FIX: Correctly align structural references from database values
+        userUid: item.uploaded_by || item.user_uid, 
+        userName: item.users?.name || 'Club Member',
         userAvatarUrl: item.users?.avatar_url,
         imageUrl: item.image_url,
         title: item.title,
         description: item.description,
     }));
 };
-
 export const uploadGalleryImage = async (file: File): Promise<string> => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
