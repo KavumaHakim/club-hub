@@ -20,6 +20,7 @@ const Gallery: React.FC<GalleryProps> = ({ currentUser }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [openImage, setOpenImage] = useState<GalleryItem | null>(null);
 
   const isPatron = currentUser?.role === 'PATRON';
 
@@ -207,10 +208,11 @@ const Gallery: React.FC<GalleryProps> = ({ currentUser }) => {
           items.map((item) => (
             <div key={item.id} className="group overflow-hidden rounded-3xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
               <div className="relative h-64 overflow-hidden bg-gray-100 dark:bg-gray-800">
-                <img 
-                  src={item.imageUrl} 
-                  alt={item.title || 'Gallery item'} 
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                <img
+                  src={item.imageUrl}
+                  alt={item.title || 'Gallery item'}
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 cursor-pointer"
+                  onClick={() => setOpenImage(item)}
                   onError={(e) => {
                     // Fallback to avoid broken image icons if storage URLs break
                     (e.target as HTMLImageElement).src = 'https://placehold.co/600x400?text=Image+Not+Found';
@@ -239,6 +241,27 @@ const Gallery: React.FC<GalleryProps> = ({ currentUser }) => {
           ))
         )}
       </section>
+      {openImage && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4" onClick={() => setOpenImage(null)} role="dialog" aria-modal="true">
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl max-w-[90vw] max-h-[90vh] w-full overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="relative bg-black">
+              <img src={openImage.imageUrl} alt={openImage.title || 'Full image'} className="w-full max-h-[75vh] object-contain bg-black" />
+              <button
+                onClick={() => setOpenImage(null)}
+                className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
+                aria-label="Close full image"
+              >
+                <XIcon className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-4">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{openImage.title || 'Untitled'}</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">{openImage.description || 'No details provided.'}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">Uploaded by {openImage.userName}</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
