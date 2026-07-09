@@ -58,7 +58,7 @@ const StreakNoticeModal: React.FC<StreakNoticeModalProps> = ({
               How It Works
             </p>
             <p className="mt-2 text-sm text-gray-700 dark:text-gray-200">
-              You get one late exception to protect a streak. After that, the next missed gap resets it.
+              You start with 1 grace. Earn an extra grace for every 5 streak days you reach (up to a maximum of 5). Graces protect your streak when you miss a day.
             </p>
           </div>
 

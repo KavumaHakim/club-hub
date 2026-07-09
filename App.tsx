@@ -465,7 +465,7 @@ const App: React.FC = () => {
                 <div className="flex items-center gap-2 sm:gap-4">
                   <div
                     className="hidden sm:flex items-center gap-2 rounded-full border border-amber-200/80 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-900/20 px-3 py-1.5"
-                    title={user.streakGraceUsed ? 'Streak grace used' : 'Streak grace available'}
+                    title={`${user.streakGraces ?? 1} / 5 graces available`}
                   >
                     <span aria-hidden="true" className="text-sm leading-none">🔥</span>
                     <div className="leading-tight">

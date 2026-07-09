@@ -1013,8 +1013,8 @@ Return ONLY JSON:
 
 const QUIZ_QUESTION_SECONDS = 20;
 const CODING_QUESTION_SECONDS = 60;
-const QUIZ_TARGET_COUNT = 15;
-const QUIZ_CODING_COUNT = 3;
+const QUIZ_TARGET_COUNT = 12;
+const QUIZ_CODING_COUNT = 8;
 
 const normalizeQuizCard = (q: any, index: number): DuelQuizCard | null => {
     const type = ['MULTIPLE_CHOICE', 'TRUE_FALSE', 'SHORT_ANSWER'].includes(q?.type) ? q.type : null;
@@ -1084,16 +1084,17 @@ const buildCodingCard = async (
     return { id: `code-${index + 1}`, kind: 'coding', question, starterCode, testCases, seconds: CODING_QUESTION_SECONDS };
 };
 
-// Spread coding questions through the set (roughly every 5th) instead of clustering them.
+// Coding-dominant set: mostly coding questions, with a quick quiz question woven in
+// roughly every 3rd slot to vary the pace.
 const interleaveQuestions = (quiz: DuelQuizQuestion[], coding: DuelQuizQuestion[]): DuelQuizQuestion[] => {
     const out: DuelQuizQuestion[] = [];
     let qi = 0;
     let ci = 0;
     const total = quiz.length + coding.length;
     for (let i = 0; i < total; i += 1) {
-        if ((i + 1) % 5 === 0 && ci < coding.length) out.push(coding[ci++]);
-        else if (qi < quiz.length) out.push(quiz[qi++]);
+        if ((i + 1) % 3 === 0 && qi < quiz.length) out.push(quiz[qi++]);
         else if (ci < coding.length) out.push(coding[ci++]);
+        else if (qi < quiz.length) out.push(quiz[qi++]);
     }
     return out;
 };

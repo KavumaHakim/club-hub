@@ -109,7 +109,7 @@ export interface User {
   lastLogin?: string; // ISO Date string
   streakCount?: number;
   streakLastActiveDate?: string;
-  streakGraceUsed?: boolean;
+  streakGraces?: number;
 }
 
 export type ActivityCategory = 'WORKSHOP' | 'SOCIAL' | 'COMPETITION' | 'GUEST_SPEAKER' | 'OTHER';

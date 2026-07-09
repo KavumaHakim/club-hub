@@ -229,7 +229,7 @@ export const getUserProfile = async (userId: string): Promise<User | null> => {
         lastLogin: data.last_login,
         streakCount: data.streak_count ?? 0,
         streakLastActiveDate: data.streak_last_active_date ?? undefined,
-        streakGraceUsed: data.streak_grace_used ?? false
+        streakGraces: data.streak_graces ?? 1
     };
 };
 
@@ -252,7 +252,7 @@ export const getUsers = async (): Promise<User[]> => {
         lastLogin: u.last_login,
         streakCount: u.streak_count ?? 0,
         streakLastActiveDate: u.streak_last_active_date ?? undefined,
-        streakGraceUsed: u.streak_grace_used ?? false
+        streakGraces: u.streak_graces ?? 1
     }));
 };
 
@@ -271,7 +271,7 @@ export const updateUser = async (uid: string, data: Partial<User>) => {
     if (data.lastLogin) updates.last_login = data.lastLogin;
     if (data.streakCount !== undefined) updates.streak_count = data.streakCount;
     if (data.streakLastActiveDate !== undefined) updates.streak_last_active_date = data.streakLastActiveDate;
-    if (data.streakGraceUsed !== undefined) updates.streak_grace_used = data.streakGraceUsed;
+    if (data.streakGraces !== undefined) updates.streak_graces = data.streakGraces;
 
     const { error } = await supabase.from('users').update(updates).eq('uid', uid);
     if (error) throw error;
@@ -304,25 +304,26 @@ const dayDiff = (fromDay: string, toDay: string): number => {
 export type StreakLoginNotice =
     | { type: 'saved_with_grace'; title: string; message: string }
     | { type: 'broken'; title: string; message: string }
+    | { type: 'grace_earned'; title: string; message: string }
     | null;
 
 export const syncUserLoginStreak = async (user: User): Promise<{ user: User; notice: StreakLoginNotice }> => {
     const today = getStreakDayKey();
     const previousDay = user.streakLastActiveDate;
     const currentCount = Math.max(0, user.streakCount || 0);
-    const graceUsed = !!user.streakGraceUsed;
+    const graces = user.streakGraces !== undefined ? user.streakGraces : 1;
 
     if (!previousDay) {
         const updatedUser = {
             ...user,
             streakCount: 1,
             streakLastActiveDate: today,
-            streakGraceUsed: false,
+            streakGraces: 1,
         };
         await updateUser(user.uid, {
             streakCount: 1,
             streakLastActiveDate: today,
-            streakGraceUsed: false,
+            streakGraces: 1,
         });
         return { user: updatedUser, notice: null };
     }
@@ -333,36 +334,60 @@ export const syncUserLoginStreak = async (user: User): Promise<{ user: User; not
     }
 
     if (diff === 1) {
+        const nextStreak = currentCount + 1;
+        let nextGraces = graces;
+        let notice: StreakLoginNotice = null;
+
+        if (nextStreak % 5 === 0) {
+            nextGraces = Math.min(5, graces + 1);
+            if (nextGraces > graces) {
+                notice = {
+                    type: 'grace_earned',
+                    title: 'Streak Milestone!',
+                    message: `Congratulations on reaching a ${nextStreak}-day streak! You earned an extra streak grace. You now have ${nextGraces} / 5 graces.`,
+                };
+            }
+        }
+
         const updatedUser = {
             ...user,
-            streakCount: currentCount + 1,
+            streakCount: nextStreak,
             streakLastActiveDate: today,
+            streakGraces: nextGraces,
         };
         await updateUser(user.uid, {
-            streakCount: updatedUser.streakCount,
+            streakCount: nextStreak,
             streakLastActiveDate: today,
+            streakGraces: nextGraces,
         });
-        return { user: updatedUser, notice: null };
+        return { user: updatedUser, notice };
     }
 
-    if (diff === 2 && !graceUsed) {
+    if (diff === 2 && graces > 0) {
+        const nextStreak = currentCount + 1;
+        let nextGraces = graces - 1; // Consume one grace
+
+        if (nextStreak % 5 === 0) {
+            nextGraces = Math.min(5, nextGraces + 1);
+        }
+
         const updatedUser = {
             ...user,
-            streakCount: currentCount + 1,
+            streakCount: nextStreak,
             streakLastActiveDate: today,
-            streakGraceUsed: true,
+            streakGraces: nextGraces,
         };
         await updateUser(user.uid, {
-            streakCount: updatedUser.streakCount,
+            streakCount: nextStreak,
             streakLastActiveDate: today,
-            streakGraceUsed: true,
+            streakGraces: nextGraces,
         });
         return {
             user: updatedUser,
             notice: {
                 type: 'saved_with_grace',
                 title: 'Streak Saved',
-                message: 'You were late, but your one streak exception saved this streak. Miss again and the streak will reset.',
+                message: `You were late, but a streak grace saved your streak. You have ${nextGraces} / 5 graces remaining.`,
             },
         };
     }
@@ -372,12 +397,12 @@ export const syncUserLoginStreak = async (user: User): Promise<{ user: User; not
         ...user,
         streakCount: 1,
         streakLastActiveDate: today,
-        streakGraceUsed: false,
+        streakGraces: 1,
     };
     await updateUser(user.uid, {
         streakCount: 1,
         streakLastActiveDate: today,
-        streakGraceUsed: false,
+        streakGraces: 1,
     });
     return {
         user: updatedUser,

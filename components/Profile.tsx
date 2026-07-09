@@ -459,8 +459,9 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
     }, [attendance]);
 
     const streakCount = currentUser.streakCount || 0;
-    const streakGraceLabel = currentUser.streakGraceUsed ? 'Grace already used' : 'Grace available';
-    const streakGraceTone = currentUser.streakGraceUsed
+    const gracesAvailable = currentUser.streakGraces ?? 1;
+    const streakGraceLabel = `${gracesAvailable} / 5 graces available`;
+    const streakGraceTone = gracesAvailable === 0
         ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300'
         : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300';
 
@@ -649,12 +650,12 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
                                             {streakGraceLabel}
                                         </span>
                                         <span className="inline-flex items-center justify-center rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 px-3 py-1 text-xs font-semibold">
-                                            One late exception policy
+                                            Earn graces every 5 days (max 5)
                                         </span>
                                     </div>
                                 </div>
                                 <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">
-                                    If you miss one day, your grace can preserve the streak once. A later miss after that resets it.
+                                    If you miss a day, a grace will preserve your streak. You earn an extra grace for every 5 streak days you reach (up to a maximum of 5).
                                 </p>
                             </div>
 

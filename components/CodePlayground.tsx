@@ -348,7 +348,9 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
   const [memberProjectIds, setMemberProjectIds] = useState<string[]>([]);
   const [activeProject, setActiveProject] = useState<PlaygroundProject | null>(null);
   const [activeFile, setActiveFile] = useState<PlaygroundProjectFile | null>(null);
+  const [openFilePaths, setOpenFilePaths] = useState<string[]>([]);
   const [fileContents, setFileContents] = useState<Record<string, string>>({});
+  const [savedFileContents, setSavedFileContents] = useState<Record<string, string>>({});
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [isLoadingActivity, setIsLoadingActivity] = useState(false);
@@ -393,11 +395,13 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
   const [isWaitingForInput, setIsWaitingForInput] = useState(false);
   const [inputPrompt, setInputPrompt] = useState('');
   const [consoleInput, setConsoleInput] = useState('');
+  const [draggedTabPath, setDraggedTabPath] = useState<string | null>(null);
   const inputResolverRef = useRef<((value: string) => void) | null>(null);
   
   const consoleInputRef = useRef<HTMLInputElement>(null);
   const outputContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const newFileNameInputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [pendingChallenge, setPendingChallenge] = useState<any | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
@@ -414,6 +418,11 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
   const canPreview = isProjectMode
       ? activeProject?.language === 'web' || activeProject?.language === 'html'
       : language === 'html';
+  const isFileDirty = (path: string) => {
+      const current = fileContents[path];
+      const saved = savedFileContents[path];
+      return current !== undefined && saved !== undefined && current !== saved;
+  };
 
   useEffect(() => {
       if (!activeProject) {
@@ -499,6 +508,8 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
           
           setProjectFiles([]);
           setActiveFile(null);
+          setOpenFilePaths([]);
+          setSavedFileContents({});
           setProjectMembers([]);
           setInviteUserId('');
           setInviteTeamId('');
@@ -618,6 +629,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
           const content = payload.content as string;
           lastRemoteUpdateRef.current[path] = Date.now();
           setFileContents(prev => ({ ...prev, [path]: content }));
+          setSavedFileContents(prev => ({ ...prev, [path]: content }));
           if (activeFileRef.current?.path === path) {
               setCode(content);
           }
@@ -763,19 +775,28 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
       }
   };
 
-  const loadProjectFiles = async (projectId: string, projectLanguage?: ProjectLanguage) => {
+  const loadProjectFiles = async (projectId: string, projectLanguage?: ProjectLanguage, preferredPath?: string) => {
       setIsLoadingFiles(true);
       try {
           const files = await api.getPlaygroundProjectFiles(projectId);
           setProjectFiles(files);
           if (files.length > 0) {
               const languageToUse = projectLanguage || activeProject?.language;
-              const preferred = languageToUse === 'web'
+              const currentFile = activeFileRef.current?.path
+                  ? files.find(file => file.path === activeFileRef.current.path)
+                  : null;
+              const preferred = preferredPath
+                  ? files.find(file => file.path === preferredPath)
+                  : null;
+              const languageDefault = languageToUse === 'web'
                   ? files.find(file => file.path.toLowerCase().endsWith('index.html'))
                   : null;
-              await openFile(preferred || files[0]);
+              await openFile(currentFile || preferred || languageDefault || files[0]);
           } else {
               setActiveFile(null);
+              setOpenFilePaths([]);
+              setFileContents({});
+              setSavedFileContents({});
               setCode('');
           }
       } catch (error: any) {
@@ -816,6 +837,8 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
       setActiveProject(project);
       setLanguage(project.language === 'web' ? 'html' : (project.language as SingleLanguage));
       setFileContents({});
+      setSavedFileContents({});
+      setOpenFilePaths([]);
       setInviteUserId('');
       setInviteTeamId('');
       setActiveTabState('editor');
@@ -835,6 +858,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
       if (activeFile) {
           setFileContents(prev => ({ ...prev, [activeFile.path]: codeRef.current }));
       }
+      setOpenFilePaths(prev => (prev.includes(file.path) ? prev : [...prev, file.path]));
       const cached = fileContents[file.path];
       if (cached !== undefined) {
           setActiveFile(file);
@@ -849,6 +873,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
       try {
           const content = await api.downloadPlaygroundFile(file.projectId, file.path);
           setFileContents(prev => ({ ...prev, [file.path]: content }));
+          setSavedFileContents(prev => ({ ...prev, [file.path]: content }));
           setActiveFile(file);
           setCode(content);
           if (!activeProject && language === 'html') {
@@ -866,6 +891,41 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
           console.error("Failed to load file", error);
           showToast("Failed to load file.", "error");
       }
+  };
+
+  const closeOpenFile = async (path: string) => {
+      const currentIndex = openFilePaths.indexOf(path);
+      const nextPaths = openFilePaths.filter(openPath => openPath !== path);
+      setOpenFilePaths(nextPaths);
+
+      if (activeFile?.path !== path) return;
+
+      const nextPath = nextPaths[currentIndex] || nextPaths[currentIndex - 1] || nextPaths[0] || null;
+      if (!nextPath) {
+          setActiveFile(null);
+          setCode('');
+          return;
+      }
+
+      const nextFile = projectFiles.find(file => file.path === nextPath);
+      if (nextFile) {
+          await openFile(nextFile);
+      } else {
+          setActiveFile(null);
+          setCode('');
+      }
+  };
+
+  const reorderOpenFile = (fromPath: string, toPath: string) => {
+      if (fromPath === toPath) return;
+      setOpenFilePaths(prev => {
+          const fromIndex = prev.indexOf(fromPath);
+          const toIndex = prev.indexOf(toPath);
+          if (fromIndex === -1 || toIndex === -1) return prev;
+          const next = prev.filter(path => path !== fromPath);
+          next.splice(toIndex, 0, fromPath);
+          return next;
+      });
   };
 
   const handleCreateProject = async () => {
@@ -947,12 +1007,22 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
               detail: fileName
           });
           setNewFileName('');
-          await loadProjectFiles(activeProject.id, activeProject.language as ProjectLanguage);
+          await loadProjectFiles(activeProject.id, activeProject.language as ProjectLanguage, fileName);
           await loadProjectActivity(activeProject.id);
       } catch (error: any) {
           console.error("Failed to add file", error);
           showToast("Failed to add file.", "error");
       }
+  };
+
+
+  const handleNewFileShortcut = () => {
+      const defaultName = activeProject?.language === 'javascript' ? 'new_file.js' : activeProject?.language === 'html' ? 'index.html' : 'new_file.py';
+      if (!newFileName.trim()) {
+          setNewFileName(defaultName);
+      }
+      setIsProjectPanelOpen(true);
+      setTimeout(() => newFileNameInputRef.current?.focus(), 0);
   };
 
   const handleSaveFile = async () => {
@@ -970,6 +1040,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
               action: 'saved_file',
               detail: activeFile.path
           });
+          setSavedFileContents(prev => ({ ...prev, [activeFile.path]: codeRef.current }));
           await loadProjectFiles(activeProject.id, activeProject.language as ProjectLanguage);
           await loadProjectActivity(activeProject.id);
           showToast("File saved.", "success");
@@ -989,10 +1060,27 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
               action: 'deleted_file',
               detail: file.path
           });
-          if (activeFile?.path === file.path) {
-              setActiveFile(null);
-              setCode('');
-          }
+          setFileContents(prev => {
+              const next = { ...prev };
+              delete next[file.path];
+              return next;
+          });
+          setSavedFileContents(prev => {
+              const next = { ...prev };
+              delete next[file.path];
+              return next;
+          });
+          await closeOpenFile(file.path);
+          setFileContents(prev => {
+              const next = { ...prev };
+              delete next[file.path];
+              return next;
+          });
+          setSavedFileContents(prev => {
+              const next = { ...prev };
+              delete next[file.path];
+              return next;
+          });
           await loadProjectFiles(activeProject.id, activeProject.language as ProjectLanguage);
           await loadProjectActivity(activeProject.id);
       } catch (error: any) {
@@ -1013,6 +1101,10 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
           }).catch(() => undefined);
           if (activeProject?.id === projectToDelete.id) {
               setActiveProject(null);
+              setActiveFile(null);
+              setOpenFilePaths([]);
+              setFileContents({});
+              setSavedFileContents({});
           }
           await loadProjects();
           setProjectToDelete(null);
@@ -1051,6 +1143,15 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
               }
               return next;
           });
+          setSavedFileContents(prev => {
+              const next = { ...prev };
+              if (next[renamingFile.path] !== undefined) {
+                  next[newPath] = next[renamingFile.path];
+                  delete next[renamingFile.path];
+              }
+              return next;
+          });
+          setOpenFilePaths(prev => prev.map(path => (path === renamingFile.path ? newPath : path)));
           if (activeFile?.path === renamingFile.path) {
               setActiveFile({ ...renamingFile, path: newPath });
           }
@@ -1174,6 +1275,9 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
       if (activeProject) {
            setActiveProject(null);
            setActiveFile(null);
+           setOpenFilePaths([]);
+           setFileContents({});
+           setSavedFileContents({});
            setProjectFiles([]);
            setProjectMembers([]);
            showToast("Exited project mode to open imported code.", "info");
@@ -1411,13 +1515,13 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
   const handleGetHint = async () => {
       setIsGettingHint(true);
       setActiveTabState('output');
-      setOutput(prev => [...prev, { type: 'log', content: '🤖 AI Tutor is thinking...' }]);
+      setOutput(prev => [...prev, { type: 'log', content: '?? AI Tutor is thinking...' }]);
       scrollToBottom();
       try {
           const hint = await geminiService.getAIPlaygroundHint(code, language);
-          setOutput(prev => [...prev.filter(l => l.content !== '🤖 AI Tutor is thinking...'), { type: 'hint', content: hint }]);
+          setOutput(prev => [...prev.filter(l => l.content !== '?? AI Tutor is thinking...'), { type: 'hint', content: hint }]);
       } catch (err: any) {
-          setOutput(prev => [...prev.filter(l => l.content !== '🤖 AI Tutor is thinking...'), { type: 'error', content: err.message || 'Failed to get hint.' }]);
+          setOutput(prev => [...prev.filter(l => l.content !== '?? AI Tutor is thinking...'), { type: 'error', content: err.message || 'Failed to get hint.' }]);
       } finally {
           setIsGettingHint(false);
           scrollToBottom();
@@ -1582,6 +1686,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
               try {
                   const content = await api.downloadPlaygroundFile(activeProject.id, file.path);
                   contents[file.path] = content;
+                  setSavedFileContents(prev => ({ ...prev, [file.path]: content }));
               } catch (error) {
                   console.error("Failed to load project file content", error);
               }
@@ -2166,7 +2271,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
             <ul className="mt-1 space-y-1 text-[11px]">
               <li>Use <strong>Run</strong> to execute code and see output below.</li>
               <li>Try the <strong>AI Hint</strong> bulb for guidance.</li>
-              <li>Publish or submit a challenge from the menu (•••).</li>
+              <li>Publish or submit a challenge from the menu (���).</li>
             </ul>
           </div>
           <button
@@ -2201,19 +2306,78 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
           <div className="relative flex-1">
             {/* Editor */}
             <div className={`absolute inset-0 w-full h-full ${activeTab === 'editor' ? 'z-10 opacity-100' : 'z-0 opacity-0 pointer-events-none'}`}>
-                 <Editor
-                    height="100%"
-                    defaultLanguage={editorLanguage}
-                    language={editorLanguage}
-                    theme={editorTheme}
-                    value={code}
-                    onChange={(value) => setCode(value || '')}
-                    onMount={handleEditorDidMount}
-                    loading={<div className="flex items-center justify-center h-full text-gray-500">Loading editor...</div>}
-                    options={{
-                        padding: { top: 16, bottom: 16 },
-                    }}
-                />
+                 <div className="flex h-full min-h-0 w-full flex-col">
+                    {activeProject && (
+                        <div className="flex items-center gap-1 overflow-x-auto border-b border-gray-200 bg-gray-100 px-2 py-1.5 dark:border-gray-700 dark:bg-gray-900/70 custom-scrollbar">
+                            {openFilePaths.length === 0 ? (
+                                <div className="px-2 text-[11px] text-gray-500 dark:text-gray-400">
+                                    Open a file from the project panel to create a tab.
+                                </div>
+                            ) : (
+                                openFilePaths.map((path) => {
+                                    const file = projectFiles.find(projectFile => projectFile.path === path);
+                                    const isActive = activeFile?.path === path;
+                                    return (
+                                        <div
+                                            key={path}
+                                            role="button"
+                                            tabIndex={0}
+                                            onClick={() => {
+                                                if (file) {
+                                                    void openFile(file);
+                                                }
+                                            }}
+                                            className={`group flex min-w-0 max-w-[220px] items-center gap-2 rounded-lg border px-3 py-1.5 text-left text-xs transition-colors ${
+                                                isActive
+                                                    ? 'border-indigo-500 bg-white text-indigo-700 shadow-sm dark:border-indigo-400 dark:bg-gray-800 dark:text-indigo-200'
+                                                    : 'border-transparent bg-transparent text-gray-500 hover:bg-white hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white'
+                                            }`}
+                                            title={path}
+                                        >
+                                            <DocumentTextIcon className="h-3.5 w-3.5 flex-shrink-0" />
+                                            <span className="truncate">{path}</span>
+                                            <button
+                                                type="button"
+                                                onClick={(event) => {
+                                                    event.stopPropagation();
+                                                    void closeOpenFile(path);
+                                                }}
+                                                className={`rounded-full p-0.5 transition-colors ${
+                                                    isActive
+                                                        ? 'text-indigo-500 hover:bg-indigo-100 hover:text-indigo-700 dark:hover:bg-indigo-900/40'
+                                                        : 'text-gray-400 opacity-0 group-hover:opacity-100 hover:bg-gray-200 hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-200'
+                                                }`}
+                                                aria-label={`Close ${path}`}
+                                                title="Close tab"
+                                            >
+                                                <XCircleIcon className="h-3.5 w-3.5" />
+                                            </button>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+                    )}
+                    <div className="min-h-0 flex-1">
+                        <Editor
+                            height="100%"
+                            defaultLanguage={editorLanguage}
+                            language={editorLanguage}
+                            theme={editorTheme}
+                            value={code}
+                            onChange={(value) => {
+                              const nextValue = value || '';
+                              codeRef.current = nextValue;
+                              setCode(nextValue);
+                            }}
+                            onMount={handleEditorDidMount}
+                            loading={<div className="flex items-center justify-center h-full text-gray-500">Loading editor...</div>}
+                            options={{
+                                padding: { top: 16, bottom: 16 },
+                            }}
+                        />
+                    </div>
+                </div>
             </div>
             
             {/* Output */}
@@ -2324,7 +2488,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                     {showPreviewConsole && (
                         <div className="h-40 border-t border-gray-200 dark:border-gray-700 bg-gray-900 text-gray-200 text-xs font-mono overflow-y-auto p-3 space-y-1 custom-scrollbar">
                             {previewConsole.length === 0 ? (
-                                <span className="text-gray-500">Preview console ready…</span>
+                                <span className="text-gray-500">Preview console ready�</span>
                             ) : (
                                 previewConsole.map((line, idx) => (
                                     <div key={idx} className={line.type === 'error' ? 'text-red-400' : 'text-gray-200'}>
@@ -2592,3 +2756,9 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
 };
 
 export default CodePlayground;
+
+
+
+
+
+

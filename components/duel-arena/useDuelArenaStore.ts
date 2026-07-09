@@ -92,6 +92,10 @@ interface DuelArenaStoreState {
   session: ArenaSession | null;
   /** Live solution source per participant uid — populated for spectators. */
   liveCode: Record<string, string>;
+  /** Quiz duel: which question index each participant is currently on — for spectators. */
+  liveQuestionIndex: Record<string, number>;
+  /** Quiz coding question: latest tests passed/total per participant — for spectators. */
+  liveTests: Record<string, { passed: number; total: number }>;
 
   // editor
   activeLanguage: DuelLanguage;
@@ -489,6 +493,14 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
             ...current,
             ...opponentFinishedUpdate,
             liveCode: payload.code != null ? { ...current.liveCode, [payload.userUid]: payload.code } : current.liveCode,
+            liveQuestionIndex:
+              payload.questionIndex != null
+                ? { ...current.liveQuestionIndex, [payload.userUid]: payload.questionIndex }
+                : current.liveQuestionIndex,
+            liveTests:
+              payload.currentTestsPassed != null && payload.currentTestsTotal != null
+                ? { ...current.liveTests, [payload.userUid]: { passed: payload.currentTestsPassed, total: payload.currentTestsTotal } }
+                : current.liveTests,
             session: {
               ...current.session,
               [key]: {
@@ -820,7 +832,10 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
     return normalizeAnswer(answer) === normalizeAnswer(card.correctAnswer);
   };
 
-  const broadcastQuizProgress = (finished = false) => {
+  const broadcastQuizProgress = (
+    finished = false,
+    extra?: { code?: string; liveTyping?: boolean; currentTestsPassed?: number; currentTestsTotal?: number }
+  ) => {
     const state = get();
     if (!state.session || state.role !== 'player' || !state.currentUser) return;
     broadcastToDuel(matchChannel, 'progress', {
@@ -829,8 +844,11 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
       testCasesPassed: state.session.player.testCasesPassed,
       compileAttempts: 0,
       statusLabel: finished ? 'Finished all questions' : `Answered ${state.answeredCount}/${state.questions.length}`,
-      liveTyping: false,
+      liveTyping: extra?.liveTyping ?? false,
       questionIndex: state.quizIndex,
+      code: extra?.code,
+      currentTestsPassed: extra?.currentTestsPassed,
+      currentTestsTotal: extra?.currentTestsTotal,
       finished,
       finishedAtMs: finished ? state.selfFinishedAtMs : undefined,
     });
@@ -928,6 +946,9 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
     const state = get();
     if (state.quizIndex < state.questions.length - 1) {
       set(questionStartState(state.quizIndex + 1));
+      // Let spectators follow onto the next question with a fresh editor / reset tests.
+      const next = get();
+      broadcastQuizProgress(false, { code: next.codingDraft, currentTestsPassed: 0, currentTestsTotal: 0 });
     } else {
       finishSelf();
     }
@@ -961,6 +982,8 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
     testCases: [],
     session: null,
     liveCode: {},
+    liveQuestionIndex: {},
+    liveTests: {},
 
     activeLanguage: 'python',
     files: createDuelFiles('def solve(input_text: str) -> str:\n    return ""\n'),
@@ -1155,6 +1178,8 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
           matchDurationSec: bundle.match.totalDurationSeconds,
           testCases: bundle.problem.testCases,
           liveCode: seededCode,
+          liveQuestionIndex: {},
+          liveTests: {},
           session,
           files: createDuelFiles(bundle.problem.starterCode),
           activeFileId: 'solver',
@@ -1222,6 +1247,8 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
         opponentPresent: false,
         testCases: [],
         liveCode: {},
+        liveQuestionIndex: {},
+        liveTests: {},
         activeSubmission: null,
         resultModalOpen: false,
         liveBanner: 'Welcome back to the lobby',
@@ -1314,7 +1341,17 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
       void executeJudging('submit');
     },
 
-    setCodingDraft: (content) => set({ codingDraft: content }),
+    setCodingDraft: (content) => {
+      const current = get();
+      set({ codingDraft: content });
+      // Stream the live coding draft to spectators (throttled) so they can watch both screens.
+      if (!current.isQuiz || current.role !== 'player' || current.answerLocked) return;
+      const now = Date.now();
+      if (now - lastTypingBroadcastAt > 1500) {
+        lastTypingBroadcastAt = now;
+        broadcastQuizProgress(false, { code: content, liveTyping: true });
+      }
+    },
 
     submitAnswer: (answer) => {
       const state = get();
@@ -1335,9 +1372,13 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
         void (async () => {
           let correct = false;
           let message = '';
+          let passed = 0;
+          let totalTests = q.testCases.length;
           try {
             const judge = await judgeDuelTestsLocally(code, q.testCases);
             correct = judge.verdict === 'Accepted';
+            passed = judge.passed;
+            totalTests = judge.total;
             message = correct
               ? `Accepted — ${judge.passed}/${judge.total} tests passed.`
               : `${judge.verdict} — ${judge.passed}/${judge.total} tests passed.`;
@@ -1346,6 +1387,8 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
             message = 'Could not run your code in time.';
           }
           recordAnswer(correct, { correct, message }, 1900);
+          // Show spectators this question's final code and which tests passed.
+          broadcastQuizProgress(false, { code, currentTestsPassed: passed, currentTestsTotal: totalTests });
         })();
         return;
       }

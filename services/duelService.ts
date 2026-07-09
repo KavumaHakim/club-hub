@@ -713,6 +713,10 @@ export interface DuelProgressPayload {
   code?: string;
   /** Quiz duel: which question (0-based) the player is on, for spectators. */
   questionIndex?: number;
+  /** Quiz coding question: tests passed on the player's latest run of the current question. */
+  currentTestsPassed?: number;
+  /** Quiz coding question: total tests for the current question. */
+  currentTestsTotal?: number;
   /** Quiz duel: set once the player has answered all questions. */
   finished?: boolean;
   /** Quiz duel: client clock (ms) when the player finished — used for tie-breaks. */

@@ -128,24 +128,84 @@ const CODING_CARDS: Array<Omit<DuelQuizQuestion & { kind: 'coding' }, 'id' | 'se
       { id: 'c3-4', input: 'programming', expectedOutput: '3', hidden: true },
     ],
   },
+  {
+    kind: 'coding',
+    question:
+      'Read the space-separated integers in `input_text` and return the largest one as a string.\n\nExample: `"3 7 2"` → `"7"`.',
+    starterCode: 'def solve(input_text: str) -> str:\n    nums = [int(x) for x in input_text.split()]\n    # return the largest\n    return ""\n',
+    testCases: [
+      { id: 'c4-1', input: '3 7 2', expectedOutput: '7', hidden: false },
+      { id: 'c4-2', input: '-1 -5 -3', expectedOutput: '-1', hidden: true },
+      { id: 'c4-3', input: '10', expectedOutput: '10', hidden: true },
+      { id: 'c4-4', input: '4 4 4', expectedOutput: '4', hidden: true },
+    ],
+  },
+  {
+    kind: 'coding',
+    question:
+      'Return the number of space-separated words in `input_text` as a string.\n\nExample: `"hello there world"` → `"3"`.',
+    starterCode: 'def solve(input_text: str) -> str:\n    # count the words\n    return "0"\n',
+    testCases: [
+      { id: 'c5-1', input: 'hello there world', expectedOutput: '3', hidden: false },
+      { id: 'c5-2', input: 'single', expectedOutput: '1', hidden: true },
+      { id: 'c5-3', input: 'a b c d', expectedOutput: '4', hidden: true },
+      { id: 'c5-4', input: 'duel time now', expectedOutput: '3', hidden: true },
+    ],
+  },
+  {
+    kind: 'coding',
+    question: 'Return `input_text` converted to uppercase.\n\nExample: `"duel"` → `"DUEL"`.',
+    starterCode: 'def solve(input_text: str) -> str:\n    return ""\n',
+    testCases: [
+      { id: 'c6-1', input: 'duel', expectedOutput: 'DUEL', hidden: false },
+      { id: 'c6-2', input: 'abc', expectedOutput: 'ABC', hidden: true },
+      { id: 'c6-3', input: 'MixEd', expectedOutput: 'MIXED', hidden: true },
+      { id: 'c6-4', input: 'go', expectedOutput: 'GO', hidden: true },
+    ],
+  },
+  {
+    kind: 'coding',
+    question:
+      'Return `"YES"` if `input_text` reads the same forwards and backwards, otherwise `"NO"`.\n\nExample: `"racecar"` → `"YES"`.',
+    starterCode: 'def solve(input_text: str) -> str:\n    # is it a palindrome?\n    return "NO"\n',
+    testCases: [
+      { id: 'c7-1', input: 'racecar', expectedOutput: 'YES', hidden: false },
+      { id: 'c7-2', input: 'hello', expectedOutput: 'NO', hidden: true },
+      { id: 'c7-3', input: 'abba', expectedOutput: 'YES', hidden: true },
+      { id: 'c7-4', input: 'abc', expectedOutput: 'NO', hidden: true },
+    ],
+  },
+  {
+    kind: 'coding',
+    question:
+      'Read two integers separated by a space from `input_text` and return their product as a string.\n\nExample: `"3 4"` → `"12"`.',
+    starterCode: 'def solve(input_text: str) -> str:\n    a, b = input_text.split()\n    # return the product\n    return ""\n',
+    testCases: [
+      { id: 'c8-1', input: '3 4', expectedOutput: '12', hidden: false },
+      { id: 'c8-2', input: '0 5', expectedOutput: '0', hidden: true },
+      { id: 'c8-3', input: '-2 6', expectedOutput: '-12', hidden: true },
+      { id: 'c8-4', input: '7 7', expectedOutput: '49', hidden: true },
+    ],
+  },
 ];
 
 export const buildBankQuizSet = (level: DuelSkillLevel): DuelQuizSet => {
-  // Interleave so coding questions are spread through the set, not clustered at the end.
-  const quiz: DuelQuizQuestion[] = QUIZ_CARDS.map((c, i) => ({ ...c, id: `q-${i + 1}`, seconds: QUIZ_SECONDS }));
+  // Coding-dominant set: every coding card, plus a handful of quiz questions woven in
+  // roughly every 3rd slot for pacing.
   const coding: DuelQuizQuestion[] = CODING_CARDS.map((c, i) => ({ ...c, id: `qc-${i + 1}`, seconds: CODING_SECONDS }));
+  const quiz: DuelQuizQuestion[] = QUIZ_CARDS.slice(0, 4).map((c, i) => ({ ...c, id: `q-${i + 1}`, seconds: QUIZ_SECONDS }));
 
   const questions: DuelQuizQuestion[] = [];
   let qi = 0;
   let ci = 0;
   for (let i = 0; i < quiz.length + coding.length; i += 1) {
-    // Drop a coding question roughly every 5th slot.
-    if ((i + 1) % 5 === 0 && ci < coding.length) {
-      questions.push(coding[ci++]);
-    } else if (qi < quiz.length) {
+    // Weave a quiz question in roughly every 3rd slot; coding fills the rest.
+    if ((i + 1) % 3 === 0 && qi < quiz.length) {
       questions.push(quiz[qi++]);
     } else if (ci < coding.length) {
       questions.push(coding[ci++]);
+    } else if (qi < quiz.length) {
+      questions.push(quiz[qi++]);
     }
   }
 
