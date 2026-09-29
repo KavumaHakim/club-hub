@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -197,10 +197,6 @@
     pointer-events: none;
   }
 
-  .feed-side-panel {
-    display: none;
-  }
-
   .arena-grid {
     background-image:
       linear-gradient(rgba(34, 211, 238, 0.08) 1px, transparent 1px),
@@ -247,43 +243,6 @@
     transform: translate(-2px, 1px);
   }
 
-  @media (min-width: 1280px) {
-    :root:not([data-sidebar-expanded="true"]) .feed-side-panel {
-      display: block;
-    }
-  }
-
-  @media (min-width: 1536px) {
-    .feed-side-panel {
-      display: block;
-    }
-  }
-
-  .feed-layout {
-    --feed-panel-left: 1.5rem;
-    --feed-panel-right: 1.5rem;
-    --feed-side-offset: 0px;
-    --feed-side-offset-right: 0px;
-  }
-
-  @media (min-width: 1280px) {
-    :root:not([data-sidebar-expanded="true"]) .feed-layout {
-      --feed-panel-left: calc(var(--sidebar-width, 5.5rem) + 1.5rem);
-      --feed-panel-right: 1.5rem;
-      --feed-side-offset: calc(var(--sidebar-width, 5.5rem) + 16rem + 2rem);
-      --feed-side-offset-right: calc(16rem + 2rem);
-    }
-  }
-
-  @media (min-width: 1536px) {
-    .feed-layout {
-      --feed-panel-left: calc(var(--sidebar-width, 5.5rem) + 1.5rem);
-      --feed-panel-right: 1.5rem;
-      --feed-side-offset: calc(var(--sidebar-width, 5.5rem) + 16rem + 2rem);
-      --feed-side-offset-right: calc(16rem + 2rem);
-    }
-  }
-
   .timeline-item {
     --timeline-x: -24px;
     --timeline-glow: 0;
@@ -317,4 +276,84 @@
   .dark .timeline-dot {
     border-color: rgba(15, 23, 42, 0.8);
   }
+}
+
+/* ============================================================
+   Modernist "Split" design tokens
+   Flat, architectural, zero radius, 2px rules, one accent.
+   Consumed through the `ch-*` Tailwind colors and the helpers
+   below. Light values live on :root, dark on .dark (the class
+   App.tsx already toggles on <html>).
+   ============================================================ */
+:root {
+  --ch-bg: #f3f2f2;
+  --ch-surface: #eae9e9;
+  --ch-surface-2: #e0dedd;
+  --ch-text: #201e1d;
+  --ch-muted: rgba(32, 30, 29, 0.6);
+  --ch-divider: rgba(32, 30, 29, 0.16);
+  --ch-rule: rgba(32, 30, 29, 0.42);
+  --ch-accent: #db2777;
+  --ch-accent-deep: #9d174d;
+  --ch-accent-soft: rgba(219, 39, 119, 0.1);
+  --ch-violet: #6d28d9;
+  --ch-on-accent: #f3f2f2;
+  --ch-matrix-fade: rgba(243, 242, 242, 0.12);
+  --ch-matrix-ink: #db2777;
+}
+
+.dark {
+  --ch-bg: #141312;
+  --ch-surface: #1e1c1b;
+  --ch-surface-2: #262322;
+  --ch-text: #f5f3f2;
+  --ch-muted: rgba(245, 243, 242, 0.58);
+  --ch-divider: rgba(245, 243, 242, 0.18);
+  --ch-rule: rgba(245, 243, 242, 0.42);
+  --ch-accent: #f472b6;
+  --ch-accent-deep: #ec4899;
+  --ch-accent-soft: rgba(236, 72, 153, 0.16);
+  --ch-violet: #a78bfa;
+  --ch-on-accent: #141312;
+  --ch-matrix-fade: rgba(20, 19, 18, 0.12);
+  --ch-matrix-ink: #f472b6;
+}
+
+/* The shell owns the ground so no page can leak a rounded card
+   background behind the rules. */
+.ch-shell {
+  background: var(--ch-bg);
+  color: var(--ch-text);
+  font-family: Archivo, system-ui, sans-serif;
+}
+
+/* Thin, un-rounded scrollbar — the rules do the organising, not
+   a chrome-coloured track. */
+.ch-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ch-divider) transparent;
+}
+.ch-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.ch-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.ch-scroll::-webkit-scrollbar-thumb {
+  background: var(--ch-divider);
+  border-radius: 0;
+}
+.ch-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--ch-rule);
+}
+
+/* Keyboard focus is themed, never the default blue ring. */
+.ch-shell :focus-visible {
+  outline: 2px solid var(--ch-accent);
+  outline-offset: -2px;
+}
+
+.ch-shell ::selection {
+  background: var(--ch-accent-soft);
 }

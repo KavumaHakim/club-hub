@@ -216,9 +216,9 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile,
     }, [activeTab, featureFlags, setActiveTab, currentUser.role]);
 
     return (
-        <div className={(activeTab === 'chat' || activeTab === 'playground' || activeTab === 'arena') ? 'h-full' : ''}>
+        <div className={(activeTab === 'chat' || activeTab === 'playground' || activeTab === 'arena' || activeTab === 'feed') ? 'h-full' : ''}>
             <Suspense fallback={<LoadingIndicator />}>
-                <TabPanel active={activeTab === 'feed' && (featureFlags.showFeed || currentUser.role === 'PATRON')}>
+                <TabPanel active={activeTab === 'feed' && (featureFlags.showFeed || currentUser.role === 'PATRON')} className="h-full">
                     <Feed currentUser={currentUser} />
                 </TabPanel>
                 <TabPanel active={activeTab === 'activities' && (featureFlags.showActivities || currentUser.role === 'PATRON')}>

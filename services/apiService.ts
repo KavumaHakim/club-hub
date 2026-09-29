@@ -278,8 +278,13 @@ export const updateUser = async (uid: string, data: Partial<User>) => {
 };
 
 const STREAK_TIME_ZONE = 'Africa/Nairobi';
+/** Most graces a member can bank. */
+export const MAX_STREAK_GRACES = 5;
+/** A grace is earned each time the streak reaches a multiple of this. */
+export const STREAK_GRACE_INTERVAL = 5;
 
-const getStreakDayKey = (date: Date = new Date()): string => {
+/** The streak's calendar day ('YYYY-MM-DD') in the club's time zone. */
+export const getStreakDayKey = (date: Date = new Date()): string => {
     const parts = new Intl.DateTimeFormat('en-CA', {
         timeZone: STREAK_TIME_ZONE,
         year: 'numeric',
@@ -338,13 +343,13 @@ export const syncUserLoginStreak = async (user: User): Promise<{ user: User; not
         let nextGraces = graces;
         let notice: StreakLoginNotice = null;
 
-        if (nextStreak % 5 === 0) {
-            nextGraces = Math.min(5, graces + 1);
+        if (nextStreak % STREAK_GRACE_INTERVAL === 0) {
+            nextGraces = Math.min(MAX_STREAK_GRACES, graces + 1);
             if (nextGraces > graces) {
                 notice = {
                     type: 'grace_earned',
                     title: 'Streak Milestone!',
-                    message: `Congratulations on reaching a ${nextStreak}-day streak! You earned an extra streak grace. You now have ${nextGraces} / 5 graces.`,
+                    message: `Congratulations on reaching a ${nextStreak}-day streak! You earned an extra streak grace. You now have ${nextGraces} / ${MAX_STREAK_GRACES} graces.`,
                 };
             }
         }
@@ -367,8 +372,8 @@ export const syncUserLoginStreak = async (user: User): Promise<{ user: User; not
         const nextStreak = currentCount + 1;
         let nextGraces = graces - 1; // Consume one grace
 
-        if (nextStreak % 5 === 0) {
-            nextGraces = Math.min(5, nextGraces + 1);
+        if (nextStreak % STREAK_GRACE_INTERVAL === 0) {
+            nextGraces = Math.min(MAX_STREAK_GRACES, nextGraces + 1);
         }
 
         const updatedUser = {
@@ -387,7 +392,7 @@ export const syncUserLoginStreak = async (user: User): Promise<{ user: User; not
             notice: {
                 type: 'saved_with_grace',
                 title: 'Streak Saved',
-                message: `You were late, but a streak grace saved your streak. You have ${nextGraces} / 5 graces remaining.`,
+                message: `You were late, but a streak grace saved your streak. You have ${nextGraces} / ${MAX_STREAK_GRACES} graces remaining.`,
             },
         };
     }

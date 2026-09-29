@@ -1,7 +1,13 @@
 
 import React, { useEffect, useRef } from 'react';
 
-const MatrixRain: React.FC = () => {
+interface MatrixRainProps {
+  /** Global alpha applied to every glyph — the shell runs it at 0.55 so the
+   *  rain sits behind the sidebar rules instead of competing with them. */
+  dim?: number;
+}
+
+const MatrixRain: React.FC<MatrixRainProps> = ({ dim = 1 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -60,18 +66,32 @@ const MatrixRain: React.FC = () => {
     // Added binary and matrix-like chars
     const characters = "01ICTCLUBHUB<>/{};[]010101HAKIM";
 
+    // Theme colours come from the document's tokens. They're cached and only
+    // re-read when <html>'s class (the dark toggle) changes, not every frame.
+    let fadeColor = '';
+    let inkColor = '';
+    const readThemeColors = () => {
+      const rootStyles = getComputedStyle(document.documentElement);
+      const isDark = document.documentElement.classList.contains('dark');
+      fadeColor =
+        rootStyles.getPropertyValue('--ch-matrix-fade').trim() ||
+        (isDark ? 'rgba(20, 19, 18, 0.12)' : 'rgba(243, 242, 242, 0.12)');
+      inkColor =
+        rootStyles.getPropertyValue('--ch-matrix-ink').trim() ||
+        (isDark ? '#f472b6' : '#db2777');
+    };
+    readThemeColors();
+    const themeObserver = new MutationObserver(readThemeColors);
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
     const draw = () => {
       const { width, height } = getDimensions();
       
-      // Check dark mode directly from DOM to handle theme switches instantly
-      const isDark = document.documentElement.classList.contains('dark');
-      
       // Fade effect - trails
-      ctx.fillStyle = isDark ? 'rgba(17, 24, 39, 0.1)' : 'rgba(255, 255, 255, 0.1)';
+      ctx.fillStyle = fadeColor;
       ctx.fillRect(0, 0, width, height);
 
-      // Text color - brighter pink/purple
-      ctx.fillStyle = isDark ? '#f472b6' : '#d946ef'; // Pink-400 / Fuchsia-500
+      ctx.fillStyle = inkColor;
       ctx.font = '15px monospace';
 
       for (let i = 0; i < drops.length; i++) {
@@ -80,7 +100,7 @@ const MatrixRain: React.FC = () => {
         const y = drops[i] * 20;
 
         // Random opacity for character variation to give "glitch" feel
-        ctx.globalAlpha = Math.random() > 0.95 ? 1.0 : 0.3 + Math.random() * 0.5;
+        ctx.globalAlpha = (Math.random() > 0.95 ? 1.0 : 0.3 + Math.random() * 0.5) * dim;
         ctx.fillText(text, x, y);
         ctx.globalAlpha = 1.0;
 
@@ -98,9 +118,10 @@ const MatrixRain: React.FC = () => {
 
     return () => {
       resizeObserver.disconnect();
+      themeObserver.disconnect();
       cancelAnimationFrame(animationFrameId);
     };
-  }, []);
+  }, [dim]);
 
   return (
     <canvas

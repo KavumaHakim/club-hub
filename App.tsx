@@ -14,11 +14,8 @@ import FeatureTourModal from './components/FeatureTourModal';
 import CustomCursor from './components/CustomCursor';
 import * as api from './services/apiService';
 import { supabase } from './services/supabaseClient';
-import { MenuIcon } from './components/icons/MenuIcon';
 import { DataProvider, useData } from './DataContext';
-import { SunIcon } from './components/icons/SunIcon';
-import { MoonIcon } from './components/icons/MoonIcon';
-import { LogoutIcon } from './components/icons/LogoutIcon';
+import ShellHeader from './components/ShellHeader';
 import ToastContainer from './components/Toast';
 import OfflineIndicator from './components/OfflineIndicator';
 import AlertModal from './components/AlertModal';
@@ -97,7 +94,8 @@ const App: React.FC = () => {
   });
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
+  // The Split direction's sidebar is the named 220px list, so it starts expanded.
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Apply theme to html element
   useEffect(() => {
@@ -110,16 +108,6 @@ const App: React.FC = () => {
     // Save to local storage
     localStorage.setItem('app_theme', theme);
   }, [theme]);
-
-  useEffect(() => {
-    const root = window.document.documentElement;
-    root.style.setProperty('--sidebar-width', isSidebarCollapsed ? '5.5rem' : '18rem');
-    if (isSidebarCollapsed) {
-      root.removeAttribute('data-sidebar-expanded');
-    } else {
-      root.setAttribute('data-sidebar-expanded', 'true');
-    }
-  }, [isSidebarCollapsed]);
 
   // Listen for Font Changes
   useEffect(() => {
@@ -435,7 +423,7 @@ const App: React.FC = () => {
   const renderContent = () => {
     if (view === 'dashboard' && user) {
       return (
-          <div className="flex h-screen bg-gray-100 dark:bg-gray-900 overflow-hidden">
+          <div className="ch-shell flex h-screen overflow-hidden">
             <Sidebar
               user={user}
               activeTab={activeTab}
@@ -445,74 +433,18 @@ const App: React.FC = () => {
               isCollapsed={isSidebarCollapsed}
               onToggleCollapse={handleSidebarCollapseToggle}
             />
-            <div className="flex-1 flex flex-col w-full h-full relative overflow-hidden transition-all duration-300">
-              {/* Unified Header (Mobile & Desktop) */}
-              <header data-app-header="true" className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 flex items-center justify-between p-4 sticky top-0 z-20 flex-shrink-0">
-                <div className="flex items-center gap-3">
-                  <button onClick={handleSidebarToggle} className="md:hidden text-gray-600 dark:text-gray-300 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Open menu">
-                    <MenuIcon />
-                  </button>
-                  {/* Mobile Title */}
-                  <h1 className="md:hidden text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600">
-                    ICT Club Hub
-                  </h1>
-                  {/* Desktop Title */}
-                  <h1 className="hidden md:block text-xl font-bold text-gray-800 dark:text-white capitalize">
-                    {activeTab === 'chat' ? 'Messages' : activeTab.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                  </h1>
-                </div>
+            <div className="relative flex h-full w-full min-w-0 flex-1 flex-col overflow-hidden">
+              <ShellHeader
+                user={user}
+                activeTab={activeTab}
+                setActiveTab={handleTabChange}
+                theme={theme}
+                onToggleTheme={toggleTheme}
+                onLogout={handleLogout}
+                onOpenSidebar={handleSidebarToggle}
+              />
 
-                <div className="flex items-center gap-2 sm:gap-4">
-                  <div
-                    className="hidden sm:flex items-center gap-2 rounded-full border border-amber-200/80 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-900/20 px-3 py-1.5"
-                    title={`${user.streakGraces ?? 1} / 5 graces available`}
-                  >
-                    <span aria-hidden="true" className="text-sm leading-none">🔥</span>
-                    <div className="leading-tight">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-700 dark:text-amber-300">
-                        Streak
-                      </p>
-                      <p className="text-xs font-semibold text-gray-800 dark:text-gray-100">
-                        {user.streakCount || 0} day{(user.streakCount || 0) === 1 ? '' : 's'}
-                      </p>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={toggleTheme}
-                    className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-amber-500 dark:hover:text-amber-400 transition-colors"
-                    aria-label="Toggle theme"
-                    title="Toggle Theme"
-                  >
-                    {theme === 'light' ? <MoonIcon /> : <SunIcon />}
-                  </button>
-
-                  <button
-                    onClick={handleLogout}
-                    className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-red-500 dark:hover:text-red-400 transition-colors"
-                    aria-label="Logout"
-                    title="Logout"
-                  >
-                    <LogoutIcon />
-                  </button>
-
-                  <button
-                    onClick={() => handleTabChange('profile')}
-                    className="flex-shrink-0 ml-1 group"
-                    aria-label="Go to Profile"
-                    title="Profile"
-                  >
-                    <img
-                      src={user.avatarUrl || `https://i.pravatar.cc/40?u=${user.username}`}
-                      alt={user.name}
-                      className="w-8 h-8 rounded-full border-2 border-white dark:border-gray-700 group-hover:border-pink-500 dark:group-hover:border-pink-500 transition-colors object-cover"
-                    />
-                  </button>
-                </div>
-              </header>
-
-              {/* Conditionally apply padding and overflow for chat/playground to allow full height */}
-              <main className={`flex-1 h-full w-full ${(activeTab === 'chat' || activeTab === 'playground' || activeTab === 'arena') ? 'overflow-hidden' : `${activeTab === 'feed' ? 'pt-0 px-4 sm:px-6 lg:px-8 pb-6' : 'p-4 sm:p-6 lg:p-8'} overflow-y-auto scroll-smooth custom-scrollbar`}`}>
+              <main className={`min-h-0 w-full flex-1 ${(activeTab === 'chat' || activeTab === 'playground' || activeTab === 'arena' || activeTab === 'feed') ? 'overflow-hidden' : 'overflow-y-auto scroll-smooth ch-scroll p-4 sm:p-6 lg:p-8'}`}>
                 <Dashboard
                   activeTab={activeTab}
                   setActiveTab={handleTabChange}

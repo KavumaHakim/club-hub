@@ -101,18 +101,18 @@ const AddAnnouncement: React.FC<AddAnnouncementProps> = ({ currentUser, onAddAnn
     };
 
     return (
-        <div className="bg-white/90 dark:bg-gray-800/90 p-5 rounded-2xl shadow-md border border-gray-200 dark:border-gray-700 mb-8 transition-all hover:shadow-lg">
+        <div className="border-2 border-ch-rule p-5">
             <div className="flex flex-col gap-4">
                 <div className="flex items-center gap-3">
-                    <img src={currentUser.avatarUrl || `https://i.pravatar.cc/40?u=${currentUser.username}`} alt={currentUser.name} className="w-10 h-10 rounded-full flex-shrink-0 border border-gray-200 dark:border-gray-600" />
+                    <img src={currentUser.avatarUrl || `https://i.pravatar.cc/40?u=${currentUser.username}`} alt={currentUser.name} className="h-10 w-10 flex-none object-cover" />
                     <div>
-                        <p className="text-sm font-semibold text-gray-900 dark:text-white">Post as {currentUser.name}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Share news, events, or questions with the club.</p>
+                        <p className="text-[13px] font-bold">Post as {currentUser.name}</p>
+                        <p className="text-[11px] text-ch-muted">Share news, events, or questions with the club.</p>
                     </div>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="flex flex-wrap gap-2 bg-gray-100 dark:bg-gray-900/60 p-1.5 rounded-xl">
+                    <div className="flex flex-wrap items-stretch border border-ch-rule">
                         {[
                             { id: 'NEWS_UPDATE', label: 'News' },
                             { id: 'EVENT_ANNOUNCEMENT', label: 'Event' },
@@ -123,9 +123,9 @@ const AddAnnouncement: React.FC<AddAnnouncementProps> = ({ currentUser, onAddAnn
                                 key={pill.id}
                                 type="button"
                                 onClick={() => setType(pill.id as FeedItemType)}
-                                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${type === pill.id
-                                    ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow'
-                                    : 'text-gray-600 dark:text-gray-400 hover:bg-white/70 dark:hover:bg-gray-700/70'
+                                className={`px-4 py-2 text-[12px] font-bold uppercase tracking-[0.08em] transition-colors ${type === pill.id
+                                    ? 'bg-ch-accent text-ch-on-accent'
+                                    : 'text-ch-muted hover:bg-ch-surface hover:text-ch-text'
                                     }`}
                             >
                                 {pill.label}
@@ -141,10 +141,10 @@ const AddAnnouncement: React.FC<AddAnnouncementProps> = ({ currentUser, onAddAnn
                                 placeholder={type === 'MEMBER_POST' ? "Title (optional)" : "Add a title"}
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
-                                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                className="w-full border border-ch-rule bg-transparent px-4 py-2.5 text-[14px] text-ch-text placeholder-ch-muted focus:outline-none"
                             />
                             {isTitleRequired && (
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Title is required for news and event announcements.</p>
+                                <p className="text-[11px] text-ch-muted">Title is required for news and event announcements.</p>
                             )}
 
                             <input
@@ -159,12 +159,12 @@ const AddAnnouncement: React.FC<AddAnnouncementProps> = ({ currentUser, onAddAnn
                                         setPreviewUrl(null);
                                     }
                                 }}
-                                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                className="w-full border border-ch-rule bg-transparent px-4 py-2.5 text-[14px] text-ch-text placeholder-ch-muted focus:outline-none"
                             />
 
                             <div className="flex flex-col gap-3">
-                                <label className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-dashed border-gray-300 dark:border-gray-500 rounded-xl cursor-pointer transition-colors text-sm font-medium text-gray-600 dark:text-gray-300">
-                                    <CameraIcon className="w-5 h-5 text-gray-400" />
+                                <label className="flex cursor-pointer items-center gap-2 border border-dashed border-ch-rule px-4 py-2.5 text-[13px] font-semibold text-ch-muted transition-colors hover:bg-ch-surface hover:text-ch-text">
+                                    <CameraIcon className="h-4 w-4" />
                                     <span>{selectedFile ? 'Change Image' : 'Upload Image'}</span>
                                     <input
                                         type="file"
@@ -185,14 +185,14 @@ const AddAnnouncement: React.FC<AddAnnouncementProps> = ({ currentUser, onAddAnn
 
                                 {previewUrl && (
                                     <div className="relative inline-block mt-2 group">
-                                        <img src={previewUrl} alt="Preview" className="w-24 h-24 object-cover rounded-xl border-2 border-pink-500/50 shadow-md" />
+                                        <img src={previewUrl} alt="Preview" className="h-24 w-24 border-2 border-ch-accent object-cover" />
                                         <button
                                             type="button"
                                             onClick={() => {
                                                 setSelectedFile(null);
                                                 setPreviewUrl(null);
                                             }}
-                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition-colors"
+                                            className="absolute -right-2 -top-2 bg-ch-accent p-1 text-ch-on-accent transition-colors hover:bg-ch-accent-deep"
                                         >
                                             <XIcon className="w-3 h-3" />
                                         </button>
@@ -209,9 +209,9 @@ const AddAnnouncement: React.FC<AddAnnouncementProps> = ({ currentUser, onAddAnn
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
                             rows={type === 'POLL' ? 2 : 3}
-                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent resize-none"
+                            className="w-full resize-none border border-ch-rule bg-transparent px-4 py-3 text-[14px] text-ch-text placeholder-ch-muted focus:outline-none"
                         ></textarea>
-                        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                        <div className="flex items-center justify-between text-[11px] text-ch-muted">
                             <span>{type === 'POLL' ? 'Make it short and clear.' : 'Keep it concise and helpful.'}</span>
                             <span>{message.length} chars</span>
                         </div>
@@ -226,13 +226,13 @@ const AddAnnouncement: React.FC<AddAnnouncementProps> = ({ currentUser, onAddAnn
                                         placeholder={`Option ${index + 1}`}
                                         value={option}
                                         onChange={(e) => handleOptionChange(index, e.target.value)}
-                                        className="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
+                                        className="min-w-0 flex-grow border border-ch-rule bg-transparent px-3 py-2 text-[13px] text-ch-text placeholder-ch-muted focus:outline-none"
                                     />
                                     {pollOptions.length > 2 && (
                                         <button
                                             type="button"
                                             onClick={() => removeOption(index)}
-                                            className="text-gray-400 hover:text-red-500 p-1"
+                                            className="p-1 text-ch-muted transition-colors hover:text-ch-accent"
                                             aria-label="Remove option"
                                         >
                                             <TrashIcon className="w-4 h-4" />
@@ -243,7 +243,7 @@ const AddAnnouncement: React.FC<AddAnnouncementProps> = ({ currentUser, onAddAnn
                             <button
                                 type="button"
                                 onClick={addOption}
-                                className="w-full border border-dashed border-gray-300 dark:border-gray-600 rounded-lg py-2 text-xs font-semibold text-purple-600 hover:text-purple-700 hover:border-purple-300 flex items-center justify-center gap-1"
+                                className="flex w-full items-center justify-center gap-1 border border-dashed border-ch-rule py-2 text-[11px] font-bold uppercase tracking-[0.08em] text-ch-accent transition-colors hover:bg-ch-surface"
                             >
                                 <PlusCircleIcon className="w-4 h-4" /> Add Option
                             </button>
@@ -251,18 +251,18 @@ const AddAnnouncement: React.FC<AddAnnouncementProps> = ({ currentUser, onAddAnn
                     )}
 
                     {errorMsg && (
-                        <div className="flex items-center gap-2 text-xs text-red-600 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40 rounded-lg p-2">
+                        <div className="flex items-center gap-2 border-l-2 border-ch-accent bg-ch-accent-soft p-2 text-[12px] text-ch-text">
                             <span className="font-semibold">Fix:</span>
                             <span>{errorMsg}</span>
                         </div>
                     )}
 
                     <div className="flex items-center justify-between pt-2">
-                        <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                            {isValid ? <CheckCircleIcon className="w-4 h-4 text-emerald-500" /> : null}
+                        <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.08em] text-ch-muted">
+                            {isValid ? <CheckCircleIcon className="h-4 w-4 text-ch-accent" /> : null}
                             <span>{isValid ? 'Ready to post' : 'Fill the required fields'}</span>
                         </div>
-                        <button type="submit" disabled={isSubmitting || !isValid} className="px-6 py-2 font-bold text-white bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 rounded-full shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 disabled:opacity-50 dark:focus:ring-offset-gray-800 transition-all transform active:scale-95">
+                        <button type="submit" disabled={isSubmitting || !isValid} className="bg-ch-accent px-6 py-2.5 text-[13px] font-extrabold uppercase tracking-[0.08em] text-ch-on-accent transition-colors hover:bg-ch-accent-deep disabled:opacity-45">
                             {isSubmitting ? 'Posting...' : 'Post'}
                         </button>
                     </div>
