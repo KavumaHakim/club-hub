@@ -1,6 +1,6 @@
 
 import { supabase } from './supabaseClient';
-import { User, Activity, AttendanceRecord, AttendanceStatus, FeedItem, ProjectData, ProjectTask, Resource, AppNotification, Room, ShowcaseItem, Suggestion, Challenge, ChallengeSubmission, FeedComment, SuggestionType, SuggestionStatus, SubmissionStatus, ActivityCategory, FeedItemType, TaskPriority, ResourceCategory, ResourceType, Tab, Roadmap, RoadmapProgress, ShowcaseComment, Message, Team, TeamChallenge, TeamChallengeSubmission, PlaygroundProject, PlaygroundProjectFile, PlaygroundProjectActivity, PlaygroundProjectMember, FeatureFlags, GameLeaderboardEntry } from '../types';
+import { User, Activity, AttendanceRecord, AttendanceStatus, FeedItem, ProjectData, ProjectTask, Resource, AppNotification, Room, ShowcaseItem, Suggestion, Challenge, ChallengeSubmission, ChallengeLanguage, ChallengeTestCase, FeedComment, SuggestionType, SuggestionStatus, SubmissionStatus, ActivityCategory, FeedItemType, TaskPriority, ResourceCategory, ResourceType, Tab, Roadmap, RoadmapProgress, ShowcaseComment, Message, Team, TeamChallenge, TeamChallengeSubmission, PlaygroundProject, PlaygroundProjectFile, PlaygroundProjectActivity, PlaygroundProjectMember, FeatureFlags, GameLeaderboardEntry } from '../types';
 
 // --- Helper for Notifications ---
 const insertNotifications = async (notifications: Array<{ user_uid: string; message: string; is_read: boolean; link_to: Tab }>) => {
@@ -1661,7 +1661,10 @@ export const getChallenges = async (): Promise<Challenge[]> => {
             createdBy: c.created_by,
             createdAt: c.created_at,
             status: c.status,
-            difficulty: c.difficulty
+            difficulty: c.difficulty,
+            language: c.language === 'javascript' ? 'javascript' : 'python',
+            starterCode: c.starter_code || undefined,
+            testCases: Array.isArray(c.test_cases) ? c.test_cases : []
         }));
     } catch (error) {
         return [];
@@ -1673,7 +1676,10 @@ export const addChallenge = async (challenge: {
     description: string,
     deadline: string,
     createdBy: string,
-    difficulty?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'
+    difficulty?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED',
+    language?: ChallengeLanguage,
+    starterCode?: string,
+    testCases?: ChallengeTestCase[]
 }) => {
     const { error } = await supabase.from('challenges').insert({
         title: challenge.title,
@@ -1681,10 +1687,29 @@ export const addChallenge = async (challenge: {
         deadline: challenge.deadline,
         created_by: challenge.createdBy,
         difficulty: challenge.difficulty || 'BEGINNER',
-        status: 'ACTIVE'
+        status: 'ACTIVE',
+        // Only sent for test-graded challenges so plain ones don't depend on the new columns.
+        ...(challenge.testCases?.length ? {
+            language: challenge.language || 'python',
+            starter_code: challenge.starterCode || null,
+            test_cases: challenge.testCases
+        } : {})
     });
     if (error) throw error;
     await notifyAllUsers(`New Challenge: ${challenge.title}`, 'challenges', challenge.createdBy);
+};
+
+export const updateChallengeTests = async (challengeId: string, tests: {
+    language: ChallengeLanguage,
+    starterCode?: string,
+    testCases: ChallengeTestCase[]
+}) => {
+    const { error } = await supabase.from('challenges').update({
+        language: tests.language,
+        starter_code: tests.starterCode || null,
+        test_cases: tests.testCases
+    }).eq('id', challengeId);
+    if (error) throw error;
 };
 
 export const submitChallenge = async (challengeId: string, userId: string, content: string): Promise<string> => {
@@ -1713,15 +1738,26 @@ export const getSubmissions = async (challengeId: string): Promise<ChallengeSubm
             userAvatarUrl: s.users?.avatar_url,
             content: s.content,
             status: s.status,
-            submittedAt: s.created_at
+            submittedAt: s.created_at,
+            testsPassed: s.tests_passed,
+            testsTotal: s.tests_total
         }));
     } catch (error) {
         return [];
     }
 };
 
-export const reviewSubmission = async (submissionId: string, status: 'APPROVED' | 'REJECTED', challengeTitle: string, userId: string) => {
-    const { error } = await supabase.from('challenge_submissions').update({ status }).eq('id', submissionId);
+export const reviewSubmission = async (
+    submissionId: string,
+    status: 'APPROVED' | 'REJECTED',
+    challengeTitle: string,
+    userId: string,
+    testSummary?: { passed: number, total: number }
+) => {
+    const { error } = await supabase.from('challenge_submissions').update({
+        status,
+        ...(testSummary ? { tests_passed: testSummary.passed, tests_total: testSummary.total } : {})
+    }).eq('id', submissionId);
     if (error) throw error;
 
     if (status === 'APPROVED') {

@@ -5,8 +5,9 @@ import { useData } from '../DataContext';
 import { XIcon } from './icons/XIcon';
 import { TrophyIcon } from './icons/TrophyIcon';
 import { CheckIcon } from './icons/CheckIcon';
-import * as api from '../services/apiService';
-import { autoEvaluateChallenge } from '../services/geminiService';
+import { submitChallengeSolution, ChallengeEvaluationError, type ChallengeTestReport } from '../services/challengeJudge';
+import { hasTestCases } from '../services/challengeRunner';
+import ChallengeTestResults from './ChallengeTestResults';
 import { FormattedMessage } from './FormattedMessage';
 import { SparklesIcon } from './icons/SparklesIcon';
 import { ExclamationCircleIcon } from './icons/ExclamationCircleIcon';
@@ -29,8 +30,9 @@ const SubmitToChallengeModal: React.FC<SubmitToChallengeModalProps> = ({ isOpen,
         weaknesses: string,
         improvements: string,
         passed: boolean | null,
-        isLoading: boolean, 
-        title: string 
+        isLoading: boolean,
+        title: string,
+        tests?: ChallengeTestReport
     }>({
         isOpen: false,
         content: '',
@@ -50,64 +52,50 @@ const SubmitToChallengeModal: React.FC<SubmitToChallengeModalProps> = ({ isOpen,
     });
 
     const handleSubmit = async () => {
-        if (!selectedChallengeId) return;
-        
+        const challenge = challenges.find(c => c.id === selectedChallengeId);
+        if (!challenge) return;
+        const title = `Evaluation: ${challenge.title}`;
+
         setIsSubmitting(true);
+        setAiFeedback({ isOpen: true, content: '', weaknesses: '', improvements: '', passed: null, isLoading: true, title });
         try {
-            const submissionId = await api.submitChallenge(selectedChallengeId, currentUser.uid, code);
-            const challenge = challenges.find(c => c.id === selectedChallengeId);
-            const challengeTitle = challenge?.title || 'Challenge';
-            const challengeDescription = challenge?.description || '';
-            
-            setAiFeedback({ 
-                isOpen: true, 
-                content: '', 
-                weaknesses: '',
-                improvements: '',
-                passed: null,
-                isLoading: true, 
-                title: `Evaluation: ${challengeTitle}` 
+            const result = await submitChallengeSolution(challenge, currentUser.uid, code);
+            if (result.passed) {
+                showToast(`Congratulations! You earned the ${challenge.title} badge!`, "success");
+                await fetchUsers(); // Refresh user data to show new badge
+            }
+            setAiFeedback({
+                isOpen: true,
+                content: result.feedback,
+                weaknesses: result.weaknesses,
+                improvements: result.improvements,
+                passed: result.passed,
+                isLoading: false,
+                title,
+                tests: result.tests
             });
-
-            try {
-                const result = await autoEvaluateChallenge(challengeTitle, challengeDescription, code);
-                
-                // Award badge if passed
-                if (result.passed) {
-                    await api.reviewSubmission(submissionId, 'APPROVED', challengeTitle, currentUser.uid);
-                    showToast(`Congratulations! You earned the ${challengeTitle} badge!`, "success");
-                    await fetchUsers(); // Refresh user data to show new badge
-                } else {
-                    await api.reviewSubmission(submissionId, 'REJECTED', challengeTitle, currentUser.uid);
-                }
-
-                setAiFeedback({ 
-                    isOpen: true, 
-                    content: result.feedback, 
-                    weaknesses: result.weaknesses,
-                    improvements: result.improvements,
-                    passed: result.passed,
-                    isLoading: false, 
-                    title: `Evaluation: ${challengeTitle}` 
-                });
-                
-                await fetchChallenges(); // Refresh data
-            } catch (e) {
-                console.error("AI evaluation failed:", e);
-                setAiFeedback({ 
-                    isOpen: true, 
-                    content: "AI evaluation is unavailable right now, but your solution has been submitted for manual review.", 
+            await fetchChallenges(); // Refresh data
+            setSelectedChallengeId(null);
+        } catch (error: any) {
+            if (error instanceof ChallengeEvaluationError) {
+                console.error("Challenge evaluation failed:", error);
+                setAiFeedback({
+                    isOpen: true,
+                    content: hasTestCases(challenge)
+                        ? "Your code couldn't be run against the tests right now. Please try again in a moment."
+                        : "AI evaluation is unavailable right now, but your solution has been submitted for manual review.",
                     weaknesses: '',
                     improvements: '',
                     passed: null,
-                    isLoading: false, 
-                    title: `Evaluation: ${challengeTitle}` 
+                    isLoading: false,
+                    title
                 });
+                setSelectedChallengeId(null);
+            } else {
+                console.error("Submission failed:", error);
+                setAiFeedback(prev => ({ ...prev, isOpen: false, isLoading: false }));
+                showToast("Failed to submit: " + error.message, "error");
             }
-            setSelectedChallengeId(null);
-        } catch (error: any) {
-            console.error("Submission failed:", error);
-            showToast("Failed to submit: " + error.message, "error");
         } finally {
             setIsSubmitting(false);
         }
@@ -155,6 +143,11 @@ const SubmitToChallengeModal: React.FC<SubmitToChallengeModalProps> = ({ isOpen,
                                     <span className="text-[10px] font-medium px-2 py-0.5 bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 rounded-full">
                                         Due: {new Date(challenge.deadline).toLocaleDateString()}
                                     </span>
+                                    {hasTestCases(challenge) && (
+                                        <span className="text-[10px] font-medium px-2 py-0.5 bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 rounded-full">
+                                            {challenge.testCases?.length} tests · {challenge.language === 'javascript' ? 'JS' : 'Python'}
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         ))
@@ -213,10 +206,12 @@ const SubmitToChallengeModal: React.FC<SubmitToChallengeModalProps> = ({ isOpen,
                                         <FormattedMessage text={aiFeedback.content} isUser={false} />
                                     </div>
 
-                                    {aiFeedback.weaknesses && (
+                                    {aiFeedback.tests && <ChallengeTestResults report={aiFeedback.tests} />}
+
+                                    {aiFeedback.weaknesses && !aiFeedback.tests && (
                                         <div className="bg-red-50 dark:bg-red-900/10 p-4 rounded-xl border border-red-100 dark:border-red-900/20">
                                             <h4 className="text-sm font-bold text-red-900 dark:text-red-400 mb-2 flex items-center gap-2">
-                                                <AlertTriangleIcon className="w-4 h-4" />
+                                                <ExclamationCircleIcon className="w-4 h-4" />
                                                 Areas for Improvement / Missing Requirements
                                             </h4>
                                             <div className="text-sm text-red-800 dark:text-red-300">
@@ -228,7 +223,7 @@ const SubmitToChallengeModal: React.FC<SubmitToChallengeModalProps> = ({ isOpen,
                                     {aiFeedback.improvements && (
                                         <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100 dark:border-blue-900/20">
                                             <h4 className="text-sm font-bold text-blue-900 dark:text-blue-400 mb-2 flex items-center gap-2">
-                                                <LightbulbIcon className="w-4 h-4" />
+                                                <LightBulbIcon className="w-4 h-4" />
                                                 Suggested Enhancements
                                             </h4>
                                             <div className="text-sm text-blue-800 dark:text-blue-300">

@@ -318,6 +318,21 @@ export interface Challenge {
   createdAt: string;
   status: 'ACTIVE' | 'CLOSED';
   difficulty?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+  language?: ChallengeLanguage;
+  starterCode?: string;
+  /** When non-empty, submissions are judged by running these against solve(input_text). */
+  testCases?: ChallengeTestCase[];
+}
+
+export type ChallengeLanguage = 'python' | 'javascript';
+
+export interface ChallengeTestCase {
+  id: string;
+  input: string;
+  expectedOutput: string;
+  /** Hidden cases are judged on submit but their input/output are never shown to members. */
+  hidden: boolean;
+  explanation?: string;
 }
 
 export type SubmissionStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -331,6 +346,8 @@ export interface ChallengeSubmission {
   content: string;
   status: SubmissionStatus;
   submittedAt: string;
+  testsPassed?: number | null;
+  testsTotal?: number | null;
 }
 
 // Toast Types

@@ -1,8 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { User, Challenge, ChallengeSubmission, SubmissionStatus } from '../types';
+import { User, Challenge, ChallengeSubmission, SubmissionStatus, ChallengeLanguage, ChallengeTestCase } from '../types';
 import { useData } from '../DataContext';
 import * as api from '../services/apiService';
-import { analyzeChallengeSubmission, generateAIChallenge, autoEvaluateChallenge } from '../services/geminiService';
+import { analyzeChallengeSubmission, generateAIChallenge } from '../services/geminiService';
+import { submitChallengeSolution, ChallengeEvaluationError, type ChallengeTestReport } from '../services/challengeJudge';
+import { hasTestCases, runChallengeReference } from '../services/challengeRunner';
+import ChallengeTestsEditor, { ChallengeTestsDraft, emptyTestsDraft, finalizeTestCases } from './ChallengeTestsEditor';
+import ChallengeTestResults from './ChallengeTestResults';
+import { CodeIcon } from './icons/CodeIcon';
 import { TrophyIcon } from './icons/TrophyIcon';
 import { PlusCircleIcon } from './icons/PlusCircleIcon';
 import { CheckCircleIcon } from './icons/CheckCircleIcon';
@@ -152,8 +157,9 @@ const ChallengeCard: React.FC<{
     currentUser: User;
     onOpenSubmission: (id: string) => void;
     onOpenReview: (id: string, title: string) => void;
+    onEditTests: (challenge: Challenge) => void;
     onMakeSubmission?: (challenge: Challenge) => void;
-}> = ({ challenge, currentUser, onOpenSubmission, onOpenReview, onMakeSubmission }) => {
+}> = ({ challenge, currentUser, onOpenSubmission, onOpenReview, onEditTests, onMakeSubmission }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const isPatron = currentUser.role === 'PATRON';
     const hasBadge = currentUser.badges?.includes(challenge.title);
@@ -192,6 +198,12 @@ const ChallengeCard: React.FC<{
                             {statusText}
                         </span>
                         <DifficultyBadge difficulty={challenge.difficulty} />
+                        {hasTestCases(challenge) && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wide self-start bg-pink-50 text-pink-700 dark:bg-pink-900/20 dark:text-pink-300 flex items-center gap-1">
+                                <CodeIcon className="w-3 h-3" />
+                                {challenge.testCases?.length} tests · {challenge.language === 'javascript' ? 'JS' : 'Python'}
+                            </span>
+                        )}
                     </div>
                     <div className="flex items-center gap-2">
                         {hasBadge && <div className="bg-green-100 dark:bg-green-900/30 p-1.5 rounded-full text-green-600 dark:text-green-400"><BadgeCheckIcon className="w-5 h-5" /></div>}
@@ -230,14 +242,25 @@ const ChallengeCard: React.FC<{
                     </div>
 
                     {isPatron ? (
-                        <Tooltip text="Review member submissions and approve badges.">
-                            <button
-                                onClick={() => onOpenReview(challenge.id, challenge.title)}
-                                className="w-full py-2.5 rounded-xl text-sm font-semibold bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/20 dark:text-purple-300 dark:hover:bg-purple-900/30 transition-colors flex items-center justify-center gap-2"
-                            >
-                                Review Submissions
-                            </button>
-                        </Tooltip>
+                        <div className="space-y-2">
+                            <Tooltip text="Review member submissions and approve badges.">
+                                <button
+                                    onClick={() => onOpenReview(challenge.id, challenge.title)}
+                                    className="w-full py-2.5 rounded-xl text-sm font-semibold bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/20 dark:text-purple-300 dark:hover:bg-purple-900/30 transition-colors flex items-center justify-center gap-2"
+                                >
+                                    Review Submissions
+                                </button>
+                            </Tooltip>
+                            <Tooltip text="Auto-grade submissions by running them against test cases.">
+                                <button
+                                    onClick={() => onEditTests(challenge)}
+                                    className="w-full py-2.5 rounded-xl text-sm font-semibold bg-gray-50 text-gray-700 hover:bg-gray-100 dark:bg-gray-900/40 dark:text-gray-300 dark:hover:bg-gray-900/60 transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <CodeIcon className="w-4 h-4" />
+                                    {hasTestCases(challenge) ? 'Edit Test Cases' : 'Add Test Cases'}
+                                </button>
+                            </Tooltip>
+                        </div>
                     ) : (
                         !hasBadge && challenge.status === 'ACTIVE' && !isExpired ? (
                             <Tooltip text="Submit your solution to earn a badge.">
@@ -263,16 +286,20 @@ const ChallengeCard: React.FC<{
     );
 };
 
+type ChallengePrefill = { title: string, description: string, difficulty: any, tests?: ChallengeTestsDraft };
+
 const CreateChallengeModal: React.FC<{
     isOpen: boolean,
     onClose: () => void,
-    onSubmit: (title: string, desc: string, date: string, diff: any) => Promise<void>,
-    prefill?: { title: string, description: string, difficulty: any } | null
+    onSubmit: (title: string, desc: string, date: string, diff: any, tests: ChallengeTestsDraft | null) => Promise<void>,
+    prefill?: ChallengePrefill | null
 }> = ({ isOpen, onClose, onSubmit, prefill }) => {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [deadline, setDeadline] = useState('');
     const [difficulty, setDifficulty] = useState<'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'>('BEGINNER');
+    const [useTests, setUseTests] = useState(false);
+    const [tests, setTests] = useState<ChallengeTestsDraft>(emptyTestsDraft());
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
@@ -281,6 +308,8 @@ const CreateChallengeModal: React.FC<{
         setDescription(prefill?.description || '');
         setDifficulty((prefill?.difficulty as any) || 'BEGINNER');
         setDeadline('');
+        setUseTests(!!prefill?.tests?.testCases.length);
+        setTests(prefill?.tests || emptyTestsDraft());
     }, [isOpen, prefill]);
 
     if (!isOpen) return null;
@@ -289,18 +318,20 @@ const CreateChallengeModal: React.FC<{
         e.preventDefault();
         if (!title || !description || !deadline) return;
         setIsSubmitting(true);
-        await onSubmit(title, description, deadline, difficulty);
+        await onSubmit(title, description, deadline, difficulty, useTests ? tests : null);
         setIsSubmitting(false);
         onClose();
         setTitle('');
         setDescription('');
         setDeadline('');
         setDifficulty('BEGINNER');
+        setUseTests(false);
+        setTests(emptyTestsDraft());
     };
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 relative border border-gray-200 dark:border-gray-700">
+            <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full p-6 relative border border-gray-200 dark:border-gray-700 max-h-[90vh] overflow-y-auto custom-scrollbar ${useTests ? 'max-w-2xl' : 'max-w-md'}`}>
                 <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400"><XIcon /></button>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Post New Challenge</h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -330,6 +361,11 @@ const CreateChallengeModal: React.FC<{
                             <input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} required className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500" />
                         </div>
                     </div>
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
+                        <input type="checkbox" checked={useTests} onChange={e => setUseTests(e.target.checked)} className="rounded text-pink-600 focus:ring-pink-500" />
+                        Auto-grade with code test cases
+                    </label>
+                    {useTests && <ChallengeTestsEditor value={tests} onChange={setTests} />}
                     <button type="submit" disabled={isSubmitting} className="w-full py-2 bg-pink-600 text-white rounded-lg font-medium hover:bg-pink-700 disabled:opacity-50">{isSubmitting ? 'Posting...' : 'Create Challenge'}</button>
                 </form>
             </div>
@@ -337,10 +373,40 @@ const CreateChallengeModal: React.FC<{
     );
 };
 
+// Expected outputs come from actually running the AI's reference solution, so a
+// generated case can never mark a correct member solution wrong. Returns null if
+// the reference couldn't produce at least two usable cases.
+const buildGeneratedTests = async (
+    language: ChallengeLanguage,
+    generated: { starterCode?: string, referenceSolution?: string, inputs?: string[] }
+): Promise<ChallengeTestsDraft | null> => {
+    const inputs = generated.inputs || [];
+    if (!generated.referenceSolution || inputs.length < 2) return null;
+    let outputs: (string | null)[];
+    try {
+        outputs = await runChallengeReference(language, generated.referenceSolution, inputs);
+    } catch (e) {
+        console.warn('Could not run generated reference solution:', e);
+        return null;
+    }
+    const testCases: ChallengeTestCase[] = [];
+    inputs.forEach((input, i) => {
+        if (outputs[i] === null) return;
+        testCases.push({ id: `tc-${testCases.length + 1}`, input, expectedOutput: outputs[i] as string, hidden: testCases.length >= 2 });
+    });
+    if (testCases.length < 2) return null;
+    return {
+        ...emptyTestsDraft(language),
+        starterCode: generated.starterCode || emptyTestsDraft(language).starterCode,
+        referenceSolution: generated.referenceSolution,
+        testCases,
+    };
+};
+
 const GenerateAIChallengeModal: React.FC<{
     isOpen: boolean,
     onClose: () => void,
-    onGenerated: (title: string, desc: string, difficulty: any) => void
+    onGenerated: (prefill: ChallengePrefill) => void
 }> = ({ isOpen, onClose, onGenerated }) => {
     const [concepts, setConcepts] = useState('');
     const [skillLevel, setSkillLevel] = useState<'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'>('BEGINNER');
@@ -356,7 +422,8 @@ const GenerateAIChallengeModal: React.FC<{
         setIsGenerating(true);
         try {
             const result = await generateAIChallenge(skillLevel, concepts, language);
-            onGenerated(result.title, result.description, skillLevel);
+            const tests = await buildGeneratedTests(language === 'JavaScript' ? 'javascript' : 'python', result);
+            onGenerated({ title: result.title, description: result.description, difficulty: skillLevel, tests: tests || undefined });
             setConcepts('');
             onClose();
         } catch (error) {
@@ -445,9 +512,58 @@ const GenerateAIChallengeModal: React.FC<{
     );
 };
 
-const SubmitSolutionModal: React.FC<{ isOpen: boolean, onClose: () => void, onSubmit: (content: string) => Promise<void> }> = ({ isOpen, onClose, onSubmit }) => {
+const EditTestsModal: React.FC<{
+    challenge: Challenge | null,
+    onClose: () => void,
+    onSave: (challenge: Challenge, tests: ChallengeTestsDraft) => Promise<void>
+}> = ({ challenge, onClose, onSave }) => {
+    const [tests, setTests] = useState<ChallengeTestsDraft>(emptyTestsDraft());
+    const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        if (!challenge) return;
+        const language = challenge.language || 'python';
+        setTests({
+            ...emptyTestsDraft(language),
+            starterCode: challenge.starterCode || emptyTestsDraft(language).starterCode,
+            testCases: challenge.testCases || [],
+        });
+    }, [challenge]);
+
+    if (!challenge) return null;
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        await onSave(challenge, tests);
+        setIsSaving(false);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full p-6 relative border border-gray-200 dark:border-gray-700 max-h-[90vh] overflow-y-auto custom-scrollbar">
+                <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400"><XIcon /></button>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Test Cases</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{challenge.title}</p>
+                <ChallengeTestsEditor value={tests} onChange={setTests} />
+                <p className="mt-4 text-xs text-gray-500 dark:text-gray-400">
+                    Removing every test case switches this challenge back to AI review. Existing submissions keep their verdicts.
+                </p>
+                <button onClick={handleSave} disabled={isSaving} className="mt-3 w-full py-2 bg-pink-600 text-white rounded-lg font-medium hover:bg-pink-700 disabled:opacity-50">
+                    {isSaving ? 'Saving...' : 'Save Test Cases'}
+                </button>
+            </div>
+        </div>
+    );
+};
+
+const SubmitSolutionModal: React.FC<{ isOpen: boolean, onClose: () => void, onSubmit: (content: string) => Promise<void>, challenge?: Challenge }> = ({ isOpen, onClose, onSubmit, challenge }) => {
     const [content, setContent] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const isTested = hasTestCases(challenge);
+
+    useEffect(() => {
+        if (isOpen) setContent(isTested ? (challenge?.starterCode || '') : '');
+    }, [isOpen, challenge?.id]);
 
     if (!isOpen) return null;
 
@@ -468,8 +584,15 @@ const SubmitSolutionModal: React.FC<{ isOpen: boolean, onClose: () => void, onSu
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Submit Solution</h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Solution (Text, Code, or Link)</label>
-                        <textarea value={content} onChange={e => setContent(e.target.value)} required rows={6} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500 font-mono text-sm" placeholder="Paste your code or a link to your project here..." />
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            {isTested ? `Solution (${challenge?.language === 'javascript' ? 'JavaScript' : 'Python'})` : 'Solution (Text, Code, or Link)'}
+                        </label>
+                        {isTested && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                Your <code className="font-mono">solve</code> function will be run against {challenge?.testCases?.length} test cases. All must pass to earn the badge.
+                            </p>
+                        )}
+                        <textarea value={content} onChange={e => setContent(e.target.value)} required rows={isTested ? 12 : 6} spellCheck={false} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500 font-mono text-sm" placeholder="Paste your code or a link to your project here..." />
                     </div>
                     <button type="submit" disabled={isSubmitting} className="w-full py-2 bg-pink-600 text-white rounded-lg font-medium hover:bg-pink-700 disabled:opacity-50">{isSubmitting ? 'Submitting...' : 'Submit'}</button>
                 </form>
@@ -488,8 +611,9 @@ const AnalysisModal: React.FC<{
     isLoading: boolean,
     title?: string,
     subtitle?: string,
-    challengeTitle?: string
-}> = ({ isOpen, onClose, content, weaknesses, improvements, passed, isLoading, title = 'AI Evaluation', subtitle = 'Powered by Gemini', challengeTitle }) => {
+    challengeTitle?: string,
+    tests?: ChallengeTestReport
+}> = ({ isOpen, onClose, content, weaknesses, improvements, passed, isLoading, title = 'AI Evaluation', subtitle = 'Powered by Gemini', challengeTitle, tests }) => {
     if (!isOpen) return null;
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
@@ -530,7 +654,9 @@ const AnalysisModal: React.FC<{
                                 <FormattedMessage text={content} isUser={false} />
                             </div>
 
-                            {weaknesses && (
+                            {tests && <ChallengeTestResults report={tests} />}
+
+                            {weaknesses && !tests && (
                                 <div className="bg-red-50 dark:bg-red-900/10 p-4 rounded-xl border border-red-100 dark:border-red-900/20">
                                     <h4 className="text-sm font-bold text-red-900 dark:text-red-400 mb-2 flex items-center gap-2">
                                         <ExclamationCircleIcon className="w-4 h-4" />
@@ -690,9 +816,16 @@ const ReviewSubmissionsModal: React.FC<{
                                                 <p className="text-xs text-gray-500">{new Date(sub.submittedAt).toLocaleDateString()}</p>
                                             </div>
                                         </div>
-                                        <span className={`text-xs px-2 py-1 rounded-full font-bold ${sub.status === 'APPROVED' ? 'bg-green-100 text-green-700' : sub.status === 'REJECTED' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                                            {sub.status}
-                                        </span>
+                                        <div className="flex items-center gap-1.5">
+                                            {sub.testsTotal != null && (
+                                                <span className={`text-xs px-2 py-1 rounded-full font-bold ${sub.testsPassed === sub.testsTotal ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-700'}`} title="Test cases passed">
+                                                    {sub.testsPassed ?? 0}/{sub.testsTotal} tests
+                                                </span>
+                                            )}
+                                            <span className={`text-xs px-2 py-1 rounded-full font-bold ${sub.status === 'APPROVED' ? 'bg-green-100 text-green-700' : sub.status === 'REJECTED' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                                {sub.status}
+                                            </span>
+                                        </div>
                                     </div>
                                     <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-600 mb-3 relative group">
                                         <div className="absolute top-2 right-2 flex gap-1">
@@ -759,8 +892,9 @@ const Challenges: React.FC<ChallengesProps> = ({ currentUser, onMakeSubmission }
         weaknesses: string,
         improvements: string,
         passed: boolean | null,
-        isLoading: boolean, 
-        title: string 
+        isLoading: boolean,
+        title: string,
+        tests?: ChallengeTestReport
     }>({
         isOpen: false,
         content: '',
@@ -771,86 +905,90 @@ const Challenges: React.FC<ChallengesProps> = ({ currentUser, onMakeSubmission }
         title: 'AI Feedback'
     });
 
-    const [prefillData, setPrefillData] = useState<{ title: string, description: string, difficulty: any } | null>(null);
+    const [prefillData, setPrefillData] = useState<ChallengePrefill | null>(null);
+    const [editingTestsFor, setEditingTestsFor] = useState<Challenge | null>(null);
     const [activeTab, setActiveTab] = useState<'ACTIVE' | 'COMPLETED' | 'ALL'>('ACTIVE');
 
     const isPatron = currentUser.role === 'PATRON';
 
-    const handleCreateChallenge = async (title: string, description: string, deadline: string, difficulty: any) => {
+    const handleCreateChallenge = async (title: string, description: string, deadline: string, difficulty: any, tests: ChallengeTestsDraft | null) => {
         await api.addChallenge({
             title,
             description,
             deadline,
             difficulty,
-            createdBy: currentUser.uid
+            createdBy: currentUser.uid,
+            ...(tests ? { language: tests.language, starterCode: tests.starterCode, testCases: finalizeTestCases(tests.testCases) } : {})
         });
         setPrefillData(null);
         await fetchChallenges();
     };
 
-    const handleAIChallengeGenerated = (title: string, description: string, difficulty: any) => {
-        setPrefillData({ title, description, difficulty });
+    const handleAIChallengeGenerated = (prefill: ChallengePrefill) => {
+        setPrefillData(prefill);
         setIsAIModalOpen(false);
         setIsCreateModalOpen(true);
     };
 
+    const handleSaveTests = async (challenge: Challenge, tests: ChallengeTestsDraft) => {
+        try {
+            await api.updateChallengeTests(challenge.id, {
+                language: tests.language,
+                starterCode: tests.starterCode,
+                testCases: finalizeTestCases(tests.testCases)
+            });
+            showToast('Test cases saved.', 'success');
+            setEditingTestsFor(null);
+            await fetchChallenges();
+        } catch (error: any) {
+            console.error(error);
+            showToast('Failed to save test cases: ' + error.message, 'error');
+        }
+    };
+
     const handleSubmitSolution = async (content: string) => {
-        if (selectedChallengeId) {
-            try {
-                const submissionId = await api.submitChallenge(selectedChallengeId, currentUser.uid, content);
-                const challenge = challenges.find(c => c.id === selectedChallengeId);
-                const challengeTitle = challenge?.title || 'Challenge';
-                const challengeDescription = challenge?.description || '';
+        const challenge = challenges.find(c => c.id === selectedChallengeId);
+        if (!challenge) return;
+        const title = `Feedback: ${challenge.title}`;
+        const isTested = hasTestCases(challenge);
 
-                setAutoFeedback({ 
-                    isOpen: true, 
-                    content: '', 
-                    weaknesses: '',
-                    improvements: '',
-                    passed: null,
-                    isLoading: true, 
-                    title: `Feedback: ${challengeTitle}` 
-                });
-
-                try {
-                    const result = await autoEvaluateChallenge(challengeTitle, challengeDescription, content);
-                    
-                    // Award badge if passed
-                    if (result.passed) {
-                        await api.reviewSubmission(submissionId, 'APPROVED', challengeTitle, currentUser.uid);
-                        showToast(`Congratulations! You earned the ${challengeTitle} badge!`, "success");
-                        await fetchUsers(); // Refresh user data to show new badge
-                    } else {
-                        await api.reviewSubmission(submissionId, 'REJECTED', challengeTitle, currentUser.uid);
-                    }
-
-                    setAutoFeedback({ 
-                        isOpen: true, 
-                        content: result.feedback, 
-                        weaknesses: result.weaknesses,
-                        improvements: result.improvements,
-                        passed: result.passed,
-                        isLoading: false, 
-                        title: `Feedback: ${challengeTitle}` 
-                    });
-                    
-                    await fetchChallenges();
-                } catch (e) {
-                    console.error("AI evaluation failed:", e);
-                    setAutoFeedback({ 
-                        isOpen: true, 
-                        content: "AI feedback is unavailable right now, but your solution has been submitted.", 
-                        weaknesses: '',
-                        improvements: '',
-                        passed: null,
-                        isLoading: false, 
-                        title: `Feedback: ${challengeTitle}` 
-                    });
-                }
-            } catch (error: any) {
-                console.error("Submission failed:", error);
-                showToast("Failed to submit: " + error.message, "error");
+        setAutoFeedback({ isOpen: true, content: '', weaknesses: '', improvements: '', passed: null, isLoading: true, title });
+        try {
+            const result = await submitChallengeSolution(challenge, currentUser.uid, content);
+            if (result.passed) {
+                showToast(`Congratulations! You earned the ${challenge.title} badge!`, "success");
+                await fetchUsers(); // Refresh user data to show new badge
             }
+            setAutoFeedback({
+                isOpen: true,
+                content: result.feedback,
+                weaknesses: result.weaknesses,
+                improvements: result.improvements,
+                passed: result.passed,
+                isLoading: false,
+                title,
+                tests: result.tests
+            });
+            await fetchChallenges();
+        } catch (e: any) {
+            if (!(e instanceof ChallengeEvaluationError)) {
+                console.error("Submission failed:", e);
+                setAutoFeedback(prev => ({ ...prev, isOpen: false, isLoading: false }));
+                showToast("Failed to submit: " + e.message, "error");
+                return;
+            }
+            console.error("Challenge evaluation failed:", e);
+            setAutoFeedback({
+                isOpen: true,
+                content: isTested
+                    ? "Your code couldn't be run against the tests right now. Please try again in a moment."
+                    : "AI feedback is unavailable right now, but your solution has been submitted.",
+                weaknesses: '',
+                improvements: '',
+                passed: null,
+                isLoading: false,
+                title
+            });
         }
     };
 
@@ -970,6 +1108,7 @@ const Challenges: React.FC<ChallengesProps> = ({ currentUser, onMakeSubmission }
                             currentUser={currentUser}
                             onOpenSubmission={openSubmission}
                             onOpenReview={openReview}
+                            onEditTests={setEditingTestsFor}
                             onMakeSubmission={onMakeSubmission}
                         />
                     ))}
@@ -987,6 +1126,13 @@ const Challenges: React.FC<ChallengesProps> = ({ currentUser, onMakeSubmission }
                 isOpen={isSubmitModalOpen}
                 onClose={() => setIsSubmitModalOpen(false)}
                 onSubmit={handleSubmitSolution}
+                challenge={challenges.find(c => c.id === selectedChallengeId)}
+            />
+
+            <EditTestsModal
+                challenge={editingTestsFor}
+                onClose={() => setEditingTestsFor(null)}
+                onSave={handleSaveTests}
             />
 
             <GenerateAIChallengeModal
@@ -1003,8 +1149,9 @@ const Challenges: React.FC<ChallengesProps> = ({ currentUser, onMakeSubmission }
                 passed={autoFeedback.passed}
                 isLoading={autoFeedback.isLoading}
                 title={autoFeedback.title}
-                subtitle="Instant AI feedback on your submission"
+                subtitle={hasTestCases(challenges.find(c => c.id === selectedChallengeId)) ? 'Running your code against the test cases' : 'Instant AI feedback on your submission'}
                 challengeTitle={autoFeedback.title.replace('Feedback: ', '')}
+                tests={autoFeedback.tests}
                 onClose={() => setAutoFeedback(prev => ({ ...prev, isOpen: false }))}
             />
 
