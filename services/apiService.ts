@@ -1,6 +1,6 @@
 
 import { supabase } from './supabaseClient';
-import { User, Activity, AttendanceRecord, AttendanceStatus, FeedItem, ProjectData, ProjectTask, Resource, AppNotification, Room, ShowcaseItem, Suggestion, Challenge, ChallengeSubmission, FeedComment, SuggestionType, SuggestionStatus, SubmissionStatus, ActivityCategory, FeedItemType, TaskPriority, ResourceCategory, ResourceType, Tab, Roadmap, RoadmapProgress, ShowcaseComment, Message, Team, TeamChallenge, TeamChallengeSubmission, PlaygroundProject, PlaygroundProjectFile, PlaygroundProjectActivity, PlaygroundProjectMember, FeatureFlags, GameLeaderboardEntry } from '../types';
+import { User, Activity, AttendanceRecord, AttendanceStatus, FeedItem, ProjectData, ProjectTask, Resource, AppNotification, Room, ShowcaseItem, Suggestion, Challenge, ChallengeSubmission, ChallengeLanguage, ChallengeTestCase, FeedComment, SuggestionType, SuggestionStatus, SubmissionStatus, ActivityCategory, FeedItemType, TaskPriority, ResourceCategory, ResourceType, Tab, Roadmap, RoadmapProgress, ShowcaseComment, Message, Team, TeamChallenge, TeamChallengeSubmission, PlaygroundProject, PlaygroundProjectFile, PlaygroundProjectActivity, PlaygroundProjectMember, FeatureFlags, GameLeaderboardEntry } from '../types';
 
 // --- Helper for Notifications ---
 const insertNotifications = async (notifications: Array<{ user_uid: string; message: string; is_read: boolean; link_to: Tab }>) => {
@@ -278,8 +278,13 @@ export const updateUser = async (uid: string, data: Partial<User>) => {
 };
 
 const STREAK_TIME_ZONE = 'Africa/Nairobi';
+/** Most graces a member can bank. */
+export const MAX_STREAK_GRACES = 5;
+/** A grace is earned each time the streak reaches a multiple of this. */
+export const STREAK_GRACE_INTERVAL = 5;
 
-const getStreakDayKey = (date: Date = new Date()): string => {
+/** The streak's calendar day ('YYYY-MM-DD') in the club's time zone. */
+export const getStreakDayKey = (date: Date = new Date()): string => {
     const parts = new Intl.DateTimeFormat('en-CA', {
         timeZone: STREAK_TIME_ZONE,
         year: 'numeric',
@@ -338,13 +343,13 @@ export const syncUserLoginStreak = async (user: User): Promise<{ user: User; not
         let nextGraces = graces;
         let notice: StreakLoginNotice = null;
 
-        if (nextStreak % 5 === 0) {
-            nextGraces = Math.min(5, graces + 1);
+        if (nextStreak % STREAK_GRACE_INTERVAL === 0) {
+            nextGraces = Math.min(MAX_STREAK_GRACES, graces + 1);
             if (nextGraces > graces) {
                 notice = {
                     type: 'grace_earned',
                     title: 'Streak Milestone!',
-                    message: `Congratulations on reaching a ${nextStreak}-day streak! You earned an extra streak grace. You now have ${nextGraces} / 5 graces.`,
+                    message: `Congratulations on reaching a ${nextStreak}-day streak! You earned an extra streak grace. You now have ${nextGraces} / ${MAX_STREAK_GRACES} graces.`,
                 };
             }
         }
@@ -367,8 +372,8 @@ export const syncUserLoginStreak = async (user: User): Promise<{ user: User; not
         const nextStreak = currentCount + 1;
         let nextGraces = graces - 1; // Consume one grace
 
-        if (nextStreak % 5 === 0) {
-            nextGraces = Math.min(5, nextGraces + 1);
+        if (nextStreak % STREAK_GRACE_INTERVAL === 0) {
+            nextGraces = Math.min(MAX_STREAK_GRACES, nextGraces + 1);
         }
 
         const updatedUser = {
@@ -387,7 +392,7 @@ export const syncUserLoginStreak = async (user: User): Promise<{ user: User; not
             notice: {
                 type: 'saved_with_grace',
                 title: 'Streak Saved',
-                message: `You were late, but a streak grace saved your streak. You have ${nextGraces} / 5 graces remaining.`,
+                message: `You were late, but a streak grace saved your streak. You have ${nextGraces} / ${MAX_STREAK_GRACES} graces remaining.`,
             },
         };
     }
@@ -1656,7 +1661,10 @@ export const getChallenges = async (): Promise<Challenge[]> => {
             createdBy: c.created_by,
             createdAt: c.created_at,
             status: c.status,
-            difficulty: c.difficulty
+            difficulty: c.difficulty,
+            language: c.language === 'javascript' ? 'javascript' : 'python',
+            starterCode: c.starter_code || undefined,
+            testCases: Array.isArray(c.test_cases) ? c.test_cases : []
         }));
     } catch (error) {
         return [];
@@ -1668,7 +1676,10 @@ export const addChallenge = async (challenge: {
     description: string,
     deadline: string,
     createdBy: string,
-    difficulty?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'
+    difficulty?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED',
+    language?: ChallengeLanguage,
+    starterCode?: string,
+    testCases?: ChallengeTestCase[]
 }) => {
     const { error } = await supabase.from('challenges').insert({
         title: challenge.title,
@@ -1676,10 +1687,29 @@ export const addChallenge = async (challenge: {
         deadline: challenge.deadline,
         created_by: challenge.createdBy,
         difficulty: challenge.difficulty || 'BEGINNER',
-        status: 'ACTIVE'
+        status: 'ACTIVE',
+        // Only sent for test-graded challenges so plain ones don't depend on the new columns.
+        ...(challenge.testCases?.length ? {
+            language: challenge.language || 'python',
+            starter_code: challenge.starterCode || null,
+            test_cases: challenge.testCases
+        } : {})
     });
     if (error) throw error;
     await notifyAllUsers(`New Challenge: ${challenge.title}`, 'challenges', challenge.createdBy);
+};
+
+export const updateChallengeTests = async (challengeId: string, tests: {
+    language: ChallengeLanguage,
+    starterCode?: string,
+    testCases: ChallengeTestCase[]
+}) => {
+    const { error } = await supabase.from('challenges').update({
+        language: tests.language,
+        starter_code: tests.starterCode || null,
+        test_cases: tests.testCases
+    }).eq('id', challengeId);
+    if (error) throw error;
 };
 
 export const submitChallenge = async (challengeId: string, userId: string, content: string): Promise<string> => {
@@ -1708,15 +1738,26 @@ export const getSubmissions = async (challengeId: string): Promise<ChallengeSubm
             userAvatarUrl: s.users?.avatar_url,
             content: s.content,
             status: s.status,
-            submittedAt: s.created_at
+            submittedAt: s.created_at,
+            testsPassed: s.tests_passed,
+            testsTotal: s.tests_total
         }));
     } catch (error) {
         return [];
     }
 };
 
-export const reviewSubmission = async (submissionId: string, status: 'APPROVED' | 'REJECTED', challengeTitle: string, userId: string) => {
-    const { error } = await supabase.from('challenge_submissions').update({ status }).eq('id', submissionId);
+export const reviewSubmission = async (
+    submissionId: string,
+    status: 'APPROVED' | 'REJECTED',
+    challengeTitle: string,
+    userId: string,
+    testSummary?: { passed: number, total: number }
+) => {
+    const { error } = await supabase.from('challenge_submissions').update({
+        status,
+        ...(testSummary ? { tests_passed: testSummary.passed, tests_total: testSummary.total } : {})
+    }).eq('id', submissionId);
     if (error) throw error;
 
     if (status === 'APPROVED') {

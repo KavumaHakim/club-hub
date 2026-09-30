@@ -22,12 +22,15 @@ import { PencilIcon } from './icons/PencilIcon';
 import { SparklesIcon } from './icons/SparklesIcon';
 import Editor from '@monaco-editor/react';
 import { emmetHTML, emmetCSS } from 'emmet-monaco-es';
-import { User, Tab, PlaygroundProject, PlaygroundProjectFile, PlaygroundProjectActivity, PlaygroundProjectMember } from '../types';
+import { User, Tab, PlaygroundProject, PlaygroundProjectFile, PlaygroundProjectActivity, PlaygroundProjectMember, ChallengeTestCase } from '../types';
 import * as api from '../services/apiService';
 import * as geminiService from '../services/geminiService';
 import ConfirmationModal from './ConfirmationModal';
 import ShareCodeModal from './ShareCodeModal';
 import SubmitToChallengeModal from './SubmitToChallengeModal';
+import ChallengeTestResults from './ChallengeTestResults';
+import { submitChallengeSolution, runChallengeTestReport, type ChallengeTestReport } from '../services/challengeJudge';
+import { hasTestCases, STARTER_CODE } from '../services/challengeRunner';
 import { useData } from '../DataContext';
 import { FormattedMessage } from './FormattedMessage';
 import { supabase } from '../services/supabaseClient';
@@ -405,7 +408,8 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
   const menuRef = useRef<HTMLDivElement>(null);
   const [pendingChallenge, setPendingChallenge] = useState<any | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
-  const [evaluationResult, setEvaluationResult] = useState<{ passed: boolean, feedback: string, weaknesses: string, improvements: string } | null>(null);
+  const [evaluationResult, setEvaluationResult] = useState<{ passed: boolean, feedback: string, weaknesses: string, improvements: string, tests?: ChallengeTestReport } | null>(null);
+  const [isRunningTests, setIsRunningTests] = useState(false);
   const codeRef = useRef(code);
   const activeFileRef = useRef<PlaygroundProjectFile | null>(null);
   const executionRef = useRef<SandboxExecutionController | null>(null);
@@ -531,31 +535,46 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
       if (challengeToHandle && globalActiveTab === 'playground') {
           try {
               const challenge = challengeToHandle;
+              const isTested = hasTestCases(challenge);
+
+              // Test-graded challenges are tied to one language: switch to it first and let
+              // this effect re-run (the pending context stays put until then).
+              if (isTested && !activeProject && challenge.language && challenge.language !== language) {
+                  setLanguage(challenge.language);
+                  localStorage.setItem('playground_lang', challenge.language);
+                  return;
+              }
+
               setPendingChallenge(challenge);
-              
+
               let challengeIntro = '';
               const deadlineStr = challenge.deadline ? new Date(challenge.deadline).toLocaleDateString() : 'N/A';
-              
+              const testsNote = isTested
+                  ? `TESTS: ${challenge.testCases.length} (use "Run Tests" to check the visible ones)\n`
+                  : '';
+
               if (language === 'python') {
                   challengeIntro = `"""\n` +
                                    `=========================================\n` +
                                    `CHALLENGE: ${challenge.title}\n` +
                                    (challenge.difficulty ? `DIFFICULTY: ${challenge.difficulty}\n` : '') +
                                    `DEADLINE: ${deadlineStr}\n` +
+                                   testsNote +
                                    `=========================================\n` +
-                                   `${challenge.description}\n` +
+                                   `${challenge.description.replace(/"""/g, '\\"\\"\\"')}\n` +
                                    `"""\n\n` +
-                                   `# Write your solution below:\n\n`;
+                                   (isTested ? (challenge.starterCode || STARTER_CODE.python) + '\n' : `# Write your solution below:\n\n`);
               } else if (language === 'javascript') {
                   challengeIntro = `/*\n` +
                                    `=========================================\n` +
                                    `CHALLENGE: ${challenge.title}\n` +
                                    (challenge.difficulty ? `DIFFICULTY: ${challenge.difficulty}\n` : '') +
                                    `DEADLINE: ${deadlineStr}\n` +
+                                   testsNote +
                                    `=========================================\n` +
-                                   `${challenge.description}\n` +
+                                   `${challenge.description.replace(/\*\//g, '* /')}\n` +
                                    `*/\n\n` +
-                                   `// Write your solution below:\n\n`;
+                                   (isTested ? (challenge.starterCode || STARTER_CODE.javascript) + '\n' : `// Write your solution below:\n\n`);
               } else if (language === 'html') {
                   challengeIntro = `<!--\n` +
                                    `=========================================\n` +
@@ -1489,19 +1508,16 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
       setIsEvaluating(true);
       setEvaluationResult(null);
       try {
-          const submissionId = await api.submitChallenge(pendingChallenge.id, currentUser.uid, code);
-          const result = await geminiService.autoEvaluateChallenge(
-              pendingChallenge.title,
-              pendingChallenge.description,
-              code
-          );
-          setEvaluationResult(result);
+          const result = await submitChallengeSolution(pendingChallenge, currentUser.uid, code);
+          if (result.passed === null) {
+              showToast("Your solution was submitted for manual review.", "info");
+              return;
+          }
+          setEvaluationResult({ ...result, passed: result.passed });
           if (result.passed) {
-              await api.reviewSubmission(submissionId, 'APPROVED', pendingChallenge.title, currentUser.uid);
               showToast("Congratulations! Challenge passed and badge awarded!", "success");
-              await fetchUsers(); 
+              await fetchUsers();
           } else {
-              await api.reviewSubmission(submissionId, 'REJECTED', pendingChallenge.title, currentUser.uid);
               showToast("Challenge evaluation complete. See feedback for improvements.", "info");
           }
       } catch (error: any) {
@@ -1509,6 +1525,44 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
           showToast("Evaluation failed: " + error.message, "error");
       } finally {
           setIsEvaluating(false);
+      }
+  };
+
+  // Dry-run against the visible test cases only; hidden ones are judged on submit.
+  const handleRunTests = async () => {
+      if (!pendingChallenge || !hasTestCases(pendingChallenge)) return;
+      const visibleCount = pendingChallenge.testCases.filter((c: ChallengeTestCase) => !c.hidden).length;
+      const hiddenCount = pendingChallenge.testCases.length - visibleCount;
+      setActiveTabState('output');
+      if (visibleCount === 0) {
+          setOutput([{ type: 'hint', content: `This challenge only has hidden tests (${hiddenCount}). Submit to be judged.` }]);
+          return;
+      }
+      setIsRunningTests(true);
+      setOutput([{ type: 'log', content: `Running ${visibleCount} visible test${visibleCount === 1 ? '' : 's'}...` }]);
+      try {
+          const report = await runChallengeTestReport(pendingChallenge, code, true);
+          const lines: OutputLine[] = [];
+          report.cases.forEach(c => {
+              if (c.passed) {
+                  lines.push({ type: 'log', content: `PASS  ${c.label}  (${c.runtimeMs} ms)` });
+                  return;
+              }
+              lines.push({ type: 'error', content: `FAIL  ${c.label}` });
+              lines.push({ type: 'log', content: `  input:    ${JSON.stringify(c.input ?? '')}` });
+              lines.push({ type: 'log', content: `  expected: ${JSON.stringify(c.expectedOutput ?? '')}` });
+              lines.push(c.error
+                  ? { type: 'error', content: `  error:    ${c.error}` }
+                  : { type: 'log', content: `  got:      ${JSON.stringify(c.actualOutput ?? '')}` });
+          });
+          if (report.timedOut) lines.push({ type: 'error', content: 'Execution timed out — check for an infinite loop.' });
+          lines.push({ type: report.passed === report.total ? 'hint' : 'error', content: `${report.passed}/${report.total} visible tests passed.` + (hiddenCount > 0 ? ` ${hiddenCount} hidden test${hiddenCount === 1 ? '' : 's'} will run when you submit.` : '') });
+          setOutput(prev => [...prev, ...lines]);
+      } catch (err: any) {
+          setOutput(prev => [...prev, { type: 'error', content: err?.message || 'Could not run the tests.' }]);
+      } finally {
+          setIsRunningTests(false);
+          scrollToBottom();
       }
   };
   
@@ -2224,11 +2278,28 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                  </button>
              </Tooltip>
 
+             {pendingChallenge && hasTestCases(pendingChallenge) && (
+                 <Tooltip text="Check your solve() against the visible test cases without submitting.">
+                     <button
+                        onClick={handleRunTests}
+                        disabled={isExecuting || isEvaluating || isRunningTests || (language === 'python' && !isPyodideReady) || isWaitingForInput}
+                        className="bg-white dark:bg-gray-800 border border-pink-300 dark:border-pink-700 text-pink-700 dark:text-pink-300 hover:bg-pink-50 dark:hover:bg-pink-900/20 px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                     >
+                        {isRunningTests ? (
+                            <span className="animate-spin h-3 w-3 border-2 border-pink-200 border-t-pink-600 rounded-full"></span>
+                        ) : (
+                            <BadgeCheckIcon className="w-3.5 h-3.5"/>
+                        )}
+                        <span className="hidden sm:inline">{isRunningTests ? 'Testing...' : 'Run Tests'}</span>
+                     </button>
+                 </Tooltip>
+             )}
+
              {pendingChallenge && (
-                 <Tooltip text="Submit your code for AI evaluation and badge awarding.">
+                 <Tooltip text={hasTestCases(pendingChallenge) ? "Submit your code to be judged against all test cases." : "Submit your code for AI evaluation and badge awarding."}>
                      <button 
-                        onClick={handleAutoEvaluate} 
-                        disabled={isExecuting || isEvaluating || (language === 'python' && !isPyodideReady) || isWaitingForInput}
+                        onClick={handleAutoEvaluate}
+                        disabled={isExecuting || isEvaluating || isRunningTests || (language === 'python' && !isPyodideReady) || isWaitingForInput}
                         className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white px-4 py-1.5 rounded-md text-xs font-bold flex items-center gap-2 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                      >
                         {isEvaluating ? (
@@ -2643,7 +2714,9 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                   </div>
                   <div className="text-center">
                       <h3 className="text-lg font-bold text-gray-900 dark:text-white">Analyzing Solution</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 animate-pulse">Kevin is reviewing your code...</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 animate-pulse">
+                          {hasTestCases(pendingChallenge) ? 'Running your code against the test cases...' : 'Kevin is reviewing your code...'}
+                      </p>
                   </div>
               </div>
           </div>
@@ -2672,14 +2745,20 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                           <section>
                               <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
                                   <SparklesIcon className="w-4 h-4 text-purple-500" />
-                                  AI Feedback
+                                  {evaluationResult.tests ? 'Verdict' : 'AI Feedback'}
                               </h4>
                               <div className="bg-gray-50 dark:bg-gray-900/50 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-300 leading-relaxed">
                                   <FormattedMessage text={evaluationResult.feedback} isUser={false} />
                               </div>
                           </section>
 
-                          {evaluationResult.weaknesses && (
+                          {evaluationResult.tests && (
+                              <section>
+                                  <ChallengeTestResults report={evaluationResult.tests} />
+                              </section>
+                          )}
+
+                          {evaluationResult.weaknesses && !evaluationResult.tests && (
                               <section>
                                   <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
                                       {evaluationResult.passed ? (

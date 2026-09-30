@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { FeedItem, FeedItemType, User, FeedComment, PollOption, PollVoter } from '../types';
+import React, { useState, useEffect, useMemo } from 'react';
+import { FeedItem, FeedItemType, User, FeedComment, PollOption } from '../types';
 import { ChatBubbleIcon } from './icons/ChatBubbleIcon';
 import { SendIcon } from './icons/SendIcon';
 import { TrashIcon } from './icons/TrashIcon';
-import { ChartBarIcon } from './icons/ChartBarIcon';
 import { CheckIcon } from './icons/CheckIcon';
 import { BookmarkIcon } from './icons/BookmarkIcon';
 import { ShareIcon } from './icons/ShareIcon';
@@ -13,31 +12,13 @@ import * as api from '../services/apiService';
 import { useData } from '../DataContext';
 import LinkPreview from './LinkPreview';
 
-const badgeConfig: { [key in FeedItemType]: {
-    text: string;
-    bgClass: string;
-    textClass: string;
-} } = {
-    EVENT_ANNOUNCEMENT: {
-        text: 'Event',
-        bgClass: 'bg-purple-100 dark:bg-purple-500/20',
-        textClass: 'text-purple-700 dark:text-purple-300',
-    },
-    MEMBER_POST: {
-        text: 'Discussion',
-        bgClass: 'bg-pink-100 dark:bg-pink-500/20',
-        textClass: 'text-pink-700 dark:text-pink-300',
-    },
-    NEWS_UPDATE: {
-        text: 'News',
-        bgClass: 'bg-blue-100 dark:bg-blue-500/20',
-        textClass: 'text-blue-700 dark:text-blue-300',
-    },
-    POLL: {
-        text: 'Poll',
-        bgClass: 'bg-yellow-100 dark:bg-yellow-500/20',
-        textClass: 'text-yellow-700 dark:text-yellow-300',
-    },
+/** The kicker above each post. One accent, no per-type tinting — the type
+ *  reads from the word, not from a colour. */
+const typeLabel: { [key in FeedItemType]: string } = {
+    EVENT_ANNOUNCEMENT: 'Event',
+    MEMBER_POST: 'Discussion',
+    NEWS_UPDATE: 'News',
+    POLL: 'Poll',
 };
 
 const getRelativeTime = (dateString: string) => {
@@ -71,41 +52,43 @@ const PollVotersModal: React.FC<{ isOpen: boolean; onClose: () => void; options:
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 relative border border-gray-200 dark:border-gray-700 flex flex-col max-h-[80vh] animate-fade-in-up">
-                <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-1 rounded-full transition-colors">
-                    <XIcon className="h-6 w-6" />
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4">
+            <div className="ch-shell relative flex max-h-[80vh] w-full max-w-md flex-col border-2 border-ch-rule bg-ch-bg p-6">
+                <button
+                    onClick={onClose}
+                    className="absolute right-4 top-4 p-1 text-ch-muted transition-colors hover:text-ch-text"
+                    aria-label="Close"
+                >
+                    <XIcon className="h-5 w-5" />
                 </button>
 
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                    <ChartBarIcon className="h-6 w-6 text-yellow-500" />
-                    Poll Results
-                </h3>
+                <p className="mb-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-ch-accent">Poll</p>
+                <h3 className="mb-6 text-[24px] font-extrabold tracking-[-0.02em]">Results</h3>
 
-                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-6 pr-2">
+                <div className="ch-scroll flex-1 space-y-6 overflow-y-auto pr-2">
                     {options.map(option => (
                         <div key={option.id}>
-                            <div className="flex justify-between items-center mb-2">
-                                <h4 className="font-semibold text-gray-800 dark:text-gray-200 text-sm">{option.text}</h4>
-                                <span className="text-xs font-bold bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full text-gray-600 dark:text-gray-300">
+                            <div className="mb-2 flex items-center justify-between border-b border-ch-divider pb-1.5">
+                                <h4 className="text-[13px] font-bold">{option.text}</h4>
+                                <span className="text-[11px] font-extrabold text-ch-muted">
                                     {option.votes} vote{option.votes !== 1 ? 's' : ''}
                                 </span>
                             </div>
 
-                            <div className="space-y-1 ml-1">
+                            <div>
                                 {option.voters && option.voters.length > 0 ? (
                                     option.voters.map(voter => (
-                                        <div key={voter.uid} className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                        <div key={voter.uid} className="flex items-center gap-2 py-1">
                                             <img
                                                 src={voter.avatarUrl || `https://i.pravatar.cc/40?u=${voter.name}`}
                                                 alt={voter.name}
-                                                className="w-6 h-6 rounded-full object-cover border border-gray-200 dark:border-gray-600"
+                                                className="h-6 w-6 flex-none object-cover"
                                             />
-                                            <span className="text-xs text-gray-700 dark:text-gray-300 font-medium truncate">{voter.name}</span>
+                                            <span className="truncate text-[12px] font-medium">{voter.name}</span>
                                         </div>
                                     ))
                                 ) : (
-                                    <p className="text-xs text-gray-400 italic pl-1">No votes yet.</p>
+                                    <p className="py-1 text-[12px] text-ch-muted">No votes yet.</p>
                                 )}
                             </div>
                         </div>
@@ -120,11 +103,11 @@ interface FeedItemCardProps {
     item: FeedItem;
     currentUser: User;
     onDelete?: (id: string) => void;
-    staggerDelay?: number;
+    /** 1-based position in the feed — printed in the row's gutter. */
+    index?: number;
 }
 
-const FeedItemCard: React.FC<FeedItemCardProps> = ({ item, currentUser, onDelete, staggerDelay = 0 }) => {
-    const config = badgeConfig[item.type];
+const FeedItemCard: React.FC<FeedItemCardProps> = ({ item, currentUser, onDelete, index }) => {
     const [showComments, setShowComments] = useState(false);
     const [comments, setComments] = useState<FeedComment[]>([]);
     const [isLoadingComments, setIsLoadingComments] = useState(false);
@@ -143,7 +126,6 @@ const FeedItemCard: React.FC<FeedItemCardProps> = ({ item, currentUser, onDelete
 
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
     const { showAlert } = useData();
-    const cardRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         // Check bookmark status from local storage
@@ -151,25 +133,7 @@ const FeedItemCard: React.FC<FeedItemCardProps> = ({ item, currentUser, onDelete
         if (bookmarks.includes(item.id)) {
             setIsBookmarked(true);
         }
-
-        const element = cardRef.current;
-        if (!element) return;
-
-        element.style.transitionDelay = `${staggerDelay}ms`;
-
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (entry.isIntersecting) {
-                    element.classList.add('is-visible');
-                    observer.unobserve(element);
-                }
-            },
-            { threshold: 0.1 }
-        );
-
-        observer.observe(element);
-        return () => observer.disconnect();
-    }, [staggerDelay, item.id]);
+    }, [item.id]);
 
     useEffect(() => {
         const handleClickOutside = () => setContextMenu(null);
@@ -296,7 +260,7 @@ const FeedItemCard: React.FC<FeedItemCardProps> = ({ item, currentUser, onDelete
         if (urlRegex.test(content)) {
             const parts = content.split(urlRegex);
             return (
-                <div className="whitespace-pre-wrap break-words w-full min-w-0 text-gray-700 dark:text-gray-300 leading-relaxed text-[15px]">
+                <div className="w-full min-w-0 max-w-[62ch] whitespace-pre-wrap break-words text-[14.5px] leading-relaxed text-ch-muted">
                     {parts.map((part, i) => {
                         if (part.match(urlRegex)) {
                             return <LinkPreview key={i} url={part} />;
@@ -306,225 +270,199 @@ const FeedItemCard: React.FC<FeedItemCardProps> = ({ item, currentUser, onDelete
                 </div>
             );
         }
-        return <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap text-[15px]">{content}</p>;
+        return (
+            <p className="max-w-[62ch] whitespace-pre-wrap text-[14.5px] leading-relaxed text-ch-muted">
+                {content}
+            </p>
+        );
     };
 
+    const actionButton = "flex items-center gap-[7px] text-[12px] font-semibold text-ch-muted transition-colors hover:text-ch-accent [&_svg]:h-[15px] [&_svg]:w-[15px]";
+
     return (
-        <div
-            ref={cardRef}
+        <article
             onContextMenu={handleContextMenu}
-            className="scroll-animate group bg-white dark:bg-gray-800 rounded-2xl shadow-sm hover:shadow-xl border border-gray-200 dark:border-gray-700 transition-all duration-300 overflow-hidden transform hover:-translate-y-0.5"
+            className="group flex items-stretch border-b border-ch-divider transition-colors hover:bg-ch-surface"
         >
-            <div className="p-5 sm:p-6">
-                {/* Header */}
-                <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                        <div className="relative">
-                            <img
-                                src={item.authorAvatarUrl}
-                                alt={item.author}
-                                className="w-10 h-10 rounded-full object-cover ring-2 ring-gray-100 dark:ring-gray-700"
-                            />
-                        </div>
-                        <div>
-                            <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">{item.author}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1" title={item.timestamp}>
-                                {getRelativeTime(item.timestamp)}
-                            </p>
-                        </div>
-                    </div>
-                    <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${config.bgClass} ${config.textClass}`}>
-                        {config.text}
+            {/* Gutter — the post's number instead of a card edge */}
+            <div className="hidden w-16 flex-none justify-center border-r border-ch-divider pt-[22px] sm:flex">
+                <span className="text-[13px] font-extrabold tracking-[0.04em] text-ch-muted">
+                    {index !== undefined ? String(index).padStart(2, '0') : ''}
+                </span>
+            </div>
+
+            <div className="min-w-0 flex-1 px-4 pb-6 pt-[22px] sm:px-7">
+                {/* Kicker line */}
+                <div className="mb-2.5 flex flex-wrap items-center gap-3">
+                    <span className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-ch-accent">
+                        {typeLabel[item.type]}
+                    </span>
+                    <span className="h-px w-[18px] bg-ch-divider" />
+                    <span className="text-[12px] text-ch-muted" title={item.timestamp}>
+                        {item.author} · {getRelativeTime(item.timestamp)}
                     </span>
                 </div>
 
                 {/* Content */}
-                <div className="mb-4">
-                    {item.type === 'POLL' ? (
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4 leading-tight flex items-start gap-2">
-                            <ChartBarIcon className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
-                            {item.message}
-                        </h3>
-                    ) : (
-                        <>
-                            {item.title && (
-                                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2 leading-tight">
-                                    {item.title}
-                                </h3>
-                            )}
-                            <div className="prose prose-sm dark:prose-invert max-w-none">
-                                {renderMessageContent(item.message)}
-                            </div>
-                        </>
-                    )}
+                {item.type === 'POLL' ? (
+                    <h3 className="mb-2 max-w-[32ch] text-[25px] font-extrabold leading-[1.12] tracking-[-0.022em]">
+                        {item.message}
+                    </h3>
+                ) : (
+                    <>
+                        {item.title && (
+                            <h3 className="mb-2 max-w-[32ch] text-[25px] font-extrabold leading-[1.12] tracking-[-0.022em]">
+                                {item.title}
+                            </h3>
+                        )}
+                        <div className="mb-3.5">{renderMessageContent(item.message)}</div>
+                    </>
+                )}
 
-                    {/* Attached Image */}
-                    {item.imageUrl && (
-                        <div className="mt-4 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-700 shadow-sm transition-transform hover:scale-[1.01] duration-300">
-                            <img
-                                src={item.imageUrl}
-                                alt={item.title || "Attached image"}
-                                className="w-full h-auto object-cover max-h-[500px]"
-                                loading="lazy"
-                                onError={(e) => {
-                                    (e.target as HTMLImageElement).parentElement!.style.display = 'none';
-                                }}
-                            />
-                        </div>
-                    )}
-
-                    {/* Poll Options */}
-                    {item.type === 'POLL' && pollOptions.length > 0 && (
-                        <div className="space-y-2 mt-4">
-                            {pollOptions.map(option => {
-                                const percent = totalVotes > 0 ? Math.round((option.votes / totalVotes) * 100) : 0;
-                                const isWinner = totalVotes > 0 && option.votes === Math.max(...pollOptions.map(o => o.votes));
-
-                                return (
-                                    <div
-                                        key={option.id}
-                                        className={`relative overflow-hidden rounded-lg border cursor-pointer transition-all duration-200 group/poll ${option.isVoted
-                                            ? 'border-purple-500 dark:border-purple-400 ring-1 ring-purple-500/20'
-                                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                                            }`}
-                                        onClick={() => handleVote(option.id)}
-                                    >
-                                        {/* Progress Bar Layer */}
-                                        <div
-                                            className={`absolute top-0 left-0 h-full transition-all duration-500 ease-out ${option.isVoted
-                                                ? 'bg-purple-100/80 dark:bg-purple-900/30'
-                                                : isWinner && totalVotes > 0
-                                                    ? 'bg-gray-100/80 dark:bg-gray-700/50'
-                                                    : 'bg-gray-50/80 dark:bg-gray-800/50'
-                                                }`}
-                                            style={{ width: `${percent}%` }}
-                                        />
-
-                                        {/* Content Layer */}
-                                        <div className="relative z-10 flex items-center justify-between p-3">
-                                            <div className="flex items-center gap-3 min-w-0">
-                                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${option.isVoted
-                                                    ? 'border-purple-500 bg-purple-500 text-white'
-                                                    : 'border-gray-300 dark:border-gray-500 group-hover/poll:border-purple-400'
-                                                    }`}>
-                                                    {option.isVoted && <CheckIcon className="w-3 h-3 text-white" />}
-                                                </div>
-                                                <span className={`text-sm font-medium truncate ${option.isVoted ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'
-                                                    }`}>
-                                                    {option.text}
-                                                </span>
-                                            </div>
-                                            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 ml-3">
-                                                {percent}%
-                                            </span>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                            <div className="flex justify-between items-center mt-2 px-1">
-                                <p className="text-xs text-gray-400 dark:text-gray-500">
-                                    {totalVotes} vote{totalVotes !== 1 ? 's' : ''}
-                                </p>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* Footer / Interactive Area */}
-                <div className="flex items-center justify-between pt-2">
-                    <div className="flex gap-4">
-                        <button
-                            onClick={handleToggleComments}
-                            className={`flex items-center gap-1.5 transition-colors ${showComments ? 'text-purple-600 dark:text-purple-400' : 'text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400'}`}
-                        >
-                            <ChatBubbleIcon className="w-5 h-5" />
-                            <span className="text-xs font-medium">{commentCount > 0 ? commentCount : 'Comment'}</span>
-                        </button>
-
-                        <button
-                            onClick={handleBookmark}
-                            className={`flex items-center gap-1.5 transition-colors ${isBookmarked ? 'text-pink-600 dark:text-pink-400' : 'text-gray-500 dark:text-gray-400 hover:text-pink-600 dark:hover:text-pink-400'}`}
-                            title={isBookmarked ? "Remove Bookmark" : "Bookmark"}
-                        >
-                            <BookmarkIcon className="w-5 h-5" filled={isBookmarked} />
-                        </button>
-
-                        <button
-                            onClick={handleShare}
-                            className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                            title="Copy to clipboard"
-                        >
-                            <ShareIcon className="w-5 h-5" />
-                            {isCopied && <span className="text-xs text-blue-600 animate-fade-in">Copied!</span>}
-                        </button>
+                {/* Attached Image — printed flat, no rounding */}
+                {item.imageUrl && (
+                    <div className="mb-4 max-w-[62ch] border border-ch-divider">
+                        <img
+                            src={item.imageUrl}
+                            alt={item.title || "Attached image"}
+                            className="block h-auto max-h-[500px] w-full object-cover"
+                            loading="lazy"
+                            onError={(e) => {
+                                (e.target as HTMLImageElement).parentElement!.style.display = 'none';
+                            }}
+                        />
                     </div>
+                )}
 
-                    {/* View Voters Button for Patrons */}
-                    {item.type === 'POLL' && currentUser.role === 'PATRON' && (
-                        <button
-                            onClick={() => setShowVotersModal(true)}
-                            className="flex items-center gap-1.5 text-gray-500 hover:text-yellow-600 dark:hover:text-yellow-400 transition-colors bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded-lg"
-                            title="View Voters"
-                        >
-                            <UsersIcon className="w-4 h-4" />
-                            <span className="text-xs font-medium">Voters</span>
-                        </button>
-                    )}
-                </div>
-            </div>
+                {/* Poll Options */}
+                {item.type === 'POLL' && pollOptions.length > 0 && (
+                    <div className="mb-3.5 max-w-[62ch]">
+                        {pollOptions.map(option => {
+                            const percent = totalVotes > 0 ? Math.round((option.votes / totalVotes) * 100) : 0;
 
-            {/* Comments Section */}
-            {showComments && (
-                <div className="bg-gray-50 dark:bg-gray-900/30 border-t border-gray-100 dark:border-gray-700/50 p-5 animate-fade-in-down">
-                    {/* Comments List */}
-                    <div className="space-y-4 mb-4 max-h-60 overflow-y-auto custom-scrollbar pr-2">
-                        {isLoadingComments ? (
-                            <p className="text-center text-xs text-gray-500">Loading comments...</p>
-                        ) : comments.length === 0 ? (
-                            <p className="text-center text-xs text-gray-400 italic">No comments yet. Start the conversation!</p>
-                        ) : (
-                            comments.map(comment => (
-                                <div key={comment.id} className="flex gap-3 animate-fade-in">
-                                    <img src={comment.userAvatarUrl} alt={comment.userName} className="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-gray-200 dark:border-gray-700" />
-                                    <div className="bg-white dark:bg-gray-800 p-3 rounded-2xl rounded-tl-none text-sm flex-1 border border-gray-200 dark:border-gray-700 shadow-sm">
-                                        <div className="flex justify-between items-baseline mb-1">
-                                            <span className="font-bold text-gray-900 dark:text-white text-xs">{comment.userName}</span>
-                                            <span className="text-[10px] text-gray-400">{getRelativeTime(comment.createdAt)}</span>
+                            return (
+                                <div
+                                    key={option.id}
+                                    className={`relative mb-1.5 cursor-pointer overflow-hidden border transition-colors ${
+                                        option.isVoted ? 'border-ch-accent' : 'border-ch-divider hover:border-ch-rule'
+                                    }`}
+                                    onClick={() => handleVote(option.id)}
+                                >
+                                    {/* Progress field */}
+                                    <div
+                                        className="absolute left-0 top-0 h-full transition-[width] duration-500 ease-out"
+                                        style={{
+                                            width: `${percent}%`,
+                                            background: option.isVoted ? 'var(--ch-accent-soft)' : 'var(--ch-surface-2)',
+                                        }}
+                                    />
+                                    <div className="relative z-10 flex items-center justify-between px-3 py-2.5">
+                                        <div className="flex min-w-0 items-center gap-3">
+                                            <div
+                                                className={`flex h-4 w-4 flex-none items-center justify-center border-2 ${
+                                                    option.isVoted
+                                                        ? 'border-ch-accent bg-ch-accent text-ch-on-accent'
+                                                        : 'border-ch-rule'
+                                                }`}
+                                            >
+                                                {option.isVoted && <CheckIcon className="h-2.5 w-2.5" />}
+                                            </div>
+                                            <span className="truncate text-[13.5px] font-semibold">{option.text}</span>
                                         </div>
-                                        <p className="text-gray-700 dark:text-gray-300 text-sm">{comment.content}</p>
+                                        <span className="ml-3 text-[12px] font-extrabold text-ch-muted">{percent}%</span>
                                     </div>
                                 </div>
-                            ))
-                        )}
+                            );
+                        })}
+                        <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-ch-muted">
+                            {totalVotes} vote{totalVotes !== 1 ? 's' : ''}
+                        </p>
                     </div>
+                )}
 
-                    {/* Add Comment Form */}
-                    <form onSubmit={handlePostComment} className="flex gap-3 items-center">
-                        <img src={currentUser.avatarUrl || `https://i.pravatar.cc/40?u=${currentUser.username}`} className="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-700" alt="My Avatar" />
-                        <div className="flex-1 relative">
+                {/* Actions */}
+                <div className="flex items-center gap-5">
+                    <button onClick={handleToggleComments} className={actionButton} title="Comments">
+                        <ChatBubbleIcon />
+                        {commentCount > 0 ? commentCount : 'Comment'}
+                    </button>
+
+                    <button
+                        onClick={handleBookmark}
+                        className={`${actionButton} ${isBookmarked ? 'text-ch-accent' : ''}`}
+                        title={isBookmarked ? "Remove Bookmark" : "Bookmark"}
+                    >
+                        <BookmarkIcon filled={isBookmarked} />
+                    </button>
+
+                    <button onClick={handleShare} className={actionButton} title="Copy to clipboard">
+                        <ShareIcon />
+                        {isCopied && <span className="text-[11px] font-bold uppercase tracking-[0.1em]">Copied</span>}
+                    </button>
+
+                    {item.type === 'POLL' && currentUser.role === 'PATRON' && (
+                        <button onClick={() => setShowVotersModal(true)} className={actionButton} title="View Voters">
+                            <UsersIcon />
+                            Voters
+                        </button>
+                    )}
+                </div>
+
+                {/* Comments */}
+                {showComments && (
+                    <div className="mt-5 border-t border-ch-divider pt-4">
+                        <div className="ch-scroll mb-4 max-h-60 space-y-3 overflow-y-auto pr-2">
+                            {isLoadingComments ? (
+                                <p className="text-[12px] text-ch-muted">Loading comments…</p>
+                            ) : comments.length === 0 ? (
+                                <p className="text-[12px] text-ch-muted">No comments yet. Start the conversation.</p>
+                            ) : (
+                                comments.map(comment => (
+                                    <div key={comment.id} className="flex gap-3">
+                                        <img
+                                            src={comment.userAvatarUrl}
+                                            alt={comment.userName}
+                                            className="h-7 w-7 flex-none object-cover"
+                                        />
+                                        <div className="min-w-0 flex-1 border-l-2 border-ch-divider pl-3">
+                                            <div className="mb-0.5 flex items-baseline justify-between gap-3">
+                                                <span className="text-[12px] font-bold">{comment.userName}</span>
+                                                <span className="flex-none text-[10px] text-ch-muted">
+                                                    {getRelativeTime(comment.createdAt)}
+                                                </span>
+                                            </div>
+                                            <p className="text-[13px] leading-relaxed text-ch-muted">{comment.content}</p>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        <form onSubmit={handlePostComment} className="flex max-w-[62ch] items-stretch border border-ch-rule">
                             <input
                                 type="text"
                                 value={newComment}
                                 onChange={(e) => setNewComment(e.target.value)}
-                                placeholder="Add a comment..."
-                                className="w-full pl-4 pr-10 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full text-sm focus:ring-2 focus:ring-purple-500 dark:text-white placeholder-gray-500 transition-shadow shadow-sm"
+                                placeholder="Add a comment…"
+                                className="min-w-0 flex-1 border-0 bg-transparent px-3 py-2.5 text-[13px] text-ch-text placeholder-ch-muted focus:outline-none"
                             />
                             <button
                                 type="submit"
                                 disabled={!newComment.trim() || isPosting}
-                                className="absolute right-1.5 top-1.5 p-1.5 bg-purple-600 text-white rounded-full hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                className="flex flex-none items-center gap-2 border-l border-ch-rule bg-ch-accent px-4 text-[12px] font-extrabold uppercase tracking-[0.1em] text-ch-on-accent transition-colors hover:bg-ch-accent-deep disabled:opacity-45"
                             >
-                                <SendIcon className="w-3.5 h-3.5 transform rotate-90" />
+                                <SendIcon className="h-3.5 w-3.5 rotate-90" />
+                                Send
                             </button>
-                        </div>
-                    </form>
-                </div>
-            )}
+                        </form>
+                    </div>
+                )}
+            </div>
 
             {/* Context Menu for Patrons */}
             {contextMenu && onDelete && (
                 <div
-                    className="fixed z-[100] bg-white dark:bg-gray-800 shadow-xl rounded-lg py-1 border border-gray-200 dark:border-gray-700 min-w-[160px] animate-fade-in-up"
+                    className="ch-shell fixed z-[100] min-w-[160px] border-2 border-ch-rule bg-ch-bg"
                     style={{
                         top: contextMenu.y,
                         left: Math.min(contextMenu.x, window.innerWidth - 170) // Ensure it doesn't go off-screen
@@ -536,10 +474,10 @@ const FeedItemCard: React.FC<FeedItemCardProps> = ({ item, currentUser, onDelete
                             onDelete(item.id);
                             setContextMenu(null);
                         }}
-                        className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center gap-2 transition-colors"
+                        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[13px] font-bold text-ch-accent transition-colors hover:bg-ch-accent hover:text-ch-on-accent [&_svg]:h-4 [&_svg]:w-4"
                     >
-                        <TrashIcon className="w-4 h-4" />
-                        <span className="font-medium">Delete Post</span>
+                        <TrashIcon />
+                        Delete post
                     </button>
                 </div>
             )}
@@ -550,7 +488,7 @@ const FeedItemCard: React.FC<FeedItemCardProps> = ({ item, currentUser, onDelete
                 onClose={() => setShowVotersModal(false)}
                 options={pollOptions}
             />
-        </div>
+        </article>
     );
 };
 

@@ -505,17 +505,23 @@ export const generateAIChallenge = async (
     skillLevel: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED',
     concepts: string,
     language: string = 'python'
-): Promise<{ title: string; description: string }> => {
+): Promise<{ title: string; description: string; starterCode?: string; referenceSolution?: string; inputs?: string[] }> => {
+    const isJs = language.toLowerCase().includes('javascript');
+    const signature = isJs ? 'function solve(inputText) { ... } returning a string' : 'def solve(input_text: str) -> str';
     const prompt = `Act as a creative coding tutor. Create a unique, scenario-based coding challenge for a student at the ${skillLevel} level.
 
     The challenge must focus on these concepts: ${concepts}
     Programming language: ${language}
 
+    The challenge is auto-graded by test cases. The student implements ${signature}.
+    It receives the whole raw test input as ONE string (parse lines/numbers from it) and must RETURN the answer as a string (not print it).
+
     FORMAT (Markdown inside "description"):
     - "Scenario" heading with a vivid story context.
-    - "Task" heading with a clear, specific objective.
+    - "Task" heading with a clear, specific objective, stating exactly what solve receives and must return.
+    - "Input Format" and "Output Format" headings describing the exact string layout.
     - "Requirements" heading with 3-5 concrete constraints.
-    - "Example" heading with sample input/output if applicable.
+    - "Example" heading with one sample input and its output.
 
     Difficulty Context (must noticeably differ by level):
     - BEGINNER: Simple logic, basic loops, variables, standard data types.
@@ -524,20 +530,36 @@ export const generateAIChallenge = async (
 
     Important: Do NOT reuse the same structure/constraints across levels; tailor complexity and constraints to the selected level.
 
+    TEST RULES:
+    - "starterCode": the solve signature plus a short hint comment, no solution.
+    - "referenceSolution": a COMPLETE, correct ${language} solution defining solve. It is executed to compute expected outputs.
+    - "inputs": 5-8 raw input strings. The first 2 are simple samples; the rest cover edge cases (empty/minimal, duplicates, ties, large values). Do NOT include expected outputs.
+
     Return ONLY a JSON object:
     {
         "title": "A short, catchy title",
-        "description": "The full challenge description in Markdown, including Scenario, Task, Requirements, and Example."
+        "description": "The full challenge description in Markdown.",
+        "starterCode": "...",
+        "referenceSolution": "...",
+        "inputs": ["...", "..."]
     }`;
 
+    let parsed: any;
     try {
         const text = await callGemini(prompt); // Use Gemini for more creative writing
-        return parseJSONResponse(text);
+        parsed = parseJSONResponse(text);
     } catch (error) {
         console.warn("Gemini challenge error, falling back to Hugging Face:", error);
         const text = await callAI([{ role: "user", content: prompt }], true);
-        return parseJSONResponse(text);
+        parsed = parseJSONResponse(text);
     }
+    return {
+        title: toSafeText(parsed?.title),
+        description: toSafeText(parsed?.description),
+        starterCode: toSafeText(parsed?.starterCode) || undefined,
+        referenceSolution: toSafeText(parsed?.referenceSolution) || undefined,
+        inputs: Array.isArray(parsed?.inputs) ? parsed.inputs.map((i: any) => toSafeText(i)).slice(0, 10) : undefined,
+    };
 };
 
 const ensureCodingQuestion = (questions: QuizQuestion[], language: string, title: string, description: string): QuizQuestion[] => {

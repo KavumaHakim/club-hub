@@ -339,6 +339,14 @@ const startExecution = (
       type: 'error',
       content: `Execution stopped after ${Math.round(timeoutMs / 1000)} seconds to protect the app.`,
     });
+    // The shared Python worker is still busy with the runaway code; drop it so the
+    // next run gets a fresh worker instead of queueing behind an infinite loop.
+    if (isPython) {
+      worker.terminate();
+      if (sharedPythonWorker === worker) {
+        sharedPythonWorker = null;
+      }
+    }
     finish();
   }, timeoutMs);
 
