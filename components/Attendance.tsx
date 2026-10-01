@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect, useRef, useId } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useId } from 'react';
 import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { AttendanceRecord, AttendanceStatus, User } from '../types';
 import * as api from '../services/apiService';
@@ -47,11 +47,12 @@ const formatDate = (dateString: string) => {
   }
 };
 
+// Returns a callback ref: the panels only mount once data has loaded, so the
+// effect must re-run when the element appears, not just on first render.
 const useScrollAnimation = (isSectionVisible: boolean, delay = 0) => {
-  const ref = useRef<HTMLDivElement>(null);
+  const [element, setElement] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const element = ref.current;
     if (!element) return;
 
     element.style.transitionDelay = `${delay}ms`;
@@ -73,9 +74,9 @@ const useScrollAnimation = (isSectionVisible: boolean, delay = 0) => {
 
     observer.observe(element);
     return () => observer.disconnect();
-  }, [delay, isSectionVisible]);
+  }, [element, delay, isSectionVisible]);
 
-  return ref;
+  return setElement;
 };
 
 const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {

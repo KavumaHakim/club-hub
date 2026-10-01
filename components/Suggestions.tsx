@@ -111,7 +111,7 @@ const AddSuggestionModal: React.FC<{ isOpen: boolean; onClose: () => void; onSub
                             required
                         />
                     </div>
-                    <Tooltip text="Send your suggestion or bug report to the club.">
+                    <Tooltip className="flex w-full" text="Send your suggestion or bug report to the club.">
                         <button
                             type="submit"
                             disabled={isSubmitting}
