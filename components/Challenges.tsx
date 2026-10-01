@@ -193,7 +193,7 @@ const ChallengeCard: React.FC<{
 
                     {isPatron ? (
                         <div className="space-y-2">
-                            <Tooltip text="Review member submissions and approve badges.">
+                            <Tooltip className="flex w-full" text="Review member submissions and approve badges.">
                                 <button
                                     onClick={() => onOpenReview(challenge.id, challenge.title)}
                                     className="w-full py-2.5 text-sm font-semibold bg-ch-accent-soft text-ch-violet hover:bg-ch-accent-soft transition-colors flex items-center justify-center gap-2"
@@ -201,7 +201,7 @@ const ChallengeCard: React.FC<{
                                     Review Submissions
                                 </button>
                             </Tooltip>
-                            <Tooltip text="Auto-grade submissions by running them against test cases.">
+                            <Tooltip className="flex w-full" text="Auto-grade submissions by running them against test cases.">
                                 <button
                                     onClick={() => onEditTests(challenge)}
                                     className="w-full py-2.5 text-sm font-semibold bg-ch-surface text-ch-text hover:bg-ch-surface transition-colors flex items-center justify-center gap-2"
@@ -213,7 +213,7 @@ const ChallengeCard: React.FC<{
                         </div>
                     ) : (
                         !hasBadge && challenge.status === 'ACTIVE' && !isExpired ? (
-                            <Tooltip text="Submit your solution to earn a badge.">
+                            <Tooltip className="flex w-full" text="Submit your solution to earn a badge.">
                                 <button
                                     onClick={() => onMakeSubmission ? onMakeSubmission(challenge) : onOpenSubmission(challenge.id)}
                                     className="w-full py-2.5 text-sm font-bold text-ch-on-accent transition-all flex items-center justify-center gap-2 bg-ch-accent hover:bg-ch-accent-deep"

@@ -5,6 +5,8 @@ interface TooltipProps {
   children: React.ReactNode;
   position?: 'top' | 'bottom' | 'left' | 'right';
   maxWidthClassName?: string;
+  /** Wrapper classes; defaults to inline-flex. Pass e.g. "flex w-full" for a full-width child. */
+  className?: string;
 }
 
 const positionClasses: Record<string, string> = {
@@ -14,9 +16,9 @@ const positionClasses: Record<string, string> = {
   right: 'left-full top-1/2 -translate-y-1/2 ml-2'
 };
 
-const Tooltip: React.FC<TooltipProps> = ({ text, children, position = 'top', maxWidthClassName }) => {
+const Tooltip: React.FC<TooltipProps> = ({ text, children, position = 'top', maxWidthClassName, className = 'inline-flex' }) => {
   return (
-    <span className="relative inline-flex group">
+    <span className={`relative group ${className}`}>
       {children}
       <span
         className={`pointer-events-none absolute z-50 hidden group-hover:block group-focus-within:block ${

@@ -70,7 +70,7 @@ const MilestoneCard: React.FC<{
                 </div>
 
                 {!isPatron && !isCompleted && !isLocked && (
-                    <Tooltip text="Take the assessment to unlock the next milestone.">
+                    <Tooltip className="flex w-full" text="Take the assessment to unlock the next milestone.">
                         <button
                             onClick={onTakeQuiz}
                             className="w-full py-2 bg-ch-accent text-ch-on-accent text-sm font-bold hover:bg-ch-accent-deep transition-all flex items-center justify-center gap-2"
@@ -198,7 +198,7 @@ const CreateRoadmapModal: React.FC<{
                                 rows={2}
                             />
                         </div>
-                        <Tooltip text="Generate a personalized roadmap with milestones and resources.">
+                        <Tooltip className="flex w-full" text="Generate a personalized roadmap with milestones and resources.">
                             <button
                                 onClick={handleGenerate}
                                 disabled={isGenerating || !topic}
