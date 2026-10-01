@@ -27,8 +27,8 @@ const SyntaxHighlightedText: React.FC<{ text: string }> = ({ text }) => {
                 if (!part) return null;
                 if (/^".*"$/.test(part) || /^'.*'$/.test(part)) return <span key={i} className="text-green-600 dark:text-green-400">{part}</span>;
                 if (/^\d+(\.\d+)?$/.test(part)) return <span key={i} className="text-blue-600 dark:text-blue-400 font-semibold">{part}</span>;
-                if (/^(True|False|None|and|or|not|def|class|return|import|from|if|else|elif|for|while|print)$/.test(part)) return <span key={i} className="text-purple-600 dark:text-purple-400 font-bold">{part}</span>;
-                if (/^[\[\]\{\}\(\),:]$/.test(part)) return <span key={i} className="text-gray-500 dark:text-gray-500 font-bold">{part}</span>;
+                if (/^(True|False|None|and|or|not|def|class|return|import|from|if|else|elif|for|while|print)$/.test(part)) return <span key={i} className="text-ch-violet font-bold">{part}</span>;
+                if (/^[\[\]\{\}\(\),:]$/.test(part)) return <span key={i} className="text-ch-muted font-bold">{part}</span>;
                 return <span key={i}>{part}</span>;
             })}
         </>
@@ -370,41 +370,41 @@ export const CodeRunnerModal: React.FC<CodeRunnerModalProps> = ({ isOpen, onClos
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-5xl w-full h-[80vh] relative border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden animate-fade-in-up">
-          <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+    <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4">
+      <div className="bg-ch-bg max-w-5xl w-full h-[80vh] relative border-2 border-ch-rule flex flex-col overflow-hidden animate-fade-in-up">
+          <div className="flex justify-between items-center p-4 border-b border-ch-divider bg-ch-surface">
               <div className="flex items-center gap-3">
-                  <div className="flex bg-gray-200 dark:bg-gray-700 p-1 rounded-lg">
+                  <div className="flex bg-ch-surface-2 p-1">
                       <button 
                           onClick={() => setLanguage('python')} 
-                          className={`px-2 py-0.5 text-xs font-bold rounded transition-colors ${language === 'python' ? 'bg-pink-500 text-white' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                          className={`px-2 py-0.5 text-xs font-bold transition-colors ${language === 'python' ? 'bg-ch-accent text-ch-on-accent' : 'text-ch-muted hover:text-ch-text'}`}
                       >
                           PY
                       </button>
                       <button 
                           onClick={() => setLanguage('javascript')} 
-                          className={`px-2 py-0.5 text-xs font-bold rounded transition-colors ${language === 'javascript' ? 'bg-yellow-500 text-white' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                          className={`px-2 py-0.5 text-xs font-bold transition-colors ${language === 'javascript' ? 'bg-yellow-500 text-white' : 'text-ch-muted hover:text-ch-text'}`}
                       >
                           JS
                       </button>
                       <button 
                           onClick={() => setLanguage('html')} 
-                          className={`px-2 py-0.5 text-xs font-bold rounded transition-colors ${language === 'html' ? 'bg-indigo-500 text-white' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                          className={`px-2 py-0.5 text-xs font-bold transition-colors ${language === 'html' ? 'bg-indigo-500 text-white' : 'text-ch-muted hover:text-ch-text'}`}
                       >
                           HTML
                       </button>
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white truncate">
+                  <h3 className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text truncate">
                       {title}
                   </h3>
               </div>
-              <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full p-1 transition-colors">
+              <button onClick={onClose} className="text-ch-muted hover:text-ch-text hover:bg-ch-surface-2 p-1 transition-colors">
                   <XIcon />
               </button>
           </div>
 
           <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-              <div className="flex-1 border-r border-gray-200 dark:border-gray-800 overflow-hidden relative">
+              <div className="flex-1 border-r border-ch-divider overflow-hidden relative">
                   <Editor
                       height="100%"
                       language={language}
@@ -422,14 +422,14 @@ export const CodeRunnerModal: React.FC<CodeRunnerModalProps> = ({ isOpen, onClos
                           renderLineHighlight: 'all',
                           contextmenu: true,
                       }}
-                      loading={<div className="flex items-center justify-center h-full text-gray-500 text-sm">Loading code...</div>}
+                      loading={<div className="flex items-center justify-center h-full text-ch-muted text-sm">Loading code...</div>}
                   />
               </div>
 
               {language !== 'html' ? (
                   <div 
                       ref={outputContainerRef}
-                      className="flex-1 bg-gray-900 dark:bg-black text-gray-300 font-mono text-xs md:text-sm p-4 overflow-y-auto flex flex-col shadow-inner"
+                      className="flex-1 bg-gray-900 text-gray-300 font-mono text-xs md:text-sm p-4 overflow-y-auto flex flex-col"
                       onClick={() => {
                           if (isWaitingForInput && consoleInputRef.current) {
                               consoleInputRef.current.focus();
@@ -438,7 +438,7 @@ export const CodeRunnerModal: React.FC<CodeRunnerModalProps> = ({ isOpen, onClos
                   >
                       <div className="flex-1">
                           {output.length === 0 && !isExecuting && (
-                              <div className="text-gray-500 italic">Click Run to execute...</div>
+                              <div className="italic text-gray-500">Click Run to execute...</div>
                           )}
                           {output.map((line, i) => (
                               <div key={i} className="mb-1 whitespace-pre-wrap break-all leading-relaxed">
@@ -470,19 +470,19 @@ export const CodeRunnerModal: React.FC<CodeRunnerModalProps> = ({ isOpen, onClos
                       </div>
                   </div>
               ) : (
-                  <div className="flex-1 flex flex-col bg-white dark:bg-gray-900">
-                      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-800/60">
-                          <span className="text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase">Preview</span>
+                  <div className="flex-1 flex flex-col bg-ch-bg">
+                      <div className="flex items-center justify-between px-3 py-2 border-b border-ch-divider bg-ch-surface">
+                          <span className="text-xs font-semibold text-ch-muted uppercase">Preview</span>
                           <div className="flex items-center gap-2">
                               <button
                                   onClick={() => setShowPreviewConsole(prev => !prev)}
-                                  className="px-2 py-1 text-xs font-semibold rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200"
+                                  className="px-2 py-1 text-xs font-semibold bg-ch-surface-2 text-ch-text"
                               >
                                   {showPreviewConsole ? 'Hide Console' : 'Show Console'}
                               </button>
                               <button
                                   onClick={() => setPreviewConsole([])}
-                                  className="px-2 py-1 text-xs font-semibold rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200"
+                                  className="px-2 py-1 text-xs font-semibold bg-ch-surface-2 text-ch-text"
                               >
                                   Clear Console
                               </button>
@@ -496,7 +496,7 @@ export const CodeRunnerModal: React.FC<CodeRunnerModalProps> = ({ isOpen, onClos
                               srcDoc={htmlPreview}
                           />
                           {showPreviewConsole && (
-                              <div className="h-40 border-t border-gray-200 dark:border-gray-800 bg-gray-900 text-gray-200 text-xs font-mono overflow-y-auto p-3 space-y-1 custom-scrollbar">
+                              <div className="h-40 border-t border-ch-divider bg-gray-900 text-gray-200 text-xs font-mono overflow-y-auto p-3 space-y-1 custom-scrollbar">
                                   {previewConsole.length === 0 ? (
                                       <span className="text-gray-500">Preview console ready…</span>
                                   ) : (
@@ -513,11 +513,11 @@ export const CodeRunnerModal: React.FC<CodeRunnerModalProps> = ({ isOpen, onClos
               )}
           </div>
 
-          <div className="p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex justify-end">
+          <div className="p-4 border-t border-ch-divider bg-ch-bg flex justify-end">
               <button 
                   onClick={handleRunCode}
                   disabled={isExecuting || (language === 'python' && isLoadingPyodide)}
-                  className="flex items-center gap-2 px-6 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-pink-500/20 transition-all"
+                  className="flex items-center gap-2 px-6 py-2 bg-ch-accent hover:bg-ch-accent-deep text-ch-on-accent font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                   {language === 'python' && isLoadingPyodide ? 'Loading Engine...' : isExecuting ? 'Running...' : (
                       <>

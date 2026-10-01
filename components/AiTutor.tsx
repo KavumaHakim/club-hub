@@ -284,14 +284,14 @@ const AiTutor: React.FC<AiTutorProps> = ({ currentUser }) => {
         >
             {/* Chat Window */}
             {isOpen && (
-                <div className="mb-4 w-80 sm:w-96 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden animate-fade-in-up origin-bottom-right h-[500px] max-h-[80vh]">
+                <div className="mb-4 w-80 sm:w-96 bg-ch-bg border border-ch-divider flex flex-col overflow-hidden animate-fade-in-up origin-bottom-right h-[500px] max-h-[80vh]">
                     {/* Header */}
                     <div 
-                        className="bg-gradient-to-r from-teal-500 to-emerald-500 p-4 flex justify-between items-center text-white cursor-move"
+                        className="bg-teal-600 border-b-2 border-ch-rule p-4 flex justify-between items-center text-white cursor-move"
                         // Allow dragging from the header too if needed, but let's keep it simple for now or bind same handlers
                     >
                         <div className="flex items-center gap-2">
-                            <div className="p-1.5 bg-white/20 rounded-full">
+                            <div className="p-1.5 bg-white/20">
                                 <RobotIcon className="w-5 h-5 text-white" />
                             </div>
                             <div>
@@ -301,24 +301,24 @@ const AiTutor: React.FC<AiTutorProps> = ({ currentUser }) => {
                         </div>
                         <button 
                             onClick={(e) => { e.stopPropagation(); setIsOpen(false); }}
-                            className="p-1 hover:bg-white/20 rounded-full transition-colors"
+                            className="p-1 hover:bg-white/20 transition-colors"
                         >
                             <XIcon className="w-5 h-5" />
                         </button>
                     </div>
 
                     {/* Messages Area */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900 custom-scrollbar">
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-ch-surface custom-scrollbar">
                         {messages.map((msg, idx) => (
                             <div 
                                 key={idx} 
                                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                             >
                                 <div 
-                                    className={`max-w-[90%] p-3 rounded-2xl shadow-sm ${
+                                    className={`max-w-[90%] p-3 ${
                                         msg.role === 'user' 
-                                        ? 'bg-teal-600 text-white rounded-tr-none' 
-                                        : 'bg-white dark:bg-gray-800 rounded-tl-none border border-gray-100 dark:border-gray-700'
+                                        ? 'bg-teal-600 text-white' 
+                                        : 'bg-ch-bg border border-ch-divider'
                                     }`}
                                 >
                                     <FormattedMessage text={msg.text} isUser={msg.role === 'user'} />
@@ -327,11 +327,11 @@ const AiTutor: React.FC<AiTutorProps> = ({ currentUser }) => {
                         ))}
                         {isLoading && (
                             <div className="flex justify-start">
-                                <div className="bg-white dark:bg-gray-800 p-3 rounded-2xl rounded-tl-none border border-gray-100 dark:border-gray-700">
+                                <div className="bg-ch-bg p-3 border border-ch-divider">
                                     <div className="flex space-x-1.5">
-                                        <div className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-bounce"></div>
-                                        <div className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-bounce delay-100"></div>
-                                        <div className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-bounce delay-200"></div>
+                                        <div className="w-1.5 h-1.5 bg-teal-400 animate-bounce"></div>
+                                        <div className="w-1.5 h-1.5 bg-teal-400 animate-bounce delay-100"></div>
+                                        <div className="w-1.5 h-1.5 bg-teal-400 animate-bounce delay-200"></div>
                                     </div>
                                 </div>
                             </div>
@@ -340,20 +340,20 @@ const AiTutor: React.FC<AiTutorProps> = ({ currentUser }) => {
                     </div>
 
                     {/* Input Area */}
-                    <form onSubmit={handleSend} className="p-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex gap-2">
+                    <form onSubmit={handleSend} className="p-3 bg-ch-bg border-t border-ch-divider flex gap-2">
                         <input
                             ref={inputRef}
                             type="text"
                             value={inputText}
                             onChange={(e) => setInputText(e.target.value)}
                             placeholder="Ask a question..."
-                            className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                            className="flex-1 bg-ch-surface text-ch-text px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                             disabled={isLoading}
                         />
                         <button 
                             type="submit" 
                             disabled={!inputText.trim() || isLoading}
-                            className="p-2 bg-teal-500 hover:bg-teal-600 text-white rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                            className="p-2 bg-teal-500 hover:bg-teal-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <SendIcon className="w-4 h-4 transform rotate-90" />
                         </button>
@@ -364,7 +364,7 @@ const AiTutor: React.FC<AiTutorProps> = ({ currentUser }) => {
             {/* FAB Toggle Button (Draggable) */}
             <button
                 onPointerDown={handlePointerDown}
-                className={`p-4 rounded-full shadow-xl transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center cursor-move touch-none select-none ${
+                className={`p-4 transition-all transform flex items-center justify-center cursor-move touch-none select-none ${
                     isOpen 
                     ? 'bg-gray-700 text-white rotate-90' 
                     : 'bg-teal-500 hover:bg-teal-600 text-white animate-bounce-subtle'

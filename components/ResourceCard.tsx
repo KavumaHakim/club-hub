@@ -116,24 +116,24 @@ const ResourceCard: React.FC<ResourceCardProps> = ({ resource, currentUser, onDe
     };
 
     return (
-        <div ref={cardRef} className="scroll-animate group bg-white dark:bg-gray-900 rounded-2xl shadow-sm hover:shadow-xl border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col transition-all duration-300">
+        <div ref={cardRef} className="scroll-animate group bg-ch-bg border border-ch-divider overflow-hidden flex flex-col transition-all duration-300">
             <div className="relative">
                 {(resource.type === 'LINK' || resource.type === 'VIDEO') && resource.url && isImage ? (
                     <img src={resource.url} alt={resource.title} className="h-40 w-full object-cover" loading="lazy" />
                 ) : (
-                    <div className="h-40 w-full bg-gradient-to-br from-slate-800 via-slate-900 to-indigo-900 flex items-center justify-center">
-                        <div className="text-pink-400/90">
+                    <div className="h-40 w-full bg-ch-surface flex items-center justify-center border-b border-ch-divider">
+                        <div className="text-ch-accent">
                             {iconElement && React.cloneElement(iconElement, { className: "w-14 h-14" })}
                         </div>
                     </div>
                 )}
                 <div className="absolute top-3 left-3 flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-white/80 text-slate-900">
+                    <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-ch-text text-ch-bg">
                         {resource.type}
                     </span>
                 </div>
                 {resource.category && (
-                    <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-black/60 text-white">
+                    <span className="absolute top-3 right-3 px-2 py-0.5 text-[10px] font-semibold bg-black/60 text-white">
                         {resource.category}
                     </span>
                 )}
@@ -141,22 +141,22 @@ const ResourceCard: React.FC<ResourceCardProps> = ({ resource, currentUser, onDe
 
             <div className="p-4 flex flex-col gap-3 flex-1">
                 <div>
-                    <h4 className="font-bold text-gray-900 dark:text-gray-100 text-lg leading-snug line-clamp-2 group-hover:text-pink-600 dark:group-hover:text-pink-400 transition-colors">
+                    <h4 className="font-bold text-ch-text text-lg leading-snug line-clamp-2 group-hover:text-ch-accent transition-colors">
                         {resource.title}
                     </h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{resource.description}</p>
+                    <p className="text-sm text-ch-muted mt-1 line-clamp-2">{resource.description}</p>
                 </div>
 
                 {(resource.type === 'LINK' || resource.type === 'VIDEO') && domain && (
-                    <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-indigo-400"></span>
+                    <div className="text-xs text-ch-muted flex items-center gap-2">
+                        <span className="w-2 h-2 bg-indigo-400"></span>
                         {domain}
                     </div>
                 )}
 
                 <div className="mt-auto flex items-center justify-between gap-3">
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                        <span className="font-semibold text-gray-700 dark:text-gray-200">{resource.uploaderName}</span>
+                    <div className="text-xs text-ch-muted">
+                        <span className="font-semibold text-ch-text">{resource.uploaderName}</span>
                         <span className="mx-2">•</span>
                         <span>{formatDate(resource.createdAt)}</span>
                     </div>
@@ -166,14 +166,14 @@ const ResourceCard: React.FC<ResourceCardProps> = ({ resource, currentUser, onDe
                             target={resource.type === 'PYTHON' ? undefined : "_blank"}
                             rel="noopener noreferrer"
                             onClick={handleOpenAction}
-                            className={`px-3 py-1.5 text-xs font-semibold text-white bg-slate-900 dark:bg-slate-700 hover:bg-pink-600 rounded-lg transition-all ${isLoading ? 'opacity-70 cursor-wait' : ''}`}
+                            className={`px-3 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-ch-accent-deep transition-all ${isLoading ? 'opacity-70 cursor-wait' : ''}`}
                         >
                             {getActionText()}
                         </a>
                         {isPatron && (
                             <button
                                 onClick={() => onDelete(resource)}
-                                className="p-2 text-gray-400 hover:text-red-500 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-red-200 dark:hover:border-red-900/50 transition-colors"
+                                className="p-2 text-ch-muted hover:text-red-500 border border-ch-divider hover:border-red-200 dark:hover:border-red-900/50 transition-colors"
                                 aria-label="Delete resource"
                                 title="Delete Resource"
                             >

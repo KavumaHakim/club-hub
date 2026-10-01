@@ -102,24 +102,24 @@ const SubmitToChallengeModal: React.FC<SubmitToChallengeModalProps> = ({ isOpen,
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 relative border border-gray-200 dark:border-gray-700 flex flex-col max-h-[80vh] animate-fade-in-up">
-                <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400">
+        <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4">
+            <div className="bg-ch-bg max-w-md w-full p-6 relative border-2 border-ch-rule flex flex-col max-h-[80vh] animate-fade-in-up">
+                <button onClick={onClose} className="absolute top-4 right-4 text-ch-muted hover:text-ch-text">
                     <XIcon />
                 </button>
                 
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <h3 className="text-[20px] font-extrabold tracking-[-0.02em] text-ch-text mb-4 flex items-center gap-2">
                     <TrophyIcon className="text-yellow-500" />
                     Submit to Challenge
                 </h3>
                 
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                <p className="text-sm text-ch-muted mb-4">
                     Select an active challenge to submit your current code as a solution.
                 </p>
 
                 <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 mb-4 pr-1">
                     {activeChallenges.length === 0 ? (
-                        <div className="text-center p-6 text-gray-500 dark:text-gray-400 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
+                        <div className="text-center p-6 text-ch-muted border-2 border-dashed border-ch-divider">
                             <p>No active challenges available to submit to.</p>
                             <p className="text-xs mt-1">Check back later or complete existing ones!</p>
                         </div>
@@ -128,23 +128,23 @@ const SubmitToChallengeModal: React.FC<SubmitToChallengeModalProps> = ({ isOpen,
                             <div 
                                 key={challenge.id}
                                 onClick={() => setSelectedChallengeId(challenge.id)}
-                                className={`p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                                className={`p-3 border-2 cursor-pointer transition-all ${
                                     selectedChallengeId === challenge.id 
-                                    ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20' 
-                                    : 'border-gray-200 dark:border-gray-700 hover:border-pink-300 dark:hover:border-pink-700 bg-gray-50 dark:bg-gray-700/30'
+                                    ? 'border-ch-accent bg-ch-accent-soft' 
+                                    : 'border-ch-divider hover:border-ch-accent bg-ch-surface'
                                 }`}
                             >
                                 <div className="flex justify-between items-center mb-1">
-                                    <h4 className="font-bold text-gray-800 dark:text-gray-200 text-sm">{challenge.title}</h4>
-                                    {selectedChallengeId === challenge.id && <CheckIcon className="text-pink-500 w-5 h-5" />}
+                                    <h4 className="font-bold text-ch-text text-sm">{challenge.title}</h4>
+                                    {selectedChallengeId === challenge.id && <CheckIcon className="text-ch-accent w-5 h-5" />}
                                 </div>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-2">{challenge.description}</p>
+                                <p className="text-xs text-ch-muted line-clamp-2 mb-2">{challenge.description}</p>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-[10px] font-medium px-2 py-0.5 bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 rounded-full">
+                                    <span className="text-[10px] font-medium px-2 py-0.5 bg-ch-surface-2 text-ch-muted">
                                         Due: {new Date(challenge.deadline).toLocaleDateString()}
                                     </span>
                                     {hasTestCases(challenge) && (
-                                        <span className="text-[10px] font-medium px-2 py-0.5 bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 rounded-full">
+                                        <span className="text-[10px] font-medium px-2 py-0.5 bg-ch-accent-soft text-ch-accent">
                                             {challenge.testCases?.length} tests · {challenge.language === 'javascript' ? 'JS' : 'Python'}
                                         </span>
                                     )}
@@ -157,34 +157,34 @@ const SubmitToChallengeModal: React.FC<SubmitToChallengeModalProps> = ({ isOpen,
                 <button 
                     onClick={handleSubmit}
                     disabled={!selectedChallengeId || isSubmitting}
-                    className="w-full py-2 bg-gradient-to-r from-pink-600 to-purple-600 text-white rounded-lg font-bold shadow-md hover:from-pink-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    className="w-full py-2 text-ch-on-accent font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all bg-ch-accent hover:bg-ch-accent-deep"
                 >
                     {isSubmitting ? 'Submitting...' : 'Submit Solution'}
                 </button>
             </div>
 
             {aiFeedback.isOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full p-6 relative border border-gray-200 dark:border-gray-700 flex flex-col max-h-[90vh]">
-                        <button onClick={() => setAiFeedback(prev => ({ ...prev, isOpen: false }))} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-1 rounded-full transition-colors">
+                <div className="fixed inset-0 bg-black bg-opacity-60 z-[70] flex items-center justify-center p-4">
+                    <div className="bg-ch-bg max-w-2xl w-full p-6 relative border-2 border-ch-rule flex flex-col max-h-[90vh]">
+                        <button onClick={() => setAiFeedback(prev => ({ ...prev, isOpen: false }))} className="absolute top-4 right-4 text-ch-muted hover:text-ch-text hover:border-2 border-ch-rule transition-colors">
                             <XIcon />
                         </button>
                         
                         <div className="flex items-center gap-4 mb-6">
-                            <div className={`p-3 rounded-xl ${aiFeedback.passed ? 'bg-green-100 dark:bg-green-900/30' : aiFeedback.passed === false ? 'bg-red-100 dark:bg-red-900/30' : 'bg-pink-100 dark:bg-pink-900/30'}`}>
+                            <div className={`p-3 ${aiFeedback.passed ? 'bg-green-100 dark:bg-green-900/30' : aiFeedback.passed === false ? 'bg-red-100 dark:bg-red-900/30' : 'bg-ch-accent-soft'}`}>
                                 {aiFeedback.passed ? (
                                     <TrophyIcon className="w-8 h-8 text-green-600 dark:text-green-400" />
                                 ) : aiFeedback.passed === false ? (
                                     <ExclamationCircleIcon className="w-8 h-8 text-red-600 dark:text-red-400" />
                                 ) : (
-                                    <SparklesIcon className="w-8 h-8 text-pink-600 dark:text-pink-400" />
+                                    <SparklesIcon className="w-8 h-8 text-ch-accent" />
                                 )}
                             </div>
                             <div>
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                                <h3 className="text-[20px] font-extrabold tracking-[-0.02em] text-ch-text">
                                     {aiFeedback.title}
                                 </h3>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                <p className="text-xs text-ch-muted">
                                     {aiFeedback.passed ? 'Challenge Passed!' : aiFeedback.passed === false ? 'Challenge Not Yet Passed' : 'Instant AI evaluation on your submission'}
                                 </p>
                             </div>
@@ -193,14 +193,14 @@ const SubmitToChallengeModal: React.FC<SubmitToChallengeModalProps> = ({ isOpen,
                         <div className="flex-1 overflow-y-auto custom-scrollbar space-y-6">
                             {aiFeedback.isLoading ? (
                                 <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
-                                    <p className="text-gray-500 animate-pulse font-medium">Analyzing your code against challenge requirements...</p>
+                                    <div className="animate-spin h-12 w-12 border-2 border-ch-divider border-t-ch-accent"></div>
+                                    <p className="text-ch-muted animate-pulse font-medium">Analyzing your code against challenge requirements...</p>
                                 </div>
                             ) : (
                                 <>
-                                    <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700/50">
-                                        <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                                            <SparklesIcon className="w-4 h-4 text-pink-500" />
+                                    <div className="bg-ch-surface p-4 border border-ch-divider">
+                                        <h4 className="text-sm font-bold text-ch-text mb-2 flex items-center gap-2">
+                                            <SparklesIcon className="w-4 h-4 text-ch-accent" />
                                             Verdict & Feedback
                                         </h4>
                                         <FormattedMessage text={aiFeedback.content} isUser={false} />
@@ -209,7 +209,7 @@ const SubmitToChallengeModal: React.FC<SubmitToChallengeModalProps> = ({ isOpen,
                                     {aiFeedback.tests && <ChallengeTestResults report={aiFeedback.tests} />}
 
                                     {aiFeedback.weaknesses && !aiFeedback.tests && (
-                                        <div className="bg-red-50 dark:bg-red-900/10 p-4 rounded-xl border border-red-100 dark:border-red-900/20">
+                                        <div className="bg-red-50 dark:bg-red-900/10 p-4 border border-red-100 dark:border-red-900/20">
                                             <h4 className="text-sm font-bold text-red-900 dark:text-red-400 mb-2 flex items-center gap-2">
                                                 <ExclamationCircleIcon className="w-4 h-4" />
                                                 Areas for Improvement / Missing Requirements
@@ -221,7 +221,7 @@ const SubmitToChallengeModal: React.FC<SubmitToChallengeModalProps> = ({ isOpen,
                                     )}
 
                                     {aiFeedback.improvements && (
-                                        <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100 dark:border-blue-900/20">
+                                        <div className="bg-blue-50 dark:bg-blue-900/10 p-4 border border-blue-100 dark:border-blue-900/20">
                                             <h4 className="text-sm font-bold text-blue-900 dark:text-blue-400 mb-2 flex items-center gap-2">
                                                 <LightBulbIcon className="w-4 h-4" />
                                                 Suggested Enhancements
@@ -232,20 +232,20 @@ const SubmitToChallengeModal: React.FC<SubmitToChallengeModalProps> = ({ isOpen,
                                         </div>
                                     )}
 
-                                    <section className="pt-4 border-t border-gray-100 dark:border-gray-700">
-                                        <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                            <TrophyIcon className={`w-4 h-4 ${aiFeedback.passed ? 'text-yellow-500' : 'text-gray-400'}`} />
+                                    <section className="pt-4 border-t border-ch-divider">
+                                        <h4 className="text-xs font-bold text-ch-muted uppercase tracking-widest mb-3 flex items-center gap-2">
+                                            <TrophyIcon className={`w-4 h-4 ${aiFeedback.passed ? 'text-yellow-500' : 'text-ch-muted'}`} />
                                             Badge Status
                                         </h4>
-                                        <div className={`p-5 rounded-2xl border flex items-center gap-4 ${aiFeedback.passed ? 'bg-yellow-50/50 dark:bg-yellow-900/10 border-yellow-100 dark:border-yellow-900/20' : 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700'}`}>
-                                            <div className={`p-3 rounded-xl ${aiFeedback.passed ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600' : 'bg-gray-200 dark:bg-gray-700 text-gray-400'}`}>
+                                        <div className={`p-5 border flex items-center gap-4 ${aiFeedback.passed ? 'bg-yellow-50/50 dark:bg-yellow-900/10 border-yellow-100 dark:border-yellow-900/20' : 'bg-ch-surface border-ch-divider'}`}>
+                                            <div className={`p-3 ${aiFeedback.passed ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600' : 'bg-ch-surface-2 text-ch-muted'}`}>
                                                 <TrophyIcon className="w-8 h-8" />
                                             </div>
                                             <div>
-                                                <p className="font-bold text-gray-900 dark:text-white">
+                                                <p className="font-bold text-ch-text">
                                                     {aiFeedback.passed ? 'Badge Earned!' : 'Badge Locked'}
                                                 </p>
-                                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                <p className="text-sm text-ch-muted">
                                                     {aiFeedback.passed 
                                                         ? `Congratulations! You've successfully unlocked the ${aiFeedback.title.replace('Evaluation: ', '')} badge.` 
                                                         : 'Correct the issues mentioned below and try again to earn your badge!'}
@@ -260,7 +260,7 @@ const SubmitToChallengeModal: React.FC<SubmitToChallengeModalProps> = ({ isOpen,
                         <div className="mt-6 flex justify-end">
                             <button 
                                 onClick={() => setAiFeedback(prev => ({ ...prev, isOpen: false }))} 
-                                className="px-6 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-bold hover:opacity-90 transition-opacity shadow-lg"
+                                className="px-6 py-2.5 bg-ch-text text-ch-bg font-bold hover:opacity-90 transition-opacity"
                             >
                                 {aiFeedback.passed ? 'Awesome!' : 'Got it'}
                             </button>

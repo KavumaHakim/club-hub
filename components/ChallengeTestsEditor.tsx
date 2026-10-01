@@ -25,7 +25,7 @@ export const finalizeTestCases = (cases: ChallengeTestCase[]): ChallengeTestCase
         .filter(c => c.input.trim() !== '' || c.expectedOutput.trim() !== '')
         .map((c, i) => ({ ...c, id: `tc-${i + 1}` }));
 
-const inputClass = "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-900 dark:text-white focus:ring-pink-500 font-mono text-xs";
+const inputClass = "w-full px-3 py-2 border border-ch-divider focus:ring-ch-accent font-mono text-xs";
 
 const ChallengeTestsEditor: React.FC<{
     value: ChallengeTestsDraft;
@@ -79,17 +79,17 @@ const ChallengeTestsEditor: React.FC<{
 
     return (
         <div className="space-y-4">
-            <div className="rounded-lg bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 p-3 text-xs text-gray-600 dark:text-gray-400">
-                Members write <code className="font-mono text-pink-600 dark:text-pink-400">solve(input_text)</code>, which receives each test's input as one string and must <strong>return</strong> the output as a string. A submission earns the badge only if every test passes.
+            <div className="bg-ch-surface border border-ch-divider p-3 text-xs text-ch-muted">
+                Members write <code className="font-mono text-ch-accent">solve(input_text)</code>, which receives each test's input as one string and must <strong>return</strong> the output as a string. A submission earns the badge only if every test passes.
             </div>
 
             <div className="grid grid-cols-2 gap-4">
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Language</label>
+                    <label className="block text-sm font-medium text-ch-text mb-1">Language</label>
                     <select
                         value={value.language}
                         onChange={e => switchLanguage(e.target.value as ChallengeLanguage)}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500"
+                        className="w-full px-3 py-2 border border-ch-divider focus:ring-ch-accent"
                     >
                         <option value="python">Python</option>
                         <option value="javascript">JavaScript</option>
@@ -98,13 +98,13 @@ const ChallengeTestsEditor: React.FC<{
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Starter code</label>
+                <label className="block text-sm font-medium text-ch-text mb-1">Starter code</label>
                 <textarea value={value.starterCode} onChange={e => update({ starterCode: e.target.value })} rows={4} spellCheck={false} className={inputClass} />
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Reference solution <span className="text-gray-400 font-normal">(optional, never shown to members)</span>
+                <label className="block text-sm font-medium text-ch-text mb-1">
+                    Reference solution <span className="text-ch-muted font-normal">(optional, never shown to members)</span>
                 </label>
                 <textarea
                     value={value.referenceSolution}
@@ -118,10 +118,10 @@ const ChallengeTestsEditor: React.FC<{
                     type="button"
                     onClick={computeExpected}
                     disabled={isComputing || !value.referenceSolution.trim() || value.testCases.length === 0}
-                    className="mt-2 px-3 py-1.5 text-xs font-semibold rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/20 dark:text-purple-300 dark:hover:bg-purple-900/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                    className="mt-2 px-3 py-1.5 text-xs font-semibold bg-ch-accent-soft text-ch-violet hover:bg-ch-accent-soft disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
                 >
                     {isComputing
-                        ? <span className="animate-spin h-3 w-3 border-2 border-purple-300 border-t-purple-700 rounded-full"></span>
+                        ? <span className="animate-spin h-3 w-3 border-2 border-ch-divider border-t-purple-700"></span>
                         : <PlayIcon className="w-3.5 h-3.5" />}
                     Compute expected outputs
                 </button>
@@ -132,28 +132,28 @@ const ChallengeTestsEditor: React.FC<{
 
             <div>
                 <div className="flex items-center justify-between mb-2">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Test cases ({value.testCases.length})</label>
-                    <button type="button" onClick={addCase} className="text-xs font-semibold text-pink-600 dark:text-pink-400 hover:underline flex items-center gap-1">
+                    <label className="text-sm font-medium text-ch-text">Test cases ({value.testCases.length})</label>
+                    <button type="button" onClick={addCase} className="text-xs font-semibold text-ch-accent hover:underline flex items-center gap-1">
                         <PlusCircleIcon className="w-4 h-4" /> Add test case
                     </button>
                 </div>
 
                 {value.testCases.length === 0 ? (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 text-center py-4 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg">
+                    <p className="text-xs text-ch-muted text-center py-4 border-2 border-dashed border-ch-divider">
                         No test cases yet — add at least one.
                     </p>
                 ) : (
                     <div className="space-y-3">
                         {value.testCases.map((tc, i) => (
-                            <div key={i} className="p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60">
+                            <div key={i} className="p-3 border border-ch-divider bg-ch-bg">
                                 <div className="flex items-center justify-between mb-2">
-                                    <span className="text-xs font-bold text-gray-500 dark:text-gray-400">Case {i + 1}</span>
+                                    <span className="text-xs font-bold text-ch-muted">Case {i + 1}</span>
                                     <div className="flex items-center gap-3">
-                                        <label className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400 cursor-pointer">
-                                            <input type="checkbox" checked={tc.hidden} onChange={e => updateCase(i, { hidden: e.target.checked })} className="rounded text-pink-600 focus:ring-pink-500" />
+                                        <label className="flex items-center gap-1.5 text-xs text-ch-muted cursor-pointer">
+                                            <input type="checkbox" checked={tc.hidden} onChange={e => updateCase(i, { hidden: e.target.checked })} className="text-ch-accent focus:ring-ch-accent" />
                                             Hidden
                                         </label>
-                                        <button type="button" onClick={() => removeCase(i)} className="text-gray-400 hover:text-red-500" title="Remove test case">
+                                        <button type="button" onClick={() => removeCase(i)} className="text-ch-muted hover:text-red-500" title="Remove test case">
                                             <XIcon className="w-4 h-4" />
                                         </button>
                                     </div>

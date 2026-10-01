@@ -7,6 +7,7 @@ import { ArrowUpCircleIcon } from './icons/ArrowUpCircleIcon';
 import { ArrowDownCircleIcon } from './icons/ArrowDownCircleIcon';
 import { CheckIcon } from './icons/CheckIcon';
 import { SearchIcon } from './icons/SearchIcon';
+import { PageIntro, RuledTabs } from './SplitKit';
 import { useData } from '../DataContext';
 import ConfirmationModal from './ConfirmationModal';
 import MemberPortfolioModal from './MemberPortfolioModal';
@@ -59,7 +60,7 @@ const Members: React.FC<MembersProps> = ({ currentUser }) => {
         handleAction(() => api.approveMember(uid), "Member approved successfully.");
     
     if (isLoadingUsers) {
-        return <div className="text-center p-8 text-gray-500 dark:text-gray-400">Loading members...</div>;
+        return <div className="text-center p-8 text-ch-muted">Loading members...</div>;
     }
 
     if (allUsersError) {
@@ -80,61 +81,37 @@ const Members: React.FC<MembersProps> = ({ currentUser }) => {
     }
 
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="p-6 pb-0">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                    <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200">Manage Club Members</h2>
-                    
-                    <div className="relative w-full md:w-64">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                            <SearchIcon className="h-5 w-5" />
-                        </div>
+        <div>
+            <PageIntro
+                eyebrow="Patron only"
+                title="Manage Club Members"
+                description="Approve new sign-ups and review the active roster."
+                actions={
+                    <label className="flex w-full items-center gap-2.5 border-2 border-ch-rule px-3 md:w-72 [&_svg]:h-4 [&_svg]:w-4">
+                        <span className="flex-none text-ch-muted"><SearchIcon /></span>
                         <input
                             type="text"
                             placeholder="Search members..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
+                            className="min-w-0 flex-1 border-0 bg-transparent py-2 text-[13.5px] text-ch-text placeholder-ch-muted focus:outline-none"
                         />
-                    </div>
-                </div>
-                
-                {/* Tabs */}
-                <div className="flex border-b border-gray-200 dark:border-gray-700 space-x-1">
-                    <button
-                        onClick={() => setActiveTab('active')}
-                        className={`pb-3 px-6 text-sm font-medium transition-colors relative focus:outline-none ${
-                            activeTab === 'active' 
-                            ? 'text-pink-600 dark:text-pink-400 border-b-2 border-pink-600 dark:border-pink-400' 
-                            : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-                        }`}
-                    >
-                        Active Members
-                        <span className="ml-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 py-0.5 px-2 rounded-full text-xs font-semibold">
-                            {activeMembers.length}
-                        </span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('pending')}
-                        className={`pb-3 px-6 text-sm font-medium transition-colors relative focus:outline-none ${
-                            activeTab === 'pending' 
-                            ? 'text-pink-600 dark:text-pink-400 border-b-2 border-pink-600 dark:border-pink-400' 
-                            : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-                        }`}
-                    >
-                        Pending Approval
-                        {pendingMembers.length > 0 && (
-                            <span className="ml-2 bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 py-0.5 px-2 rounded-full text-xs font-semibold animate-pulse">
-                                {pendingMembers.length}
-                            </span>
-                        )}
-                    </button>
-                </div>
-            </div>
+                    </label>
+                }
+            />
 
-            <div className="p-6 overflow-x-auto">
+            <RuledTabs
+                tabs={[
+                    { id: 'active' as const, label: 'Active Members', count: activeMembers.length },
+                    { id: 'pending' as const, label: 'Pending Approval', count: pendingMembers.length },
+                ]}
+                active={activeTab}
+                onChange={setActiveTab}
+            />
+
+            <div className="overflow-x-auto border-2 border-ch-rule">
                 {usersToDisplay.length === 0 ? (
-                    <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                    <div className="text-center py-12 text-ch-muted">
                         <p>
                             {searchTerm 
                                 ? `No members found matching "${searchTerm}"` 
@@ -146,48 +123,48 @@ const Members: React.FC<MembersProps> = ({ currentUser }) => {
                     </div>
                 ) : (
                     <table className="w-full text-left">
-                        <thead className="border-b-2 border-gray-200 dark:border-gray-700">
+                        <thead className="border-b-2 border-ch-divider">
                             <tr>
-                                <th className="py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Name</th>
-                                <th className="py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Phone Number</th>
-                                <th className="py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Role</th>
+                                <th className="py-3 px-4 font-semibold text-ch-muted">Name</th>
+                                <th className="py-3 px-4 font-semibold text-ch-muted">Phone Number</th>
+                                <th className="py-3 px-4 font-semibold text-ch-muted">Role</th>
                                 {activeTab === 'active' && (
-                                    <th className="py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Last Seen</th>
+                                    <th className="py-3 px-4 font-semibold text-ch-muted">Last Seen</th>
                                 )}
-                                <th className="py-3 px-4 font-semibold text-gray-600 dark:text-gray-400 text-right">Actions</th>
+                                <th className="py-3 px-4 font-semibold text-ch-muted text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {usersToDisplay.map((user) => (
-                                <tr key={user.uid} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                <tr key={user.uid} className="border-b border-ch-divider hover:bg-ch-surface transition-colors">
                                     <td className="py-4 px-4">
                                         <div className="flex items-center">
                                             <div className="relative mr-3">
                                                 <img 
                                                     src={user.avatarUrl || `https://i.pravatar.cc/40?u=${user.username}`} 
                                                     alt={user.name} 
-                                                    className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-600" 
+                                                    className="w-10 h-10 object-cover border border-ch-divider" 
                                                 />
                                                 {onlineUsers.includes(user.uid) && (
-                                                    <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full ring-2 ring-white dark:ring-gray-800 bg-green-500 shadow-sm"></span>
+                                                    <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 ring-2 ring-white bg-green-500"></span>
                                                 )}
                                             </div>
                                             <div>
-                                                <div className="font-medium text-gray-800 dark:text-gray-200">{user.name}</div>
-                                                <div className="text-sm text-gray-500 dark:text-gray-400">@{user.username}</div>
+                                                <div className="font-medium text-ch-text">{user.name}</div>
+                                                <div className="text-sm text-ch-muted">@{user.username}</div>
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="py-4 px-4 text-sm text-gray-500 dark:text-gray-400">
+                                    <td className="py-4 px-4 text-sm text-ch-muted">
                                         {user.phoneNumber || 'N/A'}
                                     </td>
                                     <td className="py-4 px-4">
-                                        <span className={`px-3 py-1 text-xs font-medium rounded-full ${user.role === 'PATRON' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300'}`}>
+                                        <span className={`px-3 py-1 text-xs font-medium ${user.role === 'PATRON' ? 'bg-ch-accent-soft text-ch-violet' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300'}`}>
                                             {user.role}
                                         </span>
                                     </td>
                                     {activeTab === 'active' && (
-                                        <td className="py-4 px-4 text-sm text-gray-500 dark:text-gray-400">
+                                        <td className="py-4 px-4 text-sm text-ch-muted">
                                             {user.lastLogin ? new Date(user.lastLogin).toLocaleString(undefined, { 
                                                 month: 'short', 
                                                 day: 'numeric', 
@@ -203,7 +180,7 @@ const Members: React.FC<MembersProps> = ({ currentUser }) => {
                                                 <Tooltip text="Open this member’s portfolio and achievements.">
                                                     <button
                                                         onClick={() => setPortfolioUser(user)}
-                                                        className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-900 text-white hover:bg-gray-800"
+                                                        className="px-3 py-1.5 text-xs font-semibold bg-gray-900 text-white hover:bg-gray-800"
                                                     >
                                                         View Portfolio
                                                     </button>
@@ -212,7 +189,7 @@ const Members: React.FC<MembersProps> = ({ currentUser }) => {
                                             {activeTab === 'pending' && (
                                                 <button 
                                                     onClick={() => onApproveUser(user.uid)}
-                                                    className="flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 rounded-lg transition-colors text-xs font-medium"
+                                                    className="flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors text-xs font-medium"
                                                     aria-label={`Approve ${user.name}`}
                                                 >
                                                     <CheckIcon className="w-4 h-4" /> Approve
@@ -221,7 +198,7 @@ const Members: React.FC<MembersProps> = ({ currentUser }) => {
                                             {activeTab === 'active' && user.role === 'MEMBER' && (
                                                 <button 
                                                     onClick={() => onUpdateUserRole(user.uid, 'PATRON')}
-                                                    className="p-2 text-gray-500 hover:text-purple-600 rounded-full hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors"
+                                                    className="p-2 text-ch-muted hover:text-ch-accent hover:bg-ch-accent-soft transition-colors"
                                                     aria-label={`Promote ${user.name} to Patron`}
                                                     title="Promote to Patron"
                                                 >
@@ -231,7 +208,7 @@ const Members: React.FC<MembersProps> = ({ currentUser }) => {
                                             {activeTab === 'active' && user.role === 'PATRON' && (
                                                 <button
                                                     onClick={() => onUpdateUserRole(user.uid, 'MEMBER')}
-                                                    className="p-2 text-gray-500 hover:text-yellow-600 rounded-full hover:bg-yellow-100 dark:hover:bg-yellow-900/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    className="p-2 text-ch-muted hover:text-yellow-600 hover:bg-yellow-100 dark:hover:bg-yellow-900/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                     aria-label={`Demote ${user.name} to Member`}
                                                     title="Demote to Member"
                                                     disabled={user.uid === currentUser.uid}
@@ -241,7 +218,7 @@ const Members: React.FC<MembersProps> = ({ currentUser }) => {
                                             )}
                                             <button 
                                                 onClick={() => setUserToDelete(user)}
-                                                className={`p-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${activeTab === 'pending' ? 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20' : 'text-gray-500 hover:text-red-600 hover:bg-red-100 dark:hover:bg-red-900/50'}`}
+                                                className={`p-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${activeTab === 'pending' ? 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20' : 'text-ch-muted hover:text-red-600 hover:bg-red-100 dark:hover:bg-red-900/50'}`}
                                                 aria-label={`Delete ${user.name}`}
                                                 title={activeTab === 'pending' ? "Reject Request" : "Remove User"}
                                                 disabled={user.uid === currentUser.uid}

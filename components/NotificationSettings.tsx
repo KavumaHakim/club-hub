@@ -73,23 +73,23 @@ const NotificationSettings: React.FC = () => {
     return (
         <div className="p-6 space-y-6">
             <div>
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Notification Settings</h2>
-                <p className="text-gray-600 dark:text-gray-400 mt-2">
+                <h2 className="text-[22px] font-extrabold tracking-[-0.02em] text-ch-text">Notification Settings</h2>
+                <p className="text-ch-muted mt-2">
                     Control when ClubHub sends you alerts for new events, posts, and messages.
                 </p>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
+            <div className="bg-ch-bg border border-ch-divider p-5 space-y-4">
                 <div className="flex items-center justify-between">
                     <div>
-                        <p className="font-semibold text-gray-800 dark:text-gray-200">Browser Notifications</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Show native alerts when you’re away.</p>
+                        <p className="font-semibold text-ch-text">Browser Notifications</p>
+                        <p className="text-sm text-ch-muted">Show native alerts when you’re away.</p>
                     </div>
                     <button
                         onClick={handleToggleBrowser}
-                        className={`px-4 py-2 rounded-full text-xs font-semibold transition-colors ${notificationPrefs.browserEnabled
+                        className={`px-4 py-2 text-xs font-semibold transition-colors ${notificationPrefs.browserEnabled
                                 ? 'bg-green-500 text-white'
-                                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                                : 'bg-ch-surface-2 text-ch-text'
                             }`}
                     >
                         {notificationPrefs.browserEnabled ? 'Enabled' : 'Disabled'}
@@ -97,21 +97,21 @@ const NotificationSettings: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between">
                     <div>
-                        <p className="font-semibold text-gray-800 dark:text-gray-200">Notify Only When Away</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Don’t show browser alerts when this tab is focused.</p>
+                        <p className="font-semibold text-ch-text">Notify Only When Away</p>
+                        <p className="text-sm text-ch-muted">Don’t show browser alerts when this tab is focused.</p>
                     </div>
                     <button
                         onClick={() => updateNotificationPrefs({ notifyWhenAway: !notificationPrefs.notifyWhenAway })}
-                        className={`px-4 py-2 rounded-full text-xs font-semibold transition-colors ${notificationPrefs.notifyWhenAway
+                        className={`px-4 py-2 text-xs font-semibold transition-colors ${notificationPrefs.notifyWhenAway
                                 ? 'bg-indigo-500 text-white'
-                                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                                : 'bg-ch-surface-2 text-ch-text'
                             }`}
                         disabled={!notificationPrefs.browserEnabled}
                     >
                         {notificationPrefs.notifyWhenAway ? 'On' : 'Off'}
                     </button>
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
+                <div className="text-xs text-ch-muted">
                     Permission status: <span className="font-semibold">{permission}</span>
                 </div>
             </div>

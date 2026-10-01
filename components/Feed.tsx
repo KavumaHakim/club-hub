@@ -9,7 +9,7 @@ import FeedItemCard from './FeedItemCard';
 import { useData } from '../DataContext';
 import ConfirmationModal from './ConfirmationModal';
 import { SearchIcon } from './icons/SearchIcon';
-import InitialsTile from './InitialsTile';
+import InitialsTile, { TILE_COLORS } from './InitialsTile';
 import { NEW_POST_EVENT, COMPOSER_STATE_EVENT } from './ShellHeader';
 import { useMediaQuery } from '../lib/useMediaQuery';
 
@@ -45,8 +45,6 @@ const STRIP_TITLES: Record<StripState, string> = {
   off: 'Not in streak',
   future: 'Upcoming',
 };
-
-const TILE_COLORS = ['#BE185D', '#6D28D9', '#0E7490', '#B45309', '#15803D'];
 
 const Feed: React.FC<FeedProps> = ({ currentUser }) => {
   const {

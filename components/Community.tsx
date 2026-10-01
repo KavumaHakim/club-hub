@@ -10,6 +10,7 @@ import { CheckCircleIcon } from './icons/CheckCircleIcon';
 import MemberPortfolioModal from './MemberPortfolioModal';
 import Tooltip from './Tooltip';
 import ConfirmationModal from './ConfirmationModal';
+import { PageIntro, StatStrip, BTN_PRIMARY } from './SplitKit';
 
 interface CommunityProps {
     currentUser: User;
@@ -192,103 +193,81 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
     return (
         <>
         <div className="max-w-6xl mx-auto space-y-8">
-            <section className="relative overflow-hidden rounded-3xl border border-gray-200/70 dark:border-gray-700/60 bg-gradient-to-br from-white via-pink-50/60 to-purple-50/50 dark:from-gray-900 dark:via-pink-900/15 dark:to-purple-900/15 p-6 md:p-8 shadow-sm">
-                <div className="absolute -top-16 -right-10 h-40 w-40 rounded-full bg-pink-300/30 blur-3xl"></div>
-                <div className="absolute -bottom-20 -left-10 h-44 w-44 rounded-full bg-purple-300/25 blur-3xl"></div>
-                <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-                    <div>
-                        <p className="text-xs uppercase tracking-[0.3em] text-pink-500/80 dark:text-pink-300">Community</p>
-                        <h2 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">Community Hub</h2>
-                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 max-w-2xl">
-                            Celebrate wins, form teams, and ship together. This is the heartbeat of the club.
-                        </p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-3">
+            <div>
+                <PageIntro
+                    eyebrow="Community"
+                    title="Community Hub"
+                    description="Celebrate wins, form teams, and ship together. This is the heartbeat of the club."
+                    actions={
                         <Tooltip text="Create a new team and invite members.">
-                            <button
-                                onClick={handleCreateTeam}
-                                className="inline-flex items-center gap-2 px-4 py-2.5 bg-pink-600 text-white rounded-xl text-sm font-semibold shadow-md hover:bg-pink-700 transition-all"
-                            >
-                                <PlusCircleIcon className="w-4 h-4" /> Create Team
+                            <button onClick={handleCreateTeam} className={BTN_PRIMARY}>
+                                <PlusCircleIcon /> Create Team
                             </button>
                         </Tooltip>
-                        <div className="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-900/10 dark:bg-white/10 text-gray-700 dark:text-gray-200 rounded-xl text-sm font-semibold">
-                            <CheckCircleIcon className="w-4 h-4" /> Build teams for projects
-                        </div>
-                    </div>
-                </div>
-                <div className="relative z-10 mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div className="rounded-2xl bg-white/80 dark:bg-gray-900/70 border border-gray-200/60 dark:border-gray-700/60 p-4">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Members</p>
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.approvedMembers}</p>
-                    </div>
-                    <div className="rounded-2xl bg-white/80 dark:bg-gray-900/70 border border-gray-200/60 dark:border-gray-700/60 p-4">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Teams</p>
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalTeams}</p>
-                    </div>
-                    <div className="rounded-2xl bg-white/80 dark:bg-gray-900/70 border border-gray-200/60 dark:border-gray-700/60 p-4">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Spotlight</p>
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{topMember ? 'Live' : '—'}</p>
-                    </div>
-                    <div className="rounded-2xl bg-white/80 dark:bg-gray-900/70 border border-gray-200/60 dark:border-gray-700/60 p-4">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Highlights</p>
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{recognitionBoard.length}</p>
-                    </div>
-                </div>
-            </section>
+                    }
+                />
+                <StatStrip
+                    stats={[
+                        { label: 'Members', value: stats.approvedMembers },
+                        { label: 'Teams', value: stats.totalTeams },
+                        { label: 'Spotlight', value: topMember ? 'Live' : '—' },
+                        { label: 'Highlights', value: recognitionBoard.length },
+                    ]}
+                />
+            </div>
 
             <section className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-6">
-                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm">
+                <div className="bg-ch-bg border border-ch-divider p-6">
                     <div className="flex items-center gap-3 mb-4">
                         <TrophyIcon />
                         <div>
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recognition Board</h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Points from showcases, suggestions, and badges.</p>
+                            <h3 className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">Recognition Board</h3>
+                            <p className="text-sm text-ch-muted">Points from showcases, suggestions, and badges.</p>
                         </div>
                     </div>
 
                     {recognitionBoard.length === 0 ? (
-                        <p className="text-sm text-gray-500 dark:text-gray-400">No recognition data yet. Submit showcases or suggestions to appear here.</p>
+                        <p className="text-sm text-ch-muted">No recognition data yet. Submit showcases or suggestions to appear here.</p>
                     ) : (
                         <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] gap-4">
-                            <div className="rounded-2xl bg-gradient-to-br from-pink-500/10 via-purple-500/10 to-indigo-500/10 border border-pink-200/60 dark:border-pink-500/30 p-4">
-                                <p className="text-xs uppercase tracking-[0.2em] text-pink-600 dark:text-pink-300">Top Contributor</p>
+                            <div className="border border-ch-divider p-4 bg-ch-accent-soft">
+                                <p className="text-xs uppercase tracking-[0.2em] text-ch-accent">Top Contributor</p>
                                 {topMember ? (
                                     <div className="mt-3 flex items-center gap-4">
                                         <img
                                             src={topMember.user.avatarUrl || `https://i.pravatar.cc/120?u=${topMember.user.username}`}
                                             alt={topMember.user.name}
-                                            className="w-16 h-16 rounded-full object-cover border-2 border-white/80 dark:border-gray-900 shadow-lg"
+                                            className="w-16 h-16 object-cover border-2 border-white/80"
                                         />
                                         <div>
-                                            <p className="text-lg font-bold text-gray-900 dark:text-white">{topMember.user.name}</p>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">@{topMember.user.username}</p>
-                                            <p className="text-sm font-semibold text-pink-600 dark:text-pink-300 mt-1">{topMember.score} pts</p>
+                                            <p className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">{topMember.user.name}</p>
+                                            <p className="text-xs text-ch-muted">@{topMember.user.username}</p>
+                                            <p className="text-sm font-semibold text-ch-accent mt-1">{topMember.score} pts</p>
                                         </div>
                                     </div>
                                 ) : (
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">No spotlight yet.</p>
+                                    <p className="text-sm text-ch-muted">No spotlight yet.</p>
                                 )}
                             </div>
 
                             <div className="space-y-3">
                                 {recognitionBoard.map((entry, index) => (
-                                    <div key={entry.user.uid} className="flex items-center gap-3 bg-gray-50 dark:bg-gray-700/40 rounded-xl p-3">
-                                        <div className="h-8 w-8 rounded-full bg-gray-900 text-white dark:bg-white dark:text-gray-900 flex items-center justify-center text-sm font-bold">
+                                    <div key={entry.user.uid} className="flex items-center gap-3 bg-ch-surface p-3">
+                                        <div className="h-8 w-8 bg-ch-text text-ch-bg flex items-center justify-center text-sm font-bold hover:opacity-90">
                                             {index + 1}
                                         </div>
                                         <img
                                             src={entry.user.avatarUrl || `https://i.pravatar.cc/40?u=${entry.user.username}`}
                                             alt={entry.user.name}
-                                            className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-600"
+                                            className="w-10 h-10 object-cover border border-ch-divider"
                                         />
                                         <div className="flex-1">
-                                            <p className="font-semibold text-gray-900 dark:text-white">{entry.user.name}</p>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">@{entry.user.username}</p>
+                                            <p className="font-semibold text-ch-text">{entry.user.name}</p>
+                                            <p className="text-xs text-ch-muted">@{entry.user.username}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-sm font-bold text-pink-600 dark:text-pink-400">{entry.score} pts</p>
-                                            <p className="text-[11px] text-gray-400">Showcases {entry.showcaseScore} • Ideas {entry.suggestionScore} • Badges {entry.badges}</p>
+                                            <p className="text-sm font-bold text-ch-accent">{entry.score} pts</p>
+                                            <p className="text-[11px] text-ch-muted">Showcases {entry.showcaseScore} • Ideas {entry.suggestionScore} • Badges {entry.badges}</p>
                                         </div>
                                     </div>
                                 ))}
@@ -297,41 +276,39 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
                     )}
                 </div>
 
-                <div className="relative overflow-hidden bg-gradient-to-br from-pink-500/25 via-purple-500/25 to-indigo-500/20 dark:from-pink-500/35 dark:via-purple-500/35 dark:to-indigo-500/25 border border-pink-300/60 dark:border-pink-500/40 rounded-3xl p-6 shadow-[0_20px_60px_-30px_rgba(236,72,153,0.6)]">
-                    <div className="absolute -top-16 -right-12 w-48 h-48 bg-pink-400/20 blur-3xl rounded-full"></div>
-                    <div className="absolute -bottom-20 -left-16 w-56 h-56 bg-purple-500/20 blur-3xl rounded-full"></div>
+                <div className="relative overflow-hidden border border-ch-divider p-6 bg-ch-accent-soft">
                     <div className="flex items-center gap-3 mb-4 relative z-10">
                         <SparklesIcon />
                         <div>
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white tracking-tight">Member Spotlight</h3>
-                            <p className="text-sm text-gray-600 dark:text-gray-300">Top community contributor this cycle.</p>
+                            <h3 className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text tracking-tight">Member Spotlight</h3>
+                            <p className="text-sm text-ch-muted">Top community contributor this cycle.</p>
                         </div>
                     </div>
                     {topMember ? (
                         <div className="relative z-10">
-                            <p className="text-xl font-black text-gray-900 dark:text-white">{topMember.user.name}</p>
-                            <p className="text-sm text-gray-700 dark:text-gray-300">@{topMember.user.username}</p>
-                            <p className="text-sm text-pink-700 dark:text-pink-200 mt-2">Showcases {topMember.showcaseScore} • Ideas {topMember.suggestionScore} • Badges {topMember.badges}</p>
+                            <p className="text-[20px] font-extrabold tracking-[-0.02em] text-ch-text">{topMember.user.name}</p>
+                            <p className="text-sm text-ch-text">@{topMember.user.username}</p>
+                            <p className="text-sm text-ch-accent mt-2">Showcases {topMember.showcaseScore} • Ideas {topMember.suggestionScore} • Badges {topMember.badges}</p>
                         </div>
                     ) : (
-                        <p className="text-sm text-gray-500 dark:text-gray-400">No spotlight yet. Start contributing to appear here.</p>
+                        <p className="text-sm text-ch-muted">No spotlight yet. Start contributing to appear here.</p>
                     )}
                 </div>
             </section>
 
-            <section className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm">
+            <section className="bg-ch-bg border border-ch-divider p-6">
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                         <UsersIcon />
                         <div>
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Teams</h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Form squads for projects and study groups.</p>
+                            <h3 className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">Teams</h3>
+                            <p className="text-sm text-ch-muted">Form squads for projects and study groups.</p>
                         </div>
                     </div>
                     <Tooltip text="Create a new team and invite members.">
                         <button
                             onClick={handleCreateTeam}
-                            className="inline-flex items-center gap-2 px-3 py-2 bg-pink-600 text-white rounded-lg text-sm font-semibold hover:bg-pink-700 transition-colors"
+                            className="inline-flex items-center gap-2 px-3 py-2 bg-ch-accent text-ch-on-accent text-sm font-semibold hover:bg-ch-accent-deep transition-colors"
                         >
                             <PlusCircleIcon className="w-4 h-4" /> Create Team
                         </button>
@@ -343,22 +320,22 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
                         value={teamForm.name}
                         onChange={(e) => setTeamForm(prev => ({ ...prev, name: e.target.value }))}
                         placeholder="Team name"
-                        className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm"
+                        className="px-3 py-2 border border-ch-divider bg-ch-bg text-sm"
                     />
                     <input
                         value={teamForm.description}
                         onChange={(e) => setTeamForm(prev => ({ ...prev, description: e.target.value }))}
                         placeholder="Short description"
-                        className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm md:col-span-2"
+                        className="px-3 py-2 border border-ch-divider bg-ch-bg text-sm md:col-span-2"
                     />
                 </div>
 
                 {isLoadingTeams ? (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Loading teams...</p>
+                    <p className="text-sm text-ch-muted">Loading teams...</p>
                 ) : teamsError ? (
                     <p className="text-sm text-red-500 dark:text-red-400">{teamsError}</p>
                 ) : teams.length === 0 ? (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">No teams yet. Create the first one.</p>
+                    <p className="text-sm text-ch-muted">No teams yet. Create the first one.</p>
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         {teams.map(team => {
@@ -371,17 +348,17 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
                                 .filter(user => user.status === 'APPROVED')
                                 .filter(user => !team.memberIds.includes(user.uid));
                             return (
-                                <div key={team.id} className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-gray-50 dark:bg-gray-900/50">
+                                <div key={team.id} className="border border-ch-divider p-4 bg-ch-surface">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <h4 className="text-md font-semibold text-gray-900 dark:text-white">{team.name}</h4>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">{team.description || 'No description'}</p>
+                                            <h4 className="text-md font-semibold text-ch-text">{team.name}</h4>
+                                            <p className="text-xs text-ch-muted">{team.description || 'No description'}</p>
                                         </div>
                                         {isOwner ? (
                                             <Tooltip text="Delete this team and remove all members.">
                                                 <button
                                                     onClick={() => setTeamToDelete(team)}
-                                                    className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700"
+                                                    className="px-3 py-1.5 text-xs font-semibold bg-red-600 text-white hover:bg-red-700"
                                                 >
                                                     Delete
                                                 </button>
@@ -389,18 +366,18 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
                                         ) : isMember ? (
                                             <button
                                                 onClick={() => handleLeaveTeam(team.id)}
-                                                className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200"
+                                                className="px-3 py-1.5 text-xs font-semibold bg-ch-surface-2 text-ch-text"
                                             >
                                                 Leave
                                             </button>
                                         ) : myRequest ? (
-                                            <span className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">
+                                            <span className="px-3 py-1.5 text-xs font-semibold bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">
                                                 Requested
                                             </span>
                                         ) : (
                                             <button
                                                 onClick={() => handleRequestJoin(team.id)}
-                                                className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-pink-600 text-white hover:bg-pink-700"
+                                                className="px-3 py-1.5 text-xs font-semibold bg-ch-accent text-ch-on-accent hover:bg-ch-accent-deep"
                                             >
                                                 Request Join
                                             </button>
@@ -414,16 +391,16 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
                                                     key={uid}
                                                     src={user?.avatarUrl || `https://i.pravatar.cc/40?u=${user?.username || uid}`}
                                                     alt={user?.name || 'Member'}
-                                                    className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-700 object-cover"
+                                                    className="w-8 h-8 border border-ch-divider object-cover"
                                                 />
                                             );
                                         })}
                                         {team.memberIds.length > 6 && (
-                                            <span className="text-xs text-gray-500 dark:text-gray-400">+{team.memberIds.length - 6} more</span>
+                                            <span className="text-xs text-ch-muted">+{team.memberIds.length - 6} more</span>
                                         )}
                                     </div>
                                     {isOwner && pendingRequests.length > 0 && (
-                                        <div className="mt-4 rounded-lg border border-amber-200 dark:border-amber-700/40 bg-amber-50/60 dark:bg-amber-900/20 p-3 space-y-2">
+                                        <div className="mt-4 border border-amber-200 dark:border-amber-700/40 bg-amber-50/60 dark:bg-amber-900/20 p-3 space-y-2">
                                             <p className="text-xs font-semibold text-amber-700 dark:text-amber-200 uppercase tracking-wide">Join Requests</p>
                                             {pendingRequests.map(req => {
                                                 const requester = userMap.get(req.requesterId);
@@ -433,23 +410,23 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
                                                             <img
                                                                 src={requester?.avatarUrl || `https://i.pravatar.cc/40?u=${requester?.username || req.requesterId}`}
                                                                 alt={requester?.name || 'Member'}
-                                                                className="w-7 h-7 rounded-full border border-gray-200 dark:border-gray-700 object-cover"
+                                                                className="w-7 h-7 border border-ch-divider object-cover"
                                                             />
-                                                            <div className="text-xs text-gray-700 dark:text-gray-200">
+                                                            <div className="text-xs text-ch-text">
                                                                 <p className="font-semibold">{requester?.name || 'Member'}</p>
-                                                                <p className="text-[11px] text-gray-500 dark:text-gray-400">@{requester?.username || 'unknown'}</p>
+                                                                <p className="text-[11px] text-ch-muted">@{requester?.username || 'unknown'}</p>
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center gap-2">
                                                             <button
                                                                 onClick={() => handleApproveRequest(team.id, req.id, req.requesterId)}
-                                                                className="px-2.5 py-1 text-[11px] font-semibold rounded-md bg-emerald-600 text-white hover:bg-emerald-700"
+                                                                className="px-2.5 py-1 text-[11px] font-semibold bg-emerald-600 text-white hover:bg-emerald-700"
                                                             >
                                                                 Approve
                                                             </button>
                                                             <button
                                                                 onClick={() => handleRejectRequest(req.id)}
-                                                                className="px-2.5 py-1 text-[11px] font-semibold rounded-md bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
+                                                                className="px-2.5 py-1 text-[11px] font-semibold bg-ch-surface-2 text-ch-text hover:bg-ch-surface-2"
                                                             >
                                                                 Decline
                                                             </button>
@@ -465,7 +442,7 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
                                             <select
                                                 value={memberInvite[team.id] ?? ''}
                                                 onChange={(e) => setMemberInvite(prev => ({ ...prev, [team.id]: e.target.value }))}
-                                                className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm flex-1"
+                                                className="px-3 py-2 border border-ch-divider bg-ch-bg text-sm flex-1"
                                             >
                                                 <option value="">Invite member</option>
                                                 {availableMembers.map(user => (
@@ -476,7 +453,7 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
                                             </select>
                                             <button
                                                 onClick={() => handleAddMember(team.id)}
-                                                className="px-3 py-2 text-xs font-semibold rounded-lg bg-gray-900 text-white hover:bg-gray-800"
+                                                className="px-3 py-2 text-xs font-semibold bg-gray-900 text-white hover:bg-gray-800"
                                             >
                                                 Invite
                                             </button>
@@ -489,42 +466,42 @@ const Community: React.FC<CommunityProps> = ({ currentUser }) => {
                 )}
             </section>
 
-            <section className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm">
+            <section className="bg-ch-bg border border-ch-divider p-6">
                 <div className="flex items-center justify-between mb-4">
                     <div>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Member Portfolio</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Browse achievements and activity.</p>
+                        <h3 className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">Member Portfolio</h3>
+                        <p className="text-sm text-ch-muted">Browse achievements and activity.</p>
                     </div>
                     <input
                         value={memberSearch}
                         onChange={(e) => setMemberSearch(e.target.value)}
                         placeholder="Search members..."
-                        className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm w-56"
+                        className="px-3 py-2 border border-ch-divider bg-ch-bg text-sm w-56"
                     />
                 </div>
 
                 {directoryMembers.length === 0 ? (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">No members found.</p>
+                    <p className="text-sm text-ch-muted">No members found.</p>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {directoryMembers.map(member => (
-                            <div key={member.uid} className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-gray-50 dark:bg-gray-900/40">
+                            <div key={member.uid} className="border border-ch-divider p-4 bg-ch-surface">
                                 <div className="flex items-center gap-3">
                                     <img
                                         src={member.avatarUrl || `https://i.pravatar.cc/40?u=${member.username}`}
                                         alt={member.name}
-                                        className="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-700 object-cover"
+                                        className="w-10 h-10 border border-ch-divider object-cover"
                                     />
                                     <div className="flex-1">
-                                        <p className="text-sm font-semibold text-gray-900 dark:text-white">{member.name}</p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">@{member.username}</p>
+                                        <p className="text-sm font-semibold text-ch-text">{member.name}</p>
+                                        <p className="text-xs text-ch-muted">@{member.username}</p>
                                     </div>
                                 </div>
-                                <div className="mt-3 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                                <div className="mt-3 flex items-center justify-between text-xs text-ch-muted">
                                     <span>{member.badges?.length || 0} badges</span>
                                     <button
                                         onClick={() => setSelectedMember(member)}
-                                        className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-900 text-white hover:bg-gray-800"
+                                        className="px-3 py-1.5 text-xs font-semibold bg-gray-900 text-white hover:bg-gray-800"
                                     >
                                         View Portfolio
                                     </button>

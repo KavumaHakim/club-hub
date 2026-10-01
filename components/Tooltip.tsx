@@ -24,7 +24,7 @@ const Tooltip: React.FC<TooltipProps> = ({ text, children, position = 'top', max
         }`}
       >
         <span
-          className={`block text-[11px] leading-snug text-white bg-gray-900/95 dark:bg-black/90 px-2.5 py-1.5 rounded-md shadow-lg border border-white/10 ${
+          className={`block text-[11px] leading-snug text-ch-bg bg-ch-text px-2.5 py-1.5 ${
             maxWidthClassName || 'max-w-[240px]'
           }`}
         >

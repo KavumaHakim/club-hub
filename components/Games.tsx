@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { User } from '../types';
 import * as api from '../services/apiService';
 import Tooltip from './Tooltip';
+import { PageIntro } from './SplitKit';
 
 type ReactionState = 'idle' | 'waiting' | 'ready' | 'tooSoon' | 'done';
 type MathDifficulty = 'warmup' | 'core' | 'boss';
@@ -1072,25 +1073,18 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
 
     return (
         <div className="max-w-6xl mx-auto space-y-8">
-            <section className="relative overflow-hidden rounded-3xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-8 shadow-sm">
-                <div className="absolute inset-0 opacity-70">
-                    <div className="absolute -top-20 -right-24 h-64 w-64 bg-gradient-to-br from-pink-400/40 to-purple-500/10 blur-3xl"></div>
-                    <div className="absolute -bottom-24 -left-10 h-64 w-64 bg-gradient-to-br from-blue-400/30 to-cyan-400/10 blur-3xl"></div>
-                </div>
-                <div className="relative z-10">
-                    <p className="text-xs uppercase tracking-[0.35em] text-pink-500 font-semibold">Club Arcade</p>
-                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white mt-2">Games Lounge</h2>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 max-w-2xl">
-                        Short, focused coding games to reset your brain between deep work sessions. Scores are local to this device so you can keep things casual.
-                    </p>
-                </div>
-            </section>
+            <PageIntro
+                eyebrow="Club Arcade"
+                title="Games Lounge"
+                description="Short, focused coding games to reset your brain between deep work sessions. Scores are local to this device so you can keep things casual."
+                className="!mb-0"
+            />
 
-            <section className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm space-y-4">
+            <section className="bg-ch-bg border border-ch-divider p-6 space-y-4">
                 <div className="flex items-center justify-between gap-4">
                     <div>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Arcade Leaderboard</h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Club-wide scores updated in real time.</p>
+                        <h3 className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">Arcade Leaderboard</h3>
+                        <p className="text-xs text-ch-muted">Club-wide scores updated in real time.</p>
                     </div>
                 </div>
 
@@ -1100,59 +1094,59 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                             <button
                                 key={item.key}
                                 onClick={() => setLeaderboardGameKey(item.key as keyof typeof gameMeta)}
-                                className={`w-full text-left rounded-xl border px-3 py-2 text-sm transition-all ${
+                                className={`w-full text-left border px-3 py-2 text-sm transition-all ${
                                     leaderboardGameKey === item.key
-                                        ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-200'
-                                        : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-900/40'
+                                        ? 'border-ch-accent bg-ch-accent-soft text-ch-accent'
+                                        : 'border-ch-divider text-ch-text hover:bg-ch-surface'
                                 }`}
                             >
                                 <div className="flex items-center justify-between">
                                     <span className="font-semibold">{item.label}</span>
-                                    <span className="text-xs text-gray-400">{item.value}</span>
+                                    <span className="text-xs text-ch-muted">{item.value}</span>
                                 </div>
-                                <p className="text-[10px] text-gray-400">{item.detail}</p>
+                                <p className="text-[10px] text-ch-muted">{item.detail}</p>
                             </button>
                         ))}
                     </div>
 
-                    <div className="lg:col-span-2 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-4">
+                    <div className="lg:col-span-2 border border-ch-divider bg-ch-surface p-4">
                         <div className="flex items-center justify-between mb-3">
                             <div>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Leaderboard</p>
-                                <p className="text-lg font-semibold text-gray-900 dark:text-white">{gameMeta[leaderboardGameKey].label}</p>
+                                <p className="text-xs text-ch-muted">Leaderboard</p>
+                                <p className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">{gameMeta[leaderboardGameKey].label}</p>
                             </div>
                             <button
                                 onClick={() => loadLeaderboard(leaderboardGameKey)}
-                                className="text-xs text-pink-500 hover:text-pink-600"
+                                className="text-xs text-ch-accent hover:text-ch-accent"
                             >
                                 Refresh
                             </button>
                         </div>
 
                         {leaderboardLoading ? (
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Loading leaderboard...</p>
+                            <p className="text-sm text-ch-muted">Loading leaderboard...</p>
                         ) : leaderboardError ? (
                             <p className="text-sm text-red-500 dark:text-red-400">{leaderboardError}</p>
                         ) : leaderboardEntries.length === 0 ? (
-                            <p className="text-sm text-gray-500 dark:text-gray-400">No scores yet. Be the first.</p>
+                            <p className="text-sm text-ch-muted">No scores yet. Be the first.</p>
                         ) : (
                             <div className="space-y-2">
                                 {leaderboardEntries.map((entry, index) => (
-                                    <div key={`${entry.userId}-${index}`} className="flex items-center gap-3 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3">
-                                        <div className="h-8 w-8 rounded-full bg-gray-900 text-white dark:bg-white dark:text-gray-900 flex items-center justify-center text-xs font-bold">
+                                    <div key={`${entry.userId}-${index}`} className="flex items-center gap-3 bg-ch-bg border border-ch-divider p-3">
+                                        <div className="h-8 w-8 bg-ch-text text-ch-bg flex items-center justify-center text-xs font-bold hover:opacity-90">
                                             {index + 1}
                                         </div>
                                         <img
                                             src={entry.userAvatarUrl || `https://i.pravatar.cc/40?u=${entry.userUsername}`}
                                             alt={entry.userName}
-                                            className="w-9 h-9 rounded-full object-cover border border-gray-200 dark:border-gray-700"
+                                            className="w-9 h-9 object-cover border border-ch-divider"
                                         />
                                         <div className="flex-1">
-                                            <p className="text-sm font-semibold text-gray-900 dark:text-white">{entry.userName}</p>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">@{entry.userUsername}</p>
+                                            <p className="text-sm font-semibold text-ch-text">{entry.userName}</p>
+                                            <p className="text-xs text-ch-muted">@{entry.userUsername}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-sm font-bold text-gray-900 dark:text-white">
+                                            <p className="text-sm font-bold text-ch-text">
                                                 {entry.bestValue}{gameMeta[leaderboardGameKey].valueSuffix ? ` ${gameMeta[leaderboardGameKey].valueSuffix}` : ''}
                                             </p>
                                         </div>
@@ -1164,15 +1158,15 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                 </div>
             </section>
 
-            <section className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm space-y-4">
+            <section className="bg-ch-bg border border-ch-divider p-6 space-y-4">
                 <div className="flex items-center justify-between gap-4">
                     <div>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">How To Play</h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Quick guides for every game.</p>
+                        <h3 className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">How To Play</h3>
+                        <p className="text-xs text-ch-muted">Quick guides for every game.</p>
                     </div>
                     <button
                         onClick={() => setShowHelp(prev => !prev)}
-                        className="text-xs text-pink-500 hover:text-pink-600"
+                        className="text-xs text-ch-accent hover:text-ch-accent"
                     >
                         {showHelp ? 'Hide tips' : 'Show tips'}
                     </button>
@@ -1181,12 +1175,12 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                 {showHelp && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                         {gameHelp.map(help => (
-                            <div key={help.title} className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 p-4">
-                                <p className="text-sm font-semibold text-gray-900 dark:text-white">{help.title}</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{help.description}</p>
+                            <div key={help.title} className="border border-ch-divider bg-ch-surface p-4">
+                                <p className="text-sm font-semibold text-ch-text">{help.title}</p>
+                                <p className="text-xs text-ch-muted mt-1">{help.description}</p>
                                 <div className="mt-2 space-y-1">
                                     {help.tips.map(tip => (
-                                        <p key={tip} className="text-[11px] text-gray-400">- {tip}</p>
+                                        <p key={tip} className="text-[11px] text-ch-muted">- {tip}</p>
                                     ))}
                                 </div>
                             </div>
@@ -1196,19 +1190,19 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
             </section>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <section className="lg:col-span-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm space-y-5">
+                <section className="lg:col-span-2 bg-ch-bg border border-ch-divider p-6 space-y-5">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Reaction Timer</h3>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Train your quick response time.</p>
+                            <h3 className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">Reaction Timer</h3>
+                            <p className="text-xs text-ch-muted">Train your quick response time.</p>
                         </div>
                         <div className="text-right">
-                            <p className="text-[10px] uppercase tracking-[0.2em] text-gray-400">Best</p>
-                            <p className="text-lg font-bold text-gray-900 dark:text-white">{bestReaction ? `${bestReaction} ms` : '--'}</p>
+                            <p className="text-[10px] uppercase tracking-[0.2em] text-ch-muted">Best</p>
+                            <p className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">{bestReaction ? `${bestReaction} ms` : '--'}</p>
                         </div>
                     </div>
 
-                    <div className={`h-40 rounded-2xl border border-dashed flex items-center justify-center text-sm font-semibold transition-all ${reactionState === 'ready' ? 'bg-emerald-500/20 border-emerald-400 text-emerald-600 dark:text-emerald-300' : reactionState === 'tooSoon' ? 'bg-red-500/10 border-red-400 text-red-500' : 'bg-gray-50 dark:bg-gray-900/40 border-gray-200 dark:border-gray-700 text-gray-500'}`}
+                    <div className={`h-40 border border-dashed flex items-center justify-center text-sm font-semibold transition-all ${reactionState === 'ready' ? 'bg-emerald-500/20 border-emerald-400 text-emerald-600 dark:text-emerald-300' : reactionState === 'tooSoon' ? 'bg-red-500/10 border-red-400 text-red-500' : 'bg-ch-surface border-ch-divider text-ch-muted'}`}
                         onClick={handleReactionClick}
                         role="button"
                         tabIndex={0}
@@ -1220,7 +1214,7 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                         <Tooltip text="Start a new reaction test.">
                             <button
                                 onClick={startReaction}
-                                className="px-4 py-2 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 text-white text-sm font-semibold shadow-sm hover:opacity-90"
+                                className="px-4 py-2 text-ch-on-accent text-sm font-semibold hover:opacity-90 bg-ch-accent"
                             >
                                 Start Run
                             </button>
@@ -1228,7 +1222,7 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                         <Tooltip text="Clear the timer and reset the board.">
                             <button
                                 onClick={resetReaction}
-                                className="px-4 py-2 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-sm font-semibold hover:bg-gray-200 dark:hover:bg-gray-600"
+                                className="px-4 py-2 bg-ch-surface text-ch-text text-sm font-semibold hover:bg-ch-surface-2"
                             >
                                 Reset
                             </button>
@@ -1236,45 +1230,45 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                     </div>
                 </section>
 
-                <section className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm space-y-4">
+                <section className="bg-ch-bg border border-ch-divider p-6 space-y-4">
                     <div>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Quick Math</h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Keep your brain warm with rapid prompts.</p>
+                        <h3 className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">Quick Math</h3>
+                        <p className="text-xs text-ch-muted">Keep your brain warm with rapid prompts.</p>
                     </div>
 
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Streak</p>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white">{mathStreak}</p>
+                            <p className="text-xs text-ch-muted">Streak</p>
+                            <p className="text-[22px] font-extrabold tracking-[-0.02em] text-ch-text">{mathStreak}</p>
                         </div>
                         <div className="text-right">
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Best</p>
-                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{mathBest}</p>
+                            <p className="text-xs text-ch-muted">Best</p>
+                            <p className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">{mathBest}</p>
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-between rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 px-3 py-2">
+                    <div className="flex items-center justify-between border border-ch-divider bg-ch-surface px-3 py-2">
                         <div>
-                            <p className="text-[10px] uppercase tracking-[0.2em] text-gray-400">Timer</p>
-                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{mathTimeLeft}s</p>
+                            <p className="text-[10px] uppercase tracking-[0.2em] text-ch-muted">Timer</p>
+                            <p className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">{mathTimeLeft}s</p>
                         </div>
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={startMathTimer}
-                                className="px-3 py-1.5 rounded-lg bg-pink-600 text-white text-xs font-semibold hover:bg-pink-700"
+                                className="px-3 py-1.5 bg-ch-accent text-ch-on-accent text-xs font-semibold hover:bg-ch-accent-deep"
                             >
                                 Start
                             </button>
                             <button
                                 onClick={resetMathTimer}
-                                className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                className="px-3 py-1.5 border border-ch-divider text-xs text-ch-muted hover:bg-ch-surface"
                             >
                                 Reset
                             </button>
                         </div>
                     </div>
 
-                    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 px-4 py-4 text-center text-2xl font-bold text-gray-900 dark:text-white">
+                    <div className="border border-ch-divider bg-ch-surface px-4 py-4 text-center text-[22px] font-extrabold tracking-[-0.02em] text-ch-text">
                         {mathQuestion.text}
                     </div>
 
@@ -1283,14 +1277,14 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                             value={mathAnswer}
                             onChange={(e) => setMathAnswer(e.target.value)}
                             type="number"
-                            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/60 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                            className="w-full border border-ch-divider bg-ch-bg px-3 py-2 text-sm text-ch-text focus:outline-none focus:ring-2 focus:ring-ch-accent"
                             placeholder="Type your answer"
                             disabled={!mathIsRunning || mathTimeLeft === 0}
                         />
                         <div className="flex flex-wrap gap-2">
                             <button
                                 type="submit"
-                                className="flex-1 px-3 py-2 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-semibold disabled:opacity-60"
+                                className="flex-1 px-3 py-2 bg-ch-text text-ch-bg text-sm font-semibold disabled:opacity-60 hover:opacity-90"
                                 disabled={!mathIsRunning || mathTimeLeft === 0}
                             >
                                 Submit
@@ -1298,7 +1292,7 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                             <button
                                 type="button"
                                 onClick={skipMath}
-                                className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-60"
+                                className="px-3 py-2 border border-ch-divider text-sm text-ch-muted hover:bg-ch-surface disabled:opacity-60"
                                 disabled={!mathIsRunning || mathTimeLeft === 0}
                             >
                                 Skip
@@ -1307,11 +1301,11 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                     </form>
 
                     <div className="flex items-center justify-between">
-                        <label className="text-xs text-gray-500 dark:text-gray-400">Difficulty</label>
+                        <label className="text-xs text-ch-muted">Difficulty</label>
                         <select
                             value={mathDifficulty}
                             onChange={(e) => setMathDifficulty(e.target.value as MathDifficulty)}
-                            className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/60 px-2 py-1 text-xs text-gray-700 dark:text-gray-200"
+                            className="border border-ch-divider bg-ch-bg px-2 py-1 text-xs text-ch-text"
                             disabled={mathIsRunning}
                         >
                             <option value="warmup">Warm-up</option>
@@ -1321,19 +1315,19 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                     </div>
 
                     {mathFeedback && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{mathFeedback}</p>
+                        <p className="text-xs text-ch-muted">{mathFeedback}</p>
                     )}
                 </section>
 
-                <section className="lg:col-span-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm space-y-4">
+                <section className="lg:col-span-3 bg-ch-bg border border-ch-divider p-6 space-y-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Number Guess</h3>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Read the clue, then adjust your range.</p>
+                            <h3 className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">Number Guess</h3>
+                            <p className="text-xs text-ch-muted">Read the clue, then adjust your range.</p>
                         </div>
                         <div className="text-right">
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Best Attempts</p>
-                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{bestGuess ?? '--'}</p>
+                            <p className="text-xs text-ch-muted">Best Attempts</p>
+                            <p className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">{bestGuess ?? '--'}</p>
                         </div>
                     </div>
 
@@ -1342,49 +1336,49 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                             value={guessValue}
                             onChange={(e) => setGuessValue(e.target.value)}
                             type="number"
-                            className="flex-1 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/60 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            className="flex-1 border border-ch-divider bg-ch-bg px-3 py-2 text-sm text-ch-text focus:outline-none focus:ring-2 focus:ring-ch-accent"
                             placeholder="Your guess..."
                         />
                         <button
                             type="submit"
-                            className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-sm font-semibold shadow-sm hover:opacity-90"
+                            className="px-4 py-2 bg-ch-accent text-ch-on-accent text-sm font-semibold hover:bg-ch-accent-deep transition-colors"
                         >
                             Guess
                         </button>
                         <button
                             type="button"
                             onClick={resetGuess}
-                            className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            className="px-4 py-2 border border-ch-divider text-sm text-ch-muted hover:bg-ch-surface"
                         >
                             New Round
                         </button>
                     </form>
 
                     <div className="flex flex-wrap items-center justify-between gap-3">
-                        <p className="text-sm text-gray-600 dark:text-gray-300">{guessFeedback}</p>
-                        <span className="text-xs text-gray-400">Attempts: {guessAttempts}</span>
+                        <p className="text-sm text-ch-muted">{guessFeedback}</p>
+                        <span className="text-xs text-ch-muted">Attempts: {guessAttempts}</span>
                     </div>
                 </section>
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                <section className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm space-y-4">
+                <section className="bg-ch-bg border border-ch-divider p-6 space-y-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Sequence Builder</h3>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Drag the bot with step-by-step commands.</p>
+                            <h3 className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">Sequence Builder</h3>
+                            <p className="text-xs text-ch-muted">Drag the bot with step-by-step commands.</p>
                         </div>
                         <div className="text-right">
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Best</p>
-                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{sequenceBest ?? '--'}</p>
+                            <p className="text-xs text-ch-muted">Best</p>
+                            <p className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">{sequenceBest ?? '--'}</p>
                         </div>
                     </div>
 
                     <div className="flex items-center justify-between">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Puzzle {sequenceIndex + 1} of {sequencePuzzles.length}</p>
+                        <p className="text-xs text-ch-muted">Puzzle {sequenceIndex + 1} of {sequencePuzzles.length}</p>
                         <button
                             onClick={() => setSequenceIndex(prev => nextIndex(prev, sequencePuzzles.length))}
-                            className="text-xs text-pink-500 hover:text-pink-600"
+                            className="text-xs text-ch-accent hover:text-ch-accent"
                         >
                             New Map
                         </button>
@@ -1399,12 +1393,12 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                 const isObstacle = currentSequence.obstacles.some(o => o.x === x && o.y === y);
                                 const isBot = sequencePos.x === x && sequencePos.y === y;
                                 const isVisited = sequencePath.has(positionKey({ x, y }));
-                                let className = 'h-8 w-8 rounded-md border border-gray-200 dark:border-gray-700 flex items-center justify-center text-[10px] font-semibold';
-                                if (isObstacle) className += ' bg-gray-200 dark:bg-gray-700 text-gray-500';
+                                let className = 'h-8 w-8 border border-ch-divider flex items-center justify-center text-[10px] font-semibold';
+                                if (isObstacle) className += ' bg-ch-surface-2 text-ch-muted';
                                 else if (isGoal) className += ' bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600';
                                 else if (isStart) className += ' bg-blue-100 dark:bg-blue-900/40 text-blue-600';
-                                else if (isVisited) className += ' bg-pink-50 dark:bg-pink-900/20 text-pink-500';
-                                if (isBot) className += ' ring-2 ring-pink-500';
+                                else if (isVisited) className += ' bg-ch-accent-soft text-ch-accent';
+                                if (isBot) className += ' ring-2 ring-ch-accent';
                                 return (
                                     <div key={key} className={className}>
                                         {isBot ? 'R' : isGoal ? 'G' : isStart ? 'S' : isObstacle ? 'X' : ''}
@@ -1419,20 +1413,20 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                             <button
                                 key={cmd}
                                 onClick={() => addSequenceCommand(cmd)}
-                                className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                className="px-3 py-1.5 border border-ch-divider text-xs font-semibold text-ch-text hover:bg-ch-surface"
                             >
                                 {cmd}
                             </button>
                         ))}
                         <button
                             onClick={removeSequenceCommand}
-                            className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            className="px-3 py-1.5 border border-ch-divider text-xs text-ch-muted hover:bg-ch-surface"
                         >
                             Undo
                         </button>
                         <button
                             onClick={resetSequence}
-                            className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            className="px-3 py-1.5 border border-ch-divider text-xs text-ch-muted hover:bg-ch-surface"
                         >
                             Clear
                         </button>
@@ -1440,10 +1434,10 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
 
                     <div className="flex flex-wrap gap-2">
                         {sequenceCommands.length === 0 ? (
-                            <span className="text-xs text-gray-400">No steps yet.</span>
+                            <span className="text-xs text-ch-muted">No steps yet.</span>
                         ) : (
                             sequenceCommands.map((cmd, index) => (
-                                <span key={`${cmd}-${index}`} className="px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-700 text-xs text-gray-600 dark:text-gray-200">
+                                <span key={`${cmd}-${index}`} className="px-2 py-1 bg-ch-surface text-xs text-ch-muted">
                                     {cmd}
                                 </span>
                             ))
@@ -1451,31 +1445,31 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                     </div>
 
                     {sequenceResult && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{sequenceResult}</p>
+                        <p className="text-xs text-ch-muted">{sequenceResult}</p>
                     )}
 
                     <div className="flex justify-end">
                         <button
                             onClick={runSequence}
-                            className="px-3 py-2 rounded-xl bg-pink-500 text-white text-sm font-semibold hover:bg-pink-600"
+                            className="px-3 py-2 bg-ch-accent text-ch-on-accent text-sm font-semibold hover:bg-ch-accent-deep"
                         >
                             Run
                         </button>
                     </div>
                 </section>
 
-                <section className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm space-y-4">
+                <section className="bg-ch-bg border border-ch-divider p-6 space-y-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Loop Logic</h3>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Pick how many loops reach the target.</p>
+                            <h3 className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">Loop Logic</h3>
+                            <p className="text-xs text-ch-muted">Pick how many loops reach the target.</p>
                         </div>
                         <div className="text-right">
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Streak</p>
-                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{loopStreak} / {loopBest}</p>
+                            <p className="text-xs text-ch-muted">Streak</p>
+                            <p className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">{loopStreak} / {loopBest}</p>
                             <button
                                 onClick={nextLoop}
-                                className="text-xs text-pink-500 hover:text-pink-600"
+                                className="text-xs text-ch-accent hover:text-ch-accent"
                             >
                                 New Loop
                             </button>
@@ -1490,11 +1484,11 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                 const isGoal = x === currentLoop.goal.x && y === currentLoop.goal.y;
                                 const isBot = loopPos.x === x && loopPos.y === y;
                                 const isVisited = loopPath.has(positionKey({ x, y }));
-                                let className = 'h-8 w-8 rounded-md border border-gray-200 dark:border-gray-700 flex items-center justify-center text-[10px] font-semibold';
+                                let className = 'h-8 w-8 border border-ch-divider flex items-center justify-center text-[10px] font-semibold';
                                 if (isGoal) className += ' bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600';
                                 else if (isStart) className += ' bg-blue-100 dark:bg-blue-900/40 text-blue-600';
-                                else if (isVisited) className += ' bg-purple-50 dark:bg-purple-900/20 text-purple-500';
-                                if (isBot) className += ' ring-2 ring-purple-500';
+                                else if (isVisited) className += ' bg-ch-accent-soft text-ch-violet';
+                                if (isBot) className += ' ring-2 ring-ch-accent';
                                 return (
                                     <div key={key} className={className}>
                                         {isBot ? 'R' : isGoal ? 'G' : isStart ? 'S' : ''}
@@ -1504,18 +1498,18 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                         ))}
                     </div>
 
-                    <p className="text-sm text-gray-700 dark:text-gray-300">{currentLoop.label}</p>
+                    <p className="text-sm text-ch-text">{currentLoop.label}</p>
                     <div className="flex flex-wrap gap-2">
                         {currentLoop.options.map(option => (
                             <button
                                 key={option}
                                 onClick={() => evaluateLoop(option)}
-                                className={`px-3 py-1.5 rounded-lg border text-xs font-semibold ${
+                                className={`px-3 py-1.5 border text-xs font-semibold ${
                                     loopChoice === option
                                         ? option === currentLoop.answer
                                             ? 'border-emerald-400 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200'
                                             : 'border-red-400 bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-200'
-                                        : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                        : 'border-ch-divider text-ch-text hover:bg-ch-surface'
                                 }`}
                             >
                                 {option}x
@@ -1524,22 +1518,22 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                     </div>
 
                     {loopFeedback && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{loopFeedback}</p>
+                        <p className="text-xs text-ch-muted">{loopFeedback}</p>
                     )}
                 </section>
 
-                <section className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm space-y-4">
+                <section className="bg-ch-bg border border-ch-divider p-6 space-y-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Function Calls</h3>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Combine mini-functions to reach the goal.</p>
+                            <h3 className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">Function Calls</h3>
+                            <p className="text-xs text-ch-muted">Combine mini-functions to reach the goal.</p>
                         </div>
                         <div className="text-right">
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Streak</p>
-                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{functionStreak} / {functionBest}</p>
+                            <p className="text-xs text-ch-muted">Streak</p>
+                            <p className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">{functionStreak} / {functionBest}</p>
                             <button
                                 onClick={nextFunctionPuzzle}
-                                className="text-xs text-pink-500 hover:text-pink-600"
+                                className="text-xs text-ch-accent hover:text-ch-accent"
                             >
                                 New Puzzle
                             </button>
@@ -1555,8 +1549,8 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                 const isObstacle = currentFunction.obstacles.some(o => o.x === x && o.y === y);
                                 const isBot = functionPos.x === x && functionPos.y === y;
                                 const isVisited = functionPath.has(positionKey({ x, y }));
-                                let className = 'h-8 w-8 rounded-md border border-gray-200 dark:border-gray-700 flex items-center justify-center text-[10px] font-semibold';
-                                if (isObstacle) className += ' bg-gray-200 dark:bg-gray-700 text-gray-500';
+                                let className = 'h-8 w-8 border border-ch-divider flex items-center justify-center text-[10px] font-semibold';
+                                if (isObstacle) className += ' bg-ch-surface-2 text-ch-muted';
                                 else if (isGoal) className += ' bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600';
                                 else if (isStart) className += ' bg-blue-100 dark:bg-blue-900/40 text-blue-600';
                                 else if (isVisited) className += ' bg-amber-50 dark:bg-amber-900/20 text-amber-500';
@@ -1571,8 +1565,8 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                     </div>
 
                     <div className="space-y-2">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Function A: {currentFunction.functions.A.join(' ')}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Function B: {currentFunction.functions.B.join(' ')}</p>
+                        <p className="text-xs text-ch-muted">Function A: {currentFunction.functions.A.join(' ')}</p>
+                        <p className="text-xs text-ch-muted">Function B: {currentFunction.functions.B.join(' ')}</p>
                     </div>
 
                     <div className="flex flex-wrap gap-2">
@@ -1581,7 +1575,7 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                 key={`call-${index}`}
                                 value={call}
                                 onChange={(e) => updateFunctionCall(index, e.target.value)}
-                                className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/60 px-2 py-1 text-xs text-gray-700 dark:text-gray-200"
+                                className="border border-ch-divider bg-ch-bg px-2 py-1 text-xs text-ch-text"
                             >
                                 <option value="A">Call A</option>
                                 <option value="B">Call B</option>
@@ -1590,13 +1584,13 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                     </div>
 
                     {functionFeedback && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{functionFeedback}</p>
+                        <p className="text-xs text-ch-muted">{functionFeedback}</p>
                     )}
 
                     <div className="flex justify-end">
                         <button
                             onClick={runFunctions}
-                            className="px-3 py-2 rounded-xl bg-amber-500 text-white text-sm font-semibold hover:bg-amber-600"
+                            className="px-3 py-2 bg-amber-500 text-white text-sm font-semibold hover:bg-amber-600"
                         >
                             Run
                         </button>
@@ -1604,30 +1598,30 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                 </section>
             </div>
 
-            <section className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm space-y-4">
+            <section className="bg-ch-bg border border-ch-divider p-6 space-y-4">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Coordinate Target</h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Click the grid cell matching the coordinate.</p>
+                        <h3 className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">Coordinate Target</h3>
+                        <p className="text-xs text-ch-muted">Click the grid cell matching the coordinate.</p>
                     </div>
                     <div className="text-right">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Streak</p>
-                        <p className="text-lg font-semibold text-gray-900 dark:text-white">{coordStreak} / {coordBest}</p>
+                        <p className="text-xs text-ch-muted">Streak</p>
+                        <p className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">{coordStreak} / {coordBest}</p>
                     </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-                    <span>Origin: <span className="font-semibold text-gray-700 dark:text-gray-200">{coordOriginBottom ? 'Bottom-left' : 'Top-left'}</span></span>
-                    <span>Grid: <span className="font-semibold text-gray-700 dark:text-gray-200">{coordinateSize} x {coordinateSize}</span></span>
-                    <span>Labels: <span className="font-semibold text-gray-700 dark:text-gray-200">{coordShowLabels ? 'On' : 'Off'}</span></span>
+                <div className="flex flex-wrap items-center gap-3 text-xs text-ch-muted">
+                    <span>Origin: <span className="font-semibold text-ch-text">{coordOriginBottom ? 'Bottom-left' : 'Top-left'}</span></span>
+                    <span>Grid: <span className="font-semibold text-ch-text">{coordinateSize} x {coordinateSize}</span></span>
+                    <span>Labels: <span className="font-semibold text-ch-text">{coordShowLabels ? 'On' : 'Off'}</span></span>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                    <label className="text-xs text-gray-500 dark:text-gray-400">Size</label>
+                    <label className="text-xs text-ch-muted">Size</label>
                     <select
                         value={coordinateSize}
                         onChange={(e) => setCoordinateSize(Number(e.target.value))}
-                        className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/60 px-2 py-1 text-xs text-gray-700 dark:text-gray-200"
+                        className="border border-ch-divider bg-ch-bg px-2 py-1 text-xs text-ch-text"
                     >
                         {[6, 8, 10].map(size => (
                             <option key={size} value={size}>{size}x{size}</option>
@@ -1635,19 +1629,19 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                     </select>
                     <button
                         onClick={() => setCoordShowLabels(prev => !prev)}
-                        className="px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        className="px-2.5 py-1.5 border border-ch-divider text-xs text-ch-muted hover:bg-ch-surface"
                     >
                         {coordShowLabels ? 'Hide labels' : 'Show labels'}
                     </button>
                     <button
                         onClick={() => setCoordOriginBottom(prev => !prev)}
-                        className="px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        className="px-2.5 py-1.5 border border-ch-divider text-xs text-ch-muted hover:bg-ch-surface"
                     >
                         Switch origin
                     </button>
                 </div>
 
-                <p className="text-sm text-gray-700 dark:text-gray-300">
+                <p className="text-sm text-ch-text">
                     Target: <span className="font-semibold">({coordTarget.x}, {coordTarget.y})</span>
                 </p>
 
@@ -1655,17 +1649,17 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                     <input
                         value={coordInput}
                         onChange={(e) => setCoordInput(e.target.value)}
-                        className="flex-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/60 px-3 py-2 text-sm text-gray-700 dark:text-gray-200"
+                        className="flex-1 border border-ch-divider bg-ch-bg px-3 py-2 text-sm text-ch-text"
                         placeholder="Enter coordinates like 2+1, 3+0"
                     />
                     <button
                         type="submit"
-                        className="px-4 py-2 rounded-lg bg-pink-600 text-white text-sm font-semibold hover:bg-pink-700"
+                        className="px-4 py-2 bg-ch-accent text-ch-on-accent text-sm font-semibold hover:bg-ch-accent-deep"
                     >
                         Submit
                     </button>
                 </form>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Use sums to calculate coordinates. Example: <span className="font-semibold">1+2, 4+0</span>.</p>
+                <p className="text-xs text-ch-muted">Use sums to calculate coordinates. Example: <span className="font-semibold">1+2, 4+0</span>.</p>
 
                 <div className="grid gap-1 max-w-xs" style={{ gridTemplateColumns: `repeat(${coordinateSize}, minmax(0, 1fr))` }}>
                     {Array.from({ length: coordinateSize }).map((_, y) => (
@@ -1675,7 +1669,7 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                 <button
                                     key={`${x}-${y}`}
                                     onClick={() => handleCoordClick(x, y)}
-                                    className="h-8 w-8 rounded-md border border-gray-200 dark:border-gray-700 text-[10px] text-gray-500 hover:bg-pink-50 dark:hover:bg-pink-900/20"
+                                    className="h-8 w-8 border border-ch-divider text-[10px] text-ch-muted hover:bg-ch-accent-soft"
                                 >
                                     {coordShowLabels ? `${x},${displayY}` : ''}
                                 </button>
@@ -1685,13 +1679,13 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                 </div>
 
                 {coordFeedback && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{coordFeedback}</p>
+                    <p className="text-xs text-ch-muted">{coordFeedback}</p>
                 )}
 
                 <div className="flex justify-end">
                     <button
                         onClick={resetCoordTarget}
-                        className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        className="px-3 py-2 border border-ch-divider text-sm text-ch-muted hover:bg-ch-surface"
                     >
                         New Target
                     </button>
@@ -1699,55 +1693,55 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
             </section>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <section className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm space-y-4">
+                <section className="bg-ch-bg border border-ch-divider p-6 space-y-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Output Prediction</h3>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Read the snippet and pick the output.</p>
+                            <h3 className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">Output Prediction</h3>
+                            <p className="text-xs text-ch-muted">Read the snippet and pick the output.</p>
                         </div>
                         <div className="text-right">
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Streak</p>
-                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{outputStreak} / {outputBest}</p>
+                            <p className="text-xs text-ch-muted">Streak</p>
+                            <p className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">{outputStreak} / {outputBest}</p>
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-between rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 px-3 py-2">
+                    <div className="flex items-center justify-between border border-ch-divider bg-ch-surface px-3 py-2">
                         <div>
-                            <p className="text-[10px] uppercase tracking-[0.2em] text-gray-400">Timer</p>
-                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{outputTimeLeft}s</p>
+                            <p className="text-[10px] uppercase tracking-[0.2em] text-ch-muted">Timer</p>
+                            <p className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">{outputTimeLeft}s</p>
                         </div>
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={startOutputTimer}
-                                className="px-3 py-1.5 rounded-lg bg-pink-600 text-white text-xs font-semibold hover:bg-pink-700"
+                                className="px-3 py-1.5 bg-ch-accent text-ch-on-accent text-xs font-semibold hover:bg-ch-accent-deep"
                             >
                                 Start
                             </button>
                             <button
                                 onClick={resetOutputTimer}
-                                className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                className="px-3 py-1.5 border border-ch-divider text-xs text-ch-muted hover:bg-ch-surface"
                             >
                                 Reset
                             </button>
                         </div>
                     </div>
 
-                    <div className="text-xs text-gray-400 uppercase tracking-[0.2em]">{currentOutput.language}</div>
-                    <pre className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/60 p-4 text-xs text-gray-800 dark:text-gray-200 overflow-x-auto">
+                    <div className="text-xs text-ch-muted uppercase tracking-[0.2em]">{currentOutput.language}</div>
+                    <pre className="border border-ch-divider bg-ch-surface p-4 text-xs text-ch-text overflow-x-auto">
                         <code>{currentOutput.code}</code>
                     </pre>
 
-                    <p className="text-sm text-gray-700 dark:text-gray-300">{currentOutput.prompt}</p>
+                    <p className="text-sm text-ch-text">{currentOutput.prompt}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {currentOutput.options.map((option, index) => {
                             const isSelected = outputSelected === index;
                             const isCorrect = outputSelected !== null && index === currentOutput.answer;
-                            const base = 'px-3 py-2 rounded-xl border text-sm text-left transition-all';
+                            const base = 'px-3 py-2 border text-sm text-left transition-all';
                             const styles = isSelected
                                 ? isCorrect
                                     ? 'border-emerald-400 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200'
                                     : 'border-red-400 bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-200'
-                                : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/40 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800';
+                                : 'border-ch-divider bg-ch-bg text-ch-text hover:bg-ch-surface';
                             return (
                                 <button
                                     key={option}
@@ -1761,68 +1755,68 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                     </div>
 
                     {outputFeedback && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{outputFeedback}</p>
+                        <p className="text-xs text-ch-muted">{outputFeedback}</p>
                     )}
 
                     <div className="flex justify-end">
                         <button
                             onClick={nextOutput}
-                            className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            className="px-3 py-2 border border-ch-divider text-sm text-ch-muted hover:bg-ch-surface"
                         >
                             Next Challenge
                         </button>
                     </div>
                 </section>
 
-                <section className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm space-y-4">
+                <section className="bg-ch-bg border border-ch-divider p-6 space-y-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Bug Hunt</h3>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Choose the fix that makes it work.</p>
+                            <h3 className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">Bug Hunt</h3>
+                            <p className="text-xs text-ch-muted">Choose the fix that makes it work.</p>
                         </div>
                         <div className="text-right">
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Streak</p>
-                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{bugStreak} / {bugBest}</p>
+                            <p className="text-xs text-ch-muted">Streak</p>
+                            <p className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">{bugStreak} / {bugBest}</p>
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-between rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 px-3 py-2">
+                    <div className="flex items-center justify-between border border-ch-divider bg-ch-surface px-3 py-2">
                         <div>
-                            <p className="text-[10px] uppercase tracking-[0.2em] text-gray-400">Timer</p>
-                            <p className="text-lg font-semibold text-gray-900 dark:text-white">{bugTimeLeft}s</p>
+                            <p className="text-[10px] uppercase tracking-[0.2em] text-ch-muted">Timer</p>
+                            <p className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">{bugTimeLeft}s</p>
                         </div>
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={startBugTimer}
-                                className="px-3 py-1.5 rounded-lg bg-pink-600 text-white text-xs font-semibold hover:bg-pink-700"
+                                className="px-3 py-1.5 bg-ch-accent text-ch-on-accent text-xs font-semibold hover:bg-ch-accent-deep"
                             >
                                 Start
                             </button>
                             <button
                                 onClick={resetBugTimer}
-                                className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                className="px-3 py-1.5 border border-ch-divider text-xs text-ch-muted hover:bg-ch-surface"
                             >
                                 Reset
                             </button>
                         </div>
                     </div>
 
-                    <div className="text-xs text-gray-400 uppercase tracking-[0.2em]">{currentBug.language}</div>
-                    <pre className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/60 p-4 text-xs text-gray-800 dark:text-gray-200 overflow-x-auto">
+                    <div className="text-xs text-ch-muted uppercase tracking-[0.2em]">{currentBug.language}</div>
+                    <pre className="border border-ch-divider bg-ch-surface p-4 text-xs text-ch-text overflow-x-auto">
                         <code>{currentBug.code}</code>
                     </pre>
 
-                    <p className="text-sm text-gray-700 dark:text-gray-300">{currentBug.prompt}</p>
+                    <p className="text-sm text-ch-text">{currentBug.prompt}</p>
                     <div className="space-y-2">
                         {currentBug.options.map((option, index) => {
                             const isSelected = bugSelected === index;
                             const isCorrect = bugSelected !== null && index === currentBug.answer;
-                            const base = 'w-full px-3 py-2 rounded-xl border text-sm text-left transition-all';
+                            const base = 'w-full px-3 py-2 border text-sm text-left transition-all';
                             const styles = isSelected
                                 ? isCorrect
                                     ? 'border-emerald-400 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200'
                                     : 'border-red-400 bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-200'
-                                : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/40 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800';
+                                : 'border-ch-divider bg-ch-bg text-ch-text hover:bg-ch-surface';
                             return (
                                 <button
                                     key={option}
@@ -1836,13 +1830,13 @@ const Games: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                     </div>
 
                     {bugFeedback && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{bugFeedback}</p>
+                        <p className="text-xs text-ch-muted">{bugFeedback}</p>
                     )}
 
                     <div className="flex justify-end">
                         <button
                             onClick={nextBug}
-                            className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            className="px-3 py-2 border border-ch-divider text-sm text-ch-muted hover:bg-ch-surface"
                         >
                             Next Bug
                         </button>

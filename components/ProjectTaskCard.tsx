@@ -33,16 +33,16 @@ interface ProjectTaskCardProps {
   onDeleteSubmission: (taskId: string, userId: string, filePath: string) => Promise<void>;
 }
 
-const DRAGGING_CLASSES = ['opacity-75', 'ring-2', 'ring-pink-500', 'rotate-3', 'scale-105', 'shadow-2xl'];
+const DRAGGING_CLASSES = ['opacity-75', 'ring-2', 'ring-ch-accent', 'rotate-3', 'scale-105', ''];
 
 const PriorityBadge: React.FC<{ priority: string }> = ({ priority }) => {
-    let colorClass = "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400";
+    let colorClass = "bg-ch-surface text-ch-muted";
     if (priority === 'HIGH') colorClass = "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400";
     if (priority === 'MEDIUM') colorClass = "bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400";
     if (priority === 'LOW') colorClass = "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400";
 
     return (
-        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${colorClass}`}>
+        <span className={`text-[10px] font-bold px-1.5 py-0.5 uppercase ${colorClass}`}>
             {priority}
         </span>
     );
@@ -141,14 +141,14 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = (props) => {
         onClick={() => isPatron && onEditTask(task)} // Click to edit
         data-task-id={task.id}
         data-dragging={isBeingDragged}
-        className={`scroll-animate bg-white dark:bg-gray-800 p-4 rounded-md border transform transition-all duration-300 shadow-sm relative group ${
-            isPatron ? 'cursor-grab hover:border-pink-300 dark:hover:border-pink-700' : ''
+        className={`scroll-animate bg-ch-bg p-4 border transform transition-all duration-300 relative group ${
+            isPatron ? 'cursor-grab hover:border-ch-accent' : ''
         } ${
             isBeingDragged ? 'opacity-40' : ''
         } ${
             isCompleted 
                 ? 'border-green-200 dark:border-green-900/50 bg-green-50/40 dark:bg-green-900/20' 
-                : 'border-gray-200 dark:border-gray-700 hover:shadow-md hover:-translate-y-0.5'
+                : 'border-ch-divider'
         }`}
         >
         {/* Priority & Edit Hint */}
@@ -164,17 +164,17 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = (props) => {
                     canToggleCompletion && onToggleTaskCompletion(task.id, !!isCompleted);
                 }}
                 disabled={!canToggleCompletion}
-                className={`relative flex-shrink-0 mt-0.5 h-6 w-6 rounded-full border-2 flex items-center justify-center transition-all duration-300 ease-out ${
+                className={`relative flex-shrink-0 mt-0.5 h-6 w-6 border-2 flex items-center justify-center transition-all duration-300 ease-out ${
                     isCompleted 
                     ? 'bg-green-500 border-green-500 text-white' 
-                    : 'bg-transparent border-gray-300 dark:border-gray-600 text-transparent hover:border-green-400 dark:hover:border-green-400'
-                } ${!canToggleCompletion ? 'cursor-default opacity-60' : 'cursor-pointer active:scale-90'}`}
+                    : 'bg-transparent border-ch-divider text-transparent hover:border-green-400 dark:hover:border-green-400'
+                } ${!canToggleCompletion ? 'cursor-default opacity-60' : 'cursor-pointer'}`}
             >
                 <div className={`transform transition-all duration-300 ease-in-out ${isCompleted ? 'scale-100 rotate-0' : 'scale-0 -rotate-90'}`}>
                     <CheckIcon />
                 </div>
             </button>
-            <p className={`text-gray-800 dark:text-gray-200 mb-1 flex-grow text-sm font-medium transition-all duration-300 ${isCompleted ? 'line-through text-gray-500 dark:text-gray-500 opacity-75' : ''}`}>
+            <p className={`text-ch-text mb-1 flex-grow text-sm font-medium transition-all duration-300 ${isCompleted ? 'line-through text-ch-muted opacity-75' : ''}`}>
                 {task.content}
             </p>
         </div>
@@ -182,45 +182,45 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = (props) => {
         {(task.dueDate || (task.tags && task.tags.length > 0)) && (
             <div className="mt-2 pl-9 flex flex-wrap gap-2 transition-opacity duration-300" style={{ opacity: isCompleted ? 0.6 : 1 }}>
                 {task.dueDate && (
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded border ${isOverdue ? 'bg-red-50 text-red-600 border-red-200 dark:bg-red-900/20 dark:text-red-400' : 'bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-700 dark:text-gray-400'}`}>
+                    <span className={`text-[10px] px-1.5 py-0.5 border ${isOverdue ? 'bg-red-50 text-red-600 border-red-200 dark:bg-red-900/20 dark:text-red-400' : 'bg-ch-surface text-ch-muted border-ch-divider'}`}>
                         📅 {new Date(task.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                     </span>
                 )}
                 {task.tags?.map(tag => (
-                    <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 border border-purple-100 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800">
+                    <span key={tag} className="text-[10px] px-1.5 py-0.5 bg-ch-accent-soft text-ch-violet border border-ch-divider">
                         #{tag}
                     </span>
                 ))}
             </div>
         )}
 
-        <div className="pt-3 mt-3 border-t border-gray-100 dark:border-gray-700/50 space-y-4">
+        <div className="pt-3 mt-3 border-t border-ch-divider space-y-4">
             {/* Submission Section */}
              {submission && submissionUrl && fileName ? (
                 <div onClick={e => e.stopPropagation()}>
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">Submission</span>
+                        <span className="text-xs font-bold text-ch-muted uppercase">Submission</span>
                         <div className="flex items-center gap-2">
                             {submission.grade ? (
-                                <span className="flex items-center gap-1 text-xs font-bold text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-900/30 px-2 py-0.5 rounded-full">
+                                <span className="flex items-center gap-1 text-xs font-bold text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-900/30 px-2 py-0.5">
                                     <StarIcon className="w-3 h-3" filled />
                                     {submission.grade}/5
                                 </span>
                             ) : null}
-                            <span className="text-xs text-gray-400 dark:text-gray-500" title={submission.submittedAt ? new Date(submission.submittedAt).toLocaleString() : ''}>
+                            <span className="text-xs text-ch-muted" title={submission.submittedAt ? new Date(submission.submittedAt).toLocaleString() : ''}>
                                 {submission.submittedAt ? `on ${new Date(submission.submittedAt).toLocaleDateString()}` : ''}
                             </span>
                         </div>
                     </div>
-                    <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg flex items-center justify-between gap-2">
+                    <div className="mt-2 p-2 bg-ch-surface flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 min-w-0">
-                            <DocumentTextIcon className="h-5 w-5 text-gray-500 flex-shrink-0"/>
-                            <a href={submissionUrl} download={fileName} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-purple-600 dark:text-purple-400 truncate hover:underline" title={`Download ${fileName}`}>
+                            <DocumentTextIcon className="h-5 w-5 text-ch-muted flex-shrink-0"/>
+                            <a href={submissionUrl} download={fileName} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-ch-violet truncate hover:underline" title={`Download ${fileName}`}>
                                 {fileName}
                             </a>
                         </div>
                         {canUnsubmit && (
-                            <button onClick={handleUnsubmit} className="p-1 text-gray-400 hover:text-red-500 transition-colors" title="Unsubmit file">
+                            <button onClick={handleUnsubmit} className="p-1 text-ch-muted hover:text-red-500 transition-colors" title="Unsubmit file">
                                 <XCircleIcon className="w-5 h-5"/>
                             </button>
                         )}
@@ -228,9 +228,9 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = (props) => {
                     
                     {/* Feedback Display */}
                     {submission.feedback && (
-                        <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-100 dark:border-yellow-900/30 rounded-lg">
+                        <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-100 dark:border-yellow-900/30">
                             <p className="text-xs font-bold text-yellow-700 dark:text-yellow-500 mb-1">Feedback:</p>
-                            <p className="text-xs text-gray-700 dark:text-gray-300 italic">{submission.feedback}</p>
+                            <p className="text-xs text-ch-text italic">{submission.feedback}</p>
                         </div>
                     )}
                 </div>
@@ -239,7 +239,7 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = (props) => {
                     <button
                         onClick={() => fileInputRef.current?.click()}
                         disabled={isSubmitting}
-                        className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700/80 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 hover:border-pink-500 dark:hover:border-pink-500 transition-all disabled:opacity-50"
+                        className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-ch-muted bg-ch-surface hover:bg-ch-surface-2 border border-dashed border-ch-divider hover:border-ch-accent transition-all disabled:opacity-50"
                     >
                         {isSubmitting ? (
                             <>
@@ -266,22 +266,22 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = (props) => {
                                     key={user.uid}
                                     src={user.avatarUrl || `https://i.pravatar.cc/24?u=${user.username}`}
                                     alt={user.name}
-                                    className="w-6 h-6 rounded-full border-2 border-white dark:border-gray-800 object-cover"
+                                    className="w-6 h-6 border-2 border-white object-cover"
                                     title={user.name}
                                 />
                             ))}
                             {assignees.length > 3 && (
-                                <div className="w-6 h-6 rounded-full border-2 border-white dark:border-gray-800 bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-[10px] font-bold text-gray-600 dark:text-gray-300">
+                                <div className="w-6 h-6 border-2 border-white bg-ch-surface-2 flex items-center justify-center text-[10px] font-bold text-ch-muted">
                                     +{assignees.length - 3}
                                 </div>
                             )}
                         </div>
                     ) : (
                         <div className="flex items-center gap-2 opacity-50">
-                            <div className="w-6 h-6 rounded-full border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center bg-gray-50 dark:bg-gray-800/50" title="Unassigned">
-                            <span className="text-[10px] text-gray-400">?</span>
+                            <div className="w-6 h-6 border-2 border-dashed border-ch-divider flex items-center justify-center bg-ch-surface" title="Unassigned">
+                            <span className="text-[10px] text-ch-muted">?</span>
                             </div>
-                            <span className="text-xs text-gray-400">Unassigned</span>
+                            <span className="text-xs text-ch-muted">Unassigned</span>
                         </div>
                     )}
                 </div>
@@ -291,7 +291,7 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = (props) => {
                         <div className="relative" ref={dropdownRef}>
                             <button 
                                 onClick={() => setIsAssignDropdownOpen(!isAssignDropdownOpen)}
-                                className={`p-1.5 rounded-full transition-colors ${isAssignDropdownOpen ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/50 dark:text-purple-300' : 'text-gray-400 hover:text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20'}`}
+                                className={`p-1.5 transition-colors ${isAssignDropdownOpen ? 'bg-ch-accent-soft text-ch-violet' : 'text-ch-muted hover:text-ch-accent hover:bg-ch-accent-soft'}`}
                                 aria-label="Manage assignee"
                                 title="Assign Member"
                             >
@@ -299,8 +299,8 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = (props) => {
                             </button>
 
                             {isAssignDropdownOpen && (
-                                <div className="absolute bottom-full right-0 mb-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 max-h-60 overflow-y-auto custom-scrollbar">
-                                    <div className="p-2 border-b border-gray-100 dark:border-gray-700 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                                <div className="absolute bottom-full right-0 mb-2 w-48 bg-ch-bg border border-ch-divider z-50 max-h-60 overflow-y-auto custom-scrollbar">
+                                    <div className="p-2 border-b border-ch-divider text-xs font-semibold text-ch-muted">
                                         Assign to...
                                     </div>
                                     {approvedMembers.map(user => {
@@ -309,13 +309,13 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = (props) => {
                                             <div 
                                                 key={user.uid}
                                                 onClick={() => onToggleTaskAssignee(task.id, user.uid)}
-                                                className={`px-3 py-2 flex items-center gap-2 text-sm cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 ${isAssigned ? 'bg-pink-50 dark:bg-pink-900/10' : ''}`}
+                                                className={`px-3 py-2 flex items-center gap-2 text-sm cursor-pointer transition-colors hover:bg-ch-surface ${isAssigned ? 'bg-ch-accent-soft' : ''}`}
                                             >
-                                                <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${isAssigned ? 'bg-pink-500 border-pink-500' : 'border-gray-300 dark:border-gray-500'}`}>
+                                                <div className={`w-4 h-4 border flex items-center justify-center flex-shrink-0 transition-colors ${isAssigned ? 'bg-ch-accent border-ch-accent' : 'border-ch-divider'}`}>
                                                     {isAssigned && <CheckIcon className="w-3 h-3 text-white" />}
                                                 </div>
-                                                <img src={user.avatarUrl || `https://i.pravatar.cc/20?u=${user.username}`} className="w-5 h-5 rounded-full object-cover" alt="" />
-                                                <span className={`truncate ${isAssigned ? 'text-pink-700 dark:text-pink-300 font-medium' : 'text-gray-700 dark:text-gray-300'}`}>
+                                                <img src={user.avatarUrl || `https://i.pravatar.cc/20?u=${user.username}`} className="w-5 h-5 object-cover" alt="" />
+                                                <span className={`truncate ${isAssigned ? 'text-ch-accent font-medium' : 'text-ch-text'}`}>
                                                     {user.name}
                                                 </span>
                                             </div>
@@ -332,7 +332,7 @@ const ProjectTaskCard: React.FC<ProjectTaskCardProps> = (props) => {
                                 e.stopPropagation();
                                 onDeleteTask(task.id, columnId);
                             }}
-                            className="p-1.5 text-gray-400 hover:text-red-600 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" 
+                            className="p-1.5 text-ch-muted hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" 
                             aria-label="Delete task"
                         >
                             <TrashIcon className="h-4 w-4" />

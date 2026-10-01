@@ -24,7 +24,7 @@ const StarRating: React.FC<StarRatingProps> = ({ rating, onRate, disabled }) => 
           key={star}
           type="button"
           disabled={disabled}
-          className={`transition-all duration-200 ease-in-out focus:outline-none p-0.5 transform ${!disabled ? 'hover:scale-110' : ''} ${displayRating >= star ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`}
+          className={`transition-all duration-200 ease-in-out focus:outline-none p-0.5 transform ${!disabled ? '' : ''} ${displayRating >= star ? 'text-yellow-400' : 'text-ch-rule'}`}
           onMouseEnter={() => !disabled && setHoverRating(star)}
           onClick={() => !disabled && onRate && onRate(star)}
           aria-label={`Rate ${star} stars`}

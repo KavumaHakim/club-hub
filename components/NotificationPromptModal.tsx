@@ -70,15 +70,15 @@ const NotificationPromptModal: React.FC<NotificationPromptModalProps> = ({ isOpe
     };
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-2xl max-w-md w-full overflow-hidden relative border border-white/20 animate-fade-in-up">
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
+            <div className="bg-ch-bg max-w-md w-full overflow-hidden relative border border-white/20 animate-fade-in-up">
                 
                 {/* Decorative background elements */}
-                <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-pink-500/20 to-purple-600/20 -z-10" />
+                <div className="absolute top-0 left-0 w-full h-32 -z-10 bg-ch-accent-soft" />
                 
                 <button 
                     onClick={onClose} 
-                    className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-all z-20"
+                    className="absolute top-6 right-6 text-ch-muted hover:text-ch-text p-2 hover:bg-ch-surface transition-all z-20"
                 >
                     <XIcon className="w-5 h-5" />
                 </button>
@@ -87,20 +87,20 @@ const NotificationPromptModal: React.FC<NotificationPromptModalProps> = ({ isOpe
                     {step === 'prompt' && (
                         <>
                             <div className="relative inline-block mb-8">
-                                <div className="w-24 h-24 bg-gradient-to-tr from-pink-500 to-purple-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-pink-500/30 rotate-3 transform transition-transform hover:rotate-0">
-                                    <BellIcon className="w-12 h-12 text-white" />
+                                <div className="w-24 h-24 flex items-center justify-center rotate-3 transform transition-transform hover:rotate-0 bg-ch-accent">
+                                    <BellIcon className="w-12 h-12 text-ch-on-accent" />
                                 </div>
-                                <div className="absolute -top-2 -right-2 bg-yellow-400 p-2 rounded-full shadow-lg animate-pulse">
-                                    <SparklesIcon className="w-4 h-4 text-gray-900" />
+                                <div className="absolute -top-2 -right-2 bg-yellow-400 p-2 animate-pulse">
+                                    <SparklesIcon className="w-4 h-4 text-ch-text" />
                                 </div>
                             </div>
 
-                            <h3 className="text-3xl font-black text-gray-900 dark:text-white mb-4 tracking-tight">
+                            <h3 className="text-[28px] font-extrabold tracking-[-0.02em] text-ch-text mb-4 tracking-tight">
                                 Don't Miss Out!
                             </h3>
-                            <p className="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed px-2">
-                                Get instant alerts for <span className="text-pink-600 dark:text-pink-400 font-bold">new challenges</span>, 
-                                <span className="text-purple-600 dark:text-purple-400 font-bold"> club announcements</span>, and 
+                            <p className="text-ch-muted mb-8 leading-relaxed px-2">
+                                Get instant alerts for <span className="text-ch-accent font-bold">new challenges</span>, 
+                                <span className="text-ch-violet font-bold"> club announcements</span>, and 
                                 <span className="text-indigo-600 dark:text-indigo-400 font-bold"> chat messages</span> directly on your device.
                             </p>
 
@@ -108,11 +108,11 @@ const NotificationPromptModal: React.FC<NotificationPromptModalProps> = ({ isOpe
                                 <button
                                     onClick={handleEnable}
                                     disabled={isSubmitting}
-                                    className="w-full py-5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl font-black text-lg shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+                                    className="w-full py-5 bg-ch-text text-ch-bg font-black text-lg transition-all disabled:opacity-50 flex items-center justify-center gap-3 hover:opacity-90"
                                 >
                                     {isSubmitting ? (
                                         <>
-                                            <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                            <div className="w-5 h-5 border-2 border-current border-t-transparent animate-spin" />
                                             Enabling...
                                         </>
                                     ) : (
@@ -122,13 +122,13 @@ const NotificationPromptModal: React.FC<NotificationPromptModalProps> = ({ isOpe
                                 <button
                                     onClick={onClose}
                                     disabled={isSubmitting}
-                                    className="w-full py-4 bg-transparent text-gray-500 dark:text-gray-400 rounded-2xl font-bold hover:text-gray-700 dark:hover:text-gray-200 transition-all"
+                                    className="w-full py-4 bg-transparent text-ch-muted font-bold hover:text-ch-text transition-all"
                                 >
                                     Maybe later
                                 </button>
                             </div>
                             
-                            <p className="mt-6 text-[11px] text-gray-400 dark:text-gray-500 uppercase font-bold tracking-widest">
+                            <p className="mt-6 text-[11px] text-ch-muted uppercase font-bold tracking-widest">
                                 Manage anytime in Profile Settings
                             </p>
                         </>
@@ -136,26 +136,26 @@ const NotificationPromptModal: React.FC<NotificationPromptModalProps> = ({ isOpe
 
                     {step === 'success' && (
                         <div className="py-12 animate-scale-in">
-                            <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-green-500/30">
+                            <div className="w-24 h-24 bg-green-500 flex items-center justify-center mx-auto mb-8">
                                 <CheckIcon className="w-12 h-12 text-white" />
                             </div>
-                            <h3 className="text-3xl font-black text-gray-900 dark:text-white mb-2">You're All Set!</h3>
-                            <p className="text-gray-600 dark:text-gray-400">Notifications have been successfully enabled.</p>
+                            <h3 className="text-[28px] font-extrabold tracking-[-0.02em] text-ch-text mb-2">You're All Set!</h3>
+                            <p className="text-ch-muted">Notifications have been successfully enabled.</p>
                         </div>
                     )}
 
                     {step === 'denied' && (
                         <div className="py-6">
-                            <div className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-6">
-                                <BellIcon className="w-10 h-10 text-gray-400" />
+                            <div className="w-20 h-20 bg-ch-surface flex items-center justify-center mx-auto mb-6">
+                                <BellIcon className="w-10 h-10 text-ch-muted" />
                             </div>
-                            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">Permissions Required</h3>
-                            <p className="text-gray-600 dark:text-gray-400 mb-8 text-sm">
+                            <h3 className="text-[22px] font-extrabold tracking-[-0.02em] text-ch-text mb-3">Permissions Required</h3>
+                            <p className="text-ch-muted mb-8 text-sm">
                                 It looks like notifications are blocked. To enable them, click the lock icon in your browser's address bar and set notifications to "Allow".
                             </p>
                             <button
                                 onClick={onClose}
-                                className="w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl font-bold transition-all"
+                                className="w-full py-4 bg-ch-text text-ch-bg font-bold transition-all hover:opacity-90"
                             >
                                 Got it
                             </button>
