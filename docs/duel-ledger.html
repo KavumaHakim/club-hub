@@ -1,0 +1,551 @@
+<title>Club Hub Build Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  /* Layout: one ruled column like the app's Split shell — 2px rules between sections, flat cells, one pink accent. */
+  :root {
+    --bg: #f3f2f2;
+    --surface: #eae9e9;
+    --text: #201e1d;
+    --muted: rgba(32, 30, 29, 0.62);
+    --divider: rgba(32, 30, 29, 0.16);
+    --rule: rgba(32, 30, 29, 0.42);
+    --accent: #db2777;
+    --accent-deep: #9d174d;
+    --accent-soft: rgba(219, 39, 119, 0.1);
+    --on-accent: #f3f2f2;
+    --ok: #15803d;
+    --warn: #b45309;
+    --font-display: "Archivo", system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141312; --surface: #1e1c1b; --text: #f5f3f2; --muted: rgba(245, 243, 242, 0.6);
+      --divider: rgba(245, 243, 242, 0.18); --rule: rgba(245, 243, 242, 0.42);
+      --accent: #f472b6; --accent-deep: #ec4899; --accent-soft: rgba(236, 72, 153, 0.16); --on-accent: #141312;
+      --ok: #86efac; --warn: #fbbf24; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141312; --surface: #1e1c1b; --text: #f5f3f2; --muted: rgba(245, 243, 242, 0.6);
+    --divider: rgba(245, 243, 242, 0.18); --rule: rgba(245, 243, 242, 0.42);
+    --accent: #f472b6; --accent-deep: #ec4899; --accent-soft: rgba(236, 72, 153, 0.16); --on-accent: #141312;
+    --ok: #86efac; --warn: #fbbf24; color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-display);
+    font-size: 15px;
+    line-height: 1.55;
+    padding-inline: 16px;
+    padding-block: 0 64px;
+  }
+  .shell { max-width: 1040px; margin: 0 auto; }
+  a { color: var(--accent); }
+  code, .mono { font-family: var(--font-mono); font-size: 0.86em; }
+  code { background: var(--surface); padding: 1px 5px; }
+  h1, h2, h3 { text-wrap: balance; margin: 0; letter-spacing: -0.02em; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .eyebrow { font-size: 10px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); }
+  .label { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+
+  /* ---------- masthead ---------- */
+  .masthead { border-bottom: 2px solid var(--rule); padding-block: 40px 28px; display: grid; gap: 22px; }
+  .masthead h1 { font-size: clamp(34px, 6vw, 56px); font-weight: 900; line-height: 0.98; letter-spacing: -0.035em; }
+  .standfirst { max-width: 66ch; font-size: 16.5px; color: var(--muted); margin: 0; }
+  .standfirst b { color: var(--text); }
+  .meta { display: flex; flex-wrap: wrap; border: 2px solid var(--rule); }
+  .meta > div { padding: 10px 16px; border-right: 1px solid var(--divider); display: grid; gap: 2px; min-width: 0; }
+  .meta > div:last-child { border-right: 0; }
+  .meta .value { font-weight: 700; font-size: 13.5px; }
+  .progress { flex: 1 1 260px; }
+  .bar { height: 8px; background: var(--surface); border: 1px solid var(--divider); display: flex; margin-top: 4px; }
+  .bar span { display: block; height: 100%; }
+  .bar .done { background: var(--accent); }
+  .bar .doing { background: var(--accent-soft); }
+
+  /* ---------- sections ---------- */
+  section { border-bottom: 2px solid var(--rule); padding-block: 32px; }
+  section > h2 { font-size: 26px; font-weight: 800; margin-top: 6px; }
+  section > .intro { max-width: 66ch; color: var(--muted); margin: 10px 0 0; }
+
+  /* the flow: a real sequence, so it is numbered */
+  .flow { list-style: none; margin: 22px 0 0; padding: 0; border: 2px solid var(--rule); counter-reset: step; }
+  .flow li { display: grid; grid-template-columns: 56px minmax(0, 1fr); border-top: 1px solid var(--divider); }
+  .flow li:first-child { border-top: 0; }
+  .flow li::before {
+    counter-increment: step; content: counter(step);
+    display: flex; align-items: flex-start; justify-content: center; padding-top: 14px;
+    font-weight: 900; font-size: 22px; color: var(--accent); border-right: 1px solid var(--divider);
+  }
+  .flow .step { padding: 13px 18px; min-width: 0; }
+  .flow .step b { display: block; font-size: 15px; }
+  .flow .step p { margin: 3px 0 0; color: var(--muted); font-size: 14px; }
+
+  .formats { margin-top: 22px; overflow-x: auto; border: 2px solid var(--rule); }
+  table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 13.5px; }
+  th { text-align: left; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); background: var(--surface); padding: 9px 14px; border-bottom: 1px solid var(--divider); }
+  td { padding: 11px 14px; border-top: 1px solid var(--divider); vertical-align: top; }
+  td:first-child { font-weight: 800; white-space: nowrap; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .findings { list-style: none; margin: 22px 0 0; padding: 0; display: grid; gap: 0; border: 2px solid var(--rule); }
+  .findings li { padding: 14px 18px; border-top: 1px solid var(--divider); display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 14px; }
+  .findings li:first-child { border-top: 0; }
+  .sev { font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; padding-top: 3px; }
+  .sev.high { color: var(--accent); }
+  .sev.mid { color: var(--warn); }
+  .sev.low { color: var(--muted); }
+  .findings b { display: block; }
+  .findings p { margin: 3px 0 0; color: var(--muted); font-size: 14px; }
+
+  .scope-list { list-style: none; margin: 18px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); border-top: 1px solid var(--divider); border-left: 1px solid var(--divider); }
+  .scope-list li { padding: 14px 16px; border-right: 1px solid var(--divider); border-bottom: 1px solid var(--divider); font-size: 14px; color: var(--muted); }
+  .scope-list b { color: var(--text); }
+
+  /* ---------- gates ---------- */
+  .gate { border: 2px solid var(--rule); margin-top: 22px; }
+  .gate-head { display: grid; grid-template-columns: 76px minmax(0, 1fr); border-bottom: 2px solid var(--rule); }
+  .gate-no { display: flex; flex-direction: column; justify-content: center; align-items: center; background: var(--accent); color: var(--on-accent); padding: 12px 0; }
+  .gate-no span { font-size: 9px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.8; }
+  .gate-no b { font-size: 34px; font-weight: 900; line-height: 1; letter-spacing: -0.04em; }
+  .gate-title { padding: 14px 18px; display: grid; gap: 4px; min-width: 0; }
+  .gate-title h3 { font-size: 21px; font-weight: 800; }
+  .gate-tags { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .tag { font-size: 9.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; padding: 2px 7px; border: 1px solid var(--rule); }
+  .tag.track { background: var(--accent-soft); border-color: transparent; color: var(--accent-deep); }
+  .gate-count { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .gate-why { padding: 14px 18px; border-bottom: 1px solid var(--divider); display: grid; gap: 8px; font-size: 14.5px; }
+  .gate-why p { margin: 0; max-width: 72ch; }
+  .gate-why .accept { color: var(--muted); }
+  .gate-why .dep { font-size: 12.5px; color: var(--muted); }
+
+  .tasks { list-style: none; margin: 0; padding: 0; }
+  .task { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 0; border-top: 1px solid var(--divider); }
+  .task:first-child { border-top: 0; }
+  .task-id { padding: 12px 0 0 18px; font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .task-body { padding: 11px 14px 13px; min-width: 0; }
+  .task-title { font-weight: 700; font-size: 14.5px; }
+  .task-note { margin: 3px 0 0; color: var(--muted); font-size: 13.5px; max-width: 74ch; }
+  .task-refs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+  .ref { font-family: var(--font-mono); font-size: 11px; color: var(--muted); border: 1px solid var(--divider); padding: 1px 6px; overflow-wrap: anywhere; }
+  .task-status { padding: 11px 18px 0 0; }
+  .status {
+    display: inline-flex; align-items: center; gap: 6px; min-width: 76px; justify-content: flex-start;
+    font: 800 10px/1 var(--font-display); letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 6px 8px; border: 1px solid var(--divider); background: transparent; color: var(--muted);
+  }
+  .status::before { content: ""; width: 7px; height: 7px; background: var(--divider); flex: none; }
+  .status[data-s="doing"] { color: var(--text); border-color: var(--rule); }
+  .status[data-s="doing"]::before { background: var(--accent); }
+  .status[data-s="done"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .status[data-s="done"]::before { background: var(--on-accent); }
+  .status[data-s="blocked"] { color: var(--warn); border-color: var(--warn); }
+  .status[data-s="blocked"]::before { background: var(--warn); }
+  button.status { cursor: pointer; }
+  button.status:hover { border-color: var(--accent); }
+  .task[data-s="done"] .task-title { color: var(--muted); }
+
+  .log { list-style: none; margin: 18px 0 0; padding: 0; border: 2px solid var(--rule); }
+  .log li { display: grid; grid-template-columns: 112px minmax(0, 1fr); border-top: 1px solid var(--divider); }
+  .log li:first-child { border-top: 0; }
+  .log-date { padding: 13px 0 0 18px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+  .log-entry { padding: 12px 18px 14px 0; font-size: 14px; }
+  .log-entry p { margin: 4px 0 0; color: var(--muted); }
+  .note-line { margin-top: 10px; font-size: 12.5px; color: var(--muted); }
+
+  @media (max-width: 640px) {
+    .task { grid-template-columns: 48px minmax(0, 1fr); }
+    .task-id { padding-left: 12px; }
+    .task-status { grid-column: 2; padding: 0 14px 12px; }
+    .gate-head { grid-template-columns: 60px minmax(0, 1fr); }
+    .findings li, .log li { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+    .log-date { padding: 12px 18px 0; }
+    .log-entry { padding: 2px 18px 14px; }
+    .findings li { padding: 12px 14px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="shell">
+
+  <header class="masthead">
+    <p class="eyebrow">Club Hub · Feature build</p>
+    <h1>Club Hub Build Ledger</h1>
+    <p class="standfirst">
+      The roadmap for Club Hub. Gates 0–9 are the <b>Duels</b> track: two members race to solve the same problem, the
+      club's judge decides, and a rating moves. Today the match runs and looks right, but <b>every result is decided and
+      written by the players' own browsers</b>, so those gates make the outcome something the server decides first.
+      From Gate 10 the <b>Platform</b> track covers the app around it, starting with a shorter side navigation.
+    </p>
+    <div class="meta" aria-label="Ledger status">
+      <div><span class="label">Source</span><span class="value mono">docs/duel-ledger.html</span></div>
+      <div><span class="label">Opened</span><span class="value num">2026-10-01</span></div>
+      <div><span class="label">Last edit</span><span class="value num">2026-10-02</span></div>
+      <div class="progress">
+        <span class="label" id="progress-label">Progress · loading statuses</span>
+        <div class="bar" aria-hidden="true"><span class="done" id="bar-done" style="width:0%"></span><span class="doing" id="bar-doing" style="width:0%"></span></div>
+      </div>
+    </div>
+  </header>
+
+  <section id="flow">
+    <p class="eyebrow">Duels · the target</p>
+    <h2>How a duel works</h2>
+    <p class="intro">Every gate serves this sequence. Steps marked by the server are the ones a player's browser must not be able to fake.</p>
+    <ol class="flow">
+      <li><div class="step"><b>Challenge or queue</b><p>A member challenges someone from the lobby, or joins quick match for a format. Invites expire after 15 minutes; the queue pairs by rating and widens the band the longer you wait.</p></div></li>
+      <li><div class="step"><b>Accept, and the problem is already there</b><p>Accepting picks a problem from the reviewed bank by both players' rating and topics neither has seen against the other. No AI call happens while someone waits.</p></div></li>
+      <li><div class="step"><b>Start on the server clock</b><p>The server stamps <code>started_at</code> and every deadline. Clients show a countdown; they never decide when time is up.</p></div></li>
+      <li><div class="step"><b>Play</b><p>Run checks the public samples in the browser (Pyodide), as today. Each Submit is recorded server-side with code and time.</p></div></li>
+      <li><div class="step"><b>Judge on the server</b><p>A judge function re-runs the submitted code against the hidden tests, which never leave the server. Its verdict is the one that counts.</p></div></li>
+      <li><div class="step"><b>Finish once</b><p>One server function settles the match: winner, reason (solved, time, forfeit), Elo for both players, XP and streaks, in one transaction. Disconnecting for 60 seconds forfeits.</p></div></li>
+      <li><div class="step"><b>Show and share</b><p>Both players and spectators see the same result. History, replays, the ladder and the feed read the settled record.</p></div></li>
+    </ol>
+
+    <div class="formats" role="region" aria-label="Duel formats" tabindex="0">
+      <table>
+        <thead><tr><th>Format</th><th>Shape</th><th>Clock</th><th>Win condition</th><th>Rated</th><th>State</th></tr></thead>
+        <tbody>
+          <tr><td>Sprint</td><td>12 questions: 4 quick quiz, 8 short coding</td><td class="num">20 s quiz · 60 s coding</td><td>More points; tie → less total time</td><td>Ranked or casual</td><td>Built, client-judged</td></tr>
+          <tr><td>Classic</td><td>One problem, full test suite</td><td class="num">15 min cap</td><td>First to pass every test; else most tests, then earliest</td><td>Ranked or casual</td><td>Gate 3</td></tr>
+          <tr><td>Best of 3</td><td>Three rounds, played in your own time</td><td class="num">24 h per round</td><td>Two round wins; round = more tests, then less time</td><td>Casual first</td><td>Gate 3</td></tr>
+          <tr><td>Practice</td><td>Race a recorded opponent's timeline</td><td class="num">As recorded</td><td>Beat the ghost</td><td>Never</td><td>Gate 3</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="today">
+    <p class="eyebrow">Duels · audit 1 Oct 2026</p>
+    <h2>Where duels stand today</h2>
+    <p class="intro">Read from the code and migrations on <code>main</code>. These are the reasons the gates are ordered the way they are.</p>
+    <ul class="findings">
+      <li><span class="sev high">Integrity</span><div><b>Players write their own rating.</b><p>Migration <code>20260611120000</code> lets each player update their own <code>duel_profiles</code> row, and <code>applyOwnRatingUpdate</code> does exactly that from the browser. Anyone can set any rating, wins or XP from the console.</p></div></li>
+      <li><span class="sev high">Integrity</span><div><b>The result is whatever a client says.</b><p>Both clients race <code>finishMatchRecord</code> and broadcast a <code>finish</code> event; the first conditional write wins. Nothing checks that the winner's code actually passed.</p></div></li>
+      <li><span class="sev high">Integrity</span><div><b>Hidden tests are readable.</b><p><code>duel_problems.test_cases_json</code> holds hidden cases alongside public ones, and any signed-in member can select active problems.</p></div></li>
+      <li><span class="sev mid">Reliability</span><div><b>The problem is generated while the accepter waits.</b><p><code>acceptInviteAndCreateMatch</code> calls <code>generateDuelQuizSet</code> at accept time. Slow or failed AI falls back to the built-in bank, but the wait is long and quality varies.</p></div></li>
+      <li><span class="sev mid">Reliability</span><div><b>No expiry, no forfeit, no resume.</b><p>Invites never become <code>EXPIRED</code>; a <code>forfeit</code> reason exists but nothing triggers it; the countdown is the client's own <code>tick()</code>, so a refresh or a closed laptop leaves a match hanging.</p></div></li>
+      <li><span class="sev low">Unused</span><div><b>Five tables are built and never read.</b><p><code>duel_matchmaking_queue</code>, <code>duel_tournaments</code>, <code>duel_seasons</code>, <code>duel_user_badges</code> and <code>duel_anti_cheat_events</code> exist from <code>20260524143000</code>; no service touches them. Anti-cheat signals stay in the browser.</p></div></li>
+    </ul>
+  </section>
+
+  <section id="ahead">
+    <p class="eyebrow">Keep</p>
+    <h2>Already ahead — don't rebuild</h2>
+    <ul class="scope-list">
+      <li><b>Deterministic judging in the browser.</b> <code>duelRunner.ts</code> runs <code>solve()</code> per case in Pyodide with fresh namespaces. It stays as the Run check and becomes the reference for the server judge.</li>
+      <li><b>Expected outputs come from a reference solution.</b> <code>buildCodingCard</code> runs the reference to derive outputs, so an AI's wrong answer key cannot fail a correct player.</li>
+      <li><b>Live spectating.</b> Spectator view, presence counts and match chat with taunts already stream over realtime channels.</li>
+      <li><b>A working fallback bank.</b> <code>duelProblemBank.ts</code> and <code>duelQuizBank.ts</code> keep duels playable when AI is down — the seed for Gate 2's reviewed bank.</li>
+      <li><b>The lobby is on the Split shell.</b> Live, For you, Waiting and Ladder views on real invites and matches, with a record panel (this release).</li>
+    </ul>
+  </section>
+
+  <section id="not">
+    <p class="eyebrow">Decided</p>
+    <h2>Deliberately not building</h2>
+    <ul class="scope-list">
+      <li><b>Wagering points, badges or XP.</b> Betting on outcomes turns practice into a stake. Ratings move; nothing is staked.</li>
+      <li><b>Voice or video in matches.</b> Text chat and taunts are enough at a desk in a computer lab; a media stack is a large build for little return.</li>
+      <li><b>Open matchmaking with other schools.</b> Duels stay inside the club, where patrons can moderate. Revisit only for an organised inter-school event (Gate 9).</li>
+      <li><b>Raw speed ladders for beginners.</b> Beginner duels rank by tests passed first and time second, so typing speed doesn't decide a learner's match.</li>
+      <li><b>AI-written opponents.</b> Practice races a real recorded timeline (Gate 3) rather than a bot, so the bar is a classmate's actual pace.</li>
+    </ul>
+  </section>
+
+  <section id="gates" aria-labelledby="gates-title">
+    <p class="eyebrow">Roadmap</p>
+    <h2 id="gates-title">Gates</h2>
+    <p class="intro">Duel gates run roughly in order: 0 and 1 first, because every later duel gate assumes the server decides outcomes. Platform gates are independent of them. Task status is kept in this page's store and updated as pull requests open and merge.</p>
+    <div id="gate-list"></div>
+  </section>
+
+  <section id="log">
+    <p class="eyebrow">History</p>
+    <h2>Revision log</h2>
+    <ul class="log">
+      <li>
+        <span class="log-date">2026-10-02</span>
+        <div class="log-entry">
+          <b>Platform track opened; ledger renamed.</b>
+          <p>Added Gate 10, grouping the side navigation into collapsible sections (Club, Compete, Learn, Club life, Patron) so the sidebar shows about seven rows at rest. The ledger now covers all of Club Hub, with duels as its first track.</p>
+        </div>
+      </li>
+      <li>
+        <span class="log-date">2026-10-01</span>
+        <div class="log-entry">
+          <b>Ledger opened.</b>
+          <p>Audited the arena on <code>main</code> (findings above). Set the target flow, four formats and ten gates. The lobby moved onto the Split shell in the same release (8.1, in review); the in-match screens keep the neon arena look until 8.4.</p>
+        </div>
+      </li>
+    </ul>
+    <p class="note-line">Status changes are saved for everyone. Only editors can change them; everyone else sees them read-only.</p>
+  </section>
+</div>
+
+<script>
+  // Gates and tasks. Keys are stable: statuses live in the store at tasks/<key>.
+  const GATES = [
+    {
+      gate: "0", track: "Integrity", title: "The server decides who won",
+      why: "Results, ratings and XP are written by the players' own browsers, and the hidden tests are readable. <b>Nothing else in this ledger is worth building on a ladder anyone can edit.</b>",
+      accept: "<b>Done when:</b> a member who edits their own <code>duel_profiles</code> row, replays a <code>finish</code> broadcast, or reads <code>duel_problems</code> cannot change any rating or see a hidden test. Proven by SQL tests run as a member.",
+      dep: "Blocks Gates 3–6 and 9.",
+      tasks: [
+        { key: "0.1", title: "Record every submission server-side", note: "Each Submit inserts into duel_submissions (code, language, client verdict, server time). The client's verdict is kept for display only.", refs: ["duel_submissions", "insertDuelSubmission"] },
+        { key: "0.2", title: "Move hidden tests out of client reach", note: "Split test_cases_json: public samples stay on duel_problems; hidden cases move to a table only service-role code can read.", refs: ["duel_problems.test_cases_json", "20260611120000"] },
+        { key: "0.3", title: "Server judge function", note: "Edge function duel-judge runs Pyodide in Deno against the hidden tests and writes the authoritative verdict to the submission row. Mirrors duelRunner.ts's harness so verdicts agree.", refs: ["supabase/functions/duel-judge", "services/duelRunner.ts"] },
+        { key: "0.4", title: "finish_duel(match_id) settles once", note: "SECURITY DEFINER function: reads judged submissions, decides winner and reason, computes Elo for both players, updates match, participants and profiles in one transaction. A second call is a no-op.", refs: ["finishMatchRecord", "computeRatingDelta"] },
+        { key: "0.5", title: "Revoke player writes to duel_profiles", note: "Drop the own-row update policy; ratings change only through finish_duel and an audited patron correction function.", refs: ["applyOwnRatingUpdate", "Duel profiles update"] },
+        { key: "0.6", title: "Client listens instead of deciding", note: "Remove applyFinish's rating write and the finish race; the store subscribes to the match row and shows the settled result.", refs: ["useDuelArenaStore.ts:379", "useDuelArenaStore.ts:448"] },
+        { key: "0.7", title: "SQL tests for the trust boundary", note: "Run as a member: attempt profile updates, fake finishes, hidden-test reads. Each must match zero rows or fail.", refs: ["supabase/tests"] }
+      ]
+    },
+    {
+      gate: "1", track: "Match", title: "One match lifecycle",
+      why: "A match today is whatever two browsers agree it is. A refresh, a closed laptop or an ignored invite leaves records hanging, and the countdown is each client's own clock.",
+      accept: "<b>Done when:</b> every match ends in exactly one terminal state, a player can refresh mid-match and carry on, and walking away forfeits after 60 seconds.",
+      dep: "Needs 0.4.",
+      tasks: [
+        { key: "1.1", title: "Status as a checked state machine", note: "invited → accepted → live → finished | abandoned | cancelled | expired, enforced by a transition function; no direct status updates from clients.", refs: ["duel_matches.status", "duel_friend_invites.status"] },
+        { key: "1.2", title: "Invites expire after 15 minutes", note: "Expired on read and swept by a scheduled job; the lobby stops showing stale challenges.", refs: ["fetchInvitesForUser", "EXPIRED"] },
+        { key: "1.3", title: "Deadlines from the server clock", note: "started_at and per-question deadlines stamped by the database; tick() renders a countdown against them.", refs: ["useDuelArenaStore.ts tick()"] },
+        { key: "1.4", title: "Resume after refresh", note: "enterMatch rebuilds answers, submissions and remaining time from the database for a live match.", refs: ["enterMatch", "fetchMatchBundle"] },
+        { key: "1.5", title: "Disconnect → forfeit", note: "Presence on the match channel; 60 seconds without a heartbeat calls finish_duel with reason forfeit.", refs: ["joinDuelChannel presence", "applyFinish 'forfeit'"] },
+        { key: "1.6", title: "Rematch as a fresh invite", note: "Rematch creates a new invite with the same format and swapped sides, through the same lifecycle.", refs: ["rematch"] }
+      ]
+    },
+    {
+      gate: "2", track: "Content", title: "Problems ready before the duel",
+      why: "Generating a problem set while the accepter waits is slow and uneven. A reviewed bank makes accept instant and every problem trustworthy.",
+      accept: "<b>Done when:</b> accepting a duel never calls an AI model, and every live problem has a reference solution that passes its own tests.",
+      dep: "Uses 0.2's split tables.",
+      tasks: [
+        { key: "2.1", title: "Problem bank with review state", note: "draft → reviewed → live → retired, with level, topics and format. Patrons review; members cannot publish to it.", refs: ["duel_problems"] },
+        { key: "2.2", title: "Offline AI drafting into the bank", note: "generateDuelQuizSet runs from a patron screen, saving drafts rather than starting a match.", refs: ["generateDuelQuizSet", "generateDuelProblem"] },
+        { key: "2.3", title: "Validate before going live", note: "Run the reference solution against every test (runReference) and reject drafts where any case raises or times out.", refs: ["runReference", "buildCodingCard"] },
+        { key: "2.4", title: "Pick by rating, not seen before", note: "Choose from live problems near the pair's average rating, excluding problems either player met in their last 20 duels.", refs: ["averageSkillLevel"] },
+        { key: "2.5", title: "Import the fallback banks", note: "Move duelProblemBank.ts and duelQuizBank.ts content into the bank as reviewed seed problems.", refs: ["services/duelProblemBank.ts", "services/duelQuizBank.ts"] }
+      ]
+    },
+    {
+      gate: "3", track: "Match", title: "Formats",
+      why: "Sprint is the only format and it suits a quick break. Classic suits a real problem; Best of 3 suits members who can't be online at the same time.",
+      accept: "<b>Done when:</b> a challenger picks Sprint, Classic or Best of 3, and each settles through finish_duel with the win condition in the table above.",
+      dep: "Needs Gates 0–2.",
+      tasks: [
+        { key: "3.1", title: "Format on the invite and match", note: "format column on invites and matches; the lobby's challenge action asks which.", refs: ["duel_friend_invites", "DuelLobby challengeMember"] },
+        { key: "3.2", title: "Sprint scoring settled server-side", note: "Points per correct answer, ties broken by total time, computed in finish_duel from recorded answers.", refs: ["submitAnswer", "useDuelArenaStore.ts:912"] },
+        { key: "3.3", title: "Classic: one problem, full suite", note: "15-minute cap; first full pass wins; otherwise most tests, then earliest submission.", refs: ["CodeEditorPanel", "ProblemPanel"] },
+        { key: "3.4", title: "Best of 3 rounds", note: "duel_rounds table; each player plays a round within 24 hours; the lobby's 'your turn' state comes from it.", refs: ["new: duel_rounds"] },
+        { key: "3.5", title: "Practice against a recorded run", note: "Replay a past opponent's submission timeline as a ghost. Never rated.", refs: ["duel_submissions"] }
+      ]
+    },
+    {
+      gate: "4", track: "Competition", title: "Ratings people trust",
+      why: "Elo exists in computeRatingDelta, but runs on the client and never resets. Seasons and placement make the ladder fair for newcomers and fresh each term.",
+      accept: "<b>Done when:</b> ratings change only in finish_duel, new members are provisional for 5 games, and a term ends with archived standings and a soft reset.",
+      dep: "Needs 0.4.",
+      tasks: [
+        { key: "4.1", title: "Elo in the database", note: "K = 40 for the first 10 games, 24 after; casual games unrated; floor at 0.", refs: ["computeRatingDelta"] },
+        { key: "4.2", title: "Provisional placement", note: "Rank hidden until 5 rated games; ladder shows 'placing'.", refs: ["rankForRating", "divisionForRating"] },
+        { key: "4.3", title: "Seasons per school term", note: "Use duel_seasons: archive standings at term end and pull ratings halfway back toward 1200.", refs: ["duel_seasons"] },
+        { key: "4.4", title: "Limit rated rematches", note: "At most 3 rated games per pair per day, so two friends can't farm each other.", refs: ["finish_duel"] }
+      ]
+    },
+    {
+      gate: "5", track: "Match", title: "Quick match",
+      why: "Today you must pick an opponent. A queue lets anyone get a fair game without knowing who is free.",
+      accept: "<b>Done when:</b> a member joins the queue for a format and is matched within a minute when anyone near their rating is waiting.",
+      dep: "Needs Gate 1.",
+      tasks: [
+        { key: "5.1", title: "Queue on duel_matchmaking_queue", note: "Join, leave and timeout; one entry per member.", refs: ["duel_matchmaking_queue"] },
+        { key: "5.2", title: "Pairing with a widening band", note: "±100 rating, widening by 50 every 15 seconds, done by a database function to avoid double-pairing.", refs: ["new: pair_duel_queue()"] },
+        { key: "5.3", title: "Who's free in the lobby", note: "Presence shows members online and not in a match, so challenges go to people who can answer.", refs: ["DuelLobby"] }
+      ]
+    },
+    {
+      gate: "6", track: "Integrity", title: "Fair play",
+      why: "Focus-loss and paste warnings exist but stay in the browser. Patrons need a record and a way to void a match.",
+      accept: "<b>Done when:</b> suspicious matches land in a patron queue, and voiding one reverses its rating change.",
+      dep: "Needs Gate 0.",
+      tasks: [
+        { key: "6.1", title: "Log integrity events server-side", note: "Write focus loss, large pastes and tab switches to duel_anti_cheat_events.", refs: ["recordFocusLoss", "recordClipboardWarning", "duel_anti_cheat_events"] },
+        { key: "6.2", title: "Similarity check between opponents", note: "Compare the two final solutions after normalising names and whitespace; flag near-identical code.", refs: ["duel_submissions"] },
+        { key: "6.3", title: "Patron review and void", note: "Queue of flagged matches; void reverses Elo through a correction function and notes why.", refs: ["AdminTools"] }
+      ]
+    },
+    {
+      gate: "7", track: "Social", title: "History, replays and reach",
+      why: "A finished match disappears from view. History and replays let members learn from a loss, and notifications get invites answered.",
+      accept: "<b>Done when:</b> every member can open their last 50 matches, replay one, and gets a push when challenged.",
+      dep: "Needs Gate 0.",
+      tasks: [
+        { key: "7.1", title: "Match history", note: "The lobby's Done view and a profile tab read settled matches.", refs: ["DuelLobby", "Profile"] },
+        { key: "7.2", title: "Replay a match", note: "Step through both players' submissions on a timeline, with verdicts.", refs: ["duel_submissions"] },
+        { key: "7.3", title: "Push on challenge and your turn", note: "Through the existing push-notify function; respects notification settings.", refs: ["supabase/functions/push-notify"] },
+        { key: "7.4", title: "Share a win to the feed", note: "Optional post with format, opponent and problem, never the code.", refs: ["Feed", "addFeedItem"] }
+      ]
+    },
+    {
+      gate: "8", track: "UI", title: "The arena on the Split shell",
+      why: "The lobby now matches the rest of the app; the in-match screens still use the old neon look and custom components.",
+      accept: "<b>Done when:</b> lobby, match, spectator and result screens use the ch tokens and Split layout in both themes.",
+      dep: "Independent; 8.2–8.4 easier after Gate 3.",
+      tasks: [
+        { key: "8.1", title: "Lobby on real data", note: "Live, For you, Waiting and Ladder views, record panel, challenge list.", refs: ["components/duel-arena/DuelLobby.tsx"] },
+        { key: "8.2", title: "Record panel shows last results", note: "The design's last-five W/L strip, once history exists.", refs: ["7.1"] },
+        { key: "8.3", title: "Match screen restyle", note: "Problem, editor, opponent and quiz panels onto the Split tokens; keep Monaco.", refs: ["CodeEditorPanel", "ProblemPanel", "QuizPanel", "OpponentPanel"] },
+        { key: "8.4", title: "Spectator and result screens", note: "SpectatorView and ResultModal in the same language; retire components/ui use.", refs: ["SpectatorView", "ResultModal"] }
+      ]
+    },
+    {
+      gate: "9", track: "Competition", title: "Tournaments",
+      why: "duel_tournaments exists unused. A patron-run bracket gives the club a termly event.",
+      accept: "<b>Done when:</b> a patron opens a tournament, members enter, and a single-elimination bracket plays out through ordinary matches.",
+      dep: "Needs Gates 0, 1 and 3.",
+      tasks: [
+        { key: "9.1", title: "Create and enter", note: "Patron creates with format, dates and seats; members enter until the deadline.", refs: ["duel_tournaments", "duel_tournament_entries"] },
+        { key: "9.2", title: "Bracket and seeding", note: "Seed by rating; byes for odd counts; each round creates matches through the normal lifecycle.", refs: ["ArenaTournamentRound"] },
+        { key: "9.3", title: "Bracket view and results", note: "Live bracket in the lobby; winners get a duel badge in duel_user_badges.", refs: ["duel_user_badges"] }
+      ]
+    },
+    {
+      gate: "10", track: "Platform", title: "A shorter side navigation",
+      why: "The sidebar is one flat list of 16 pages for members and 18 for patrons, so on a laptop it scrolls and on a phone it fills the drawer. <b>Grouping related pages into a few collapsible sections</b> keeps every page one click away while showing six or seven rows at rest.",
+      accept: "<b>Done when:</b> the sidebar opens with Feed, Messages, the five group headings and Profile visible; the group holding the current page is expanded; every existing tab name and bookmark still opens the same page.",
+      dep: "Independent of the Duels track. 10.1 needs a decision before the rest.",
+      tasks: [
+        { key: "10.1", title: "Agree the grouping", note: "Proposed: Feed and Messages on top. Club: Community, Voting, Suggestions. Compete: Challenges, Duel Arena, Games. Learn: Roadmap, Resources, Playground, Showcase. Club life: Activities, Projects, Attendance. Patron: Members, Admin Tools. Profile stays in the footer.", refs: ["components/Sidebar.tsx:122"] },
+        { key: "10.2", title: "Collapsible group sections", note: "A ruled heading row per group with a chevron; the group containing the active tab opens automatically; open or closed state is remembered per member on this device.", refs: ["components/Sidebar.tsx"] },
+        { key: "10.3", title: "Badges roll up to the heading", note: "A collapsed group shows the sum of its pages' badges (unread messages excluded, Messages stays top-level), so nothing waiting is hidden.", refs: ["notificationCounts", "totalUnread"] },
+        { key: "10.4", title: "Icon-only sidebar opens a flyout", note: "When the sidebar is collapsed to icons at md+, each group shows one icon that opens a small menu of its pages.", refs: ["Sidebar collapse"] },
+        { key: "10.5", title: "Sibling tabs in the header", note: "Inside a group, ShellHeader shows the group's other pages as a ruled tab strip, so moving between Challenges, Duel Arena and Games doesn't need the sidebar.", refs: ["components/ShellHeader.tsx"] },
+        { key: "10.6", title: "Feature flags hide empty groups", note: "A group whose pages are all switched off for members disappears; a group with one visible page shows that page as a plain row instead of a heading.", refs: ["featureFlags", "AdminTools"] },
+        { key: "10.7", title: "Keep tab names and deep links", note: "Tab ids and the saved-tab check in App.tsx stay as they are, so links and remembered tabs keep working; grouping is presentation only.", refs: ["App.tsx validTabs"] },
+        { key: "10.8", title: "Phone drawer and tours", note: "The mobile drawer uses the same groups, and the feature tour and first-visit intros name pages by their group.", refs: ["FeatureTourModal", "Dashboard featureIntroMap"] }
+      ]
+    }
+  ];
+
+  const STATUSES = ["todo", "doing", "done", "blocked"];
+  const status = Object.create(null);
+  let canEdit = false;
+  let db = null;
+
+  const el = (tag, cls, html) => {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (html !== undefined) n.innerHTML = html;
+    return n;
+  };
+
+  function renderGates() {
+    const root = document.getElementById("gate-list");
+    root.textContent = "";
+    for (const g of GATES) {
+      const done = g.tasks.filter(t => status[t.key] === "done").length;
+      const box = el("article", "gate");
+      box.id = "gate-" + g.gate;
+      const head = el("div", "gate-head");
+      head.append(el("div", "gate-no", `<span>Gate</span><b>${g.gate}</b>`));
+      const title = el("div", "gate-title");
+      title.append(el("h3", "", g.title));
+      title.append(el("div", "gate-tags", `<span class="tag track">${g.track}</span><span class="gate-count">${done} / ${g.tasks.length} done</span>`));
+      head.append(title);
+      box.append(head);
+      const why = el("div", "gate-why");
+      why.append(el("p", "", g.why));
+      why.append(el("p", "accept", g.accept));
+      why.append(el("p", "dep", g.dep));
+      box.append(why);
+      const list = el("ul", "tasks");
+      for (const t of g.tasks) {
+        const s = status[t.key] || "todo";
+        const li = el("li", "task");
+        li.dataset.s = s;
+        li.append(el("span", "task-id", t.key));
+        const body = el("div", "task-body");
+        body.append(el("div", "task-title", t.title));
+        body.append(el("p", "task-note", t.note));
+        const refs = el("div", "task-refs");
+        for (const r of t.refs) { const c = el("span", "ref"); c.textContent = r; refs.append(c); }
+        body.append(refs);
+        li.append(body);
+        const cell = el("div", "task-status");
+        const chip = el(canEdit ? "button" : "span", "status");
+        chip.dataset.s = s;
+        chip.textContent = s === "todo" ? "To do" : s === "doing" ? "Doing" : s === "done" ? "Done" : "Blocked";
+        if (canEdit) {
+          chip.type = "button";
+          chip.title = "Change status";
+          chip.setAttribute("aria-label", `Task ${t.key} status: ${chip.textContent}. Change`);
+          chip.addEventListener("click", () => cycle(t.key));
+        }
+        cell.append(chip);
+        li.append(cell);
+        list.append(li);
+      }
+      box.append(list);
+      root.append(box);
+    }
+    renderProgress();
+  }
+
+  function renderProgress() {
+    const all = GATES.flatMap(g => g.tasks);
+    const done = all.filter(t => status[t.key] === "done").length;
+    const doing = all.filter(t => status[t.key] === "doing").length;
+    document.getElementById("progress-label").textContent =
+      `Progress · ${done} of ${all.length} done${doing ? ` · ${doing} in progress` : ""}`;
+    document.getElementById("bar-done").style.width = (done / all.length * 100) + "%";
+    document.getElementById("bar-doing").style.width = (doing / all.length * 100) + "%";
+  }
+
+  async function cycle(key) {
+    if (!db || !canEdit) return;
+    const next = STATUSES[(STATUSES.indexOf(status[key] || "todo") + 1) % STATUSES.length];
+    try {
+      await db.doc("tasks/" + key).set({ status: next, updatedAt: new Date().toISOString() });
+    } catch (e) {
+      canEdit = false;
+      renderGates();
+    }
+  }
+
+  renderGates();
+
+  // Statuses come from the store and stream live; without it the page reads as all "to do".
+  (async () => {
+    try {
+      db = await window.claude?.use?.("db");
+      const user = await window.claude?.use?.("user");
+      canEdit = user ? await user.canEdit() : false;
+      if (!db) {
+        document.getElementById("progress-label").textContent = "Progress · statuses unavailable in this view";
+        renderGates();
+        return;
+      }
+      db.collection("tasks").onSnapshot(snap => {
+        for (const d of snap.docs) {
+          const s = d.data()?.status;
+          if (STATUSES.includes(s)) status[d.id] = s;
+        }
+        renderGates();
+      }, () => {
+        document.getElementById("progress-label").textContent = "Progress · statuses unavailable in this view";
+      });
+      renderGates();
+    } catch {
+      renderGates();
+    }
+  })();
+</script>

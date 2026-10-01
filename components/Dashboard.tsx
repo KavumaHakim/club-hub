@@ -216,7 +216,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile,
     }, [activeTab, featureFlags, setActiveTab, currentUser.role]);
 
     return (
-        <div className={(activeTab === 'chat' || activeTab === 'playground' || activeTab === 'arena' || activeTab === 'feed') ? 'h-full' : ''}>
+        <div className={(activeTab === 'chat' || activeTab === 'playground' || activeTab === 'arena' || activeTab === 'feed' || activeTab === 'community' || activeTab === 'challenges') ? 'h-full' : ''}>
             <Suspense fallback={<LoadingIndicator />}>
                 <TabPanel active={activeTab === 'feed' && (featureFlags.showFeed || currentUser.role === 'PATRON')} className="h-full">
                     <Feed currentUser={currentUser} />
@@ -255,15 +255,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile,
                 <TabPanel active={activeTab === 'suggestions' && (featureFlags.showSuggestions || currentUser.role === 'PATRON')}>
                     <Suggestions currentUser={currentUser} />
                 </TabPanel>
-                <TabPanel active={activeTab === 'challenges' && (featureFlags.showChallenges || currentUser.role === 'PATRON')}>
-                    <Challenges 
-                        currentUser={currentUser} 
-                        onMakeSubmission={(challenge) => {
-                            sessionStorage.setItem('pending_challenge_context', JSON.stringify(challenge));
-                            setPendingChallenge(challenge);
-                            setActiveTab('playground');
-                        }}
-                    />
+                <TabPanel active={activeTab === 'challenges' && (featureFlags.showChallenges || currentUser.role === 'PATRON')} className="h-full">
+                    <Challenges currentUser={currentUser} theme={theme} />
                 </TabPanel>
                 <TabPanel active={activeTab === 'arena' && (featureFlags.showChallenges || currentUser.role === 'PATRON')} className="h-full">
                     <CodeDuelArena currentUser={currentUser} theme={theme} />
@@ -272,8 +265,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile,
                 <TabPanel active={activeTab === 'roadmap' && (featureFlags.showRoadmap || currentUser.role === 'PATRON')}>
                     <RoadmapView currentUser={currentUser} />
                 </TabPanel>
-                <TabPanel active={activeTab === 'community' && (featureFlags.showCommunity || currentUser.role === 'PATRON')}>
-                    <Community currentUser={currentUser} />
+                <TabPanel active={activeTab === 'community' && (featureFlags.showCommunity || currentUser.role === 'PATRON')} className="h-full">
+                    <Community currentUser={currentUser} setActiveTab={setActiveTab} />
                 </TabPanel>
                 <TabPanel active={activeTab === 'games' && (featureFlags.showGames || currentUser.role === 'PATRON')}>
                     <Games currentUser={currentUser} />

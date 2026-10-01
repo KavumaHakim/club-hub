@@ -60,13 +60,18 @@ const CodeDuelArena: React.FC<CodeDuelArenaProps> = ({ currentUser }) => {
   const scrollable = phase === 'lobby' || phase === 'preparing' || phase === 'loading';
 
   return (
-    <div className={cn('relative flex h-full flex-col bg-gradient-to-b from-slate-950 via-[#0a0f24] to-slate-950 text-white', scrollable ? 'overflow-y-auto custom-scrollbar' : 'overflow-hidden')}>
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+    <div className={cn(
+      'relative flex h-full flex-col',
+      // The lobby sits on the shell's Split ground; matches keep the neon arena.
+      phase === 'lobby' ? 'overflow-hidden bg-ch-bg text-ch-text' : 'bg-gradient-to-b from-slate-950 via-[#0a0f24] to-slate-950 text-white',
+      phase !== 'lobby' && (scrollable ? 'overflow-y-auto custom-scrollbar' : 'overflow-hidden'),
+    )}>
+      {phase !== 'lobby' && <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="arena-grid absolute inset-0 opacity-40" />
         <div className="absolute left-[10%] top-[-7rem] h-72 w-72 rounded-full bg-cyan-500/15 blur-3xl" />
         <div className="absolute right-[6%] top-[14%] h-72 w-72 rounded-full bg-fuchsia-500/15 blur-3xl" />
         <div className="absolute bottom-[-6rem] left-[35%] h-72 w-72 rounded-full bg-violet-600/10 blur-3xl" />
-      </div>
+      </div>}
 
       <div className="relative flex min-h-0 flex-1 flex-col">
         {phase === 'loading' ? (
