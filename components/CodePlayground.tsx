@@ -32,6 +32,10 @@ import ChallengeTestResults from './ChallengeTestResults';
 import { submitChallengeSolution, runChallengeTestReport, type ChallengeTestReport } from '../services/challengeJudge';
 import { hasTestCases, STARTER_CODE } from '../services/challengeRunner';
 import { useData } from '../DataContext';
+import { PLAYGROUND_ACTION_EVENT, PLAYGROUND_STATE_EVENT, type PlaygroundAction, type PlaygroundHeaderState } from './ShellHeader';
+import InitialsTile, { TILE_COLORS } from './InitialsTile';
+import { defineSplitThemes, splitEditorTheme } from '../lib/monacoThemes';
+import { openChallengeWorkspace } from '../lib/challengeNav';
 import { FormattedMessage } from './FormattedMessage';
 import { supabase } from '../services/supabaseClient';
 import { runSandboxedJavaScript, runSandboxedPython, type SandboxExecutionController } from '../services/sandboxRunner';
@@ -283,6 +287,37 @@ const PublishModal: React.FC<{
     );
 };
 
+const timeAgo = (iso?: string) => {
+    if (!iso) return '';
+    const ms = Date.now() - new Date(iso).getTime();
+    if (Number.isNaN(ms)) return '';
+    const m = Math.round(ms / 60000);
+    if (m < 1) return 'just now';
+    if (m < 60) return `${m}m ago`;
+    const h = Math.round(m / 60);
+    if (h < 24) return `${h}h ago`;
+    const d = Math.round(h / 24);
+    return d === 1 ? 'yesterday' : `${d}d ago`;
+};
+
+/** First readable sentence(s) of a markdown challenge description. */
+const plainSummary = (markdown: string) =>
+    markdown
+        .replace(/```[\s\S]*?```/g, ' ')
+        .replace(/^#+\s.*$/gm, ' ')
+        .replace(/[*_`>#]/g, '')
+        .replace(/\[(.*?)\]\(.*?\)/g, '$1')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 180);
+
+const FILE_CHIP: Record<string, { chip: string; color: string }> = {
+    py: { chip: 'PY', color: '#1D4ED8' },
+    js: { chip: 'JS', color: '#B45309' },
+    html: { chip: 'HTM', color: '#BE185D' },
+    css: { chip: 'CSS', color: '#0E7490' },
+};
+
 const MenuItem: React.FC<{ onClick: () => void; icon: React.ReactNode; label: string }> = ({ onClick, icon, label }) => (
     <button onClick={onClick} className="w-full text-left px-4 py-2.5 text-sm text-ch-text hover:bg-ch-surface flex items-center gap-3 transition-colors">
         <span className="text-ch-muted">{icon}</span>
@@ -324,7 +359,7 @@ const processCarriageReturns = (text: string) => {
 };
 
 const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, setActiveTab, globalActiveTab, incomingChallenge, onChallengeHandled }) => {
-  const { fetchShowcaseItems, showToast, teams, allUsers, fetchUsers } = useData();
+  const { fetchShowcaseItems, showToast, teams, allUsers, fetchUsers, challenges, showcaseItems } = useData();
   const [language, setLanguage] = useState<SingleLanguage>(() => {
       return (localStorage.getItem('playground_lang') as SingleLanguage) || 'python';
   });
@@ -372,7 +407,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
   const [previewSessionId, setPreviewSessionId] = useState(0);
   const [showPreviewConsole, setShowPreviewConsole] = useState(true);
   
-  const [output, setOutput] = useState<OutputLine[]>([{ type: 'log', content: 'Click "Run Code" to see the output here.' }]);
+  const [output, setOutput] = useState<OutputLine[]>([]);
   const [isExecuting, setIsExecuting] = useState<boolean>(false);
   const [isPyodideReady] = useState(true);
   const [activeTab, setActiveTabState] = useState<'editor' | 'output' | 'preview'>('editor');
@@ -693,6 +728,10 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
   }, [code, activeFile?.path, activeProject?.id, isProjectMode, currentUser.uid]);
 
   const handleEditorDidMount = (editor: any, monaco: any) => {
+      editor.onDidChangeCursorPosition((event: any) => {
+          setCaret({ line: event.position.lineNumber, col: event.position.column });
+      });
+      editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => actionsRef.current.run());
       editor.updateOptions({
           minimap: { enabled: false },
           fontSize: 14,
@@ -1857,7 +1896,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
       });
   };
 
-  const editorTheme = theme === 'dark' ? 'vs-dark' : 'light';
+  const editorTheme = splitEditorTheme(theme);
   const editorLanguage = useMemo(() => {
       if (activeProject && activeFile) {
           const ext = getFileExtension(activeFile.path);
@@ -1870,8 +1909,227 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
       return language;
   }, [activeProject, activeFile?.path, language]);
 
+
+  // ---------- Split shell: header bridge, status bar, console, board ----------
+  const [caret, setCaret] = useState({ line: 1, col: 1 });
+  const [runInfo, setRunInfo] = useState<{ status: 'idle' | 'running' | 'ok' | 'err'; ms: number; label: string }>({ status: 'idle', ms: 0, label: '' });
+  const runStartRef = useRef(0);
+  const [boardTab, setBoardTab] = useState<'scripts' | 'projects' | 'shared'>('scripts');
+  const [scriptsRequested, setScriptsRequested] = useState(false);
+
+  const scratchName = `main.${language === 'python' ? 'py' : language === 'javascript' ? 'js' : 'html'}`;
+  const fileLabel = activeFile?.path || scratchName;
+  const langLabel =
+      editorLanguage === 'python' ? 'Python'
+      : editorLanguage === 'javascript' ? 'JavaScript'
+      : editorLanguage === 'html' ? 'HTML'
+      : editorLanguage === 'css' ? 'CSS'
+      : 'Text';
+  const activeDirty = !!activeFile && isFileDirty(activeFile.path);
+  const anyDirty = openFilePaths.some(isFileDirty);
+  const saveStatus = activeProject ? (activeDirty ? 'Unsaved' : 'Saved') : 'Autosaved';
+  const busy = isExecuting || isWaitingForInput || isEvaluating || isRunningTests || isGettingHint;
+
+  // Run timing + verdict for the console status line.
+  useEffect(() => {
+      if (isExecuting) {
+          runStartRef.current = performance.now();
+          setRunInfo({ status: 'running', ms: 0, label: fileLabel });
+          return;
+      }
+      setRunInfo(prev => prev.status !== 'running' ? prev : {
+          status: output.some(line => line.type === 'error') ? 'err' : 'ok',
+          ms: performance.now() - runStartRef.current,
+          label: prev.label,
+      });
+  }, [isExecuting]);
+
+  // Header cells live in ShellHeader; they talk to us over window events.
+  const actionsRef = useRef<Record<PlaygroundAction, () => void>>({} as Record<PlaygroundAction, () => void>);
+  actionsRef.current = {
+      run: () => {
+          if (isExecuting) executionRef.current?.cancel();
+          else if (!busy) handleRunCode();
+      },
+      hint: () => { if (!busy) void handleGetHint(); },
+      share: () => setIsShareModalOpen(true),
+      save: () => { if (activeProject) void handleSaveFile(); else handleOpenCloudModal(); },
+      submit: () => {
+          if (busy) return;
+          if (pendingChallenge) void handleAutoEvaluate();
+          else setIsSubmitChallengeModalOpen(true);
+      },
+  };
+
+  useEffect(() => {
+      const onAction = (event: Event) => {
+          const action = (event as CustomEvent<PlaygroundAction>).detail;
+          actionsRef.current[action]?.();
+      };
+      window.addEventListener(PLAYGROUND_ACTION_EVENT, onAction);
+      return () => window.removeEventListener(PLAYGROUND_ACTION_EVENT, onAction);
+  }, []);
+
+  useEffect(() => {
+      if (globalActiveTab !== 'playground') return;
+      const detail: PlaygroundHeaderState = {
+          meta: `${langLabel} · sandboxed · ${activeProject ? (anyDirty ? 'unsaved changes' : 'all saved') : 'autosaved locally'}`,
+          running: isExecuting,
+          busy,
+          submitLabel: 'Submit',
+      };
+      window.dispatchEvent(new CustomEvent(PLAYGROUND_STATE_EVENT, { detail }));
+  }, [globalActiveTab, langLabel, activeProject, anyDirty, isExecuting, busy]);
+
+  // Board data is fetched the first time its tab is on screen.
+  useEffect(() => {
+      if (globalActiveTab === 'playground' && boardTab === 'scripts' && !scriptsRequested) {
+          setScriptsRequested(true);
+          void fetchCloudScripts();
+      }
+  }, [globalActiveTab, boardTab, scriptsRequested]);
+
+  useEffect(() => {
+      if (globalActiveTab === 'playground' && boardTab === 'shared' && showcaseItems.length === 0) {
+          void fetchShowcaseItems();
+      }
+  }, [globalActiveTab, boardTab]);
+
+  const spotlightChallenge = useMemo(() => {
+      if (pendingChallenge) return pendingChallenge;
+      const now = new Date();
+      return [...challenges]
+          .filter(c => c.status === 'ACTIVE' && new Date(c.deadline) >= now && !currentUser.badges?.includes(c.title))
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] || null;
+  }, [pendingChallenge, challenges, currentUser.badges]);
+
+
+  const consoleDot =
+      runInfo.status === 'running' ? 'var(--ch-violet)'
+      : isWaitingForInput ? '#d97706'
+      : runInfo.status === 'ok' ? '#16a34a'
+      : runInfo.status === 'err' ? 'var(--ch-accent)'
+      : 'var(--ch-divider)';
+  const consoleStatus =
+      isWaitingForInput ? 'Waiting for input'
+      : runInfo.status === 'running' ? `Running ${runInfo.label}…`
+      : runInfo.status === 'ok' ? `${runInfo.label} finished in ${(runInfo.ms / 1000).toFixed(2)}s`
+      : runInfo.status === 'err' ? `${runInfo.label} stopped with an error`
+      : 'Idle';
+
+  const challengePanel = spotlightChallenge && (
+      <div className="flex-none bg-ch-accent px-6 pb-[22px] pt-6 text-ch-on-accent">
+          <div className="mb-3.5 flex items-baseline justify-between gap-3">
+              <span className="text-[10px] font-extrabold uppercase tracking-[0.16em]">
+                  {pendingChallenge ? 'Challenge mode' : 'Open challenge'}
+                  {spotlightChallenge.difficulty ? ` · ${spotlightChallenge.difficulty.toLowerCase()}` : ''}
+              </span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.08em] opacity-75">
+                  Closes {new Date(spotlightChallenge.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              </span>
+          </div>
+          <p className="line-clamp-3 text-[34px] font-extrabold leading-[0.95] tracking-[-0.04em]">{spotlightChallenge.title}</p>
+          <p className="mb-[18px] mt-3.5 line-clamp-3 max-w-[300px] text-[13px] font-semibold leading-[1.45]">{plainSummary(spotlightChallenge.description)}</p>
+          <div className="flex items-center gap-3 border-t-2 border-black/[0.28] pt-3.5">
+              <button
+                  onClick={() => pendingChallenge ? setPendingChallenge(null) : openChallengeWorkspace(spotlightChallenge.id, setActiveTab)}
+                  className="flex h-8 items-center bg-ch-on-accent px-3.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-ch-accent-deep transition-opacity hover:opacity-85"
+              >
+                  {pendingChallenge ? 'Exit challenge' : 'Open challenge'}
+              </button>
+              <span className="flex-1" />
+              <span className="text-[11.5px] font-bold">
+                  {hasTestCases(spotlightChallenge) ? `${spotlightChallenge.testCases?.length} tests` : 'AI reviewed'}
+              </span>
+          </div>
+      </div>
+  );
+
+  const boardRow = 'flex w-full items-center gap-3 border-t border-ch-divider py-[11px] text-left transition-opacity duration-100 hover:opacity-65';
+
+  const scriptsList = (
+      <div className="px-5 pb-5 pt-[18px]">
+          <div className="mb-2.5 flex items-baseline justify-between">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ch-muted">Your files</p>
+              <button onClick={handleOpenCloudModal} className="text-[11px] font-bold text-ch-accent hover:underline">Save current</button>
+          </div>
+          {isLoadingScripts ? (
+              <p className="py-2 text-[13px] text-ch-muted">Loading scripts…</p>
+          ) : cloudScripts.length === 0 ? (
+              <p className="py-2 text-[13px] text-ch-muted">No saved scripts yet. Use Save in the header.</p>
+          ) : (
+              cloudScripts.map(script => {
+                  const ext = script.name.split('.').pop()?.toLowerCase() || '';
+                  const chip = FILE_CHIP[ext] || { chip: ext.slice(0, 3).toUpperCase() || '—', color: '#6D28D9' };
+                  return (
+                      <button key={script.id || script.name} onClick={() => { void handleCloudLoad(script.name); setIsProjectPanelOpen(false); }} className={boardRow}>
+                          <span className="flex h-7 w-7 flex-none items-center justify-center text-[10px] font-extrabold text-white" style={{ background: chip.color }}>{chip.chip}</span>
+                          <span className="min-w-0 flex-1">
+                              <span className="block truncate font-mono text-[12.5px] font-semibold leading-tight">{script.name}</span>
+                              <span className="mt-0.5 block truncate text-[11px] text-ch-muted">Edited {timeAgo(script.lastModified)}</span>
+                          </span>
+                          <span className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-ch-muted">Open</span>
+                      </button>
+                  );
+              })
+          )}
+      </div>
+  );
+
+  const sharedList = (
+      <div className="px-5 pb-5 pt-[18px]">
+          <div className="mb-2.5 flex items-baseline justify-between">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ch-muted">From the showcase</p>
+              <span className="text-[11px] text-ch-muted">{showcaseItems.length} snippets</span>
+          </div>
+          {showcaseItems.length === 0 ? (
+              <p className="py-2 text-[13px] text-ch-muted">Nothing shared yet.</p>
+          ) : (
+              showcaseItems.slice(0, 30).map((item, index) => (
+                  <button key={item.id} onClick={() => { handleImportCode(item.codeContent); setIsProjectPanelOpen(false); }} className={boardRow}>
+                      <InitialsTile name={item.userName || '?'} size={28} color={TILE_COLORS[index % TILE_COLORS.length]} />
+                      <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[13px] font-semibold leading-tight">{item.title}</span>
+                          <span className="mt-0.5 block truncate text-[11px] text-ch-muted">
+                              {item.userName || 'Unknown'} · {item.likes?.length || 0} like{item.likes?.length === 1 ? '' : 's'}
+                          </span>
+                      </span>
+                      <span className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-ch-muted">Load</span>
+                  </button>
+              ))
+          )}
+      </div>
+  );
+
+  // A function, not a value: projectPanel is declared further down.
+  const renderBoard = () => (
+      <div className="flex min-h-0 flex-1 flex-col">
+          <div className="flex h-[42px] flex-none items-stretch border-b-2 border-ch-rule">
+              {([['scripts', 'My scripts'], ['projects', 'Projects'], ['shared', 'Club shared']] as const).map(([id, label]) => (
+                  <button
+                      key={id}
+                      onClick={() => setBoardTab(id)}
+                      className={`flex flex-1 items-center gap-2 border-r border-ch-divider px-4 text-[10px] font-extrabold uppercase tracking-[0.14em] transition-colors duration-100 last:border-r-0 ${
+                          boardTab === id ? 'bg-ch-accent-soft text-ch-text' : 'text-ch-muted hover:bg-ch-surface'
+                      }`}
+                  >
+                      <span className="h-1.5 w-1.5 flex-none" style={{ background: boardTab === id ? 'var(--ch-accent)' : 'transparent' }} />
+                      {label}
+                  </button>
+              ))}
+          </div>
+          <div className="ch-scroll min-h-0 flex-1 overflow-y-auto">
+              {boardTab === 'projects' ? projectPanel : boardTab === 'scripts' ? scriptsList : sharedList}
+          </div>
+      </div>
+  );
+
+  const stripCell = 'flex flex-none items-center border-l border-ch-divider px-3.5 text-[11px] font-bold uppercase tracking-[0.08em] transition-colors duration-100';
+  const stripIdle = 'text-ch-muted hover:bg-ch-surface hover:text-ch-text';
+  const stripActive = 'bg-ch-accent text-ch-on-accent';
+
   const projectPanel = (
-      <div className="flex flex-col h-full w-72 bg-ch-bg border-r-2 border-ch-rule">
+      <div className="flex min-h-full flex-col bg-ch-bg">
           <div className="p-3 border-b border-ch-divider flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm font-semibold text-ch-text">
                   <ViewGridIcon />
@@ -1885,7 +2143,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                   <RefreshIcon />
               </button>
           </div>
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-4">
+          <div className="flex-1 p-3 space-y-4">
               <div className="space-y-2">
                   <p className="text-xs font-semibold text-ch-muted uppercase">New Project</p>
                   <input
@@ -2010,6 +2268,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
 
                       <div className="flex items-center gap-2">
                           <input
+                              ref={newFileNameInputRef}
                               value={newFileName}
                               onChange={(e) => setNewFileName(e.target.value)}
                               placeholder={activeProject?.language === 'javascript' ? "new_file.js" : activeProject?.language === 'html' ? "index.html" : "new_file.py"}
@@ -2176,403 +2435,317 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
         className="hidden"
       />
 
-      {/* Challenge Mode Banner */}
-      {pendingChallenge && (
-        <div className="text-ch-on-accent px-4 py-2 flex items-center justify-between z-20 bg-ch-accent">
-          <div className="flex items-center gap-3">
-            <div className="bg-black/20 p-1.5">
-              <TrophyIcon className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider opacity-90">Challenge Mode</p>
-              <p className="text-sm font-semibold">{pendingChallenge.title}</p>
-            </div>
-          </div>
-          <button 
-            onClick={() => {
-                setPendingChallenge(null);
-                showToast("Exited challenge mode.", "info");
-            }}
-            className="opacity-70 hover:opacity-100 transition-opacity p-1"
-            title="Exit Challenge"
-          >
-            <XIcon className="w-5 h-5" />
-          </button>
-        </div>
-      )}
+      <div className="flex min-h-0 flex-1 items-stretch">
 
-      {/* Compact Toolbar */}
-      <div className="flex items-center justify-between p-2 border-b-2 border-ch-rule bg-ch-bg flex-shrink-0">
-        <div className="flex items-center gap-3">
-             <button
-                onClick={() => setIsProjectPanelOpen(true)}
-                className="lg:hidden p-1.5 bg-ch-surface-2 text-ch-text"
-                title="Projects"
-             >
-                <ViewGridIcon />
-             </button>
-             <div className="flex bg-ch-surface-2 p-0.5">
-                <button onClick={() => handleLanguageChange('python')} className={`px-3 py-1 text-xs font-bold transition-all ${language === 'python' ? 'bg-ch-accent text-ch-on-accent' : 'text-ch-muted hover:text-ch-text'} ${isProjectMode ? 'opacity-60 cursor-not-allowed' : ''}`}>PY</button>
-                <button onClick={() => handleLanguageChange('javascript')} className={`px-3 py-1 text-xs font-bold transition-all ${language === 'javascript' ? 'bg-ch-accent text-ch-on-accent' : 'text-ch-muted hover:text-ch-text'} ${isProjectMode ? 'opacity-60 cursor-not-allowed' : ''}`}>JS</button>
-                <button onClick={() => handleLanguageChange('html')} className={`px-3 py-1 text-xs font-bold transition-all ${language === 'html' ? 'bg-ch-accent text-ch-on-accent' : 'text-ch-muted hover:text-ch-text'} ${isProjectMode ? 'opacity-60 cursor-not-allowed' : ''}`}>HTML</button>
-             </div>
-             <div className="h-4 w-px bg-ch-surface-2 mx-1 hidden sm:block"></div>
-             {/* Tabs */}
-             <div className="flex bg-ch-surface-2 p-0.5">
-                <button onClick={() => setActiveTabState('editor')} className={`px-3 py-1 text-xs font-medium transition-all ${activeTab === 'editor' ? 'bg-ch-bg text-ch-text' : 'text-ch-muted'}`}>Code</button>
-                <button onClick={() => setActiveTabState('output')} className={`px-3 py-1 text-xs font-medium transition-all ${activeTab === 'output' ? 'bg-ch-bg text-ch-text' : 'text-ch-muted'}`}>Output</button>
-                {canPreview && (
-                    <button onClick={() => setActiveTabState('preview')} className={`px-3 py-1 text-xs font-medium transition-all ${activeTab === 'preview' ? 'bg-ch-bg text-ch-text' : 'text-ch-muted'}`}>Preview</button>
-                )}
-             </div>
-             {activeProject && (
-                <div className="hidden md:flex flex-col text-[11px] text-ch-muted ml-2">
-                    <span className="font-semibold">{activeProject.name}</span>
-                    <span className="truncate max-w-[140px]">{activeFile?.path || 'No file selected'}</span>
+        {/* ---------- Editor column ---------- */}
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+
+          {/* File strip */}
+          <div className="flex h-[46px] flex-none items-stretch border-b-2 border-ch-rule">
+            <button
+              onClick={() => setIsProjectPanelOpen(true)}
+              className="flex flex-none items-center border-r border-ch-divider px-3.5 text-ch-muted transition-colors hover:bg-ch-surface hover:text-ch-text xl:hidden [&_svg]:h-4 [&_svg]:w-4"
+              title="Scripts and projects"
+              aria-label="Open scripts and projects"
+            >
+              <ViewGridIcon />
+            </button>
+            <div className="ch-scroll flex min-w-0 items-stretch overflow-x-auto">
+              {activeProject ? (
+                openFilePaths.length === 0 ? (
+                  <div className="flex items-center px-4 text-[12px] text-ch-muted">Open a file from Projects.</div>
+                ) : (
+                  openFilePaths.map((path) => {
+                    const file = projectFiles.find(projectFile => projectFile.path === path);
+                    const isActive = activeFile?.path === path;
+                    return (
+                      <div
+                        key={path}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => { if (file) void openFile(file); }}
+                        onKeyDown={(event) => { if (event.key === 'Enter' && file) void openFile(file); }}
+                        title={path}
+                        className={`group flex flex-none items-center gap-2.5 border-r border-ch-divider pl-[18px] pr-2 font-mono text-[12.5px] font-bold transition-colors duration-100 ${
+                          isActive ? 'text-ch-text shadow-[inset_0_-2px_0_var(--ch-accent)]' : 'text-ch-muted hover:bg-ch-surface hover:text-ch-text'
+                        }`}
+                      >
+                        <span className="max-w-[160px] truncate">{path.split('/').pop()}</span>
+                        {isFileDirty(path) && <span className="h-1.5 w-1.5 flex-none bg-ch-accent" title="Unsaved" />}
+                        <button
+                          type="button"
+                          onClick={(event) => { event.stopPropagation(); void closeOpenFile(path); }}
+                          className="flex h-5 w-5 items-center justify-center text-ch-muted transition-colors hover:bg-ch-surface-2 hover:text-ch-text"
+                          aria-label={`Close ${path}`}
+                          title="Close tab"
+                        >
+                          <XIcon className="h-3 w-3" />
+                        </button>
+                      </div>
+                    );
+                  })
+                )
+              ) : (
+                <div className="flex flex-none items-center border-r border-ch-divider px-[18px] font-mono text-[12.5px] font-bold text-ch-text shadow-[inset_0_-2px_0_var(--ch-accent)]">
+                  {scratchName}
                 </div>
-             )}
-        </div>
+              )}
+            </div>
+            {activeProject && (
+              <button
+                onClick={() => { setBoardTab('projects'); handleNewFileShortcut(); }}
+                className="flex w-[46px] flex-none items-center justify-center border-r border-ch-divider text-[18px] font-bold text-ch-muted transition-colors hover:bg-ch-surface hover:text-ch-text"
+                title="New file"
+                aria-label="New file"
+              >
+                +
+              </button>
+            )}
+            <div className="flex-1" />
 
-        <div className="flex items-center gap-2">
-             {activeProject && (
-                <button
-                    onClick={() => setActiveProject(null)}
-                    className="px-2 py-1 text-xs font-semibold bg-ch-surface-2 text-ch-text hover:bg-ch-surface-2"
-                    title="Exit project mode"
-                >
-                    Exit Project
-                </button>
-             )}
-             {activeProject && (
-                <Tooltip text="Save the current file to your project.">
-                    <button
-                        onClick={handleSaveFile}
-                        className="px-2 py-1 text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700"
-                    >
-                        Save
-                    </button>
-                </Tooltip>
-             )}
-             <Tooltip text="Get a short hint from Kevin (no full solutions).">
-                 <button 
-                    onClick={handleGetHint} 
-                    disabled={isExecuting || (language === 'python' && !isPyodideReady) || isWaitingForInput || isGettingHint}
-                    className="p-1.5 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors disabled:opacity-50" 
-                 >
-                    <LightBulbIcon className="w-5 h-5"/>
-                 </button>
-             </Tooltip>
-             
-             <Tooltip text="Run your code and see output below.">
-                 <button 
-                    onClick={handleRunCode} 
-                    disabled={isExecuting || (language === 'python' && !isPyodideReady) || isWaitingForInput}
-                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 text-xs font-bold flex items-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                 >
-                    {language === 'python' && !isPyodideReady ? (
-                        <span className="animate-spin h-3 w-3 border-2 border-white/30 border-t-white"></span>
-                    ) : (
-                        <PlayIcon className="w-3.5 h-3.5"/>
-                    )}
-                    <span className="hidden sm:inline">{isExecuting ? 'Running...' : 'Run'}</span>
-                 </button>
-             </Tooltip>
+            {pendingChallenge && hasTestCases(pendingChallenge) && (
+              <button
+                onClick={handleRunTests}
+                disabled={busy}
+                className={`${stripCell} gap-2 text-ch-accent hover:bg-ch-accent-soft disabled:cursor-not-allowed disabled:opacity-50`}
+                title="Check your solve() against the visible test cases"
+              >
+                {isRunningTests ? 'Testing…' : 'Run tests'}
+              </button>
+            )}
 
-             {pendingChallenge && hasTestCases(pendingChallenge) && (
-                 <Tooltip text="Check your solve() against the visible test cases without submitting.">
-                     <button
-                        onClick={handleRunTests}
-                        disabled={isExecuting || isEvaluating || isRunningTests || (language === 'python' && !isPyodideReady) || isWaitingForInput}
-                        className="bg-ch-bg border border-ch-divider text-ch-accent hover:bg-ch-accent-soft px-3 py-1.5 text-xs font-bold flex items-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                     >
-                        {isRunningTests ? (
-                            <span className="animate-spin h-3 w-3 border-2 border-ch-divider border-t-pink-600"></span>
-                        ) : (
-                            <BadgeCheckIcon className="w-3.5 h-3.5"/>
-                        )}
-                        <span className="hidden sm:inline">{isRunningTests ? 'Testing...' : 'Run Tests'}</span>
-                     </button>
-                 </Tooltip>
-             )}
+            {canPreview && (
+              <>
+                <button onClick={() => setActiveTabState('editor')} className={`${stripCell} ${activeTab !== 'preview' ? stripActive : stripIdle}`}>Code</button>
+                <button onClick={() => setActiveTabState('preview')} className={`${stripCell} ${activeTab === 'preview' ? stripActive : stripIdle}`}>Preview</button>
+              </>
+            )}
 
-             {pendingChallenge && (
-                 <Tooltip text={hasTestCases(pendingChallenge) ? "Submit your code to be judged against all test cases." : "Submit your code for AI evaluation and badge awarding."}>
-                     <button 
-                        onClick={handleAutoEvaluate}
-                        disabled={isExecuting || isEvaluating || isRunningTests || (language === 'python' && !isPyodideReady) || isWaitingForInput}
-                        className="text-ch-on-accent px-4 py-1.5 text-xs font-bold flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-ch-accent hover:bg-ch-accent-deep"
-                     >
-                        {isEvaluating ? (
-                            <span className="animate-spin h-3 w-3 border-2 border-white/30 border-t-white"></span>
-                        ) : (
-                            <SparklesIcon className="w-4 h-4 text-yellow-300"/>
-                        )}
-                        <span>{isEvaluating ? 'Evaluating...' : 'Submit Challenge'}</span>
-                     </button>
-                 </Tooltip>
-             )}
-             
-             {/* Dropdown Trigger */}
-             <div className="relative" ref={menuRef}>
-                <button 
-                    onClick={() => setIsMenuOpen(!isMenuOpen)} 
-                    className={`p-1.5 transition-colors ${isMenuOpen ? 'bg-ch-surface-2 text-ch-text' : 'text-ch-muted hover:bg-ch-surface-2'}`}
-                >
-                    <DotsVerticalIcon />
-                </button>
-                {isMenuOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-48 bg-ch-bg border border-ch-divider z-50 py-1 animate-fade-in-up">
-                        <MenuItem onClick={triggerFileUpload} icon={<UploadIcon className="w-4 h-4"/>} label="Upload" />
-                        <MenuItem onClick={handleDownloadCode} icon={<DownloadIcon className="w-4 h-4"/>} label="Download" />
-                        <MenuItem onClick={handleOpenCloudModal} icon={<CloudIcon className="w-4 h-4"/>} label="Cloud Scripts" />
-                        <div className="h-px bg-ch-surface my-1"></div>
-                        <MenuItem onClick={() => { setIsShareModalOpen(true); setIsMenuOpen(false); }} icon={<ShareIcon className="w-4 h-4"/>} label="Share" />
-                        <MenuItem onClick={() => { setIsPublishModalOpen(true); setIsMenuOpen(false); }} icon={<GlobeIcon className="w-4 h-4"/>} label="Publish" />
-                        <MenuItem onClick={() => { setIsSubmitChallengeModalOpen(true); setIsMenuOpen(false); }} icon={<TrophyIcon className="w-4 h-4"/>} label="Submit Challenge" />
-                    </div>
-                )}
-             </div>
-        </div>
-      </div>
+            {!activeProject && (['python', 'javascript', 'html'] as const).map(lang => (
+              <button
+                key={lang}
+                onClick={() => handleLanguageChange(lang)}
+                className={`${stripCell} ${language === lang ? stripActive : stripIdle}`}
+              >
+                <span className="sm:hidden">{lang === 'python' ? 'PY' : lang === 'javascript' ? 'JS' : 'HTML'}</span>
+                <span className="hidden sm:inline">{lang === 'python' ? 'Python' : lang === 'javascript' ? 'JavaScript' : 'HTML'}</span>
+              </button>
+            ))}
 
-      {showFirstLoginTips && (
-        <div className="mx-3 mt-3 mb-1 bg-ch-accent-soft border border-ch-divider text-ch-accent p-3 text-xs flex items-start justify-between gap-3">
-          <div>
-            <div className="font-semibold">Playground Tips</div>
-            <ul className="mt-1 space-y-1 text-[11px]">
-              <li>Use <strong>Run</strong> to execute code and see output below.</li>
-              <li>Try the <strong>AI Hint</strong> bulb for guidance.</li>
-              <li>Publish or submit a challenge from the menu (���).</li>
-            </ul>
+            <div className="relative flex flex-none items-stretch" ref={menuRef}>
+              <button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className={`${stripCell} ${isMenuOpen ? 'bg-ch-surface text-ch-text' : stripIdle}`}
+                aria-label="More actions"
+                aria-expanded={isMenuOpen}
+              >
+                <DotsVerticalIcon />
+              </button>
+              {isMenuOpen && (
+                <div className="absolute right-0 top-full z-50 w-52 border-2 border-ch-rule bg-ch-bg py-1">
+                  <MenuItem onClick={triggerFileUpload} icon={<UploadIcon className="w-4 h-4"/>} label="Upload" />
+                  <MenuItem onClick={handleDownloadCode} icon={<DownloadIcon className="w-4 h-4"/>} label="Download" />
+                  <MenuItem onClick={handleOpenCloudModal} icon={<CloudIcon className="w-4 h-4"/>} label="Cloud Scripts" />
+                  <div className="my-1 h-px bg-ch-divider"></div>
+                  <MenuItem onClick={() => { setIsShareModalOpen(true); setIsMenuOpen(false); }} icon={<ShareIcon className="w-4 h-4"/>} label="Share" />
+                  <MenuItem onClick={() => { setIsPublishModalOpen(true); setIsMenuOpen(false); }} icon={<GlobeIcon className="w-4 h-4"/>} label="Publish" />
+                  <MenuItem onClick={() => { setIsSubmitChallengeModalOpen(true); setIsMenuOpen(false); }} icon={<TrophyIcon className="w-4 h-4"/>} label="Submit Challenge" />
+                  {activeProject && (
+                    <>
+                      <div className="my-1 h-px bg-ch-divider"></div>
+                      <MenuItem onClick={() => { setActiveProject(null); setIsMenuOpen(false); }} icon={<XIcon className="w-4 h-4"/>} label="Exit project" />
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-          <button
-            onClick={dismissPlaygroundTips}
-            className="px-3 py-1 bg-ch-accent text-ch-on-accent border border-ch-accent"
-          >
-            Got it
-          </button>
-        </div>
-      )}
 
-      {/* Main Area */}
-      <div className="flex-1 relative w-full h-full overflow-hidden">
-        <div className="absolute inset-0 flex">
-          <aside className="hidden lg:flex">
-            {projectPanel}
-          </aside>
-
-          {isProjectPanelOpen && (
-            <div className="lg:hidden fixed inset-0 z-50 bg-black/50 flex">
-              <div className="h-full">
-                {projectPanel}
+          {/* The board's challenge panel is hidden below xl; keep the mode visible. */}
+          {pendingChallenge && (
+            <div className="flex flex-none items-stretch border-b-2 border-ch-rule bg-ch-accent text-ch-on-accent xl:hidden">
+              <div className="flex min-w-0 flex-1 items-center gap-3 px-4 py-2">
+                <span className="flex-none text-[10px] font-extrabold uppercase tracking-[0.16em]">Challenge</span>
+                <span className="truncate text-[13px] font-bold">{pendingChallenge.title}</span>
               </div>
               <button
-                onClick={() => setIsProjectPanelOpen(false)}
-                className="flex-1"
-                aria-label="Close project panel"
-              />
+                onClick={() => setPendingChallenge(null)}
+                className="flex flex-none items-center border-l-2 border-black/[0.28] px-4 text-[11px] font-extrabold uppercase tracking-[0.08em] hover:bg-black/10"
+              >
+                Exit
+              </button>
             </div>
           )}
 
-          <div className="relative flex-1">
-            {/* Editor */}
-            <div className={`absolute inset-0 w-full h-full ${activeTab === 'editor' ? 'z-10 opacity-100' : 'z-0 opacity-0 pointer-events-none'}`}>
-                 <div className="flex h-full min-h-0 w-full flex-col">
-                    {activeProject && (
-                        <div className="flex items-center gap-1 overflow-x-auto border-b border-ch-divider bg-ch-surface px-2 py-1.5 custom-scrollbar">
-                            {openFilePaths.length === 0 ? (
-                                <div className="px-2 text-[11px] text-ch-muted">
-                                    Open a file from the project panel to create a tab.
-                                </div>
-                            ) : (
-                                openFilePaths.map((path) => {
-                                    const file = projectFiles.find(projectFile => projectFile.path === path);
-                                    const isActive = activeFile?.path === path;
-                                    return (
-                                        <div
-                                            key={path}
-                                            role="button"
-                                            tabIndex={0}
-                                            onClick={() => {
-                                                if (file) {
-                                                    void openFile(file);
-                                                }
-                                            }}
-                                            className={`group flex min-w-0 max-w-[220px] items-center gap-2 border px-3 py-1.5 text-left text-xs transition-colors ${
-                                                isActive
-                                                    ? 'border-indigo-500 bg-ch-bg text-indigo-700 dark:border-indigo-400 dark:text-indigo-200'
-                                                    : 'border-transparent bg-transparent text-ch-muted hover:bg-ch-surface hover:text-ch-text'
-                                            }`}
-                                            title={path}
-                                        >
-                                            <DocumentTextIcon className="h-3.5 w-3.5 flex-shrink-0" />
-                                            <span className="truncate">{path}</span>
-                                            <button
-                                                type="button"
-                                                onClick={(event) => {
-                                                    event.stopPropagation();
-                                                    void closeOpenFile(path);
-                                                }}
-                                                className={`p-0.5 transition-colors ${
-                                                    isActive
-                                                        ? 'text-indigo-500 hover:bg-indigo-100 hover:text-indigo-700 dark:hover:bg-indigo-900/40'
-                                                        : 'text-ch-muted opacity-0 group-hover:opacity-100 hover:bg-ch-surface-2 hover:text-ch-text'
-                                                }`}
-                                                aria-label={`Close ${path}`}
-                                                title="Close tab"
-                                            >
-                                                <XCircleIcon className="h-3.5 w-3.5" />
-                                            </button>
-                                        </div>
-                                    );
-                                })
-                            )}
-                        </div>
-                    )}
-                    <div className="min-h-0 flex-1">
-                        <Editor
-                            height="100%"
-                            defaultLanguage={editorLanguage}
-                            language={editorLanguage}
-                            theme={editorTheme}
-                            value={code}
-                            onChange={(value) => {
-                              const nextValue = value || '';
-                              codeRef.current = nextValue;
-                              setCode(nextValue);
-                            }}
-                            onMount={handleEditorDidMount}
-                            loading={<div className="flex items-center justify-center h-full text-ch-muted">Loading editor...</div>}
-                            options={{
-                                padding: { top: 16, bottom: 16 },
-                            }}
-                        />
-                    </div>
-                </div>
+          {showFirstLoginTips && (
+            <div className="flex flex-none items-start justify-between gap-4 border-b-2 border-ch-rule bg-ch-accent-soft px-6 py-3 text-[12px]">
+              <div>
+                <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-ch-accent">Playground tips</p>
+                <p className="mt-1 text-ch-text">
+                  Run with the header button or <strong>Ctrl/⌘ + Enter</strong>. Hint asks Kevin for a nudge. Upload, publish and more live under ⋮.
+                </p>
+              </div>
+              <button onClick={dismissPlaygroundTips} className="flex-none bg-ch-accent px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-ch-on-accent hover:bg-ch-accent-deep">
+                Got it
+              </button>
             </div>
-            
-            {/* Output */}
-            <div className={`absolute inset-0 w-full h-full bg-gray-900 text-gray-300 font-mono text-sm overflow-hidden flex flex-col ${activeTab === 'output' ? 'z-10 opacity-100' : 'z-0 opacity-0 pointer-events-none'}`}>
-                 <div className="flex justify-between items-center p-2 bg-gray-800 border-b border-gray-700">
-                    <span className="text-xs font-semibold uppercase tracking-wider pl-2 text-gray-400">Console</span>
-                    <div className="flex gap-1">
-                        <button onClick={handleCopyOutput} className="p-1.5 hover:text-white hover:bg-gray-700 transition-colors text-gray-400" title="Copy Output">
-                            <CopyIcon className="w-4 h-4" />
-                        </button>
-                        <button onClick={handleClearOutput} className="p-1.5 hover:text-red-400 hover:bg-gray-700 transition-colors text-gray-400" title="Clear Console">
-                            <TrashIcon className="w-4 h-4" />
-                        </button>
-                    </div>
-                 </div>
-                 <div 
-                    ref={outputContainerRef}
-                    className="flex-1 p-4 overflow-y-auto custom-scrollbar whitespace-pre-wrap break-words"
-                    onClick={() => {
-                        if (isWaitingForInput && consoleInputRef.current) {
-                            consoleInputRef.current.focus();
-                        }
-                    }}
-                 >
-                    {output.length === 0 && !isWaitingForInput ? (
-                        <span className="text-ch-muted italic select-none">Run code to see output...</span>
-                    ) : (
-                        output.map((line, index) => (
-                           <div key={index} className="leading-relaxed mb-0.5 whitespace-pre-wrap break-words">
-                                {line.type === 'log' ? (
-                                    <span className="text-gray-300 whitespace-pre-wrap break-words">{line.content}</span>
-                                ) : line.type === 'hint' ? (
-                                    <div className="bg-yellow-900/20 p-3 border-l-2 border-yellow-600 my-2 flex gap-3 font-sans text-gray-200">
-                                        <div className="text-yellow-500 mt-0.5 flex-shrink-0">
-                                            <LightBulbIcon className="w-4 h-4"/>
-                                        </div>
-                                        <div className="flex-1 text-sm">
-                                            <FormattedMessage text={line.content} isUser={false} />
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <span className="text-red-400 font-medium whitespace-pre-wrap break-words">{line.content}</span>
-                                )}
-                           </div>
-                        ))
-                    )}
-                    
-                    {isWaitingForInput && (
-                        <div className="flex items-center text-gray-300 leading-relaxed mt-1">
-                            <span className="whitespace-pre-wrap">{inputPrompt}</span>
-                            <input
-                                ref={consoleInputRef}
-                                value={consoleInput}
-                                onChange={e => setConsoleInput(e.target.value)}
-                                onKeyDown={handleConsoleInputEnter}
-                                className="flex-1 bg-transparent border-none outline-none text-green-400 font-bold ml-1 min-w-[50px]"
-                                autoFocus
-                                autoComplete="off"
-                                spellCheck="false"
-                            />
-                        </div>
-                    )}
-                    
-                    {isExecuting && !isWaitingForInput && <div className="animate-pulse mt-1 text-green-500">_</div>}
-                 </div>
+          )}
+
+          {/* Editor / preview */}
+          <div className="relative min-h-0 flex-1">
+            <div className={`absolute inset-0 ${activeTab !== 'preview' ? 'z-10' : 'pointer-events-none z-0 opacity-0'}`}>
+              <Editor
+                height="100%"
+                defaultLanguage={editorLanguage}
+                language={editorLanguage}
+                theme={editorTheme}
+                value={code}
+                beforeMount={defineSplitThemes}
+                onChange={(value) => {
+                  const nextValue = value || '';
+                  codeRef.current = nextValue;
+                  setCode(nextValue);
+                }}
+                onMount={handleEditorDidMount}
+                loading={<div className="flex h-full items-center justify-center text-[13px] text-ch-muted">Loading editor…</div>}
+                options={{ padding: { top: 16, bottom: 16 } }}
+              />
             </div>
 
-            {/* Preview */}
-            <div className={`absolute inset-0 w-full h-full bg-ch-bg overflow-hidden flex flex-col ${activeTab === 'preview' ? 'z-10 opacity-100' : 'z-0 opacity-0 pointer-events-none'}`}>
-                 <div className="flex justify-between items-center p-2 bg-ch-surface border-b border-ch-divider">
-                    <span className="text-xs font-semibold text-ch-muted uppercase tracking-wider pl-2">Preview</span>
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => setShowPreviewConsole(prev => !prev)}
-                            className="px-2 py-1 text-xs font-semibold bg-ch-surface-2 text-ch-text"
-                        >
-                            {showPreviewConsole ? 'Hide Console' : 'Show Console'}
-                        </button>
-                        <button
-                            onClick={() => setPreviewConsole([])}
-                            className="px-2 py-1 text-xs font-semibold bg-ch-surface-2 text-ch-text"
-                        >
-                            Clear Console
-                        </button>
-                        <button
-                            onClick={() => {
-                                if (activeProject) runWebPreview();
-                                else {
-                                    setPreviewConsole([]);
-                                    const session = Date.now();
-                                    setPreviewSessionId(session);
-                                    setHtmlPreview(buildWebPreviewHtml({ 'index.html': code }, session));
-                                }
-                            }}
-                            className="px-2 py-1 text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700"
-                        >
-                            Refresh
-                        </button>
-                    </div>
-                 </div>
-                 <div className="flex-1 bg-white flex flex-col">
-                    <iframe
-                        title="HTML Preview"
-                        className={`w-full border-0 bg-white ${showPreviewConsole ? 'flex-1' : 'h-full'}`}
-                        sandbox="allow-scripts allow-modals allow-forms"
-                        srcDoc={htmlPreview}
-                    />
-                    {showPreviewConsole && (
-                        <div className="h-40 border-t border-ch-divider bg-gray-900 text-gray-200 text-xs font-mono overflow-y-auto p-3 space-y-1 custom-scrollbar">
-                            {previewConsole.length === 0 ? (
-                                <span className="text-gray-500">Preview console ready�</span>
-                            ) : (
-                                previewConsole.map((line, idx) => (
-                                    <div key={idx} className={line.type === 'error' ? 'text-red-400' : 'text-gray-200'}>
-                                        {line.content}
-                                    </div>
-                                ))
-                            )}
-                        </div>
+            <div className={`absolute inset-0 flex flex-col overflow-hidden bg-ch-bg ${activeTab === 'preview' ? 'z-10' : 'pointer-events-none z-0 opacity-0'}`}>
+              <div className="flex h-9 flex-none items-stretch border-b border-ch-divider text-[10px] font-extrabold uppercase tracking-[0.12em]">
+                <span className="flex items-center px-5 text-ch-muted">Preview</span>
+                <span className="flex-1" />
+                <button onClick={() => setShowPreviewConsole(prev => !prev)} className={`${stripCell} ${stripIdle}`}>
+                  {showPreviewConsole ? 'Hide console' : 'Show console'}
+                </button>
+                <button onClick={() => setPreviewConsole([])} className={`${stripCell} ${stripIdle}`}>Clear</button>
+                <button
+                  onClick={() => {
+                    if (activeProject) runWebPreview();
+                    else {
+                      setPreviewConsole([]);
+                      const session = Date.now();
+                      setPreviewSessionId(session);
+                      setHtmlPreview(buildWebPreviewHtml({ 'index.html': code }, session));
+                    }
+                  }}
+                  className={`${stripCell} ${stripActive} hover:bg-ch-accent-deep`}
+                >
+                  Refresh
+                </button>
+              </div>
+              <div className="flex flex-1 flex-col bg-white">
+                <iframe
+                  title="HTML Preview"
+                  className={`w-full border-0 bg-white ${showPreviewConsole ? 'flex-1' : 'h-full'}`}
+                  sandbox="allow-scripts allow-modals allow-forms"
+                  srcDoc={htmlPreview}
+                />
+                {showPreviewConsole && (
+                  <div className="ch-scroll h-40 space-y-1 overflow-y-auto border-t-2 border-ch-rule bg-ch-bg p-3 font-mono text-xs text-ch-text">
+                    {previewConsole.length === 0 ? (
+                      <span className="text-ch-muted">Preview console ready.</span>
+                    ) : (
+                      previewConsole.map((line, idx) => (
+                        <div key={idx} className={line.type === 'error' ? 'text-ch-accent' : ''}>{line.content}</div>
+                      ))
                     )}
-                 </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Status bar */}
+          <div className="flex h-7 flex-none items-stretch border-t border-ch-divider bg-ch-surface text-[10px] font-bold uppercase tracking-[0.1em] text-ch-muted">
+            <div className="flex items-center border-r border-ch-divider px-[18px]">Ln {caret.line}, Col {caret.col}</div>
+            <div className="flex items-center border-r border-ch-divider px-[18px]">{langLabel}</div>
+            <div className="hidden items-center border-r border-ch-divider px-[18px] sm:flex">Spaces · 4</div>
+            {activeProject && (
+              <div className="hidden min-w-0 items-center border-r border-ch-divider px-[18px] md:flex">
+                <span className="truncate">{activeProject.name}</span>
+              </div>
+            )}
+            <div className="flex-1" />
+            <div className={`flex items-center px-[18px] ${activeDirty ? 'text-ch-accent' : ''}`}>{saveStatus}</div>
+          </div>
+
+          {/* Console */}
+          <div className="flex h-[34%] max-h-[300px] min-h-[170px] flex-none flex-col border-t-2 border-ch-rule">
+            <div className="flex h-10 flex-none items-stretch border-b border-ch-divider">
+              <div className="flex items-center gap-2.5 px-6 text-[10px] font-extrabold uppercase tracking-[0.14em]">
+                <span className="h-1.5 w-1.5" style={{ background: consoleDot }} />
+                Console
+              </div>
+              <div className="flex min-w-0 flex-1 items-center truncate text-[12px] text-ch-muted">{consoleStatus}</div>
+              <button onClick={handleCopyOutput} className={`${stripCell} ${stripIdle}`}>{copyFeedback ? 'Copied' : 'Copy'}</button>
+              <button onClick={handleClearOutput} className={`${stripCell} ${stripIdle}`}>Clear</button>
+            </div>
+            <div
+              ref={outputContainerRef}
+              className="ch-scroll min-h-0 flex-1 overflow-y-auto py-3.5 font-mono text-[13px] leading-[21px]"
+              onClick={() => { if (isWaitingForInput) consoleInputRef.current?.focus(); }}
+            >
+              {output.length === 0 && !isWaitingForInput ? (
+                <p className="px-6 font-sans text-[13px] text-ch-muted">Output shows here. Press Run or Ctrl/⌘ + Enter.</p>
+              ) : (
+                output.map((line, index) => (
+                  line.type === 'hint' ? (
+                    <div key={index} className="mx-6 my-2 flex gap-3 border-l-2 border-ch-accent bg-ch-accent-soft px-3 py-2.5 font-sans">
+                      <LightBulbIcon className="mt-0.5 h-4 w-4 flex-none text-ch-accent" />
+                      <div className="min-w-0 flex-1 text-sm">
+                        <FormattedMessage text={line.content} isUser={false} />
+                      </div>
+                    </div>
+                  ) : (
+                    <div key={index} className={`flex gap-3.5 px-6 ${line.type === 'error' ? 'text-ch-accent' : 'text-ch-text'}`}>
+                      <span className="w-6 flex-none text-right text-ch-muted">{line.type === 'error' ? '!' : ''}</span>
+                      <span className="min-w-0 whitespace-pre-wrap break-words">{line.content}</span>
+                    </div>
+                  )
+                ))
+              )}
+
+              {isWaitingForInput && (
+                <div className="flex items-center gap-3.5 px-6">
+                  <span className="w-6 flex-none text-right text-ch-accent">$</span>
+                  <span className="whitespace-pre-wrap">{inputPrompt}</span>
+                  <input
+                    ref={consoleInputRef}
+                    value={consoleInput}
+                    onChange={e => setConsoleInput(e.target.value)}
+                    onKeyDown={handleConsoleInputEnter}
+                    className="min-w-[50px] flex-1 border-none bg-transparent font-bold text-ch-accent outline-none"
+                    autoFocus
+                    autoComplete="off"
+                    spellCheck="false"
+                    aria-label="Program input"
+                  />
+                </div>
+              )}
+
+              {isExecuting && !isWaitingForInput && <div className="animate-pulse px-6 pl-[64px] text-ch-violet">_</div>}
             </div>
           </div>
         </div>
+
+        {/* ---------- Board ---------- */}
+        <aside className="hidden min-h-0 w-[392px] flex-none flex-col border-l-2 border-ch-rule xl:flex">
+          {challengePanel}
+          {renderBoard()}
+        </aside>
+
+        {/* Narrow screens: the board slides in as a drawer. */}
+        {isProjectPanelOpen && (
+          <div className="fixed inset-0 z-50 flex bg-black/50 xl:hidden">
+            <button onClick={() => setIsProjectPanelOpen(false)} className="flex-1" aria-label="Close panel" />
+            <div className="flex h-full w-[min(392px,92vw)] flex-col border-l-2 border-ch-rule bg-ch-bg">
+              {challengePanel}
+              {renderBoard()}
+            </div>
+          </div>
+        )}
       </div>
 
       {isCloudModalOpen && (

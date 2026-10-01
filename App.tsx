@@ -444,7 +444,7 @@ const App: React.FC = () => {
                 onOpenSidebar={handleSidebarToggle}
               />
 
-              <main className={`min-h-0 w-full flex-1 ${(activeTab === 'chat' || activeTab === 'playground' || activeTab === 'arena' || activeTab === 'feed') ? 'overflow-hidden' : 'overflow-y-auto scroll-smooth ch-scroll p-4 sm:p-6 lg:p-8'}`}>
+              <main className={`min-h-0 w-full flex-1 ${(activeTab === 'chat' || activeTab === 'playground' || activeTab === 'arena' || activeTab === 'feed' || activeTab === 'community' || activeTab === 'challenges') ? 'overflow-hidden' : 'overflow-y-auto scroll-smooth ch-scroll p-4 sm:p-6 lg:p-8'}`}>
                 <Dashboard
                   activeTab={activeTab}
                   setActiveTab={handleTabChange}
