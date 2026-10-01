@@ -6,6 +6,7 @@ import { runChallengeTests, hasTestCases, STARTER_CODE } from '../services/chall
 import {
     runChallengeTestReport,
     submitChallengeSolution,
+    evaluateChallengeSubmission,
     ChallengeEvaluationError,
     type ChallengeEvaluation,
     type ChallengeTestReport,
@@ -38,7 +39,7 @@ type PanelResult =
     | { kind: 'run'; report: ChallengeTestReport }
     | { kind: 'custom'; output?: string; error?: string; runtimeMs: number; timedOut: boolean }
     | { kind: 'free'; lines: Array<{ type: 'log' | 'error'; content: string }>; timedOut: boolean }
-    | { kind: 'submit'; evaluation: ChallengeEvaluation }
+    | { kind: 'submit'; evaluation: ChallengeEvaluation; recorded: boolean }
     | { kind: 'error'; message: string };
 
 const verdictOf = (report: ChallengeTestReport): Verdict =>
@@ -76,6 +77,8 @@ const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({ challenge, curr
     const isWide = useMediaQuery('(min-width: 1024px)');
     const visibleCases = useMemo(() => (challenge.testCases || []).filter(c => !c.hidden), [challenge.testCases]);
     const hiddenCount = (challenge.testCases?.length || 0) - visibleCases.length;
+    // Starter code that ships its own solve() glue (seeded practice sets): members write a named function instead.
+    const suppliedSolve = /Judge glue/.test(challenge.starterCode || '');
 
     // Tested challenges are judged in their own language; AI-reviewed ones let the member pick.
     const [language, setLanguage] = useState<ChallengeLanguage>(challenge.language || 'python');
@@ -96,10 +99,12 @@ const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({ challenge, curr
     const hasBadge = !!currentUser.badges?.includes(challenge.title);
     const isOpen = challenge.status === 'ACTIVE' && deadline >= now;
     const isPatron = currentUser.role === 'PATRON';
+    // Only an eligible member's submission is saved and can award the badge. Everyone
+    // else still gets the full judge (hidden tests included) as "Check all".
     const canSubmit = isOpen && !hasBadge && !isPatron;
-    const submitBlockedReason = isPatron ? 'Patron preview — run only'
-        : hasBadge ? 'Badge already earned'
-        : !isOpen ? 'Challenge closed — run only'
+    const submitBlockedReason = isPatron ? 'Patron preview — Check all judges every test without saving'
+        : hasBadge ? 'Badge already earned — Check all judges every test without saving'
+        : !isOpen ? 'Challenge closed — Check all judges every test without saving'
         : '';
     const busy = result.kind === 'busy';
 
@@ -185,12 +190,20 @@ const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({ challenge, curr
 
     // ---------- Submit ----------
     const submit = async () => {
-        if (busy || !canSubmit) return;
+        if (busy) return;
         setResult({ kind: 'busy', label: tested ? 'Judging against all tests' : 'Reviewing your solution' });
         showResult();
+        if (!canSubmit) {
+            try {
+                setResult({ kind: 'submit', evaluation: await evaluateChallengeSubmission(challenge, code), recorded: false });
+            } catch (error: any) {
+                setResult({ kind: 'error', message: error?.message || 'Your code could not be judged right now. Try again in a moment.' });
+            }
+            return;
+        }
         try {
             const evaluation = await submitChallengeSolution(challenge, currentUser.uid, code);
-            setResult({ kind: 'submit', evaluation });
+            setResult({ kind: 'submit', evaluation, recorded: true });
             onSubmitted();
         } catch (error: any) {
             setResult({
@@ -259,7 +272,15 @@ const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({ challenge, curr
 
             <div className="mt-8 border-2 border-ch-rule px-4 py-3.5">
                 <p className="mb-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] text-ch-accent">How it's judged</p>
-                {tested ? (
+                {tested && suppliedSolve ? (
+                    <p className="text-[13px] leading-relaxed text-ch-muted">
+                        Write the function named in the starter code and keep its name. Each test calls it with that test's input as its
+                        arguments and compares what it <strong className="text-ch-text">returns</strong>, value and type, with the expected answer.
+                        Leave the <code className="font-mono text-ch-text">solve</code> glue at the bottom as it is.
+                        Run checks the {visibleCases.length} example{visibleCases.length === 1 ? '' : 's'}; Submit runs all {challenge.testCases?.length}
+                        {hiddenCount > 0 ? `, including ${hiddenCount} hidden` : ''}. Every test must pass to earn the badge.
+                    </p>
+                ) : tested ? (
                     <p className="text-[13px] leading-relaxed text-ch-muted">
                         Define <code className="font-mono text-ch-text">solve(input_text)</code>. It receives each test's input as one string and must
                         <strong className="text-ch-text"> return</strong> the answer as a string (trailing whitespace is ignored).
@@ -414,12 +435,18 @@ const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({ challenge, curr
                 );
             case 'submit': {
                 const ev = result.evaluation;
+                const notSaved = !result.recorded && (
+                    <p className="mb-4 border-l-2 border-ch-rule bg-ch-surface px-3 py-2 text-[12.5px] text-ch-muted">
+                        Checked only — not saved, and no badge. {submitBlockedReason.split(' — ')[0]}.
+                    </p>
+                );
                 if (ev.tests) {
                     const v = verdictOf(ev.tests);
                     return (
                         <div className="px-5 py-4">
                             {verdictHeader(v, v === 'Accepted', `${ev.tests.passed}/${ev.tests.total} tests passed`)}
-                            {ev.passed && (
+                            {notSaved}
+                            {ev.passed && result.recorded && (
                                 <p className="mb-4 border-l-2 border-ch-accent bg-ch-accent-soft px-3 py-2 text-[13px] font-semibold">
                                     Badge earned: {challenge.title}
                                 </p>
@@ -432,7 +459,8 @@ const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({ challenge, curr
                 return (
                     <div className="space-y-4 px-5 py-4">
                         {verdictHeader(ev.passed ? 'Approved' : ev.passed === false ? 'Not yet' : 'Submitted', !!ev.passed, 'AI review')}
-                        {ev.passed && (
+                        {notSaved}
+                        {ev.passed && result.recorded && (
                             <p className="border-l-2 border-ch-accent bg-ch-accent-soft px-3 py-2 text-[13px] font-semibold">Badge earned: {challenge.title}</p>
                         )}
                         <div className="text-[13.5px] leading-relaxed"><FormattedMessage text={ev.feedback} isUser={false} /></div>
@@ -490,11 +518,11 @@ const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({ challenge, curr
                 </button>
                 <button
                     onClick={() => void submit()}
-                    disabled={busy || !canSubmit}
-                    title={canSubmit ? 'Submit (Ctrl/⌘ + Shift + Enter)' : submitBlockedReason}
+                    disabled={busy}
+                    title={`${canSubmit ? 'Submit' : 'Check all tests without saving'} (Ctrl/⌘ + Shift + Enter)`}
                     className={`${stripBtn} border-l-2 border-ch-rule bg-ch-accent text-ch-on-accent hover:bg-ch-accent-deep`}
                 >
-                    Submit
+                    {canSubmit ? 'Submit' : 'Check all'}
                 </button>
             </div>
 
