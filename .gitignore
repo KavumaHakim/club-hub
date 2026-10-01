@@ -27,4 +27,4 @@ vapid.txt
 # Challenge seeds carry hidden tests and the generator carries reference
 # solutions; this repo is public, so both stay local.
 supabase/seed/
-scripts/stage1_challenges.py
+scripts/challenge_seeds.py
