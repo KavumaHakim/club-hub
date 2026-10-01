@@ -24,8 +24,8 @@ const SyntaxHighlightedText: React.FC<{ text: string }> = ({ text }) => {
                 if (!part) return null;
                 if (/^".*"$/.test(part) || /^'.*'$/.test(part)) return <span key={i} className="text-green-600 dark:text-green-400">{part}</span>;
                 if (/^\d+(\.\d+)?$/.test(part)) return <span key={i} className="text-blue-600 dark:text-blue-400 font-semibold">{part}</span>;
-                if (/^(True|False|None|and|or|not|def|class|return|import|from|if|else|elif|for|while|print)$/.test(part)) return <span key={i} className="text-purple-600 dark:text-purple-400 font-bold">{part}</span>;
-                if (/^[\[\]\{\}\(\),:]$/.test(part)) return <span key={i} className="text-gray-500 dark:text-gray-500 font-bold">{part}</span>;
+                if (/^(True|False|None|and|or|not|def|class|return|import|from|if|else|elif|for|while|print)$/.test(part)) return <span key={i} className="text-ch-violet font-bold">{part}</span>;
+                if (/^[\[\]\{\}\(\),:]$/.test(part)) return <span key={i} className="text-ch-muted font-bold">{part}</span>;
                 return <span key={i}>{part}</span>;
             })}
         </>
@@ -198,30 +198,30 @@ const FreeCodeRunner: React.FC<FreeCodeRunnerProps> = ({ theme, onExit }) => {
     };
 
     return (
-        <div className="flex flex-col h-screen bg-white dark:bg-gray-900 overflow-hidden font-sans">
+        <div className="flex flex-col h-screen bg-ch-bg overflow-hidden font-sans">
             {/* Minimal Toolbar */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+            <div className="flex items-center justify-between p-4 border-b border-ch-divider bg-ch-surface">
                 <div className="flex items-center gap-4">
                     <button 
                         onClick={onExit}
-                        className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors text-gray-500"
+                        className="p-2 hover:bg-ch-surface-2 transition-colors text-ch-muted"
                         title="Exit Code Runner"
                     >
                         <XIcon className="w-5 h-5" />
                     </button>
-                    <h1 className="text-xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent hidden sm:block">
+                    <h1 className="text-xl font-bold hidden sm:block text-ch-accent">
                         Free Code Runner
                     </h1>
-                    <div className="flex bg-gray-200 dark:bg-gray-700 p-1 rounded-lg">
+                    <div className="flex bg-ch-surface-2 p-1">
                         <button 
                             onClick={() => handleLanguageChange('python')} 
-                            className={`px-3 py-1 text-xs font-bold rounded transition-colors ${language === 'python' ? 'bg-white dark:bg-gray-600 shadow text-pink-600' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                            className={`px-3 py-1 text-xs font-bold transition-colors ${language === 'python' ? 'bg-ch-accent text-ch-on-accent' : 'text-ch-muted hover:text-ch-text'}`}
                         >
                             PY
                         </button>
                         <button 
                             onClick={() => handleLanguageChange('javascript')} 
-                            className={`px-3 py-1 text-xs font-bold rounded transition-colors ${language === 'javascript' ? 'bg-white dark:bg-gray-600 shadow text-yellow-600' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                            className={`px-3 py-1 text-xs font-bold transition-colors ${language === 'javascript' ? 'bg-ch-bg text-yellow-600' : 'text-ch-muted hover:text-ch-text'}`}
                         >
                             JS
                         </button>
@@ -230,10 +230,10 @@ const FreeCodeRunner: React.FC<FreeCodeRunnerProps> = ({ theme, onExit }) => {
                 <button 
                     onClick={handleRunCode}
                     disabled={isExecuting || (language === 'python' && isLoadingPyodide)}
-                    className="flex items-center gap-2 px-6 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all"
+                    className="flex items-center gap-2 px-6 py-2 bg-ch-accent hover:bg-ch-accent-deep text-ch-on-accent font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                     {language === 'python' && isLoadingPyodide ? (
-                         <span className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full"></span>
+                         <span className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white"></span>
                     ) : (
                         <PlayIcon className="w-4 h-4"/>
                     )}
@@ -243,7 +243,7 @@ const FreeCodeRunner: React.FC<FreeCodeRunnerProps> = ({ theme, onExit }) => {
 
             {/* Split View */}
             <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-                <div className="flex-1 border-r border-gray-200 dark:border-gray-800 relative">
+                <div className="flex-1 border-r border-ch-divider relative">
                     <Editor
                         height="100%"
                         language={language}
@@ -261,7 +261,7 @@ const FreeCodeRunner: React.FC<FreeCodeRunnerProps> = ({ theme, onExit }) => {
                 </div>
                 <div 
                     ref={outputContainerRef}
-                    className="flex-1 bg-gray-900 dark:bg-black text-gray-300 font-mono text-sm p-4 overflow-y-auto flex flex-col"
+                    className="flex-1 bg-gray-900 text-gray-300 font-mono text-sm p-4 overflow-y-auto flex flex-col"
                     onClick={() => {
                         if (isWaitingForInput && consoleInputRef.current) {
                             consoleInputRef.current.focus();
@@ -270,7 +270,7 @@ const FreeCodeRunner: React.FC<FreeCodeRunnerProps> = ({ theme, onExit }) => {
                 >
                     <div className="flex-1">
                         {output.length === 0 && !isExecuting && (
-                            <div className="text-gray-600 italic">Click Run to execute code...</div>
+                            <div className="italic text-gray-600">Click Run to execute code...</div>
                         )}
                         {output.map((line, i) => (
                             <div key={i} className="mb-1 whitespace-pre-wrap break-all leading-relaxed">

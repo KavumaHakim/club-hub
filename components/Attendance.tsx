@@ -7,6 +7,7 @@ import { DownloadIcon } from './icons/DownloadIcon';
 import { useData } from '../DataContext';
 import ChartErrorBoundary from './ChartErrorBoundary';
 import Tooltip from './Tooltip';
+import { PageIntro } from './SplitKit';
 
 interface AttendanceProps {
   currentUser: User;
@@ -14,7 +15,7 @@ interface AttendanceProps {
 }
 
 const statusColors: { [key in AttendanceStatus]: string } = {
-  'Present': 'bg-pink-100 text-pink-800 dark:bg-pink-900/50 dark:text-pink-300',
+  'Present': 'bg-ch-accent-soft text-ch-accent',
   'Absent': 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
   'Excused': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300',
 };
@@ -200,9 +201,9 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg">
-          <p className="font-bold text-gray-800 dark:text-gray-200">{data.name}</p>
-          <p className="text-sm text-gray-600 dark:text-gray-400">{`Date: ${formatDate(data.date)}`}</p>
+        <div className="bg-ch-bg p-3 border border-ch-divider">
+          <p className="font-bold text-ch-text">{data.name}</p>
+          <p className="text-sm text-ch-muted">{`Date: ${formatDate(data.date)}`}</p>
           <p className="text-sm font-semibold" style={{ color: chartColors[data.status as AttendanceStatus] }}>{`Status: ${data.status}`}</p>
         </div>
       );
@@ -381,7 +382,7 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
 
 
   if (isLoadingAttendance || isLoadingActivities || isLoadingUsers) {
-    return <div className="text-center p-8 text-gray-500 dark:text-gray-400">Loading attendance data...</div>;
+    return <div className="text-center p-8 text-ch-muted">Loading attendance data...</div>;
   }
 
   if (attendanceError || activitiesError) {
@@ -390,18 +391,25 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
 
   return (
     <>
+      <PageIntro
+        eyebrow="Records"
+        title="Attendance"
+        description={currentUser.role === 'PATRON'
+          ? 'Run quick sessions, mark members present, and review the log.'
+          : 'Your attendance across club activities.'}
+      />
       {currentUser.role === 'PATRON' ? (
-        <div ref={formRef} className="scroll-animate mb-8 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-md border border-gray-200 dark:border-gray-700">
+        <div ref={formRef} className="scroll-animate mb-8 border-2 border-ch-rule p-6">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div>
-              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Patron Attendance</h2>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">Quickly mark attendance for all members in one session.</p>
+              <h2 className="text-[20px] font-extrabold tracking-[-0.02em] text-ch-text">Quick session</h2>
+              <p className="text-ch-muted mt-1">Quickly mark attendance for all members in one session.</p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <button
                 onClick={handleQuickAttendance}
                 disabled={isQuickCreating}
-                className="flex items-center space-x-2 px-5 py-3 font-semibold text-white bg-pink-600 rounded-xl shadow-md hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="flex items-center space-x-2 px-5 py-3 font-semibold text-ch-on-accent bg-ch-accent hover:bg-ch-accent-deep disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 <Tooltip text="Create a quick attendance session for today.">
                   <span className="flex items-center space-x-2">
@@ -413,7 +421,7 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
               <Tooltip text="Export attendance records as a CSV file.">
                 <button
                   onClick={handleDownloadCSV}
-                  className="flex items-center space-x-2 px-5 py-3 font-semibold text-white bg-purple-600 rounded-xl shadow-md hover:bg-purple-700 transition-all"
+                  className="flex items-center space-x-2 px-5 py-3 font-semibold text-ch-on-accent bg-ch-accent hover:bg-ch-accent-deep transition-all"
                   aria-label="Download attendance records as CSV"
                 >
                   <DownloadIcon />
@@ -423,16 +431,16 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
             </div>
           </div>
 
-          <div className="mt-6 border-t border-gray-200 dark:border-gray-700 pt-6 space-y-6">
+          <div className="mt-6 border-t border-ch-divider pt-6 space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] gap-4 items-end">
               <div>
-                <label htmlFor="patron-activity-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Activity</label>
+                <label htmlFor="patron-activity-select" className="block text-sm font-medium text-ch-text mb-1">Activity</label>
                 <select
                   id="patron-activity-select"
                   name="patronActivityId"
                   value={patronActivityId}
                   onChange={(e) => setPatronActivityId(e.target.value)}
-                  className="block w-full pl-3 pr-10 py-2.5 text-base border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-pink-500 focus:border-pink-500 sm:text-sm rounded-xl"
+                  className="block w-full pl-3 pr-10 py-2.5 text-base border-ch-divider bg-ch-bg text-ch-text focus:outline-none focus:ring-ch-accent focus:border-ch-accent sm:text-sm"
                 >
                   <option value="" disabled>Select an activity...</option>
                   {activities.map(act => (
@@ -444,25 +452,25 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
                 <button
                   onClick={handleBulkSubmit}
                   disabled={!patronActivityId || isBulkSubmitting}
-                  className="inline-flex justify-center py-2.5 px-5 border border-transparent shadow-sm text-sm font-semibold rounded-xl text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 dark:focus:ring-offset-gray-800 disabled:opacity-50"
+                  className="inline-flex justify-center py-2.5 px-5 border border-transparent text-sm font-semibold text-ch-on-accent bg-ch-accent hover:bg-ch-accent-deep focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ch-accent disabled:opacity-50"
                 >
                   {isBulkSubmitting ? 'Saving...' : 'Save Attendance'}
                 </button>
               </Tooltip>
             </div>
 
-            <div className="rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-gray-50/80 dark:bg-gray-900/40">
+            <div className="border border-ch-divider overflow-hidden">
+              <div className="px-4 py-3 border-b border-ch-divider flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-ch-surface">
                 <div>
-                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Members</p>
-                  <p className="text-xs text-gray-400">{memberUsers.length} total • {presentCount} present • {absentCount} absent</p>
+                  <p className="text-sm font-semibold text-ch-text">Members</p>
+                  <p className="text-xs text-ch-muted">{memberUsers.length} total • {presentCount} present • {absentCount} absent</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <Tooltip text="Mark every member as present.">
                     <button
                       type="button"
                       onClick={() => handleMarkAll(true)}
-                      className="px-3 py-1.5 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200 hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors"
+                      className="px-3 py-1.5 text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200 hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors"
                     >
                       All Present
                     </button>
@@ -471,7 +479,7 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
                     <button
                       type="button"
                       onClick={() => handleMarkAll(false)}
-                      className="px-3 py-1.5 text-xs font-semibold rounded-full bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                      className="px-3 py-1.5 text-xs font-semibold bg-ch-surface-2 text-ch-text hover:bg-ch-surface-2 transition-colors"
                     >
                       Clear All
                     </button>
@@ -483,28 +491,28 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
                     value={memberSearch}
                     onChange={(e) => setMemberSearch(e.target.value)}
                     placeholder="Search members..."
-                    className="px-3 py-1.5 text-xs rounded-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    className="px-3 py-1.5 text-xs border border-ch-divider bg-ch-bg text-ch-text focus:outline-none focus:ring-2 focus:ring-ch-accent"
                   />
                 </div>
               </div>
-              <div className="max-h-96 overflow-y-auto custom-scrollbar divide-y divide-gray-100 dark:divide-gray-700">
+              <div className="max-h-96 overflow-y-auto custom-scrollbar divide-y divide-ch-divider">
                 {filteredMembers.map(user => {
                   const isPresent = attendanceChecklist[user.uid] || false;
                   return (
-                    <label key={user.uid} className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/40 cursor-pointer">
+                    <label key={user.uid} className="flex items-center justify-between px-4 py-3 hover:bg-ch-surface cursor-pointer">
                       <div className="flex items-center gap-3">
                         <img
                           src={user.avatarUrl || `https://i.pravatar.cc/40?u=${user.username}`}
                           alt={user.name}
-                          className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-700 object-cover"
+                          className="w-8 h-8 border border-ch-divider object-cover"
                         />
                         <div>
-                          <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{user.name}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">@{user.username}</p>
+                          <p className="text-sm font-medium text-ch-text">{user.name}</p>
+                          <p className="text-xs text-ch-muted">@{user.username}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className={`text-xs font-semibold px-2 py-1 rounded-full ${isPresent ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200'}`}>
+                        <span className={`text-xs font-semibold px-2 py-1 ${isPresent ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200' : 'bg-ch-surface-2 text-ch-text'}`}>
                           {isPresent ? 'Present' : 'Absent'}
                         </span>
                         <div className="relative">
@@ -516,29 +524,29 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
                             onChange={() => handleToggleChecklist(user.uid)}
                             className="peer sr-only"
                           />
-                          <div className="h-5 w-10 rounded-full bg-gray-200 dark:bg-gray-700 transition-colors peer-checked:bg-emerald-500"></div>
-                          <div className="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5"></div>
+                          <div className="h-5 w-10 bg-ch-surface-2 transition-colors peer-checked:bg-emerald-500"></div>
+                          <div className="absolute left-0.5 top-0.5 h-4 w-4 bg-white transition-transform peer-checked:translate-x-5"></div>
                         </div>
                       </div>
                     </label>
                   );
                 })}
                 {filteredMembers.length === 0 && (
-                  <p className="text-center text-gray-500 dark:text-gray-400 py-6">No members found.</p>
+                  <p className="text-center text-ch-muted py-6">No members found.</p>
                 )}
               </div>
-              <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
+              <div className="px-4 py-3 border-t border-ch-divider text-xs text-ch-muted">
                 Checked = Present, unchecked = Absent.
               </div>
             </div>
           </div>
         </div>
       ) : (
-        <div ref={formRef} className="scroll-animate mb-8 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-md border border-gray-200 dark:border-gray-700">
+        <div ref={formRef} className="scroll-animate mb-8 border-2 border-ch-rule p-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Attendance Recording</h2>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
+              <h2 className="text-[20px] font-extrabold tracking-[-0.02em] text-ch-text">Attendance Recording</h2>
+              <p className="text-ch-muted mt-1">
                 Attendance can only be recorded by patron accounts.
               </p>
             </div>
@@ -547,25 +555,25 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
       )}
 
       <div className="grid gap-8 lg:grid-cols-3 mb-8">
-        <div ref={logRef} className="scroll-animate lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">Attendance Log</h2>
+        <div ref={logRef} className="scroll-animate lg:col-span-2 border-2 border-ch-rule p-6">
+          <h2 className="mb-4 text-[20px] font-extrabold tracking-[-0.02em] text-ch-text">Attendance Log</h2>
           <div className="overflow-x-auto">
             {attendanceRecords.length > 0 ? (
               <table className="w-full text-left">
-                <thead className="border-b-2 border-gray-200 dark:border-gray-700">
+                <thead className="border-b-2 border-ch-divider">
                   <tr>
-                    <th className="py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Event</th>
-                    <th className="py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Date</th>
-                    <th className="py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Status</th>
+                    <th className="py-3 px-4 font-semibold text-ch-muted">Event</th>
+                    <th className="py-3 px-4 font-semibold text-ch-muted">Date</th>
+                    <th className="py-3 px-4 font-semibold text-ch-muted">Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {attendanceRecords.map((record) => (
-                    <tr key={record.id} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                      <td className="py-3 px-4 text-gray-700 dark:text-gray-300">{record.activityTitle}</td>
-                      <td className="py-3 px-4 text-gray-500 dark:text-gray-400">{formatDate(record.date)}</td>
+                    <tr key={record.id} className="border-b border-ch-divider hover:bg-ch-surface">
+                      <td className="py-3 px-4 text-ch-text">{record.activityTitle}</td>
+                      <td className="py-3 px-4 text-ch-muted">{formatDate(record.date)}</td>
                       <td className="py-3 px-4">
-                        <span className={`px-3 py-1 text-xs font-medium rounded-full ${statusColors[record.status]}`}>
+                        <span className={`px-3 py-1 text-xs font-medium ${statusColors[record.status]}`}>
                           {record.status}
                         </span>
                       </td>
@@ -574,12 +582,12 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
                 </tbody>
               </table>
             ) : (
-              <p className="text-center text-gray-500 dark:text-gray-400 py-4">You have no attendance records yet.</p>
+              <p className="text-center text-ch-muted py-4">You have no attendance records yet.</p>
             )}
           </div>
         </div>
-        <div ref={summaryRef} className="scroll-animate bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4 text-center">Summary</h2>
+        <div ref={summaryRef} className="scroll-animate border-2 border-ch-rule p-6">
+          <h2 className="mb-4 text-[20px] font-extrabold tracking-[-0.02em] text-ch-text">Summary</h2>
           <div className="relative w-full h-[300px]">
             {shouldRenderChart ? (
               hasPieData ? (
@@ -611,17 +619,17 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
                   </ResponsiveContainer>
                 </ChartErrorBoundary>
               ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-gray-400">No attendance data yet.</div>
+                <div className="absolute inset-0 flex items-center justify-center text-ch-muted">No attendance data yet.</div>
               )
             ) : (
-              <div className="absolute inset-0 flex items-center justify-center text-gray-400">Loading chart...</div>
+              <div className="absolute inset-0 flex items-center justify-center text-ch-muted">Loading chart...</div>
             )}
           </div>
         </div>
       </div>
 
-      <div ref={trendRef} className="scroll-animate bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">Attendance Trend</h2>
+      <div ref={trendRef} className="scroll-animate border-2 border-ch-rule p-6">
+        <h2 className="text-[22px] font-extrabold tracking-[-0.02em] text-ch-text mb-4">Attendance Trend</h2>
         {lineChartData.length > 1 ? (
           <div className="relative w-full h-80">
             {shouldRenderChart ? (
@@ -653,11 +661,11 @@ const Attendance: React.FC<AttendanceProps> = ({ currentUser, isVisible }) => {
                 </ResponsiveContainer>
               </ChartErrorBoundary>
             ) : (
-              <div className="absolute inset-0 flex items-center justify-center text-gray-400">Loading chart...</div>
+              <div className="absolute inset-0 flex items-center justify-center text-ch-muted">Loading chart...</div>
             )}
           </div>
         ) : (
-          <p className="text-center text-gray-500 dark:text-gray-400 py-4">More attendance records are needed to show a trend.</p>
+          <p className="text-center text-ch-muted py-4">More attendance records are needed to show a trend.</p>
         )}
       </div>
     </>

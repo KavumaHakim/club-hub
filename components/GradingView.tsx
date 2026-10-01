@@ -56,8 +56,8 @@ const GradingView: React.FC<GradingViewProps> = ({ data, allUsers, onGrade }) =>
     // Defensive check: Ensure data and tasks exist before processing
     if (!data || !data.tasks) {
         return (
-            <div className="text-center p-16 bg-gray-50 dark:bg-gray-800/50 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700">
-                <p className="text-gray-500 dark:text-gray-400">No project data available.</p>
+            <div className="text-center p-16 bg-ch-surface border-2 border-dashed border-ch-divider">
+                <p className="text-ch-muted">No project data available.</p>
             </div>
         );
     }
@@ -145,9 +145,9 @@ const GradingView: React.FC<GradingViewProps> = ({ data, allUsers, onGrade }) =>
 
     if (tasksWithSubmissions.length === 0) {
         return (
-            <div className="text-center p-16 bg-gray-50 dark:bg-gray-800/50 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700">
-                <h3 className="text-xl font-bold text-gray-800 dark:text-white">No Submissions to Grade</h3>
-                <p className="text-gray-500 dark:text-gray-400 mt-2">Check back here when members have submitted their work for project tasks.</p>
+            <div className="text-center p-16 bg-ch-surface border-2 border-dashed border-ch-divider">
+                <h3 className="text-[20px] font-extrabold tracking-[-0.02em] text-ch-text">No Submissions to Grade</h3>
+                <p className="text-ch-muted mt-2">Check back here when members have submitted their work for project tasks.</p>
             </div>
         );
     }
@@ -155,15 +155,15 @@ const GradingView: React.FC<GradingViewProps> = ({ data, allUsers, onGrade }) =>
     return (
         <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-8">
             {tasksWithSubmissions.map((task: ProjectTask) => (
-                <div key={task.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
-                    <div className="p-4 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
-                        <h3 className="font-bold text-gray-800 dark:text-gray-200">{task.content}</h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <div key={task.id} className="bg-ch-bg border border-ch-divider overflow-hidden">
+                    <div className="p-4 bg-ch-surface border-b border-ch-divider">
+                        <h3 className="font-bold text-ch-text">{task.content}</h3>
+                        <p className="text-xs text-ch-muted mt-1">
                             Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No due date'}
                         </p>
                     </div>
 
-                    <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                    <div className="divide-y divide-ch-divider">
                         {Object.entries(task.submissions || {}).map(([userId, submission]: [string, any]) => {
                             const user = userMap.get(userId);
                             if (!user) return null;
@@ -174,17 +174,17 @@ const GradingView: React.FC<GradingViewProps> = ({ data, allUsers, onGrade }) =>
                             const feedbackKey = `${task.id}-${userId}`;
 
                             return (
-                                <div key={userId} className="p-4 flex flex-col gap-4 hover:bg-gray-50/50 dark:hover:bg-gray-700/20 transition-colors">
+                                <div key={userId} className="p-4 flex flex-col gap-4 hover:bg-ch-surface transition-colors">
                                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                                         <div className="flex items-center gap-3 flex-1 w-full md:w-auto">
                                             <img
                                                 src={user.avatarUrl || `https://i.pravatar.cc/40?u=${user.username}`}
                                                 alt={user.name}
-                                                className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-600"
+                                                className="w-10 h-10 object-cover border border-ch-divider"
                                             />
                                             <div>
-                                                <p className="font-semibold text-gray-900 dark:text-gray-100">{user.name}</p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400">@{user.username}</p>
+                                                <p className="font-semibold text-ch-text">{user.name}</p>
+                                                <p className="text-xs text-ch-muted">@{user.username}</p>
                                             </div>
                                         </div>
 
@@ -196,7 +196,7 @@ const GradingView: React.FC<GradingViewProps> = ({ data, allUsers, onGrade }) =>
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         download={fileName}
-                                                        className="flex items-center gap-2 text-sm font-medium text-purple-600 dark:text-purple-400 hover:underline"
+                                                        className="flex items-center gap-2 text-sm font-medium text-ch-violet hover:underline"
                                                     >
                                                         <DocumentTextIcon className="w-5 h-5" />
                                                         <span className="truncate max-w-[150px]">{fileName}</span>
@@ -205,14 +205,14 @@ const GradingView: React.FC<GradingViewProps> = ({ data, allUsers, onGrade }) =>
                                                         <>
                                                             <button
                                                                 onClick={() => handleRunCode(submission, user.name)}
-                                                                className="p-1.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full shadow-sm hover:shadow-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
+                                                                className="p-1.5 bg-ch-surface text-ch-muted hover:bg-ch-surface-2 transition-all"
                                                                 title="Run Code"
                                                             >
                                                                 <PlayIcon className="w-3 h-3" />
                                                             </button>
                                                             <button
                                                                 onClick={() => handleAiGradeClick(task, submission, userId)}
-                                                                className="p-1.5 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-full shadow-sm hover:shadow-md hover:scale-105 transition-all"
+                                                                className="p-1.5 text-ch-on-accent transition-all bg-ch-accent"
                                                                 title="Auto-Grade with AI"
                                                             >
                                                                 <SparklesIcon className="w-3 h-3" />
@@ -221,7 +221,7 @@ const GradingView: React.FC<GradingViewProps> = ({ data, allUsers, onGrade }) =>
                                                     )}
                                                 </div>
                                             ) : (
-                                                <p className="text-sm text-gray-400 italic">No file attached</p>
+                                                <p className="text-sm text-ch-muted italic">No file attached</p>
                                             )}
                                         </div>
 
@@ -235,7 +235,7 @@ const GradingView: React.FC<GradingViewProps> = ({ data, allUsers, onGrade }) =>
 
                                     {/* Feedback Section */}
                                     <div className="w-full">
-                                        <label htmlFor={`feedback-${feedbackKey}`} className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                                        <label htmlFor={`feedback-${feedbackKey}`} className="block text-xs font-bold text-ch-muted uppercase tracking-wide mb-1">
                                             Patron Feedback
                                         </label>
                                         <textarea
@@ -244,7 +244,7 @@ const GradingView: React.FC<GradingViewProps> = ({ data, allUsers, onGrade }) =>
                                             onChange={(e) => handleFeedbackChange(task.id, userId, e.target.value)}
                                             onBlur={() => handleFeedbackBlur(task.id, userId, submission.grade)}
                                             placeholder="Write constructive feedback for the student..."
-                                            className="w-full p-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-pink-500 focus:border-transparent min-h-[60px]"
+                                            className="w-full p-2 text-sm border border-ch-divider bg-ch-bg focus:ring-2 focus:ring-ch-accent focus:border-transparent min-h-[60px]"
                                         />
                                     </div>
                                 </div>

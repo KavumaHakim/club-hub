@@ -96,36 +96,36 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ isOpen, onClose, task, cu
     const approvedMembers = allUsers.filter(u => u.status === 'APPROVED');
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full p-6 relative border border-gray-200 dark:border-gray-700">
-                <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400">
+        <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+            <div className="bg-ch-bg max-w-lg w-full p-6 relative border-2 border-ch-rule">
+                <button onClick={onClose} className="absolute top-4 right-4 text-ch-muted hover:text-ch-text">
                     <XIcon />
                 </button>
 
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
+                <h3 className="text-[20px] font-extrabold tracking-[-0.02em] text-ch-text mb-6">
                     {task ? 'Edit Task' : 'New Task'}
                 </h3>
 
                 <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Task Description</label>
+                        <label className="block text-sm font-medium text-ch-text mb-1">Task Description</label>
                         <textarea
                             value={content}
                             onChange={e => setContent(e.target.value)}
                             required
                             rows={3}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500 focus:border-pink-500"
+                            className="w-full px-3 py-2 border border-ch-divider focus:ring-ch-accent focus:border-ch-accent"
                             placeholder="What needs to be done?"
                         />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priority</label>
+                            <label className="block text-sm font-medium text-ch-text mb-1">Priority</label>
                             <select
                                 value={priority}
                                 onChange={e => setPriority(e.target.value as TaskPriority)}
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500 focus:border-pink-500"
+                                className="w-full px-3 py-2 border border-ch-divider focus:ring-ch-accent focus:border-ch-accent"
                             >
                                 <option value="LOW">Low</option>
                                 <option value="MEDIUM">Medium</option>
@@ -133,32 +133,32 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ isOpen, onClose, task, cu
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Due Date</label>
+                            <label className="block text-sm font-medium text-ch-text mb-1">Due Date</label>
                             <input
                                 type="date"
                                 value={dueDate}
                                 onChange={e => setDueDate(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500 focus:border-pink-500"
+                                className="w-full px-3 py-2 border border-ch-divider focus:ring-ch-accent focus:border-ch-accent"
                             />
                         </div>
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assignees</label>
-                        <div className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg max-h-40 overflow-y-auto custom-scrollbar">
+                        <label className="block text-sm font-medium text-ch-text mb-1">Assignees</label>
+                        <div className="p-2 border border-ch-divider max-h-40 overflow-y-auto custom-scrollbar">
                             {approvedMembers.map(user => {
                                 const isAssigned = assigneeIds.includes(user.uid);
                                 return (
                                     <div
                                         key={user.uid}
                                         onClick={() => toggleAssignee(user.uid)}
-                                        className={`flex items-center gap-3 p-2 rounded-md cursor-pointer ${isAssigned ? 'bg-pink-50 dark:bg-pink-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                                        className={`flex items-center gap-3 p-2 cursor-pointer ${isAssigned ? 'bg-ch-accent-soft' : 'hover:bg-ch-surface'}`}
                                     >
-                                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${isAssigned ? 'bg-pink-500 border-pink-500' : 'border-gray-300 dark:border-gray-500'}`}>
+                                        <div className={`w-5 h-5 border-2 flex items-center justify-center ${isAssigned ? 'bg-ch-accent border-ch-accent' : 'border-ch-divider'}`}>
                                             {isAssigned && <CheckIcon className="w-3 h-3 text-white" />}
                                         </div>
-                                        <img src={user.avatarUrl} className="w-6 h-6 rounded-full" alt={user.name} />
-                                        <span className={`text-sm ${isAssigned ? 'font-semibold text-pink-800 dark:text-pink-300' : 'text-gray-700 dark:text-gray-300'}`}>{user.name}</span>
+                                        <img src={user.avatarUrl} className="w-6 h-6" alt={user.name} />
+                                        <span className={`text-sm ${isAssigned ? 'font-semibold text-ch-accent' : 'text-ch-text'}`}>{user.name}</span>
                                     </div>
                                 );
                             })}
@@ -166,10 +166,10 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ isOpen, onClose, task, cu
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tags (Press Enter)</label>
+                        <label className="block text-sm font-medium text-ch-text mb-1">Tags (Press Enter)</label>
                         <div className="flex flex-wrap gap-2 mb-2">
                             {tags.map(tag => (
-                                <span key={tag} className="bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 text-xs px-2 py-1 rounded-full flex items-center">
+                                <span key={tag} className="bg-ch-accent-soft text-ch-violet text-xs px-2 py-1 flex items-center">
                                     {tag}
                                     <button type="button" onClick={() => removeTag(tag)} className="ml-1 hover:text-purple-900"><XIcon className="w-4 h-4" /></button>
                                 </span>
@@ -181,14 +181,14 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ isOpen, onClose, task, cu
                             onChange={e => setNewTag(e.target.value)}
                             onKeyDown={handleAddTag}
                             placeholder="Frontend, Bug, etc..."
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500 focus:border-pink-500 text-sm"
+                            className="w-full px-3 py-2 border border-ch-divider focus:ring-ch-accent focus:border-ch-accent text-sm"
                         />
                     </div>
                 </form>
                 <button
                     onClick={handleSubmit}
                     disabled={isSubmitting}
-                    className="w-full py-2.5 bg-pink-600 hover:bg-pink-700 text-white font-semibold rounded-lg shadow-md transition-all flex items-center justify-center gap-2 mt-4"
+                    className="w-full py-2.5 bg-ch-accent hover:bg-ch-accent-deep text-ch-on-accent font-semibold transition-all flex items-center justify-center gap-2 mt-4"
                 >
                     {isSubmitting ? 'Saving...' : (
                         <>

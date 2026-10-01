@@ -18,6 +18,7 @@ import { CursorVariant } from './CustomCursor';
 import { FormattedMessage } from './FormattedMessage';
 import Tooltip from './Tooltip';
 import NotificationSettings from './NotificationSettings';
+import { PageIntro, RuledTabs } from './SplitKit';
 
 const AvatarSelectionModal: React.FC<{
     isOpen: boolean;
@@ -28,24 +29,24 @@ const AvatarSelectionModal: React.FC<{
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4" onClick={onClose} role="dialog" aria-modal="true">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
-                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4">Choose Your Avatar</h3>
+            <div className="bg-ch-bg p-6 w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
+                <h3 className="text-[20px] font-extrabold tracking-[-0.02em] text-ch-text mb-4">Choose Your Avatar</h3>
                 <div className="grid grid-cols-4 sm:grid-cols-6 gap-4 max-h-[60vh] overflow-y-auto p-2">
                     {predefinedAvatars.map((url, index) => (
                         <button
                             key={index}
                             onClick={() => onSelect(url)}
-                            className="rounded-full aspect-square p-1 ring-2 ring-transparent hover:ring-pink-500 focus:ring-pink-500 focus:outline-none transition-all"
+                            className="aspect-square p-1 ring-2 ring-transparent hover:ring-pink-500 focus:ring-ch-accent focus:outline-none transition-all"
                             aria-label={`Select avatar ${index + 1}`}
                         >
-                            <img src={url} alt={`Avatar ${index + 1}`} className="w-full h-full rounded-full object-cover bg-gray-200 dark:bg-gray-700" />
+                            <img src={url} alt={`Avatar ${index + 1}`} className="w-full h-full object-cover bg-ch-surface-2" />
                         </button>
                     ))}
                 </div>
                 <div className="mt-6 text-right">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 dark:bg-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none"
+                        className="px-4 py-2 text-sm font-medium text-ch-text bg-ch-surface hover:bg-ch-surface-2 focus:outline-none"
                     >
                         Cancel
                     </button>
@@ -72,13 +73,13 @@ const StatCard: React.FC<{ icon: React.ReactElement<{ className?: string }>, lab
     }, []);
 
     return (
-        <div ref={ref} className="scroll-animate bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-            <div className={`w-10 h-10 mx-auto rounded-full flex items-center justify-center ${color}`}>
+        <div ref={ref} className="scroll-animate bg-ch-surface p-4">
+            <div className={`w-10 h-10 mx-auto flex items-center justify-center ${color}`}>
                 {React.cloneElement(icon, { className: 'h-6 w-6' })}
             </div>
-            <p className="text-3xl font-bold mt-2 text-gray-800 dark:text-gray-200">{value}</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
-            <p className="text-xs font-mono text-gray-400 dark:text-gray-500 mt-1">{percentage}%</p>
+            <p className="text-3xl font-bold mt-2 text-ch-text">{value}</p>
+            <p className="text-sm text-ch-muted">{label}</p>
+            <p className="text-xs font-mono text-ch-muted mt-1">{percentage}%</p>
         </div>
     );
 };
@@ -135,16 +136,16 @@ const ChangePasswordForm: React.FC<{ currentUser: User }> = ({ currentUser }) =>
     };
 
     return (
-        <div ref={ref} className="scroll-animate mt-8 border-t border-gray-200 dark:border-gray-700 pt-6">
-            <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4">Change Password</h3>
+        <div ref={ref} className="scroll-animate mt-8 border-t border-ch-divider pt-6">
+            <h3 className="text-[20px] font-extrabold tracking-[-0.02em] text-ch-text mb-4">Change Password</h3>
             <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
                 <div>
-                    <label htmlFor="new-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">New Password</label>
+                    <label htmlFor="new-password" className="block text-sm font-medium text-ch-text">New Password</label>
                     <div className="relative mt-1">
-                        <input type={isNewPasswordVisible ? 'text' : 'password'} id="new-password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="block w-full p-2 pr-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500" required />
+                        <input type={isNewPasswordVisible ? 'text' : 'password'} id="new-password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="block w-full p-2 pr-10 border border-ch-divider bg-ch-bg focus:outline-none focus:ring-2 focus:ring-ch-accent" required />
                         <button
                             type="button"
-                            className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                            className="absolute inset-y-0 right-0 flex items-center pr-3 text-ch-muted hover:text-ch-text"
                             onClick={() => setIsNewPasswordVisible(!isNewPasswordVisible)}
                             aria-label={isNewPasswordVisible ? 'Hide password' : 'Show password'}
                         >
@@ -153,12 +154,12 @@ const ChangePasswordForm: React.FC<{ currentUser: User }> = ({ currentUser }) =>
                     </div>
                 </div>
                 <div>
-                    <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Confirm New Password</label>
+                    <label htmlFor="confirm-password" className="block text-sm font-medium text-ch-text">Confirm New Password</label>
                     <div className="relative mt-1">
-                        <input type={isConfirmPasswordVisible ? 'text' : 'password'} id="confirm-password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="block w-full p-2 pr-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500" required />
+                        <input type={isConfirmPasswordVisible ? 'text' : 'password'} id="confirm-password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="block w-full p-2 pr-10 border border-ch-divider bg-ch-bg focus:outline-none focus:ring-2 focus:ring-ch-accent" required />
                         <button
                             type="button"
-                            className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                            className="absolute inset-y-0 right-0 flex items-center pr-3 text-ch-muted hover:text-ch-text"
                             onClick={() => setIsConfirmPasswordVisible(!isConfirmPasswordVisible)}
                             aria-label={isConfirmPasswordVisible ? 'Hide password' : 'Show password'}
                         >
@@ -171,7 +172,7 @@ const ChangePasswordForm: React.FC<{ currentUser: User }> = ({ currentUser }) =>
                 {success && <p className="text-sm text-green-600 text-center md:text-left">{success}</p>}
 
                 <div className="pt-2 text-right">
-                    <button type="submit" disabled={isSubmitting} className="inline-flex items-center space-x-2 px-4 py-2 font-semibold text-white bg-purple-600 rounded-lg shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 dark:focus:ring-offset-gray-800">
+                    <button type="submit" disabled={isSubmitting} className="inline-flex items-center space-x-2 px-4 py-2 font-semibold text-ch-on-accent bg-ch-accent hover:bg-ch-accent-deep focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ch-accent disabled:opacity-50">
                         <LockClosedIcon />
                         <span>{isSubmitting ? 'Updating...' : 'Update Password'}</span>
                     </button>
@@ -326,8 +327,8 @@ const AppearanceSettings: React.FC = () => {
         <div ref={ref} className="scroll-animate mt-6 space-y-10">
             {/* Cursor Section */}
             <div>
-                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4">Cursor Customization</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                <h3 className="text-[20px] font-extrabold tracking-[-0.02em] text-ch-text mb-4">Cursor Customization</h3>
+                <p className="text-sm text-ch-muted mb-6">
                     Personalize your experience by choosing a custom cursor style.
                     (Only visible on desktop devices)
                 </p>
@@ -337,19 +338,19 @@ const AppearanceSettings: React.FC = () => {
                         <button
                             key={cursor.id}
                             onClick={() => handleCursorSelect(cursor.id)}
-                            className={`relative flex flex-col items-center justify-center p-6 rounded-xl border-2 transition-all duration-200 group
+                            className={`relative flex flex-col items-center justify-center p-6 border-2 transition-all duration-200 group
                             ${selectedCursor === cursor.id
-                                    ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/10'
-                                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-pink-300 dark:hover:border-pink-700'}`}
+                                    ? 'border-ch-accent bg-ch-accent-soft'
+                                    : 'border-ch-divider bg-ch-bg hover:border-ch-accent'}`}
                         >
-                            <div className="mb-4 transform group-hover:scale-110 transition-transform duration-200">
+                            <div className="mb-4 transform transition-transform duration-200">
                                 {cursor.preview}
                             </div>
-                            <span className={`font-medium text-sm ${selectedCursor === cursor.id ? 'text-pink-700 dark:text-pink-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                            <span className={`font-medium text-sm ${selectedCursor === cursor.id ? 'text-ch-accent' : 'text-ch-text'}`}>
                                 {cursor.name}
                             </span>
                             {selectedCursor === cursor.id && (
-                                <div className="absolute top-3 right-3 text-pink-500">
+                                <div className="absolute top-3 right-3 text-ch-accent">
                                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
                                 </div>
                             )}
@@ -359,9 +360,9 @@ const AppearanceSettings: React.FC = () => {
             </div>
 
             {/* Typography Section */}
-            <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
-                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4">Typography</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+            <div className="pt-6 border-t border-ch-divider">
+                <h3 className="text-[20px] font-extrabold tracking-[-0.02em] text-ch-text mb-4">Typography</h3>
+                <p className="text-sm text-ch-muted mb-6">
                     Choose a font style that suits your reading preference.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -369,19 +370,19 @@ const AppearanceSettings: React.FC = () => {
                         <button
                             key={font.value}
                             onClick={() => handleFontSelect(font.value)}
-                            className={`relative flex flex-col items-center justify-center p-6 rounded-xl border-2 transition-all duration-200 group
+                            className={`relative flex flex-col items-center justify-center p-6 border-2 transition-all duration-200 group
                             ${selectedFont === font.value
-                                    ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/10'
-                                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-pink-300 dark:hover:border-pink-700'}`}
+                                    ? 'border-ch-accent bg-ch-accent-soft'
+                                    : 'border-ch-divider bg-ch-bg hover:border-ch-accent'}`}
                         >
                             <div className="mb-3 text-2xl" style={{ fontFamily: font.value }}>
                                 Aa
                             </div>
-                            <span className={`font-medium text-sm ${selectedFont === font.value ? 'text-pink-700 dark:text-pink-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                            <span className={`font-medium text-sm ${selectedFont === font.value ? 'text-ch-accent' : 'text-ch-text'}`}>
                                 {font.name}
                             </span>
                             {selectedFont === font.value && (
-                                <div className="absolute top-3 right-3 text-pink-500">
+                                <div className="absolute top-3 right-3 text-ch-accent">
                                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
                                 </div>
                             )}
@@ -548,40 +549,19 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
 
     return (
         <div className="max-w-4xl mx-auto">
-            <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-6">My Profile</h2>
+            <PageIntro eyebrow="Account" title="My Profile" description="Your details, appearance, and notification preferences." />
 
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
-                {/* Navigation Tabs */}
-                <div className="flex border-b border-gray-200 dark:border-gray-700">
-                    <button
-                        onClick={() => setActiveTab('details')}
-                        className={`flex-1 py-4 text-sm font-medium text-center transition-colors focus:outline-none ${activeTab === 'details'
-                            ? 'text-pink-600 dark:text-pink-400 border-b-2 border-pink-600 dark:border-pink-400 bg-gray-50 dark:bg-gray-800'
-                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                            }`}
-                    >
-                        My Details
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('appearance')}
-                        className={`flex-1 py-4 text-sm font-medium text-center transition-colors focus:outline-none ${activeTab === 'appearance'
-                            ? 'text-pink-600 dark:text-pink-400 border-b-2 border-pink-600 dark:border-pink-400 bg-gray-50 dark:bg-gray-800'
-                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                            }`}
-                    >
-                        Appearance
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('notifications')}
-                        className={`flex-1 py-4 text-sm font-medium text-center transition-colors focus:outline-none ${activeTab === 'notifications'
-                            ? 'text-pink-600 dark:text-pink-400 border-b-2 border-pink-600 dark:border-pink-400 bg-gray-50 dark:bg-gray-800'
-                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                            }`}
-                    >
-                        Notifications
-                    </button>
-                </div>
+            <RuledTabs
+                tabs={[
+                    { id: 'details' as const, label: 'My Details' },
+                    { id: 'appearance' as const, label: 'Appearance' },
+                    { id: 'notifications' as const, label: 'Notifications' },
+                ]}
+                active={activeTab}
+                onChange={setActiveTab}
+            />
 
+            <div className="border-2 border-ch-rule">
                 <div className="p-6 sm:p-8">
                     {activeTab === 'details' ? (
                         <>
@@ -590,18 +570,18 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
                                     <Tooltip text="Change your profile picture.">
                                         <button
                                             onClick={() => setIsAvatarModalOpen(true)}
-                                            className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-full ring-4 ring-pink-500/50 focus:outline-none focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-900 focus:ring-pink-500 disabled:cursor-not-allowed"
+                                            className="relative w-24 h-24 sm:w-32 sm:h-32 border-2 border-ch-rule focus:outline-none disabled:cursor-not-allowed"
                                             aria-label="Change profile picture"
                                             disabled={isUpdatingAvatar}
                                         >
                                             <img
                                                 src={currentUser.avatarUrl || `https://i.pravatar.cc/128?u=${currentUser.username}`}
                                                 alt={currentUser.name}
-                                                className="w-full h-full rounded-full object-cover"
+                                                className="w-full h-full object-cover"
                                             />
-                                            <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity">
+                                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity">
                                                 {isUpdatingAvatar ? (
-                                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                                                    <div className="animate-spin h-8 w-8 border-2 border-ch-divider border-t-ch-accent"></div>
                                                 ) : (
                                                     <CameraIcon />
                                                 )}
@@ -610,19 +590,19 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
                                     </Tooltip>
                                 </div>
                                 <div className="text-center sm:text-left">
-                                    <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{currentUser.name}</h1>
-                                    <p className="text-md text-gray-500 dark:text-gray-400 mt-1">@{currentUser.username}</p>
+                                    <h1 className="text-[28px] font-extrabold tracking-[-0.02em] text-ch-text">{currentUser.name}</h1>
+                                    <p className="text-md text-ch-muted mt-1">@{currentUser.username}</p>
                                     <div className="mt-3 flex flex-wrap gap-2 justify-center sm:justify-start">
-                                        <span className={`inline-block px-3 py-1 text-sm font-semibold rounded-full ${currentUser.role === 'PATRON' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300'}`}>
+                                        <span className={`inline-block px-3 py-1 text-sm font-semibold ${currentUser.role === 'PATRON' ? 'bg-ch-accent-soft text-ch-violet' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300'}`}>
                                             {currentUser.role}
                                         </span>
                                         {currentUser.studentClass && (
-                                            <span className="inline-flex items-center gap-1 px-3 py-1 text-sm font-semibold rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300">
+                                            <span className="inline-flex items-center gap-1 px-3 py-1 text-sm font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300">
                                                 <IdentificationIcon className="w-4 h-4" /> {currentUser.studentClass}
                                             </span>
                                         )}
                                         {currentUser.skillLevel && (
-                                            <span className="inline-flex items-center gap-1 px-3 py-1 text-sm font-semibold rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300">
+                                            <span className="inline-flex items-center gap-1 px-3 py-1 text-sm font-semibold bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300">
                                                 <AcademicCapIcon className="w-4 h-4" /> {currentUser.skillLevel}
                                             </span>
                                         )}
@@ -630,47 +610,47 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
                                 </div>
                             </div>
 
-                            <div className="mt-6 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+                            <div className="mt-6 bg-ch-surface border border-ch-divider p-4">
                                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                                     <div>
-                                        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">Login Streak</h3>
+                                        <h3 className="text-sm font-semibold text-ch-text mb-1">Login Streak</h3>
                                         <div className="flex items-center gap-3">
                                             <span aria-hidden="true" className="text-2xl leading-none">🔥</span>
                                             <div>
-                                                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                                                <p className="text-[22px] font-extrabold tracking-[-0.02em] text-ch-text">
                                                     {streakCount} day{streakCount === 1 ? '' : 's'}
                                                 </p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                <p className="text-xs text-ch-muted">
                                                     {currentUser.streakLastActiveDate ? `Last active: ${currentUser.streakLastActiveDate}` : 'Start your streak by logging in daily.'}
                                                 </p>
                                             </div>
                                         </div>
                                     </div>
                                     <div className="flex flex-col gap-2">
-                                        <span className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-xs font-semibold ${streakGraceTone}`}>
+                                        <span className={`inline-flex items-center justify-center px-3 py-1 text-xs font-semibold ${streakGraceTone}`}>
                                             {streakGraceLabel}
                                         </span>
-                                        <span className="inline-flex items-center justify-center rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 px-3 py-1 text-xs font-semibold">
+                                        <span className="inline-flex items-center justify-center bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 px-3 py-1 text-xs font-semibold">
                                             Earn graces every {STREAK_GRACE_INTERVAL} days (max {MAX_STREAK_GRACES})
                                         </span>
                                     </div>
                                 </div>
-                                <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">
+                                <p className="mt-3 text-sm text-ch-muted">
                                     If you miss a day, a grace will preserve your streak. You earn an extra grace for every {STREAK_GRACE_INTERVAL} streak days you reach (up to a maximum of {MAX_STREAK_GRACES}).
                                 </p>
                             </div>
 
-                            <div className="mt-6 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
-                                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Class</h3>
+                            <div className="mt-6 bg-ch-surface border border-ch-divider p-4">
+                                <h3 className="text-sm font-semibold text-ch-text mb-2">Class</h3>
                                 <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
                                     <div className="flex-1">
-                                        <label htmlFor="profile-class" className="block text-xs text-gray-500 dark:text-gray-400 mb-2">Academic class or stream</label>
+                                        <label htmlFor="profile-class" className="block text-xs text-ch-muted mb-2">Academic class or stream</label>
                                         <input
                                             id="profile-class"
                                             value={studentClass}
                                             onChange={(e) => setStudentClass(e.target.value)}
                                             maxLength={80}
-                                            className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/60 p-3 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                                            className="w-full border border-ch-divider bg-ch-bg p-3 text-sm text-ch-text focus:outline-none focus:ring-2 focus:ring-ch-accent"
                                             placeholder="Senior 3"
                                         />
                                     </div>
@@ -683,7 +663,7 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
                                         <button
                                             onClick={handleSaveClass}
                                             disabled={isSavingClass}
-                                            className="px-4 py-2 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="px-4 py-2 text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             {isSavingClass ? 'Saving...' : 'Save Class'}
                                         </button>
@@ -691,28 +671,28 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
                                 </div>
                             </div>
 
-                            <div className="mt-6 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
-                                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">About Me</h3>
+                            <div className="mt-6 bg-ch-surface border border-ch-divider p-4">
+                                <h3 className="text-sm font-semibold text-ch-text mb-2">About Me</h3>
                                 <textarea
                                     value={bio}
                                     onChange={(e) => setBio(e.target.value)}
                                     rows={3}
                                     maxLength={240}
-                                    className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/60 p-3 text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                                    className="w-full border border-ch-divider bg-ch-bg p-3 text-sm text-ch-text focus:outline-none focus:ring-2 focus:ring-ch-accent"
                                     placeholder="Write a short bio or about phrase for your portfolio..."
                                 />
                                 <div className="mt-3">
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Preview</p>
-                                    <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/60 p-3">
+                                    <p className="text-xs text-ch-muted mb-2">Preview</p>
+                                    <div className="border border-ch-divider bg-ch-bg p-3">
                                         {bio.trim() ? (
                                             <FormattedMessage text={bio} isUser={false} />
                                         ) : (
-                                            <p className="text-xs text-gray-400">Your bio will appear here.</p>
+                                            <p className="text-xs text-ch-muted">Your bio will appear here.</p>
                                         )}
                                     </div>
                                 </div>
                                 <div className="mt-3 flex items-center justify-between">
-                                    <span className="text-xs text-gray-400">{bio.length}/240</span>
+                                    <span className="text-xs text-ch-muted">{bio.length}/240</span>
                                     <div className="flex items-center gap-3">
                                         {bioStatus && (
                                             <span className={`text-xs ${bioStatus === 'Saved!' ? 'text-green-600' : 'text-red-500'}`}>
@@ -723,7 +703,7 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
                                             <button
                                                 onClick={handleSaveBio}
                                                 disabled={isSavingBio}
-                                                className="px-4 py-2 text-xs font-semibold rounded-lg bg-pink-600 text-white hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="px-4 py-2 text-xs font-semibold bg-ch-accent text-ch-on-accent hover:bg-ch-accent-deep disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 {isSavingBio ? 'Saving...' : 'Save Bio'}
                                             </button>
@@ -733,18 +713,18 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
                             </div>
 
                             {/* Badges Section */}
-                            <div ref={badgesRef} className="scroll-animate mt-8 border-t border-gray-200 dark:border-gray-700 pt-6">
-                                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
+                            <div ref={badgesRef} className="scroll-animate mt-8 border-t border-ch-divider pt-6">
+                                <h3 className="text-[20px] font-extrabold tracking-[-0.02em] text-ch-text mb-4 flex items-center gap-2">
                                     <BadgeCheckIcon className="h-6 w-6 text-yellow-500" />
                                     Badges & Achievements
                                 </h3>
                                 {!currentUser.badges || currentUser.badges.length === 0 ? (
-                                    <p className="text-gray-500 dark:text-gray-400 text-sm italic">No badges yet. Participate in challenges to earn them!</p>
+                                    <p className="text-ch-muted text-sm italic">No badges yet. Participate in challenges to earn them!</p>
                                 ) : (
                                     <div className="flex flex-wrap gap-3">
                                         {currentUser.badges.map((badge, idx) => (
-                                            <div key={idx} className="flex items-center gap-2 px-3 py-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700/50 rounded-lg text-sm font-medium text-yellow-800 dark:text-yellow-200 shadow-sm">
-                                                <div className="p-1 bg-yellow-200 dark:bg-yellow-800 rounded-full">
+                                            <div key={idx} className="flex items-center gap-2 px-3 py-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700/50 text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                                                <div className="p-1 bg-yellow-200 dark:bg-yellow-800">
                                                     <BadgeCheckIcon className="w-4 h-4 text-yellow-700 dark:text-yellow-100" />
                                                 </div>
                                                 {badge}
@@ -755,27 +735,27 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
                             </div>
 
                             {/* Portfolio Section */}
-                            <div className="scroll-animate mt-8 border-t border-gray-200 dark:border-gray-700 pt-6">
-                                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4">Portfolio Highlights</h3>
+                            <div className="scroll-animate mt-8 border-t border-ch-divider pt-6">
+                                <h3 className="text-[20px] font-extrabold tracking-[-0.02em] text-ch-text mb-4">Portfolio Highlights</h3>
                                 {portfolioItems.length === 0 ? (
-                                    <p className="text-gray-500 dark:text-gray-400 text-sm italic">No showcases yet. Share your work to build your portfolio.</p>
+                                    <p className="text-ch-muted text-sm italic">No showcases yet. Share your work to build your portfolio.</p>
                                 ) : (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         {portfolioItems.map(item => (
-                                            <div key={item.id} className="p-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-700/40">
-                                                <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">{item.title}</h4>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">{item.description}</p>
-                                                <p className="text-[11px] text-gray-400 mt-2">Shared {item.createdAt}</p>
+                                            <div key={item.id} className="p-4 border border-ch-divider bg-ch-surface">
+                                                <h4 className="text-sm font-semibold text-ch-text mb-1">{item.title}</h4>
+                                                <p className="text-xs text-ch-muted line-clamp-2">{item.description}</p>
+                                                <p className="text-[11px] text-ch-muted mt-2">Shared {item.createdAt}</p>
                                             </div>
                                         ))}
                                     </div>
                                 )}
                             </div>
 
-                            <div ref={summaryRef} className="scroll-animate mt-8 border-t border-gray-200 dark:border-gray-700 pt-6">
-                                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4">Attendance Summary</h3>
+                            <div ref={summaryRef} className="scroll-animate mt-8 border-t border-ch-divider pt-6">
+                                <h3 className="text-[20px] font-extrabold tracking-[-0.02em] text-ch-text mb-4">Attendance Summary</h3>
                                 {isLoading ? (
-                                    <p className="text-gray-500 dark:text-gray-400">Loading attendance data...</p>
+                                    <p className="text-ch-muted">Loading attendance data...</p>
                                 ) : totalActivities > 0 ? (
                                     <>
                                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
@@ -784,7 +764,7 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
                                                 label="Present"
                                                 value={attendanceSummary.Present}
                                                 percentage={getPercentage(attendanceSummary.Present)}
-                                                color="text-pink-500"
+                                                color="text-ch-accent"
                                             />
                                             <StatCard
                                                 icon={<XCircleIcon />}
@@ -803,7 +783,7 @@ const Profile: React.FC<{ currentUser: User, onUpdateUserProfile: (user: User) =
                                         </div>
                                     </>
                                 ) : (
-                                    <p className="text-center text-gray-500 dark:text-gray-400 py-4">No attendance records found.</p>
+                                    <p className="text-center text-ch-muted py-4">No attendance records found.</p>
                                 )}
                             </div>
                             <ChangePasswordForm currentUser={currentUser} />

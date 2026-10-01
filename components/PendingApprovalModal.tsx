@@ -12,9 +12,9 @@ const PendingApprovalModal: React.FC<PendingApprovalModalProps> = ({ isOpen, onC
   const title = "Pending Approval";
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in">
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 animate-fade-in">
       <div 
-        className="relative w-full max-w-md rounded-2xl shadow-2xl p-8 text-center text-white overflow-hidden border border-white/10"
+        className="relative w-full max-w-md p-8 text-center text-white overflow-hidden border border-white/10"
         style={{
           background: 'linear-gradient(135deg, #4c1d95, #be185d, #4c1d95)',
           backgroundSize: '200% 200%',
@@ -22,8 +22,6 @@ const PendingApprovalModal: React.FC<PendingApprovalModalProps> = ({ isOpen, onC
         }}
       >
         {/* Floating blobs */}
-        <div className="absolute -top-16 -left-16 w-48 h-48 bg-pink-500/30 rounded-full blur-3xl animate-[float_12s_ease-in-out_infinite]"></div>
-        <div className="absolute -bottom-24 -right-12 w-64 h-64 bg-purple-600/30 rounded-full blur-3xl animate-[float_15s_ease-in-out_infinite_2s]"></div>
         
         <div className="relative z-10">
           <div className="mx-auto mb-6">
@@ -56,7 +54,7 @@ const PendingApprovalModal: React.FC<PendingApprovalModalProps> = ({ isOpen, onC
           <div className="mt-8">
             <button
               onClick={onClose}
-              className="w-full inline-flex justify-center px-4 py-3 text-base font-bold text-purple-900 bg-white/90 hover:bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-white/50"
+              className="w-full inline-flex justify-center px-4 py-3 text-base font-bold text-purple-900 bg-ch-bg hover:bg-ch-surface transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-white/50"
             >
               Okay, I'll wait!
             </button>

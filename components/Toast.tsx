@@ -50,9 +50,7 @@ const ToastItem: React.FC<ToastProps> = ({ toast, onRemove }) => {
   return (
     <div
       className={`
-        flex items-start gap-3 p-4 rounded-xl shadow-lg backdrop-blur-md bg-white/90 dark:bg-gray-800/90 
-        border-l-4 ${getBorderColor()} border-y border-r border-gray-100 dark:border-gray-700
-        transform transition-all duration-300 ease-in-out mb-3 w-80 sm:w-96
+        flex items-start gap-3 p-4 bg-ch-bg border-l-4 ${getBorderColor()} border-y border-r border-ch-divider transform transition-all duration-300 ease-in-out mb-3 w-80 sm:w-96
         ${isExiting ? 'opacity-0 translate-x-full' : 'opacity-100 translate-x-0 animate-slide-in-right'}
       `}
       role="alert"
@@ -61,13 +59,13 @@ const ToastItem: React.FC<ToastProps> = ({ toast, onRemove }) => {
         {getIcon()}
       </div>
       <div className="flex-1 pt-0.5">
-        <p className="text-sm font-medium text-gray-800 dark:text-gray-200 leading-snug">
+        <p className="text-sm font-medium text-ch-text leading-snug">
           {toast.message}
         </p>
       </div>
       <button 
         onClick={handleClose}
-        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+        className="text-ch-muted hover:text-ch-text transition-colors"
       >
         <XIcon className="w-4 h-4" />
       </button>

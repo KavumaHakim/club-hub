@@ -6,34 +6,24 @@
 
 @layer utilities {
   /* Scrollbar */
+  /* Same flat thumb as .ch-scroll (the tokens carry light/dark). */
   .custom-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: rgba(100, 116, 139, 0.45) transparent;
-  }
-  .dark .custom-scrollbar {
-    scrollbar-color: rgba(148, 163, 184, 0.45) transparent;
+    scrollbar-color: var(--ch-divider) transparent;
   }
   .custom-scrollbar::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
   }
   .custom-scrollbar::-webkit-scrollbar-track {
     background: transparent;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgba(100, 116, 139, 0.35);
-    border-radius: 9999px;
-    border: 2px solid transparent;
-    background-clip: content-box;
+    background-color: var(--ch-divider);
+    border-radius: 0;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(100, 116, 139, 0.6);
-  }
-  .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgba(148, 163, 184, 0.35);
-  }
-  .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(148, 163, 184, 0.6);
+    background-color: var(--ch-rule);
   }
 
   /* Scroll reveal helpers */
@@ -356,4 +346,20 @@
 
 .ch-shell ::selection {
   background: var(--ch-accent-soft);
+}
+
+/* Form controls take the ground and ink by default. :where() keeps this at
+   zero specificity so any explicit utility class on a control still wins —
+   it only replaces the browser's white field that the old dark: classes
+   used to paint over. */
+:where(input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']), textarea, select) {
+  background-color: var(--ch-bg);
+  color: var(--ch-text);
+  border-radius: 0;
+}
+:where(input[type='checkbox'], input[type='radio'], input[type='range'], progress) {
+  accent-color: var(--ch-accent);
+}
+.dark {
+  color-scheme: dark;
 }

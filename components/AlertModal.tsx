@@ -50,52 +50,48 @@ const AlertModal: React.FC<AlertModalProps> = ({
 
     const getHeaderColor = () => {
         switch (type) {
-            case 'success': return 'from-green-500/20 to-emerald-500/20';
-            case 'warning': return 'from-amber-500/20 to-orange-500/20';
-            case 'error': return 'from-red-500/20 to-rose-500/20';
-            case 'confirm': return 'from-blue-500/20 to-indigo-500/20';
-            default: return 'from-blue-500/20 to-cyan-500/20';
+            case 'success': return 'bg-green-600';
+            case 'warning': return 'bg-amber-500';
+            case 'error': return 'bg-red-600';
+            case 'confirm': return 'bg-blue-600';
+            default: return 'bg-ch-accent';
         }
     };
 
     const getButtonColor = () => {
         switch (type) {
-            case 'success': return 'bg-green-600 hover:bg-green-700 shadow-green-500/25';
-            case 'warning': return 'bg-amber-600 hover:bg-amber-700 shadow-amber-500/25';
-            case 'error': return 'bg-red-600 hover:bg-red-700 shadow-red-500/25';
-            case 'confirm': return 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/25';
-            default: return 'bg-pink-600 hover:bg-pink-700 shadow-pink-500/25';
+            case 'success': return 'bg-green-600 hover:bg-green-700';
+            case 'warning': return 'bg-amber-600 hover:bg-amber-700';
+            case 'error': return 'bg-red-600 hover:bg-red-700';
+            case 'confirm': return 'bg-blue-600 hover:bg-blue-700';
+            default: return 'bg-ch-accent hover:bg-ch-accent-deep';
         }
     };
 
     return (
-        <div className={`fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+        <div className={`fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
             <div
-                className={`bg-white dark:bg-gray-800 w-full max-w-sm rounded-[2rem] shadow-2xl overflow-hidden transition-all duration-300 transform ${isOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}
+                className={`bg-ch-bg w-full max-w-sm overflow-hidden border-2 border-ch-rule transition-all duration-300 transform ${isOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}
                 onTransitionEnd={() => !isOpen && setIsAnimating(false)}
             >
-                <div className={`h-32 bg-gradient-to-br ${getHeaderColor()} flex items-center justify-center relative overflow-hidden`}>
-                    {/* Decorative elements */}
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl"></div>
-                    <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full -ml-16 -mb-16 blur-2xl"></div>
-
-                    <div className="relative z-10 bg-white/90 dark:bg-gray-900/90 p-4 rounded-3xl shadow-premium animate-bounce-slow">
+                <div className={`h-28 ${getHeaderColor()} border-b-2 border-ch-rule flex items-center justify-center relative overflow-hidden`}>
+                    <div className="relative z-10 bg-ch-bg p-4 animate-bounce-slow">
                         {getIcon()}
                     </div>
 
                     <button
                         onClick={onClose}
-                        className="absolute top-4 right-4 p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                        className="absolute top-3 right-3 p-2 text-white/80 hover:text-white transition-colors"
                     >
                         <XIcon className="w-5 h-5" />
                     </button>
                 </div>
 
                 <div className="p-8 text-center">
-                    <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">
+                    <h3 className="text-[22px] font-extrabold tracking-[-0.02em] text-ch-text mb-2 tracking-tight">
                         {title}
                     </h3>
-                    <p className="text-gray-500 dark:text-gray-400 font-medium leading-relaxed">
+                    <p className="text-ch-muted font-medium leading-relaxed">
                         {message}
                     </p>
 
@@ -107,13 +103,13 @@ const AlertModal: React.FC<AlertModalProps> = ({
                                         onConfirm();
                                         onClose();
                                     }}
-                                    className={`w-full py-4 ${getButtonColor()} text-white rounded-2xl font-bold shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98]`}
+                                    className={`w-full py-4 ${getButtonColor()} text-white font-bold transition-all`}
                                 >
                                     {confirmText}
                                 </button>
                                 <button
                                     onClick={onClose}
-                                    className="w-full py-4 text-gray-500 dark:text-gray-400 font-bold hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                                    className="w-full py-4 text-ch-muted font-bold hover:text-ch-text transition-colors"
                                 >
                                     {cancelText}
                                 </button>
@@ -121,7 +117,7 @@ const AlertModal: React.FC<AlertModalProps> = ({
                         ) : (
                             <button
                                 onClick={onClose}
-                                className={`w-full py-4 ${getButtonColor()} text-white rounded-2xl font-bold shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] uppercase tracking-widest text-xs`}
+                                className={`w-full py-4 ${getButtonColor()} text-white font-bold transition-all uppercase tracking-widest text-xs`}
                             >
                                 Continue
                             </button>

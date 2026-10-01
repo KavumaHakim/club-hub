@@ -13,6 +13,8 @@ import ConfirmationModal from './ConfirmationModal';
 import { CodeIcon } from './icons/CodeIcon';
 import { DocumentTextIcon } from './icons/DocumentTextIcon';
 import Tooltip from './Tooltip';
+import { PageIntro, RuledTabs } from './SplitKit';
+import { SearchIcon } from './icons/SearchIcon';
 
 interface ResourcesProps {
     currentUser: User;
@@ -281,7 +283,7 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
 
     const renderContent = () => {
         if (isLoadingResources) {
-            return <p className="text-center text-gray-500 dark:text-gray-400">Loading resources...</p>;
+            return <p className="text-center text-ch-muted">Loading resources...</p>;
         }
 
         if (resourcesError) {
@@ -294,8 +296,8 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
                     {Object.entries(groupedResources).map(([category, items]) => (
                         <div key={category}>
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{category}</h3>
-                                <span className="text-xs text-gray-500 dark:text-gray-400">{items.length} items</span>
+                                <h3 className="text-[20px] font-extrabold tracking-[-0.02em] text-ch-text">{category}</h3>
+                                <span className="text-xs text-ch-muted">{items.length} items</span>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
                                 {items.map(resource => (
@@ -314,78 +316,66 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
             );
         }
 
-        return <p className="text-center text-gray-500 dark:text-gray-400 py-4">No resources have been uploaded yet.</p>;
+        return <p className="text-center text-ch-muted py-4">No resources have been uploaded yet.</p>;
     };
 
     return (
         <div className="space-y-8">
-            <div className="rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 text-white p-8 shadow-xl border border-white/10">
-                <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
-                    <div>
-                        <p className="uppercase tracking-[0.3em] text-xs text-indigo-200">Club Library</p>
-                        <h2 className="text-3xl lg:text-4xl font-bold mt-2">Explore the eLibrary</h2>
-                        <p className="text-indigo-100/80 mt-2 max-w-xl">Search curated tutorials, documents, videos, and tooling references. Save time with filters and smart previews.</p>
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-                        <div className="relative">
-                            <input
-                                type="text"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                placeholder="Search resources, authors, topics..."
-                                className="w-full sm:w-80 px-4 py-2.5 rounded-xl bg-white/10 text-white placeholder:text-indigo-200 border border-white/20 focus:outline-none focus:ring-2 focus:ring-pink-400"
-                            />
-                        </div>
-                        <select
-                            value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                            className="px-4 py-2.5 rounded-xl bg-white/10 text-white border border-white/20 focus:outline-none"
-                        >
-                            <option value="Newest">Newest</option>
-                            <option value="Oldest">Oldest</option>
-                            <option value="A-Z">A-Z</option>
-                        </select>
-                    </div>
+            <div>
+                <PageIntro
+                    eyebrow="Club Library"
+                    title="Explore the eLibrary"
+                    description="Search curated tutorials, documents, videos, and tooling references. Save time with filters and smart previews."
+                />
+
+                {/* Search + sort strip, ruled like the Feed's */}
+                <div className="mb-4 flex h-[46px] items-stretch border-2 border-ch-rule">
+                    <label className="flex min-w-0 flex-1 items-center gap-2.5 px-4 [&_svg]:h-4 [&_svg]:w-4">
+                        <span className="flex-none text-ch-muted"><SearchIcon /></span>
+                        <input
+                            type="text"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder="Search resources, authors, topics..."
+                            className="min-w-0 flex-1 border-0 bg-transparent p-0 text-[13.5px] text-ch-text placeholder-ch-muted focus:outline-none"
+                        />
+                    </label>
+                    <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                        aria-label="Sort resources"
+                        className="flex-none border-0 border-l border-ch-divider px-4 text-[11px] font-bold uppercase tracking-[0.08em] focus:outline-none"
+                    >
+                        <option value="Newest">Newest</option>
+                        <option value="Oldest">Oldest</option>
+                        <option value="A-Z">A-Z</option>
+                    </select>
                 </div>
-                <div className="mt-6 flex flex-wrap gap-3">
-                    {(['All', 'Documentation', 'Tutorial', 'Tool', 'Article', 'Other'] as const).map(cat => (
-                        <button
-                            key={cat}
-                            onClick={() => setSelectedCategory(cat as any)}
-                            className={`px-4 py-2 rounded-full text-xs font-semibold transition-colors ${
-                                selectedCategory === cat
-                                    ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/30'
-                                    : 'bg-white/10 text-indigo-100 hover:bg-white/20'
-                            }`}
-                        >
-                            {cat}
-                        </button>
-                    ))}
-                </div>
-                <div className="mt-4 flex flex-wrap gap-3">
-                    {(['All', 'LINK', 'VIDEO', 'PYTHON', 'DOCUMENT'] as const).map(kind => (
-                        <button
-                            key={kind}
-                            onClick={() => setSelectedType(kind as any)}
-                            className={`px-4 py-2 rounded-full text-xs font-semibold transition-colors ${
-                                selectedType === kind
-                                    ? 'bg-indigo-400 text-slate-900 shadow-lg shadow-indigo-500/30'
-                                    : 'bg-white/10 text-indigo-100 hover:bg-white/20'
-                            }`}
-                        >
-                            {kind === 'LINK' ? 'Link' : kind === 'VIDEO' ? 'Video' : kind === 'PYTHON' ? 'Python' : kind === 'DOCUMENT' ? 'Document' : 'All'}
-                        </button>
-                    ))}
-                </div>
+
+                <RuledTabs
+                    className="!mb-3"
+                    tabs={(['All', 'Documentation', 'Tutorial', 'Tool', 'Article', 'Other'] as const).map(cat => ({ id: cat, label: cat }))}
+                    active={selectedCategory as any}
+                    onChange={(cat) => setSelectedCategory(cat as any)}
+                />
+                <RuledTabs
+                    className="!mb-0"
+                    tabs={(['All', 'LINK', 'VIDEO', 'PYTHON', 'DOCUMENT'] as const).map(kind => ({
+                        id: kind,
+                        label: kind === 'LINK' ? 'Link' : kind === 'VIDEO' ? 'Video' : kind === 'PYTHON' ? 'Python' : kind === 'DOCUMENT' ? 'Document' : 'All types',
+                    }))}
+                    active={selectedType as any}
+                    onChange={(kind) => setSelectedType(kind as any)}
+                />
             </div>
 
             {isPatron && (
-                <div className="mb-8 p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+                <div className="mb-8 border-2 border-ch-rule p-6">
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
                         <div>
-                            <p className="text-xs uppercase tracking-[0.3em] text-pink-500 font-semibold">Upload Center</p>
-                            <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Share a New Resource</h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Add links, videos, Python scripts, or documents for the club.</p>
+                            <p className="text-xs uppercase tracking-[0.3em] text-ch-accent font-semibold">Upload Center</p>
+                            <h3 className="text-[22px] font-extrabold tracking-[-0.02em] text-ch-text">Share a New Resource</h3>
+                            <p className="text-sm text-ch-muted">Add links, videos, Python scripts, or documents for the club.</p>
                         </div>
                         <div className="flex flex-wrap gap-2">
                             {([
@@ -398,10 +388,10 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
                                     key={option.key}
                                     type="button"
                                     onClick={() => setType(option.key)}
-                                    className={`px-4 py-2 rounded-full text-xs font-semibold transition-colors ${
+                                    className={`px-4 py-2 text-xs font-semibold transition-colors ${
                                         type === option.key
-                                            ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/30'
-                                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                            ? 'bg-ch-accent text-ch-on-accent'
+                                            : 'bg-ch-surface text-ch-muted hover:bg-ch-surface-2'
                                     }`}
                                 >
                                     {option.label}
@@ -412,19 +402,19 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
                     <form onSubmit={handleSubmit} className="space-y-5">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-gray-600 dark:text-gray-300">Title</label>
+                                <label className="text-xs font-semibold text-ch-muted">Title</label>
                                 <input
                                     type="text"
                                     placeholder="e.g. Python Lists Crash Course"
                                     value={title}
                                     onChange={e => setTitle(e.target.value)}
                                     required
-                                    className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500"
+                                    className="w-full px-3 py-2.5 border border-ch-divider bg-ch-bg focus:outline-none focus:ring-2 focus:ring-ch-accent"
                                 />
                             </div>
                             <div>
-                                <label htmlFor="category-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
-                                <select id="category-select" value={category} onChange={e => setCategory(e.target.value as ResourceCategory)} className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500">
+                                <label htmlFor="category-select" className="block text-sm font-medium text-ch-text mb-1">Category</label>
+                                <select id="category-select" value={category} onChange={e => setCategory(e.target.value as ResourceCategory)} className="w-full px-3 py-2.5 border border-ch-divider bg-ch-bg focus:outline-none focus:ring-2 focus:ring-ch-accent">
                                     <option value="Documentation">Documentation</option>
                                     <option value="Tutorial">Tutorial</option>
                                     <option value="Tool">Tool</option>
@@ -434,14 +424,14 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
                             </div>
                         </div>
                         <div className="relative">
-                            <label className="text-xs font-semibold text-gray-600 dark:text-gray-300">Description</label>
+                            <label className="text-xs font-semibold text-ch-muted">Description</label>
                             <textarea
                                 placeholder="Add a short, helpful summary for members..."
                                 value={description}
                                 onChange={e => setDescription(e.target.value)}
                                 required
                                 rows={3}
-                                className="mt-1 w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500"
+                                className="mt-1 w-full px-3 py-2.5 border border-ch-divider bg-ch-bg focus:outline-none focus:ring-2 focus:ring-ch-accent"
                             />
                             {type === 'DOCUMENT' && selectedFile && (
                                 <Tooltip text="Summarize the document into a short description.">
@@ -449,10 +439,10 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
                                         type="button"
                                         onClick={handleGenerateDesc}
                                         disabled={isGeneratingDesc}
-                                        className="absolute bottom-2 right-2 flex items-center gap-1.5 text-xs font-semibold text-purple-600 bg-purple-100 dark:bg-purple-900/50 dark:text-purple-300 px-2.5 py-1.5 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-800 transition-all disabled:opacity-50"
+                                        className="absolute bottom-2 right-2 flex items-center gap-1.5 text-xs font-semibold text-ch-violet bg-ch-accent-soft px-2.5 py-1.5 hover:bg-ch-accent-soft transition-all disabled:opacity-50"
                                     >
                                         {isGeneratingDesc ? (
-                                            <span className="animate-spin h-3 w-3 border-2 border-current border-t-transparent rounded-full"></span>
+                                            <span className="animate-spin h-3 w-3 border-2 border-current border-t-transparent"></span>
                                         ) : (
                                             <SparklesIcon className="h-4 w-4" />
                                         )}
@@ -463,8 +453,8 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label htmlFor="type-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Resource Type</label>
-                                <select id="type-select" value={type} onChange={e => setType(e.target.value as ResourceType)} className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500">
+                                <label htmlFor="type-select" className="block text-sm font-medium text-ch-text mb-1">Resource Type</label>
+                                <select id="type-select" value={type} onChange={e => setType(e.target.value as ResourceType)} className="w-full px-3 py-2.5 border border-ch-divider bg-ch-bg focus:outline-none focus:ring-2 focus:ring-ch-accent">
                                     <option value="LINK">Link</option>
                                     <option value="VIDEO">Video</option>
                                     <option value="PYTHON">Python File</option>
@@ -472,7 +462,7 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
                                 </select>
                             </div>
                             <div>
-                                <label htmlFor="resource-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                <label htmlFor="resource-input" className="block text-sm font-medium text-ch-text mb-1">
                                     {(type === 'PYTHON' || type === 'DOCUMENT') ? `Upload File` : 'URL'}
                                 </label>
                                 {(type === 'PYTHON' || type === 'DOCUMENT') ? (
@@ -489,36 +479,36 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
                                             onDragOver={handleDragOver}
                                             onDragLeave={handleDragLeave}
                                             onDrop={handleDrop}
-                                            className={`cursor-pointer flex items-center justify-between w-full px-3 py-2.5 border border-dashed rounded-xl transition-colors ${
+                                            className={`cursor-pointer flex items-center justify-between w-full px-3 py-2.5 border border-dashed transition-colors ${
                                                 isDragging
-                                                    ? 'border-pink-500 bg-pink-100/80 dark:bg-pink-900/40'
-                                                    : 'border-pink-300 dark:border-pink-500/50 bg-pink-50/50 dark:bg-pink-900/20 hover:bg-pink-50 dark:hover:bg-pink-900/30'
+                                                    ? 'border-ch-accent bg-ch-accent-soft'
+                                                    : 'border-ch-divider bg-ch-accent-soft hover:bg-ch-accent-soft'
                                             }`}
                                         >
                                             <div className="flex items-center gap-2 truncate">
-                                                {selectedFile && (type === 'PYTHON' ? <CodeIcon className="h-5 w-5 text-pink-500 flex-shrink-0" /> : <DocumentTextIcon className="h-5 w-5 text-pink-500 flex-shrink-0" />)}
+                                                {selectedFile && (type === 'PYTHON' ? <CodeIcon className="h-5 w-5 text-ch-accent flex-shrink-0" /> : <DocumentTextIcon className="h-5 w-5 text-ch-accent flex-shrink-0" />)}
                                                 <div className="truncate">
-                                                    <span className="text-gray-600 dark:text-gray-300 truncate">
+                                                    <span className="text-ch-muted truncate">
                                                         {selectedFile ? selectedFile.name : 'Choose a file...'}
                                                     </span>
-                                                    <span className="block text-[10px] text-gray-400">Drag & drop or click</span>
+                                                    <span className="block text-[10px] text-ch-muted">Drag & drop or click</span>
                                                 </div>
                                             </div>
-                                            <UploadIcon className="h-5 w-5 text-gray-400" />
+                                            <UploadIcon className="h-5 w-5 text-ch-muted" />
                                         </label>
                                     </div>
                                 ) : (
-                                    <input id="url-input" type="url" placeholder="https://example.com" value={url} onChange={e => setUrl(e.target.value)} required className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500" />
+                                    <input id="url-input" type="url" placeholder="https://example.com" value={url} onChange={e => setUrl(e.target.value)} required className="w-full px-3 py-2.5 border border-ch-divider bg-ch-bg focus:outline-none focus:ring-2 focus:ring-ch-accent" />
                                 )}
                             </div>
                         </div>
 
                         {previewData && (
-                            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-4 space-y-3">
+                            <div className="border border-ch-divider bg-ch-surface p-4 space-y-3">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-xs uppercase tracking-[0.2em] text-gray-400">Preview</p>
-                                        <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                                        <p className="text-xs uppercase tracking-[0.2em] text-ch-muted">Preview</p>
+                                        <p className="text-sm font-semibold text-ch-text">
                                             {previewData.hasFile ? 'File ready to upload' : 'Link preview'}
                                         </p>
                                     </div>
@@ -527,7 +517,7 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
                                             href={previewData.displayUrl}
                                             target="_blank"
                                             rel="noreferrer"
-                                            className="text-xs text-pink-500 hover:text-pink-600"
+                                            className="text-xs text-ch-accent hover:text-ch-accent"
                                         >
                                             Open link
                                         </a>
@@ -536,34 +526,34 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
 
                                 {previewData.hasUrl && previewData.displayUrl && (
                                     <div className="space-y-1">
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">URL</p>
-                                        <p className="text-sm text-gray-800 dark:text-gray-200 break-all">{previewData.displayUrl}</p>
+                                        <p className="text-xs text-ch-muted">URL</p>
+                                        <p className="text-sm text-ch-text break-all">{previewData.displayUrl}</p>
                                         {previewData.domain && (
-                                            <p className="text-[11px] text-gray-400">Domain: {previewData.domain}</p>
+                                            <p className="text-[11px] text-ch-muted">Domain: {previewData.domain}</p>
                                         )}
                                     </div>
                                 )}
 
                                 {previewData.hasFile && (
                                     <div className="space-y-1">
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">File</p>
-                                        <p className="text-sm text-gray-800 dark:text-gray-200">{previewData.fileName}</p>
-                                        <p className="text-[11px] text-gray-400">{previewData.fileSize}</p>
+                                        <p className="text-xs text-ch-muted">File</p>
+                                        <p className="text-sm text-ch-text">{previewData.fileName}</p>
+                                        <p className="text-[11px] text-ch-muted">{previewData.fileSize}</p>
                                     </div>
                                 )}
 
                                 {filePreviewText && (
-                                    <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 text-xs text-gray-700 dark:text-gray-200 font-mono whitespace-pre-wrap max-h-40 overflow-y-auto custom-scrollbar">
+                                    <div className="border border-ch-divider bg-ch-bg p-3 text-xs text-ch-text font-mono whitespace-pre-wrap max-h-40 overflow-y-auto custom-scrollbar">
                                         {filePreviewText}
                                     </div>
                                 )}
 
                                 {pdfPreviewUrl && (
-                                    <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3">
-                                        <p className="text-[11px] text-gray-400 mb-2">PDF preview (first page)</p>
+                                    <div className="border border-ch-divider bg-ch-bg p-3">
+                                        <p className="text-[11px] text-ch-muted mb-2">PDF preview (first page)</p>
                                         <iframe
                                             src={`${pdfPreviewUrl}#page=1&zoom=80`}
-                                            className="w-full h-48 rounded-md border border-gray-200 dark:border-gray-700"
+                                            className="w-full h-48 border border-ch-divider"
                                             title="PDF preview"
                                         />
                                     </div>
@@ -571,14 +561,14 @@ const Resources: React.FC<ResourcesProps> = ({ currentUser, setActiveTab }) => {
                             </div>
                         )}
 
-                        {error && <div className="p-3 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300 rounded-md text-sm">{error}</div>}
+                        {error && <div className="p-3 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-sm">{error}</div>}
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                                <SparklesIcon className="h-4 w-4 text-pink-500" />
+                            <div className="flex items-center gap-2 text-xs text-ch-muted">
+                                <SparklesIcon className="h-4 w-4 text-ch-accent" />
                                 <span>Pro tip: add a short summary to help members pick quickly.</span>
                             </div>
                             <Tooltip text="Publish this resource to the club library.">
-                                <button type="submit" disabled={isSubmitting} className="inline-flex items-center justify-center space-x-2 px-5 py-2.5 font-semibold text-white bg-pink-600 rounded-xl shadow-md hover:bg-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                                <button type="submit" disabled={isSubmitting} className="inline-flex items-center justify-center space-x-2 px-5 py-2.5 font-semibold text-ch-on-accent bg-ch-accent hover:bg-ch-accent-deep transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                                     <PlusCircleIcon />
                                     <span>{isSubmitting ? 'Uploading...' : 'Add Resource'}</span>
                                 </button>

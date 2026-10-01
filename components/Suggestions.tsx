@@ -12,13 +12,14 @@ import { TrashIcon } from './icons/TrashIcon';
 import { ArrowUpCircleIcon } from './icons/ArrowUpCircleIcon';
 import ConfirmationModal from './ConfirmationModal';
 import Tooltip from './Tooltip';
+import { PageIntro, RuledTabs, EmptyState, BTN_PRIMARY } from './SplitKit';
 
 interface SuggestionsProps {
     currentUser: User;
 }
 
 const statusColors: Record<SuggestionStatus, string> = {
-    PENDING: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
+    PENDING: 'bg-ch-surface text-ch-text',
     IN_PROGRESS: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
     COMPLETED: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
     REJECTED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
@@ -62,50 +63,50 @@ const AddSuggestionModal: React.FC<{ isOpen: boolean; onClose: () => void; onSub
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 relative border border-gray-200 dark:border-gray-700">
-                <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400">
+        <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+            <div className="bg-ch-bg max-w-md w-full p-6 relative border-2 border-ch-rule">
+                <button onClick={onClose} className="absolute top-4 right-4 text-ch-muted hover:text-ch-text">
                     <XIcon />
                 </button>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">New Suggestion</h3>
+                <h3 className="text-[20px] font-extrabold tracking-[-0.02em] text-ch-text mb-6">New Suggestion</h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type</label>
+                        <label className="block text-sm font-medium text-ch-text mb-2">Type</label>
                         <div className="flex gap-3">
                             <button
                                 type="button"
                                 onClick={() => setType('FEATURE')}
-                                className={`flex-1 py-2 rounded-lg border-2 text-sm font-bold transition-colors flex items-center justify-center gap-2 ${type === 'FEATURE' ? 'border-yellow-400 bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-300' : 'border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400'}`}
+                                className={`flex-1 py-2 border-2 text-sm font-bold transition-colors flex items-center justify-center gap-2 ${type === 'FEATURE' ? 'border-yellow-400 bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-300' : 'border-ch-divider text-ch-muted'}`}
                             >
                                 <LightBulbIcon className="h-4 w-4" /> Feature
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setType('BUG')}
-                                className={`flex-1 py-2 rounded-lg border-2 text-sm font-bold transition-colors flex items-center justify-center gap-2 ${type === 'BUG' ? 'border-red-400 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300' : 'border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400'}`}
+                                className={`flex-1 py-2 border-2 text-sm font-bold transition-colors flex items-center justify-center gap-2 ${type === 'BUG' ? 'border-red-400 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300' : 'border-ch-divider text-ch-muted'}`}
                             >
                                 <BugIcon className="h-4 w-4" /> Bug Report
                             </button>
                         </div>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
+                        <label className="block text-sm font-medium text-ch-text mb-1">Title</label>
                         <input
                             type="text"
                             value={title}
                             onChange={e => setTitle(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500 focus:border-pink-500 outline-none"
+                            className="w-full px-3 py-2 border border-ch-divider focus:ring-ch-accent focus:border-ch-accent outline-none"
                             placeholder={type === 'FEATURE' ? "e.g., Dark mode support" : "e.g., Login button not working"}
                             required
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                        <label className="block text-sm font-medium text-ch-text mb-1">Description</label>
                         <textarea
                             value={description}
                             onChange={e => setDescription(e.target.value)}
                             rows={4}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500 focus:border-pink-500 outline-none"
+                            className="w-full px-3 py-2 border border-ch-divider focus:ring-ch-accent focus:border-ch-accent outline-none"
                             placeholder="Describe your idea or the bug in detail..."
                             required
                         />
@@ -114,7 +115,7 @@ const AddSuggestionModal: React.FC<{ isOpen: boolean; onClose: () => void; onSub
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="w-full py-2.5 bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-lg shadow-md transition-all disabled:opacity-50"
+                            className="w-full py-2.5 bg-ch-accent hover:bg-ch-accent-deep text-ch-on-accent font-bold transition-all disabled:opacity-50"
                         >
                             {isSubmitting ? 'Submitting...' : 'Submit'}
                         </button>
@@ -141,20 +142,20 @@ const SuggestionCard: React.FC<{
     const avatarSrc = suggestion.userAvatarUrl || (suggestion.userId ? `https://i.pravatar.cc/24?u=${suggestion.userId}` : undefined);
 
     return (
-        <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col gap-4 transition-all hover:shadow-md">
+        <div className="bg-ch-bg p-5 border border-ch-divider flex flex-col gap-4 transition-all">
             <div className="flex justify-between items-start">
                 <div className="flex gap-2 items-center">
-                    <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wide ${typeColors[suggestion.type]}`}>
+                    <span className={`text-[10px] font-bold px-2 py-1 uppercase tracking-wide ${typeColors[suggestion.type]}`}>
                         {suggestion.type}
                     </span>
-                    <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wide ${statusColors[suggestion.status]}`}>
+                    <span className={`text-[10px] font-bold px-2 py-1 uppercase tracking-wide ${statusColors[suggestion.status]}`}>
                         {suggestion.status.replace('_', ' ')}
                     </span>
                 </div>
                 {(isAuthor || isPatron) && (
                     <button
                         onClick={() => onDelete(suggestion.id)}
-                        className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                        className="text-ch-muted hover:text-red-500 transition-colors p-1"
                         title="Delete Suggestion"
                     >
                         <TrashIcon />
@@ -163,20 +164,20 @@ const SuggestionCard: React.FC<{
             </div>
 
             <div className="flex-1">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">{suggestion.title}</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed whitespace-pre-wrap">{suggestion.description}</p>
+                <h3 className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text mb-1">{suggestion.title}</h3>
+                <p className="text-ch-muted text-sm leading-relaxed whitespace-pre-wrap">{suggestion.description}</p>
             </div>
 
-            <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
-                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+            <div className="flex items-center justify-between pt-3 border-t border-ch-divider">
+                <div className="flex items-center gap-2 text-xs text-ch-muted">
                     {avatarSrc ? (
                         <img
                             src={avatarSrc}
                             alt={suggestion.userName || 'User'}
-                            className="w-6 h-6 rounded-full border border-gray-200 dark:border-gray-600 object-cover"
+                            className="w-6 h-6 border border-ch-divider object-cover"
                         />
                     ) : (
-                        <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-[10px] font-bold text-gray-500 dark:text-gray-300">
+                        <div className="w-6 h-6 bg-ch-surface-2 flex items-center justify-center text-[10px] font-bold text-ch-muted">
                             ?
                         </div>
                     )}
@@ -190,7 +191,7 @@ const SuggestionCard: React.FC<{
                         <select
                             value={suggestion.status}
                             onChange={(e) => onStatusChange(suggestion.id, e.target.value as SuggestionStatus)}
-                            className="text-xs bg-gray-100 dark:bg-gray-700 border-none rounded px-2 py-1 focus:ring-1 focus:ring-pink-500"
+                            className="text-xs bg-ch-surface border-none px-2 py-1 focus:ring-1 focus:ring-ch-accent"
                         >
                             <option value="PENDING">Pending</option>
                             <option value="IN_PROGRESS">In Progress</option>
@@ -201,7 +202,7 @@ const SuggestionCard: React.FC<{
 
                     <button
                         onClick={() => onVote(suggestion.id, upvotes)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium text-sm transition-all ${hasVoted ? 'bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400 ring-1 ring-pink-200 dark:ring-pink-800' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 font-medium text-sm transition-all ${hasVoted ? 'bg-ch-accent-soft text-ch-accent ring-1 ring-ch-accent' : 'bg-ch-surface text-ch-muted hover:bg-ch-surface-2'}`}
                     >
                         <ArrowUpCircleIcon />
                         <span>{upvotes.length}</span>
@@ -264,7 +265,7 @@ const Suggestions: React.FC<SuggestionsProps> = ({ currentUser }) => {
     };
 
     if (isLoadingSuggestions) {
-        return <div className="text-center p-8 text-gray-500 dark:text-gray-400">Loading suggestions...</div>;
+        return <div className="text-center p-8 text-ch-muted">Loading suggestions...</div>;
     }
 
     if (suggestionsError) {
@@ -273,39 +274,31 @@ const Suggestions: React.FC<SuggestionsProps> = ({ currentUser }) => {
 
     return (
         <div className="max-w-5xl mx-auto">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-                <div>
-                    <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200">Suggestions & Bugs</h2>
-                    <p className="text-gray-600 dark:text-gray-400 mt-1">Help us improve the ICT Club Hub.</p>
-                </div>
-                <Tooltip text="Create a new feature request or bug report.">
-                    <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-pink-600 hover:bg-pink-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-pink-500/25 transition-all"
-                    >
-                        <PlusCircleIcon /> New Suggestion
-                    </button>
-                </Tooltip>
-            </div>
+            <PageIntro
+                eyebrow="Feedback"
+                title="Suggestions & Bugs"
+                description="Help us improve the ICT Club Hub."
+                actions={
+                    <Tooltip text="Create a new feature request or bug report.">
+                        <button onClick={() => setIsModalOpen(true)} className={BTN_PRIMARY}>
+                            <PlusCircleIcon /> New Suggestion
+                        </button>
+                    </Tooltip>
+                }
+            />
 
-            <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl mb-6 w-fit">
-                {(['ALL', 'FEATURE', 'BUG'] as const).map((type) => (
-                    <button
-                        key={type}
-                        onClick={() => setFilterType(type)}
-                        className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${filterType === type ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
-                    >
-                        {type === 'ALL' ? 'All' : type === 'FEATURE' ? 'Features' : 'Bugs'}
-                    </button>
-                ))}
-            </div>
+            <RuledTabs
+                tabs={[
+                    { id: 'ALL', label: 'All', count: suggestions.length },
+                    { id: 'FEATURE', label: 'Features', count: suggestions.filter(s => s.type === 'FEATURE').length },
+                    { id: 'BUG', label: 'Bugs', count: suggestions.filter(s => s.type === 'BUG').length },
+                ]}
+                active={filterType}
+                onChange={setFilterType}
+            />
 
             {filteredSuggestions.length === 0 ? (
-                <div className="text-center py-16 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700">
-                    <LightBulbIcon className="h-12 w-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">No suggestions yet</h3>
-                    <p className="text-gray-500 dark:text-gray-400 mt-1">Be the first to share an idea!</p>
-                </div>
+                <EmptyState title="No suggestions yet" description="Be the first to share an idea!" />
             ) : (
                 <div className="grid gap-4 md:grid-cols-2">
                     {filteredSuggestions.map(suggestion => (

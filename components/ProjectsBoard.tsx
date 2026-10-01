@@ -12,6 +12,7 @@ import { useData } from '../DataContext';
 import EditTaskModal from './EditTaskModal';
 import ConfirmationModal from './ConfirmationModal';
 import Tooltip from './Tooltip';
+import { PageIntro, RuledTabs, BTN_PRIMARY } from './SplitKit';
 import { ViewGridIcon } from './icons/ViewGridIcon';
 import { UsersIcon } from './icons/UsersIcon';
 import AssignmentsView from './AssignmentsView';
@@ -252,7 +253,7 @@ const ProjectsBoard: React.FC<ProjectsBoardProps> = ({ currentUser }) => {
   }, [data, setProjectData, fetchProjectData, showToast]);
 
   if (isLoadingProjects || isLoadingUsers) {
-    return <div className="text-center p-8 text-gray-500 dark:text-gray-400">Loading project board...</div>;
+    return <div className="text-center p-8 text-ch-muted">Loading project board...</div>;
   }
   
   if (projectDataError || allUsersError) {
@@ -260,7 +261,7 @@ const ProjectsBoard: React.FC<ProjectsBoardProps> = ({ currentUser }) => {
   }
   
   if (!data) {
-    return <div className="text-center p-8 text-gray-500 dark:text-gray-400">No project data found.</div>;
+    return <div className="text-center p-8 text-ch-muted">No project data found.</div>;
   }
 
   const renderCurrentView = () => {
@@ -325,55 +326,32 @@ const ProjectsBoard: React.FC<ProjectsBoardProps> = ({ currentUser }) => {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="mb-6 flex flex-col md:flex-row justify-between md:items-center gap-4">
-        <div>
-            <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200">Club Projects</h2>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">{
-                viewMode === 'board' ? 'Track tasks across workflow stages.' : 
-                viewMode === 'assignments' ? 'Assign tasks to team members.' :
-                'Review and grade member submissions.'
-            }</p>
-        </div>
-        <div className="flex items-center gap-2">
-            {/* View Toggle */}
-            <div className="flex bg-gray-100 dark:bg-gray-900/50 p-1 rounded-xl">
-                <button
-                    onClick={() => setViewMode('board')}
-                    className={`p-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 ${viewMode === 'board' ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-pink-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
-                    title="Board View"
-                >
-                    <ViewGridIcon /> <span className="text-sm font-medium pr-2 hidden sm:inline">Board</span>
+      <PageIntro
+        eyebrow="Workflow"
+        title="Club Projects"
+        description={
+            viewMode === 'board' ? 'Track tasks across workflow stages.' :
+            viewMode === 'assignments' ? 'Assign tasks to team members.' :
+            'Review and grade member submissions.'
+        }
+        actions={currentUser.role === 'PATRON' ? (
+            <Tooltip text="Create a new task for the project board.">
+                <button onClick={handleOpenNewTaskModal} className={BTN_PRIMARY}>
+                    <PlusCircleIcon /> New Task
                 </button>
-                <button
-                    onClick={() => setViewMode('assignments')}
-                    className={`p-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 ${viewMode === 'assignments' ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-pink-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
-                    title="Assignments View"
-                >
-                    <UsersIcon /> <span className="text-sm font-medium pr-2 hidden sm:inline">Assignments</span>
-                </button>
-                {currentUser.role === 'PATRON' && (
-                    <button
-                        onClick={() => setViewMode('grading')}
-                        className={`p-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 ${viewMode === 'grading' ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-pink-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
-                        title="Grading View"
-                    >
-                        <AcademicCapIcon /> <span className="text-sm font-medium pr-2 hidden sm:inline">Grading</span>
-                    </button>
-                )}
-            </div>
-            {currentUser.role === 'PATRON' && (
-                 <Tooltip text="Create a new task for the project board.">
-                     <button
-                        onClick={handleOpenNewTaskModal}
-                        className="flex items-center justify-center space-x-2 px-4 py-2.5 font-semibold text-white bg-pink-600 rounded-lg shadow-md hover:bg-pink-700 transition-all"
-                      >
-                        <PlusCircleIcon />
-                        <span className="hidden sm:inline">New Task</span>
-                      </button>
-                 </Tooltip>
-            )}
-        </div>
-      </div>
+            </Tooltip>
+        ) : undefined}
+      />
+      <RuledTabs
+        tabs={[
+            { id: 'board' as const, label: <><ViewGridIcon /> Board</> },
+            { id: 'assignments' as const, label: <><UsersIcon /> Assignments</> },
+            ...(currentUser.role === 'PATRON' ? [{ id: 'grading' as const, label: <><AcademicCapIcon /> Grading</> }] : []),
+        ]}
+        active={viewMode}
+        onChange={setViewMode}
+        className="[&_svg]:h-4 [&_svg]:w-4"
+      />
 
         {renderCurrentView()}
 

@@ -14,6 +14,7 @@ import { CheckCircleIcon as CheckIcon } from './icons/CheckCircleIcon';
 import { XIcon } from './icons/XIcon';
 import { InformationCircleIcon as InfoIcon } from './icons/InformationCircleIcon';
 import { TrashIcon } from './icons/TrashIcon';
+import { PageIntro, StatStrip } from './SplitKit';
 
 const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
     const {
@@ -299,36 +300,29 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
     return (
         <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Header section */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-premium border border-gray-100 dark:border-gray-700 glassmorphism">
-                <div>
-                    <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white flex items-center gap-3">
-                        <div className="p-3 bg-pink-100 dark:bg-pink-900/40 rounded-xl text-pink-600 dark:text-pink-400">
-                            <VoteIcon className="w-7 h-7" />
-                        </div>
-                        Voting Hub
-                    </h2>
-                    <p className="mt-2 text-gray-500 dark:text-gray-400 max-w-lg">
-                        Shape the future of the club. Contest for positions, review candidates, and cast your vote.
-                    </p>
-                </div>
-
-                <div className="flex p-1 bg-gray-100 dark:bg-gray-700/50 rounded-xl">
+            <PageIntro
+                eyebrow="Club leadership"
+                title="Voting Hub"
+                description="Shape the future of the club. Contest for positions, review candidates, and cast your vote."
+                className="!mb-0"
+                actions={
+                <div className="flex items-stretch border-2 border-ch-rule [&>button+button]:border-l [&>button+button]:border-ch-divider">
                     <button
                         onClick={() => setActiveTab('active')}
-                        className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'active' ? 'bg-white dark:bg-gray-600 text-pink-600 dark:text-pink-300 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
+                        className={`px-4 py-2 text-sm font-semibold transition-all ${activeTab === 'active' ? 'bg-ch-accent text-ch-on-accent' : 'text-ch-muted hover:text-ch-text'}`}
                     >
                         Active
                     </button>
                     <button
                         onClick={() => setActiveTab('past')}
-                        className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'past' ? 'bg-white dark:bg-gray-600 text-pink-600 dark:text-pink-300 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
+                        className={`px-4 py-2 text-sm font-semibold transition-all ${activeTab === 'past' ? 'bg-ch-accent text-ch-on-accent' : 'text-ch-muted hover:text-ch-text'}`}
                     >
                         Past
                     </button>
                     {currentUser.role === 'PATRON' && (
                         <button
                             onClick={() => setActiveTab('create')}
-                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'create' ? 'bg-white dark:bg-gray-600 text-pink-600 dark:text-pink-300 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
+                            className={`px-4 py-2 text-sm font-semibold transition-all ${activeTab === 'create' ? 'bg-ch-accent text-ch-on-accent' : 'text-ch-muted hover:text-ch-text'}`}
                         >
                             Manage
                         </button>
@@ -336,11 +330,11 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                     {currentUser.role === 'PATRON' && (
                         <button
                             onClick={() => setActiveTab('vetting')}
-                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all relative ${activeTab === 'vetting' ? 'bg-white dark:bg-gray-600 text-pink-600 dark:text-pink-300 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
+                            className={`px-4 py-2 text-sm font-semibold transition-all relative ${activeTab === 'vetting' ? 'bg-ch-accent text-ch-on-accent' : 'text-ch-muted hover:text-ch-text'}`}
                         >
                             Vetting
                             {pendingContestants.length > 0 && (
-                                <span className="absolute -top-1 -right-1 w-4 h-4 bg-pink-500 text-white text-[10px] flex items-center justify-center rounded-full animate-pulse">
+                                <span className="absolute -top-1 -right-1 w-4 h-4 bg-ch-accent text-ch-on-accent text-[10px] flex items-center justify-center animate-pulse">
                                     {pendingContestants.length}
                                 </span>
                             )}
@@ -349,35 +343,26 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                     {currentUser.role === 'PATRON' && (
                         <button
                             onClick={() => setActiveTab('analytics')}
-                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'analytics' ? 'bg-white dark:bg-gray-600 text-pink-600 dark:text-pink-300 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
+                            className={`px-4 py-2 text-sm font-semibold transition-all ${activeTab === 'analytics' ? 'bg-ch-accent text-ch-on-accent' : 'text-ch-muted hover:text-ch-text'}`}
                         >
                             Analytics
                         </button>
                     )}
                 </div>
-            </div>
+                }
+            />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
-                    <p className="text-xs uppercase tracking-widest text-gray-400 font-semibold">Open now</p>
-                    <p className="text-2xl font-extrabold text-green-600 dark:text-green-400 mt-1">{electionStats.open}</p>
-                </div>
-                <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
-                    <p className="text-xs uppercase tracking-widest text-gray-400 font-semibold">Upcoming</p>
-                    <p className="text-2xl font-extrabold text-amber-600 dark:text-amber-400 mt-1">{electionStats.upcoming}</p>
-                </div>
-                <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
-                    <p className="text-xs uppercase tracking-widest text-gray-400 font-semibold">Closed</p>
-                    <p className="text-2xl font-extrabold text-gray-700 dark:text-gray-200 mt-1">{electionStats.closed}</p>
-                </div>
-                <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
-                    <p className="text-xs uppercase tracking-widest text-gray-400 font-semibold">Pending vetting</p>
-                    <p className="text-2xl font-extrabold text-pink-600 dark:text-pink-400 mt-1">{pendingContestants.length}</p>
-                </div>
-            </div>
+            <StatStrip
+                stats={[
+                    { label: 'Open now', value: electionStats.open, tone: 'text-green-600 dark:text-green-400' },
+                    { label: 'Upcoming', value: electionStats.upcoming, tone: 'text-amber-600 dark:text-amber-400' },
+                    { label: 'Closed', value: electionStats.closed },
+                    { label: 'Pending vetting', value: pendingContestants.length, tone: 'text-ch-accent' },
+                ]}
+            />
 
             {votingError && (
-                <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-600 dark:text-red-400 flex items-center gap-3">
+                <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 flex items-center gap-3">
                     <AlertIcon className="w-5 h-5" />
                     <p>{votingError}</p>
                 </div>
@@ -386,7 +371,7 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
             {isLoadingVoting ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {[1, 2, 3].map(i => (
-                        <div key={i} className="h-64 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-2xl" />
+                        <div key={i} className="h-64 bg-ch-surface-2 animate-pulse" />
                     ))}
                 </div>
             ) : activeTab === 'active' ? (
@@ -397,12 +382,12 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             placeholder="Search elections by title or description..."
-                            className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                            className="flex-1 px-4 py-3 border border-ch-divider bg-ch-bg text-sm text-ch-text focus:outline-none focus:ring-2 focus:ring-ch-accent"
                         />
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-                            className="px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                            className="px-4 py-3 border border-ch-divider bg-ch-bg text-sm text-ch-text focus:outline-none focus:ring-2 focus:ring-ch-accent"
                         >
                             <option value="all">All statuses</option>
                             <option value="open">Open now</option>
@@ -413,18 +398,18 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {filteredActiveElections.length === 0 ? (
-                            <div className="col-span-full py-20 bg-white dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 flex flex-col items-center justify-center text-center px-4">
-                                <VoteIcon className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-4" />
-                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">No Matching Elections</h3>
-                                <p className="text-gray-500 dark:text-gray-400 mt-1">Try clearing your search or changing the status filter.</p>
+                            <div className="col-span-full py-20 bg-ch-bg border-2 border-dashed border-ch-divider flex flex-col items-center justify-center text-center px-4">
+                                <VoteIcon className="w-12 h-12 text-ch-rule mb-4" />
+                                <h3 className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">No Matching Elections</h3>
+                                <p className="text-ch-muted mt-1">Try clearing your search or changing the status filter.</p>
                             </div>
                         ) : filteredActiveElections.map(pos => (
-                            <div key={pos.id} className="group bg-white dark:bg-gray-800 rounded-2xl shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-700 p-6 flex flex-col transition-all duration-300 hover:-translate-y-1">
+                            <div key={pos.id} className="group bg-ch-bg border border-ch-divider p-6 flex flex-col transition-all duration-300">
                                 <div className="flex justify-between items-start mb-4">
-                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${isVotingOpen(pos) ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'}`}>
+                                    <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest ${isVotingOpen(pos) ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'}`}>
                                         {isVotingOpen(pos) ? 'Open' : isUpcoming(pos) ? 'Upcoming' : 'Closed'}
                                     </span>
-                                    <span className="text-xs text-gray-400 flex items-center gap-1 font-medium">
+                                    <span className="text-xs text-ch-muted flex items-center gap-1 font-medium">
                                         <ClockIcon className="w-3 h-3" />
                                         {isUpcoming(pos) ? `Starts in ${getTimeRemaining(pos.startDate)}` : getTimeRemaining(pos.dueDate)}
                                     </span>
@@ -438,22 +423,22 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                                     onConfirm: () => deleteVotingPosition(pos.id)
                                                 });
                                             }}
-                                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+                                            className="p-1.5 text-ch-muted hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
                                             title="Delete Position"
                                         >
                                             <TrashIcon className="w-4 h-4" />
                                         </button>
                                     )}
                                 </div>
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 group-hover:text-pink-600 transition-colors">
+                                <h3 className="text-[20px] font-extrabold tracking-[-0.02em] text-ch-text mb-2 group-hover:text-ch-accent transition-colors">
                                     {pos.title}
                                 </h3>
-                                <p className="text-gray-600 dark:text-gray-300 text-sm line-clamp-3 mb-4 flex-grow">
+                                <p className="text-ch-muted text-sm line-clamp-3 mb-4 flex-grow">
                                     {pos.description || 'No description provided.'}
                                 </p>
 
                                 {pos.criteria && (
-                                    <div className="mb-6 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800/50">
+                                    <div className="mb-6 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50">
                                         <p className="text-xs font-bold text-blue-700 dark:text-blue-300 flex items-center gap-1 mb-1">
                                             <InfoIcon className="w-3.5 h-3.5" />
                                             Contesting Criteria
@@ -469,7 +454,7 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                         <button
                                             onClick={() => handleActionClick(pos, 'contest')}
                                             disabled={userContestantFor.has(pos.id)}
-                                            className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed ${userContestantFor.has(pos.id) ? 'bg-amber-50 dark:bg-amber-900/10 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-800' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                                            className={`flex items-center justify-center gap-2 py-3 px-4 font-bold transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed ${userContestantFor.has(pos.id) ? 'bg-amber-50 dark:bg-amber-900/10 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-800' : 'bg-ch-surface text-ch-text hover:bg-ch-surface-2'}`}
                                         >
                                             <UserIcon className="w-4 h-4" />
                                             {userContestantFor.has(pos.id) ? (
@@ -481,9 +466,9 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                     )}
                                     <button
                                         onClick={() => handleActionClick(pos, 'vote')}
-                                        className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold transition-all text-sm shadow-lg ${isVotingOpen(pos)
-                                            ? 'bg-pink-600 text-white hover:bg-pink-700 shadow-pink-500/25'
-                                            : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed shadow-none'}`}
+                                        className={`flex items-center justify-center gap-2 py-3 px-4 font-bold transition-all text-sm ${isVotingOpen(pos)
+                                            ? 'bg-ch-accent text-ch-on-accent hover:bg-ch-accent-deep'
+                                            : 'bg-ch-surface text-ch-muted cursor-not-allowed'}`}
                                     >
                                         <VoteIcon className="w-4 h-4" />
                                         {isVotingOpen(pos) ? 'Vote Now' : isUpcoming(pos) ? 'Starts Soon' : 'Closed'}
@@ -496,30 +481,30 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
             ) : activeTab === 'past' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {pastElections.length === 0 ? (
-                        <div className="col-span-full py-20 bg-white dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 flex flex-col items-center justify-center text-center px-4">
-                            <BarChart3Icon className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-4" />
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">No Past Elections</h3>
+                        <div className="col-span-full py-20 bg-ch-bg border-2 border-dashed border-ch-divider flex flex-col items-center justify-center text-center px-4">
+                            <BarChart3Icon className="w-12 h-12 text-ch-rule mb-4" />
+                            <h3 className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">No Past Elections</h3>
                         </div>
                     ) : pastElections.map(pos => (
-                        <div key={pos.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 flex flex-col">
+                        <div key={pos.id} className="bg-ch-bg border border-ch-divider p-6 flex flex-col">
                             <div className="flex justify-between items-start mb-4">
-                                <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-full text-xs font-bold uppercase tracking-wider">
+                                <span className="px-3 py-1 bg-ch-surface text-ch-muted text-xs font-bold uppercase tracking-wider">
                                     Closed
                                 </span>
-                                <span className="text-xs text-gray-400 font-medium">
+                                <span className="text-xs text-ch-muted font-medium">
                                     Ended {new Date(pos.dueDate).toLocaleDateString()}
                                 </span>
                             </div>
-                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                            <h3 className="text-[20px] font-extrabold tracking-[-0.02em] text-ch-text mb-2">
                                 {pos.title}
                             </h3>
-                            <p className="text-gray-600 dark:text-gray-300 text-sm line-clamp-2 mb-6 flex-grow">
+                            <p className="text-ch-muted text-sm line-clamp-2 mb-6 flex-grow">
                                 {pos.description}
                             </p>
 
                             <button
                                 onClick={() => handleOpenResults(pos)}
-                                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-xl font-bold hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-all text-sm"
+                                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-ch-accent-soft text-ch-violet font-bold hover:bg-ch-accent-soft transition-all text-sm"
                             >
                                 <BarChart3Icon className="w-4 h-4" />
                                 View Results
@@ -534,7 +519,7 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                             onConfirm: () => deleteVotingPosition(pos.id)
                                         });
                                     }}
-                                    className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 rounded-xl font-bold hover:bg-red-100 dark:hover:bg-red-900/30 transition-all text-sm mt-3"
+                                    className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 font-bold hover:bg-red-100 dark:hover:bg-red-900/30 transition-all text-sm mt-3"
                                 >
                                     <TrashIcon className="w-4 h-4" />
                                     Delete Record
@@ -545,54 +530,54 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                 </div>
             ) : activeTab === 'vetting' ? (
                 <div className="space-y-6">
-                    <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-premium border border-gray-100 dark:border-gray-700">
+                    <div className="bg-ch-bg p-8 border border-ch-divider">
                         <div className="flex items-center justify-between mb-8">
                             <div>
-                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Contestant Vetting</h3>
-                                <p className="text-gray-500 text-sm mt-1">Review manifestos and approve candidates for the ballot.</p>
+                                <h3 className="text-[22px] font-extrabold tracking-[-0.02em] text-ch-text">Contestant Vetting</h3>
+                                <p className="text-ch-muted text-sm mt-1">Review manifestos and approve candidates for the ballot.</p>
                             </div>
-                            <div className="px-4 py-2 bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 rounded-xl text-xs font-bold uppercase tracking-widest">
+                            <div className="px-4 py-2 bg-ch-accent-soft text-ch-accent text-xs font-bold uppercase tracking-widest">
                                 {pendingContestants.length} Pending
                             </div>
                         </div>
 
                         {pendingContestants.length === 0 ? (
-                            <div className="text-center py-20 bg-gray-50 dark:bg-gray-900/20 rounded-2xl border-2 border-dashed border-gray-100 dark:border-gray-800">
+                            <div className="text-center py-20 bg-ch-surface border-2 border-dashed border-ch-divider">
                                 <CheckIcon className="w-16 h-16 text-green-200 dark:text-green-900/40 mx-auto mb-4" />
-                                <h4 className="text-lg font-bold text-gray-900 dark:text-white">All Caught Up!</h4>
-                                <p className="text-gray-500 mt-1">No candidates are currently waiting for approval.</p>
+                                <h4 className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">All Caught Up!</h4>
+                                <p className="text-ch-muted mt-1">No candidates are currently waiting for approval.</p>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {pendingContestants.map(c => {
                                     const pos = votingPositions.find(p => p.id === c.positionId);
                                     return (
-                                        <div key={c.id} className="group bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all">
+                                        <div key={c.id} className="group bg-ch-bg border border-ch-divider p-6 transition-all">
                                             <div className="flex items-center gap-4 mb-4">
                                                 <img
                                                     src={c.userAvatarUrl || `https://i.pravatar.cc/100?u=${c.userId}`}
-                                                    className="w-12 h-12 rounded-2xl object-cover border-2 border-white dark:border-gray-700 shadow-sm"
+                                                    className="w-12 h-12 object-cover border-2 border-white"
                                                 />
                                                 <div>
-                                                    <h4 className="font-bold text-gray-900 dark:text-white">{c.userName}</h4>
-                                                    <span className="text-[10px] font-black text-pink-500 uppercase tracking-tighter bg-pink-50 dark:bg-pink-900/20 px-2 py-0.5 rounded">
+                                                    <h4 className="font-bold text-ch-text">{c.userName}</h4>
+                                                    <span className="text-[10px] font-black text-ch-accent uppercase tracking-tighter bg-ch-accent-soft px-2 py-0.5">
                                                         For {pos?.title || 'Unknown Position'}
                                                     </span>
                                                 </div>
                                             </div>
-                                            <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl mb-6 text-sm text-gray-700 dark:text-gray-300 italic leading-relaxed">
+                                            <div className="p-4 bg-ch-surface mb-6 text-sm text-ch-text italic leading-relaxed">
                                                 "{c.manifesto}"
                                             </div>
                                             <div className="flex gap-3">
                                                 <button
                                                     onClick={() => updateContestantStatus(c.id, 'APPROVED')}
-                                                    className="flex-1 py-3 bg-green-600 text-white rounded-xl text-sm font-bold hover:bg-green-700 transition-all shadow-lg shadow-green-500/20"
+                                                    className="flex-1 py-3 bg-green-600 text-white text-sm font-bold hover:bg-green-700 transition-all"
                                                 >
                                                     Approve
                                                 </button>
                                                 <button
                                                     onClick={() => updateContestantStatus(c.id, 'REJECTED')}
-                                                    className="flex-1 py-3 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-xl text-sm font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
+                                                    className="flex-1 py-3 bg-ch-surface text-ch-muted text-sm font-bold hover:bg-ch-surface-2 transition-all"
                                                 >
                                                     Reject
                                                 </button>
@@ -607,46 +592,46 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
             ) : activeTab === 'analytics' ? (
                 <div className="space-y-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-premium border border-gray-100 dark:border-gray-700 relative overflow-hidden group">
-                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-pink-500/5 rounded-full group-hover:scale-150 transition-transform duration-700" />
-                            <div className="flex items-center gap-3 text-pink-600 mb-4">
+                        <div className="bg-ch-bg p-6 border border-ch-divider relative overflow-hidden group">
+                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-ch-accent-soft transition-transform duration-700" />
+                            <div className="flex items-center gap-3 text-ch-accent mb-4">
                                 <BarChart3Icon className="w-6 h-6" />
                                 <h4 className="font-bold text-xs uppercase tracking-widest">Global Participation</h4>
                             </div>
-                            <div className="text-4xl font-black text-gray-900 dark:text-white">
+                            <div className="text-4xl font-black text-ch-text">
                                 {allUsers.length > 0 ? ((analyticsVotes.length / allUsers.length) * 100).toFixed(1) : 0}%
                             </div>
-                            <p className="text-xs text-gray-500 mt-2 font-medium">{analyticsVotes.length} votes cast by {allUsers.length} members</p>
+                            <p className="text-xs text-ch-muted mt-2 font-medium">{analyticsVotes.length} votes cast by {allUsers.length} members</p>
                         </div>
 
-                        <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-premium border border-gray-100 dark:border-gray-700 relative overflow-hidden group">
-                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-blue-500/5 rounded-full group-hover:scale-150 transition-transform duration-700" />
+                        <div className="bg-ch-bg p-6 border border-ch-divider relative overflow-hidden group">
+                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-blue-500/5 transition-transform duration-700" />
                             <div className="flex items-center gap-3 text-blue-600 mb-4">
                                 <UserIcon className="w-6 h-6" />
                                 <h4 className="font-bold text-xs uppercase tracking-widest">Election Density</h4>
                             </div>
-                            <div className="text-4xl font-black text-gray-900 dark:text-white">
+                            <div className="text-4xl font-black text-ch-text">
                                 {votingPositions.length > 0 ? (globalContestantsCount / votingPositions.length).toFixed(1) : 0}
                             </div>
-                            <p className="text-xs text-gray-500 mt-2 font-medium">Average candidates per election</p>
+                            <p className="text-xs text-ch-muted mt-2 font-medium">Average candidates per election</p>
                         </div>
 
-                        <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-premium border border-gray-100 dark:border-gray-700 relative overflow-hidden group">
-                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-green-500/5 rounded-full group-hover:scale-150 transition-transform duration-700" />
+                        <div className="bg-ch-bg p-6 border border-ch-divider relative overflow-hidden group">
+                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-green-500/5 transition-transform duration-700" />
                             <div className="flex items-center gap-3 text-green-600 mb-4">
                                 <CheckIcon className="w-6 h-6" />
                                 <h4 className="font-bold text-xs uppercase tracking-widest">Vetting Efficiency</h4>
                             </div>
-                            <div className="text-4xl font-black text-gray-900 dark:text-white">
+                            <div className="text-4xl font-black text-ch-text">
                                 {globalContestantsCount > 0 ? ((approvedContestants.length / globalContestantsCount) * 100).toFixed(0) : 0}%
                             </div>
-                            <p className="text-xs text-gray-500 mt-2 font-medium">{approvedContestants.length} of {globalContestantsCount} apps approved</p>
+                            <p className="text-xs text-ch-muted mt-2 font-medium">{approvedContestants.length} of {globalContestantsCount} apps approved</p>
                         </div>
                     </div>
 
-                    <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-premium border border-gray-100 dark:border-gray-700">
+                    <div className="bg-ch-bg p-8 border border-ch-divider">
                         <div className="flex items-center justify-between mb-8">
-                            <h4 className="text-xl font-bold text-gray-900 dark:text-white">Live Vote Breakdown</h4>
+                            <h4 className="text-[20px] font-extrabold tracking-[-0.02em] text-ch-text">Live Vote Breakdown</h4>
                             <button
                                 onClick={async () => {
                                     try {
@@ -656,7 +641,7 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                         console.error('Refresh failed', e);
                                     }
                                 }}
-                                className="flex items-center gap-2 px-4 py-2 bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 rounded-xl text-sm font-bold hover:bg-pink-100 dark:hover:bg-pink-900/40 transition-all"
+                                className="flex items-center gap-2 px-4 py-2 bg-ch-accent-soft text-ch-accent text-sm font-bold hover:bg-ch-accent-soft transition-all"
                             >
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                                 Refresh
@@ -664,7 +649,7 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                         </div>
 
                         {votingPositions.length === 0 ? (
-                            <div className="text-center py-16 text-gray-400">No elections to display.</div>
+                            <div className="text-center py-16 text-ch-muted">No elections to display.</div>
                         ) : (
                             <div className="space-y-8">
                                 {votingPositions.map(pos => {
@@ -680,25 +665,25 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                     const statusLabel = isVotingOpen(pos) ? 'LIVE' : isUpcoming(pos) ? 'Upcoming' : 'Closed';
 
                                     return (
-                                        <div key={pos.id} className="border border-gray-100 dark:border-gray-700 rounded-2xl overflow-hidden">
+                                        <div key={pos.id} className="border border-ch-divider overflow-hidden">
                                             {/* Position Header */}
-                                            <div className="flex items-center justify-between px-6 py-4 bg-gray-50 dark:bg-gray-900/30">
+                                            <div className="flex items-center justify-between px-6 py-4 bg-ch-surface">
                                                 <div className="flex items-center gap-3">
-                                                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${isVotingOpen(pos) ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 animate-pulse' :
+                                                    <span className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-widest ${isVotingOpen(pos) ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 animate-pulse' :
                                                         isUpcoming(pos) ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' :
-                                                            'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                                                            'bg-ch-surface-2 text-ch-muted'
                                                         }`}>{statusLabel}</span>
-                                                    <h5 className="font-bold text-gray-900 dark:text-white">{pos.title}</h5>
+                                                    <h5 className="font-bold text-ch-text">{pos.title}</h5>
                                                 </div>
-                                                <span className="text-sm font-black text-gray-500 dark:text-gray-400">
+                                                <span className="text-sm font-black text-ch-muted">
                                                     {totalPosVotes} vote{totalPosVotes !== 1 ? 's' : ''}
                                                 </span>
                                             </div>
 
                                             {/* Candidate Leaderboard */}
-                                            <div className="divide-y divide-gray-50 dark:divide-gray-700/50">
+                                            <div className="divide-y divide-gray-50">
                                                 {ranked.length === 0 ? (
-                                                    <div className="px-6 py-5 text-sm text-gray-400 italic">No approved candidates yet.</div>
+                                                    <div className="px-6 py-5 text-sm text-ch-muted italic">No approved candidates yet.</div>
                                                 ) : ranked.map((contestant, idx) => {
                                                     const cVotes = posVotes.filter(v => v.contestantId === contestant.id).length;
                                                     const pct = totalPosVotes > 0 ? (cVotes / totalPosVotes) * 100 : 0;
@@ -708,29 +693,29 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                                         <div key={contestant.id} className={`px-6 py-4 flex items-center gap-4 ${isLeading ? 'bg-yellow-50/50 dark:bg-yellow-900/10' : ''}`}>
                                                             {/* Rank / Medal */}
                                                             <div className="w-8 text-center text-lg flex-shrink-0">
-                                                                {idx < 3 && cVotes > 0 ? medals[idx] : <span className="text-sm font-bold text-gray-400">#{idx + 1}</span>}
+                                                                {idx < 3 && cVotes > 0 ? medals[idx] : <span className="text-sm font-bold text-ch-muted">#{idx + 1}</span>}
                                                             </div>
 
                                                             {/* Avatar */}
                                                             <img
                                                                 src={contestant.userAvatarUrl || `https://i.pravatar.cc/60?u=${contestant.userId}`}
                                                                 alt={contestant.userName}
-                                                                className="w-9 h-9 rounded-xl object-cover border-2 border-white dark:border-gray-700 shadow-sm flex-shrink-0"
+                                                                className="w-9 h-9 object-cover border-2 border-white flex-shrink-0"
                                                             />
 
                                                             {/* Name + Bar */}
                                                             <div className="flex-1 min-w-0">
                                                                 <div className="flex items-center justify-between mb-1.5">
-                                                                    <span className="text-sm font-bold text-gray-900 dark:text-white truncate">{contestant.userName}</span>
-                                                                    <span className="text-sm font-black text-gray-700 dark:text-gray-200 ml-3 flex-shrink-0">
-                                                                        {cVotes} <span className="text-[11px] font-medium text-gray-400">({pct.toFixed(0)}%)</span>
+                                                                    <span className="text-sm font-bold text-ch-text truncate">{contestant.userName}</span>
+                                                                    <span className="text-sm font-black text-ch-text ml-3 flex-shrink-0">
+                                                                        {cVotes} <span className="text-[11px] font-medium text-ch-muted">({pct.toFixed(0)}%)</span>
                                                                     </span>
                                                                 </div>
-                                                                <div className="h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                                                                <div className="h-2.5 bg-ch-surface overflow-hidden">
                                                                     <div
-                                                                        className={`h-full rounded-full transition-all duration-700 ease-out ${isLeading
-                                                                            ? 'bg-gradient-to-r from-yellow-400 to-pink-500'
-                                                                            : 'bg-gradient-to-r from-pink-400 to-purple-500'
+                                                                        className={`h-full transition-all duration-700 ease-out ${isLeading
+                                                                            ? 'bg-ch-accent'
+                                                                            : 'bg-ch-accent'
                                                                             }`}
                                                                         style={{ width: `${pct}%` }}
                                                                     />
@@ -748,33 +733,33 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                     </div>
                 </div>
             ) : (
-                <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-premium border border-gray-100 dark:border-gray-700">
-                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Create New Position</h3>
+                <div className="max-w-2xl mx-auto bg-ch-bg p-8 border border-ch-divider">
+                    <h3 className="text-[22px] font-extrabold tracking-[-0.02em] text-ch-text mb-6">Create New Position</h3>
                     <form onSubmit={handleCreatePosition} className="space-y-6">
                         <div className="space-y-2">
-                            <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Position Title</label>
+                            <label className="text-sm font-bold text-ch-text">Position Title</label>
                             <input
                                 type="text"
                                 required
-                                className="w-full p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 rounded-2xl focus:ring-2 focus:ring-pink-500 outline-none transition-all dark:text-white"
+                                className="w-full p-4 bg-ch-surface border border-ch-divider focus:ring-2 focus:ring-ch-accent outline-none transition-all"
                                 placeholder="e.g. Club President"
                                 value={newPos.title}
                                 onChange={e => setNewPos({ ...newPos, title: e.target.value })}
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Description</label>
+                            <label className="text-sm font-bold text-ch-text">Description</label>
                             <textarea
-                                className="w-full p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 rounded-2xl focus:ring-2 focus:ring-pink-500 outline-none transition-all min-h-[120px] dark:text-white"
+                                className="w-full p-4 bg-ch-surface border border-ch-divider focus:ring-2 focus:ring-ch-accent outline-none transition-all min-h-[120px]"
                                 placeholder="Describe the responsibilities..."
                                 value={newPos.description}
                                 onChange={e => setNewPos({ ...newPos, description: e.target.value })}
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Contesting Criteria</label>
+                            <label className="text-sm font-bold text-ch-text">Contesting Criteria</label>
                             <textarea
-                                className="w-full p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 rounded-2xl focus:ring-2 focus:ring-pink-500 outline-none transition-all min-h-[80px] dark:text-white"
+                                className="w-full p-4 bg-ch-surface border border-ch-divider focus:ring-2 focus:ring-ch-accent outline-none transition-all min-h-[80px]"
                                 placeholder="Who is eligible? (e.g. Must be a member for 6 months)"
                                 value={newPos.criteria}
                                 onChange={e => setNewPos({ ...newPos, criteria: e.target.value })}
@@ -782,21 +767,21 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Voting Starts</label>
+                                <label className="text-sm font-bold text-ch-text">Voting Starts</label>
                                 <input
                                     type="datetime-local"
                                     required
-                                    className="w-full p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 rounded-2xl focus:ring-2 focus:ring-pink-500 outline-none transition-all dark:text-white"
+                                    className="w-full p-4 bg-ch-surface border border-ch-divider focus:ring-2 focus:ring-ch-accent outline-none transition-all"
                                     value={newPos.startDate}
                                     onChange={e => setNewPos({ ...newPos, startDate: e.target.value })}
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Voting Ends (Deadline)</label>
+                                <label className="text-sm font-bold text-ch-text">Voting Ends (Deadline)</label>
                                 <input
                                     type="datetime-local"
                                     required
-                                    className="w-full p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 rounded-2xl focus:ring-2 focus:ring-pink-500 outline-none transition-all dark:text-white"
+                                    className="w-full p-4 bg-ch-surface border border-ch-divider focus:ring-2 focus:ring-ch-accent outline-none transition-all"
                                     value={newPos.dueDate}
                                     onChange={e => setNewPos({ ...newPos, dueDate: e.target.value })}
                                 />
@@ -804,7 +789,7 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                         </div>
                         <button
                             disabled={isSubmitting}
-                            className="w-full py-4 bg-gradient-to-r from-pink-600 to-purple-600 text-white rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg shadow-pink-500/25 disabled:opacity-50"
+                            className="w-full py-4 text-ch-on-accent font-bold hover:opacity-90 transition-all disabled:opacity-50 bg-ch-accent"
                         >
                             {isSubmitting ? 'Posting...' : 'Post Position'}
                         </button>
@@ -814,23 +799,23 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
 
             {/* Contest Modal */}
             {showContestModal && selectedPosition && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-                    <div className="bg-white dark:bg-gray-800 w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-                        <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 animate-in fade-in duration-300">
+                    <div className="bg-ch-bg w-full max-w-xl overflow-hidden animate-in zoom-in-95 duration-300">
+                        <div className="p-6 border-b border-ch-divider flex justify-between items-center">
                             <div>
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Contest for {selectedPosition.title}</h3>
-                                <p className="text-sm text-gray-500 mt-1">Submit your manifesto to the club</p>
+                                <h3 className="text-[20px] font-extrabold tracking-[-0.02em] text-ch-text">Contest for {selectedPosition.title}</h3>
+                                <p className="text-sm text-ch-muted mt-1">Submit your manifesto to the club</p>
                             </div>
                             <button
                                 onClick={() => setShowContestModal(false)}
-                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                                className="p-2 hover:bg-ch-surface transition-colors"
                             >
-                                <XIcon className="w-6 h-6 text-gray-400" />
+                                <XIcon className="w-6 h-6 text-ch-muted" />
                             </button>
                         </div>
                         <div className="p-6 space-y-6">
                             {selectedPosition.criteria && (
-                                <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl">
+                                <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
                                     <h4 className="text-sm font-extrabold text-amber-800 dark:text-amber-400 mb-1 flex items-center gap-2">
                                         <AlertIcon className="w-4 h-4" />
                                         Confirm Eligibility
@@ -841,7 +826,7 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                     <label className="flex items-center gap-3 cursor-pointer group">
                                         <input
                                             type="checkbox"
-                                            className="w-5 h-5 rounded border-amber-300 text-amber-600 focus:ring-amber-500 transition-all"
+                                            className="w-5 h-5 border-amber-300 text-amber-600 focus:ring-amber-500 transition-all"
                                             checked={criteriaAgreed}
                                             onChange={e => setCriteriaAgreed(e.target.checked)}
                                         />
@@ -853,9 +838,9 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                             )}
 
                             <div className="space-y-2">
-                                <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Your Manifesto</label>
+                                <label className="text-sm font-bold text-ch-text">Your Manifesto</label>
                                 <textarea
-                                    className="w-full p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 rounded-2xl focus:ring-2 focus:ring-pink-500 outline-none transition-all min-h-[160px] dark:text-white text-sm"
+                                    className="w-full p-4 bg-ch-surface border border-ch-divider focus:ring-2 focus:ring-ch-accent outline-none transition-all min-h-[160px] text-sm"
                                     placeholder="Explain why you are the best fit for this role..."
                                     value={manifesto}
                                     onChange={e => setManifesto(e.target.value)}
@@ -865,14 +850,14 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                             <div className="flex gap-4">
                                 <button
                                     onClick={() => setShowContestModal(false)}
-                                    className="flex-1 py-4 text-gray-500 font-bold hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                                    className="flex-1 py-4 text-ch-muted font-bold hover:text-ch-text transition-colors"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     disabled={isSubmitting || (selectedPosition.criteria && !criteriaAgreed)}
                                     onClick={handleContest}
-                                    className="flex-[2] py-4 bg-pink-600 text-white rounded-2xl font-bold hover:bg-pink-700 transition-all shadow-lg shadow-pink-500/25 disabled:opacity-50"
+                                    className="flex-[2] py-4 bg-ch-accent text-ch-on-accent font-bold hover:bg-ch-accent-deep transition-all disabled:opacity-50"
                                 >
                                     {isSubmitting ? 'Submitting...' : 'Submit Entry'}
                                 </button>
@@ -884,24 +869,24 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
 
             {/* Vote Modal */}
             {showVoteModal && selectedPosition && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-                    <div className="bg-white dark:bg-gray-800 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
-                        <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/20">
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 animate-in fade-in duration-300">
+                    <div className="bg-ch-bg w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
+                        <div className="p-6 border-b border-ch-divider flex justify-between items-center bg-ch-surface">
                             <div>
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Vote for {selectedPosition.title}</h3>
-                                <p className="text-sm text-gray-500 mt-1">{contestants.length} Contestants</p>
+                                <h3 className="text-[20px] font-extrabold tracking-[-0.02em] text-ch-text">Vote for {selectedPosition.title}</h3>
+                                <p className="text-sm text-ch-muted mt-1">{contestants.length} Contestants</p>
                             </div>
                             <button
                                 onClick={() => setShowVoteModal(false)}
-                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                                className="p-2 hover:bg-ch-surface transition-colors"
                             >
-                                <XIcon className="w-6 h-6 text-gray-400" />
+                                <XIcon className="w-6 h-6 text-ch-muted" />
                             </button>
                         </div>
 
                         <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
                             {!isVotingOpen(selectedPosition) && (
-                                <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl">
+                                <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
                                     <p className="text-sm font-bold text-amber-700 dark:text-amber-300">Voting opens on {formatDateTime(selectedPosition.startDate)}</p>
                                     <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">You can review every candidate manifesto now, and cast your vote once voting officially opens.</p>
                                 </div>
@@ -909,32 +894,32 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
 
                             {contestants.length === 0 ? (
                                 <div className="text-center py-10">
-                                    <UserIcon className="w-12 h-12 text-gray-200 dark:text-gray-700 mx-auto mb-4" />
-                                    <p className="text-gray-500">No approved candidates available yet.</p>
+                                    <UserIcon className="w-12 h-12 text-ch-rule mx-auto mb-4" />
+                                    <p className="text-ch-muted">No approved candidates available yet.</p>
                                 </div>
                             ) : approvedContestants.map(contestant => (
-                                <div key={contestant.id} className="p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-3xl shadow-sm hover:shadow-md transition-all">
+                                <div key={contestant.id} className="p-6 bg-ch-bg border border-ch-divider transition-all">
                                     <div className="flex items-center gap-4 mb-4">
                                         <img
                                             src={contestant.userAvatarUrl || `https://i.pravatar.cc/100?u=${contestant.userId}`}
                                             alt={contestant.userName}
-                                            className="w-14 h-14 rounded-2xl object-cover border-2 border-white dark:border-gray-700 shadow-sm"
+                                            className="w-14 h-14 object-cover border-2 border-white"
                                         />
                                         <div>
-                                            <h4 className="font-extrabold text-gray-900 dark:text-white text-lg">{contestant.userName}</h4>
-                                            <p className="text-xs text-pink-600 dark:text-pink-400 font-bold uppercase tracking-widest">Candidate for {selectedPosition.title}</p>
+                                            <h4 className="font-extrabold text-ch-text text-lg">{contestant.userName}</h4>
+                                            <p className="text-xs text-ch-accent font-bold uppercase tracking-widest">Candidate for {selectedPosition.title}</p>
                                         </div>
                                     </div>
                                     <div className="mb-4">
-                                        <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2">Manifesto</p>
-                                        <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-2xl text-sm text-gray-700 dark:text-gray-300 italic leading-relaxed">
+                                        <p className="text-[11px] font-black text-ch-muted uppercase tracking-widest mb-2">Manifesto</p>
+                                        <div className="p-4 bg-ch-surface text-sm text-ch-text italic leading-relaxed">
                                             {contestant.manifesto?.trim() ? `"${contestant.manifesto}"` : 'No manifesto provided by this candidate yet.'}
                                         </div>
                                     </div>
                                     <button
                                         disabled={isSubmitting || hasUserVoted || !isVotingOpen(selectedPosition)}
                                         onClick={() => handleCastVote(contestant.id)}
-                                        className="w-full py-4 bg-white dark:bg-gray-700 border-2 border-pink-100 dark:border-pink-900/30 text-pink-600 dark:text-pink-400 rounded-2xl font-bold hover:bg-pink-600 hover:text-white dark:hover:bg-pink-600 dark:hover:text-white transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                                        className="w-full py-4 bg-ch-bg border-2 border-ch-divider text-ch-accent font-bold hover:bg-ch-accent-deep hover:text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                                     >
                                         {hasUserVoted ? 'Vote Already Cast' : !isVotingOpen(selectedPosition) ? `Vote opens ${new Date(selectedPosition.startDate).toLocaleDateString()}` : `Vote for ${contestant.userName}`}
                                     </button>
@@ -947,24 +932,24 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
 
             {/* Results Modal */}
             {showResultsModal && selectedPosition && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-                    <div className="bg-white dark:bg-gray-800 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
-                        <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/20">
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 animate-in fade-in duration-300">
+                    <div className="bg-ch-bg w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
+                        <div className="p-6 border-b border-ch-divider flex justify-between items-center bg-ch-surface">
                             <div>
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Results: {selectedPosition.title}</h3>
-                                <p className="text-sm text-gray-500 mt-1">{votes.length} Votes Cast Total</p>
+                                <h3 className="text-[20px] font-extrabold tracking-[-0.02em] text-ch-text">Results: {selectedPosition.title}</h3>
+                                <p className="text-sm text-ch-muted mt-1">{votes.length} Votes Cast Total</p>
                             </div>
                             <button
                                 onClick={() => setShowResultsModal(false)}
-                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                                className="p-2 hover:bg-ch-surface transition-colors"
                             >
-                                <XIcon className="w-6 h-6 text-gray-400" />
+                                <XIcon className="w-6 h-6 text-ch-muted" />
                             </button>
                         </div>
 
                         <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
                             {sortedResults.length === 0 ? (
-                                <div className="text-center py-10 font-medium text-gray-500">
+                                <div className="text-center py-10 font-medium text-ch-muted">
                                     No data available for this election.
                                 </div>
                             ) : sortedResults.map((contestant, index) => {
@@ -975,17 +960,17 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                     <div key={contestant.id} className="space-y-3">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
-                                                {index === 0 && <span className="p-1 px-2 bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400 rounded text-[10px] font-black uppercase">Winner</span>}
-                                                <h4 className="font-bold text-gray-900 dark:text-white">{contestant.userName}</h4>
+                                                {index === 0 && <span className="p-1 px-2 bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400 text-[10px] font-black uppercase">Winner</span>}
+                                                <h4 className="font-bold text-ch-text">{contestant.userName}</h4>
                                             </div>
                                             <div className="text-right">
-                                                <span className="text-lg font-black text-gray-900 dark:text-white">{count}</span>
-                                                <span className="text-xs text-gray-400 ml-1">votes ({percent.toFixed(0)}%)</span>
+                                                <span className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">{count}</span>
+                                                <span className="text-xs text-ch-muted ml-1">votes ({percent.toFixed(0)}%)</span>
                                             </div>
                                         </div>
-                                        <div className="h-4 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden p-[2px]">
+                                        <div className="h-4 w-full bg-ch-surface overflow-hidden p-[2px]">
                                             <div
-                                                className={`h-full rounded-full transition-all duration-1000 ${index === 0 ? 'bg-gradient-to-r from-pink-500 to-purple-600 shadow-sm' : 'bg-gray-300 dark:bg-gray-500'}`}
+                                                className={`h-full transition-all duration-1000 ${index === 0 ? 'bg-ch-accent' : 'bg-ch-surface-2'}`}
                                                 style={{ width: `${percent}%` }}
                                             />
                                         </div>
@@ -993,8 +978,8 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                                 );
                             })}
 
-                            <div className="mt-8 p-6 bg-pink-50 dark:bg-pink-900/10 rounded-2xl border border-pink-100 dark:border-pink-900/30">
-                                <div className="flex items-center gap-3 text-pink-700 dark:text-pink-300">
+                            <div className="mt-8 p-6 bg-ch-accent-soft border border-ch-divider">
+                                <div className="flex items-center gap-3 text-ch-accent">
                                     <CheckIcon className="w-6 h-6" />
                                     <div>
                                         <h5 className="font-bold">Election Finalized</h5>
@@ -1008,29 +993,29 @@ const VotingPage: React.FC<{ currentUser: User }> = ({ currentUser }) => {
             )}
             {/* Status Modal (Upcoming/Closed) */}
             {showStatusModal && statusModalConfig && (
-                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
-                    <div className="bg-white dark:bg-gray-800 w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-gray-100 dark:border-gray-700">
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 animate-in fade-in duration-300">
+                    <div className="bg-ch-bg w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-300 border-2 border-ch-rule">
                         <div className="p-8 text-center">
-                            <div className={`w-20 h-20 mx-auto rounded-3xl flex items-center justify-center mb-6 ${statusModalConfig.type === 'upcoming' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600' : 'bg-gray-100 dark:bg-gray-700 text-gray-500'}`}>
+                            <div className={`w-20 h-20 mx-auto flex items-center justify-center mb-6 ${statusModalConfig.type === 'upcoming' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600' : 'bg-ch-surface text-ch-muted'}`}>
                                 {statusModalConfig.type === 'upcoming' ? <ClockIcon className="w-10 h-10" /> : <BarChart3Icon className="w-10 h-10" />}
                             </div>
-                            <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-2">{statusModalConfig.title}</h3>
-                            <p className="text-gray-500 dark:text-gray-400 leading-relaxed mb-8">
+                            <h3 className="text-[22px] font-extrabold tracking-[-0.02em] text-ch-text mb-2">{statusModalConfig.title}</h3>
+                            <p className="text-ch-muted leading-relaxed mb-8">
                                 {statusModalConfig.message}
                             </p>
 
-                            <div className="p-4 bg-gray-50 dark:bg-gray-900/40 rounded-2xl border border-gray-100 dark:border-gray-700 mb-8 inline-block mx-auto">
-                                <span className="text-sm font-bold text-gray-400 uppercase tracking-widest block mb-1">
+                            <div className="p-4 bg-ch-surface border border-ch-divider mb-8 inline-block mx-auto">
+                                <span className="text-sm font-bold text-ch-muted uppercase tracking-widest block mb-1">
                                     {statusModalConfig.type === 'upcoming' ? 'Scheduled Start' : 'Ended On'}
                                 </span>
-                                <span className="text-lg font-black text-pink-600 dark:text-pink-400">
+                                <span className="text-lg font-black text-ch-accent">
                                     {new Date(statusModalConfig.date).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
                                 </span>
                             </div>
 
                             <button
                                 onClick={() => setShowStatusModal(false)}
-                                className="w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl font-bold hover:opacity-90 transition-all shadow-xl"
+                                className="w-full py-4 bg-ch-text text-ch-bg font-bold hover:opacity-90 transition-all"
                             >
                                 Understood
                             </button>

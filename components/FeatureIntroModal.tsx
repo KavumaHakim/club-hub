@@ -13,13 +13,13 @@ const FeatureIntroModal: React.FC<FeatureIntroModalProps> = ({ isOpen, title, bo
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden border border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white">{title}</h3>
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70">
+      <div className="bg-ch-bg w-full max-w-xl overflow-hidden border-2 border-ch-rule">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-ch-divider">
+          <h3 className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">{title}</h3>
           <button
             onClick={onClose}
-            className="p-2 rounded-full text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="p-2 text-ch-muted hover:text-ch-text hover:bg-ch-surface"
             aria-label="Close feature intro"
           >
             <XIcon />
@@ -31,7 +31,7 @@ const FeatureIntroModal: React.FC<FeatureIntroModalProps> = ({ isOpen, title, bo
         <div className="px-6 pb-6 flex justify-end">
           <button
             onClick={onClose}
-            className="px-5 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-bold hover:opacity-90 transition-opacity"
+            className="px-5 py-2 bg-ch-text text-ch-bg font-bold hover:opacity-90 transition-opacity"
           >
             Got it
           </button>

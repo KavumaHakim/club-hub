@@ -24,7 +24,7 @@ class ChartErrorBoundary extends React.Component<ChartErrorBoundaryProps, ChartE
   render() {
     if (this.state.hasError) {
       return this.props.fallback || (
-        <div className="flex items-center justify-center h-full text-sm text-gray-500 dark:text-gray-400">
+        <div className="flex items-center justify-center h-full text-sm text-ch-muted">
           Chart unavailable.
         </div>
       );

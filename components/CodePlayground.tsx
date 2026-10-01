@@ -219,51 +219,51 @@ const PublishModal: React.FC<{
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 relative border border-gray-200 dark:border-gray-700">
-                <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400"><XIcon /></button>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Publish to Showcase</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+            <div className="bg-ch-bg max-w-md w-full p-6 relative border-2 border-ch-rule">
+                <button onClick={onClose} className="absolute top-4 right-4 text-ch-muted hover:text-ch-text"><XIcon /></button>
+                <h3 className="text-[20px] font-extrabold tracking-[-0.02em] text-ch-text mb-4">Publish to Showcase</h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
+                        <label className="block text-sm font-medium text-ch-text mb-1">Title</label>
                         <input 
                             type="text" 
                             value={title} 
                             onChange={e => setTitle(e.target.value)} 
                             required={!includeProject || !projectName}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500" 
+                            className="w-full px-3 py-2 border border-ch-divider focus:ring-ch-accent" 
                             placeholder="My Awesome Script"
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                        <label className="block text-sm font-medium text-ch-text mb-1">Description</label>
                         <textarea 
                             value={desc} 
                             onChange={e => setDesc(e.target.value)} 
                             required={!includeProject || !projectName}
                             rows={3}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-pink-500" 
+                            className="w-full px-3 py-2 border border-ch-divider focus:ring-ch-accent" 
                             placeholder="What does this code do?"
                         />
                     </div>
                     {projectName && (
-                        <div className="space-y-2 rounded-lg border border-gray-200 dark:border-gray-700 p-3 bg-gray-50 dark:bg-gray-900/40">
-                            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                        <div className="space-y-2 border border-ch-divider p-3 bg-ch-surface">
+                            <label className="flex items-center gap-2 text-sm text-ch-text">
                                 <input
                                     type="checkbox"
                                     checked={includeProject}
                                     onChange={(e) => setIncludeProject(e.target.checked)}
-                                    className="rounded border-gray-300 text-pink-600 focus:ring-pink-500"
+                                    className="border-ch-divider text-ch-accent focus:ring-ch-accent"
                                 />
                                 Include project details
                             </label>
                             {includeProject && teamName && (
-                                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                <label className="flex items-center gap-2 text-sm text-ch-text">
                                     <input
                                         type="checkbox"
                                         checked={showcaseAsTeam}
                                         onChange={(e) => setShowcaseAsTeam(e.target.checked)}
-                                        className="rounded border-gray-300 text-pink-600 focus:ring-pink-500"
+                                        className="border-ch-divider text-ch-accent focus:ring-ch-accent"
                                     />
                                     Showcase as team ({teamName})
                                 </label>
@@ -273,7 +273,7 @@ const PublishModal: React.FC<{
                     <button 
                         type="submit" 
                         disabled={isPublishing}
-                        className="w-full py-2 bg-pink-600 text-white rounded-lg font-medium hover:bg-pink-700 disabled:opacity-50"
+                        className="w-full py-2 bg-ch-accent text-ch-on-accent font-medium hover:bg-ch-accent-deep disabled:opacity-50"
                     >
                         {isPublishing ? 'Publishing...' : 'Publish'}
                     </button>
@@ -284,8 +284,8 @@ const PublishModal: React.FC<{
 };
 
 const MenuItem: React.FC<{ onClick: () => void; icon: React.ReactNode; label: string }> = ({ onClick, icon, label }) => (
-    <button onClick={onClick} className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors">
-        <span className="text-gray-500 dark:text-gray-400">{icon}</span>
+    <button onClick={onClick} className="w-full text-left px-4 py-2.5 text-sm text-ch-text hover:bg-ch-surface flex items-center gap-3 transition-colors">
+        <span className="text-ch-muted">{icon}</span>
         {label}
     </button>
 );
@@ -1871,15 +1871,15 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
   }, [activeProject, activeFile?.path, language]);
 
   const projectPanel = (
-      <div className="flex flex-col h-full w-72 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700">
-          <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
+      <div className="flex flex-col h-full w-72 bg-ch-bg border-r-2 border-ch-rule">
+          <div className="p-3 border-b border-ch-divider flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm font-semibold text-ch-text">
                   <ViewGridIcon />
                   Projects
               </div>
               <button
                   onClick={loadProjects}
-                  className="p-1.5 rounded-md text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
+                  className="p-1.5 text-ch-muted hover:text-ch-text hover:bg-ch-surface"
                   title="Refresh"
               >
                   <RefreshIcon />
@@ -1887,17 +1887,17 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
           </div>
           <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-4">
               <div className="space-y-2">
-                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">New Project</p>
+                  <p className="text-xs font-semibold text-ch-muted uppercase">New Project</p>
                   <input
                       value={newProject.name}
                       onChange={(e) => setNewProject(prev => ({ ...prev, name: e.target.value }))}
                       placeholder="Project name"
-                      className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                      className="w-full px-3 py-2 text-xs border border-ch-divider bg-ch-bg"
                   />
                   <select
                       value={newProject.language}
                       onChange={(e) => setNewProject(prev => ({ ...prev, language: e.target.value as ProjectLanguage }))}
-                      className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                      className="w-full px-3 py-2 text-xs border border-ch-divider bg-ch-bg"
                   >
                       <option value="python">Python</option>
                       <option value="web">Web</option>
@@ -1905,7 +1905,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                   <select
                       value={newProject.teamId}
                       onChange={(e) => setNewProject(prev => ({ ...prev, teamId: e.target.value }))}
-                      className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                      className="w-full px-3 py-2 text-xs border border-ch-divider bg-ch-bg"
                   >
                       <option value="">Personal project</option>
                       {selectableTeams.map(team => (
@@ -1914,32 +1914,32 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                   </select>
                   <button
                       onClick={handleCreateProject}
-                      className="w-full px-3 py-2 text-xs font-semibold rounded-lg bg-pink-600 text-white hover:bg-pink-700"
+                      className="w-full px-3 py-2 text-xs font-semibold bg-ch-accent text-ch-on-accent hover:bg-ch-accent-deep"
                   >
                       Create Project
                   </button>
               </div>
 
               <div className="space-y-2">
-                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Your Projects</p>
+                  <p className="text-xs font-semibold text-ch-muted uppercase">Your Projects</p>
                   {isLoadingProjects ? (
-                      <p className="text-xs text-gray-400">Loading...</p>
+                      <p className="text-xs text-ch-muted">Loading...</p>
                   ) : accessibleProjects.length === 0 ? (
-                      <p className="text-xs text-gray-400">No projects yet.</p>
+                      <p className="text-xs text-ch-muted">No projects yet.</p>
                   ) : (
                       <div className="space-y-2">
                           {accessibleProjects.map(project => (
                               <div key={project.id} className="flex items-center gap-2">
                                   <button
                                       onClick={() => openProject(project)}
-                                      className={`flex-1 text-left px-3 py-2 rounded-lg border text-xs transition-colors ${
+                                      className={`flex-1 text-left px-3 py-2 border text-xs transition-colors ${
                                           activeProject?.id === project.id
-                                              ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-200'
-                                              : 'border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                              ? 'border-ch-accent bg-ch-accent-soft text-ch-accent'
+                                              : 'border-ch-divider hover:bg-ch-surface'
                                       }`}
                                   >
                                       <div className="font-semibold">{project.name}</div>
-                                      <div className="text-[10px] text-gray-500 dark:text-gray-400 capitalize flex items-center gap-1">
+                                      <div className="text-[10px] text-ch-muted capitalize flex items-center gap-1">
                                           <DocumentTextIcon className="w-3 h-3" /> {project.language}
                                           {project.teamId && <span className="flex items-center gap-1"><UsersIcon className="w-3 h-3" /> Team</span>}
                                       </div>
@@ -1947,7 +1947,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                                   {(currentUser.role === 'PATRON' || project.createdBy === currentUser.uid) && (
                                       <button
                                           onClick={() => setProjectToDelete(project)}
-                                          className="p-1.5 text-gray-400 hover:text-red-500"
+                                          className="p-1.5 text-ch-muted hover:text-red-500"
                                           title="Delete project"
                                       >
                                           <TrashIcon className="w-4 h-4" />
@@ -1962,10 +1962,10 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
               {activeProject && (
                   <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Files</p>
+                          <p className="text-xs font-semibold text-ch-muted uppercase">Files</p>
                           <button
                               onClick={() => { setActiveProject(null); setIsProjectPanelOpen(false); }}
-                              className="text-[10px] text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+                              className="text-[10px] text-ch-muted hover:text-ch-text"
                           >
                               Exit
                           </button>
@@ -1973,32 +1973,32 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
 
                       <div className="space-y-2">
                           {isLoadingFiles ? (
-                              <p className="text-xs text-gray-400">Loading files...</p>
+                              <p className="text-xs text-ch-muted">Loading files...</p>
                           ) : projectFiles.length === 0 ? (
-                              <p className="text-xs text-gray-400">No files yet.</p>
+                              <p className="text-xs text-ch-muted">No files yet.</p>
                           ) : (
                               projectFiles.map(file => (
                                   <div key={file.id} className="flex items-center gap-2">
                                       <button
                                           onClick={() => openFile(file)}
-                                          className={`flex-1 text-left px-2 py-1.5 text-xs rounded-md border ${
+                                          className={`flex-1 text-left px-2 py-1.5 text-xs border ${
                                               activeFile?.id === file.id
                                                   ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-200'
-                                                  : 'border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                                  : 'border-ch-divider hover:bg-ch-surface'
                                           }`}
                                       >
                                           {file.path}
                                           </button>
                                       <button
                                           onClick={() => startRenameFile(file)}
-                                          className="p-1 text-gray-400 hover:text-indigo-500"
+                                          className="p-1 text-ch-muted hover:text-indigo-500"
                                           title="Rename file"
                                       >
                                           <PencilIcon className="w-4 h-4" />
                                       </button>
                                       <button
                                           onClick={() => handleDeleteFile(file)}
-                                          className="p-1 text-gray-400 hover:text-red-500"
+                                          className="p-1 text-ch-muted hover:text-red-500"
                                           title="Delete file"
                                       >
                                           <TrashIcon className="w-4 h-4" />
@@ -2013,11 +2013,11 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                               value={newFileName}
                               onChange={(e) => setNewFileName(e.target.value)}
                               placeholder={activeProject?.language === 'javascript' ? "new_file.js" : activeProject?.language === 'html' ? "index.html" : "new_file.py"}
-                              className="flex-1 px-2 py-1.5 text-xs rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                              className="flex-1 px-2 py-1.5 text-xs border border-ch-divider bg-ch-bg"
                           />
                           <button
                               onClick={handleAddFile}
-                              className="px-2 py-1.5 text-xs font-semibold rounded-md bg-gray-900 text-white hover:bg-gray-800"
+                              className="px-2 py-1.5 text-xs font-semibold bg-gray-900 text-white hover:bg-gray-800"
                           >
                               Add
                           </button>
@@ -2028,18 +2028,18 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                               <input
                                   value={renameValue}
                                   onChange={(e) => setRenameValue(e.target.value)}
-                                  className="w-full px-2 py-1.5 text-xs rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                                  className="w-full px-2 py-1.5 text-xs border border-ch-divider bg-ch-bg"
                               />
                               <div className="flex gap-2">
                                   <button
                                       onClick={handleRenameFile}
-                                      className="px-2 py-1.5 text-xs font-semibold rounded-md bg-indigo-600 text-white hover:bg-indigo-700"
+                                      className="px-2 py-1.5 text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700"
                                   >
                                       Rename
                                   </button>
                                   <button
                                       onClick={() => { setRenamingFile(null); setRenameValue(''); }}
-                                      className="px-2 py-1.5 text-xs font-semibold rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200"
+                                      className="px-2 py-1.5 text-xs font-semibold bg-ch-surface-2 text-ch-text"
                                   >
                                       Cancel
                                   </button>
@@ -2051,29 +2051,29 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
 
               {activeProject && (
                   <div className="space-y-3">
-                      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Collaborators</p>
+                      <p className="text-xs font-semibold text-ch-muted uppercase">Collaborators</p>
                       {isLoadingMembers && collaborators.length === 0 ? (
-                          <p className="text-xs text-gray-400">Loading members...</p>
+                          <p className="text-xs text-ch-muted">Loading members...</p>
                       ) : collaborators.length === 0 ? (
-                          <p className="text-xs text-gray-400">No collaborators yet.</p>
+                          <p className="text-xs text-ch-muted">No collaborators yet.</p>
                       ) : (
                           <ul className="space-y-2">
                               {collaborators.map(member => (
                                   <li key={member.uid} className="flex items-center gap-2 text-xs">
-                                      <div className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-[10px] font-semibold text-gray-700 dark:text-gray-200">
+                                      <div className="w-7 h-7 bg-ch-surface-2 flex items-center justify-center text-[10px] font-semibold text-ch-text">
                                           {member.name.slice(0, 2).toUpperCase()}
                                       </div>
                                       <div className="flex-1 min-w-0">
-                                          <div className="font-semibold text-gray-700 dark:text-gray-200 truncate">{member.name}</div>
+                                          <div className="font-semibold text-ch-text truncate">{member.name}</div>
                                           {member.username && (
-                                              <div className="text-[10px] text-gray-400 truncate">@{member.username}</div>
+                                              <div className="text-[10px] text-ch-muted truncate">@{member.username}</div>
                                           )}
                                       </div>
                                       <div className="flex flex-wrap gap-1">
-                                          {member.isOwner && <span className="px-2 py-0.5 text-[9px] rounded-full bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-200">Owner</span>}
-                                          {member.isTeamMember && <span className="px-2 py-0.5 text-[9px] rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-200">Team</span>}
+                                          {member.isOwner && <span className="px-2 py-0.5 text-[9px] bg-ch-accent-soft text-ch-accent">Owner</span>}
+                                          {member.isTeamMember && <span className="px-2 py-0.5 text-[9px] bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-200">Team</span>}
                                           {member.isInvited && !member.isTeamMember && !member.isOwner && (
-                                              <span className="px-2 py-0.5 text-[9px] rounded-full bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200">Invited</span>
+                                              <span className="px-2 py-0.5 text-[9px] bg-ch-surface-2 text-ch-text">Invited</span>
                                           )}
                                       </div>
                                   </li>
@@ -2086,7 +2086,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                               <select
                                   value={inviteUserId}
                                   onChange={(e) => setInviteUserId(e.target.value)}
-                                  className="flex-1 px-2 py-1.5 text-xs rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                                  className="flex-1 px-2 py-1.5 text-xs border border-ch-divider bg-ch-bg"
                               >
                                   <option value="">Invite member</option>
                                   {availableInviteUsers.map(user => (
@@ -2096,7 +2096,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                               <button
                                   onClick={handleInviteUser}
                                   disabled={!inviteUserId}
-                                  className="px-2 py-1.5 text-xs font-semibold rounded-md bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+                                  className="px-2 py-1.5 text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
                               >
                                   Invite
                               </button>
@@ -2106,7 +2106,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                               <select
                                   value={inviteTeamId}
                                   onChange={(e) => setInviteTeamId(e.target.value)}
-                                  className="flex-1 px-2 py-1.5 text-xs rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                                  className="flex-1 px-2 py-1.5 text-xs border border-ch-divider bg-ch-bg"
                               >
                                   <option value="">Invite team</option>
                                   {selectableTeams.map(team => (
@@ -2116,7 +2116,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                               <button
                                   onClick={handleInviteTeam}
                                   disabled={!inviteTeamId}
-                                  className="px-2 py-1.5 text-xs font-semibold rounded-md bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-50"
+                                  className="px-2 py-1.5 text-xs font-semibold bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-50"
                               >
                                   Add
                               </button>
@@ -2128,16 +2128,16 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
               {activeProject && (
                   <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Activity Log</p>
+                          <p className="text-xs font-semibold text-ch-muted uppercase">Activity Log</p>
                           <div className="flex gap-1 text-[10px]">
                               {(['all', 'me', 'team'] as const).map(filter => (
                                   <button
                                       key={filter}
                                       onClick={() => setActivityFilter(filter)}
-                                      className={`px-2 py-1 rounded-full ${
+                                      className={`px-2 py-1 ${
                                           activityFilter === filter
-                                              ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
-                                              : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                                              ? 'bg-ch-text text-ch-bg hover:opacity-90'
+                                              : 'bg-ch-surface-2 text-ch-muted'
                                       }`}
                                   >
                                       {filter === 'all' ? 'All' : filter === 'me' ? 'Me' : 'Team'}
@@ -2150,10 +2150,10 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                       ) : filteredActivity.length === 0 ? (
                           <p className="text-xs text-gray-400">No activity yet.</p>
                       ) : (
-                          <ul className="space-y-2 text-xs text-gray-500 dark:text-gray-400">
+                          <ul className="space-y-2 text-xs text-ch-muted">
                               {filteredActivity.slice(0, 8).map(activity => (
                                   <li key={activity.id} className="flex flex-col">
-                                      <span className="font-semibold text-gray-700 dark:text-gray-200">{activity.action.replace('_', ' ')}</span>
+                                      <span className="font-semibold text-ch-text">{activity.action.replace('_', ' ')}</span>
                                       {activity.detail && <span className="text-[11px]">{activity.detail}</span>}
                                       <span className="text-[10px] text-gray-400">{new Date(activity.createdAt).toLocaleString()}</span>
                                   </li>
@@ -2167,7 +2167,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
   );
   
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-gray-900 overflow-hidden relative">
+    <div className="flex flex-col h-full bg-ch-bg overflow-hidden relative">
       <input
         type="file"
         ref={fileInputRef}
@@ -2178,10 +2178,10 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
 
       {/* Challenge Mode Banner */}
       {pendingChallenge && (
-        <div className="bg-gradient-to-r from-pink-600 to-purple-600 text-white px-4 py-2 flex items-center justify-between shadow-md z-20">
+        <div className="text-ch-on-accent px-4 py-2 flex items-center justify-between z-20 bg-ch-accent">
           <div className="flex items-center gap-3">
-            <div className="bg-white/20 p-1.5 rounded-lg">
-              <TrophyIcon className="w-5 h-5 text-yellow-300" />
+            <div className="bg-black/20 p-1.5">
+              <TrophyIcon className="w-5 h-5" />
             </div>
             <div>
               <p className="text-xs font-bold uppercase tracking-wider opacity-90">Challenge Mode</p>
@@ -2193,7 +2193,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                 setPendingChallenge(null);
                 showToast("Exited challenge mode.", "info");
             }}
-            className="text-white/70 hover:text-white transition-colors p-1"
+            className="opacity-70 hover:opacity-100 transition-opacity p-1"
             title="Exit Challenge"
           >
             <XIcon className="w-5 h-5" />
@@ -2202,31 +2202,31 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
       )}
 
       {/* Compact Toolbar */}
-      <div className="flex items-center justify-between p-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex-shrink-0">
+      <div className="flex items-center justify-between p-2 border-b-2 border-ch-rule bg-ch-bg flex-shrink-0">
         <div className="flex items-center gap-3">
              <button
                 onClick={() => setIsProjectPanelOpen(true)}
-                className="lg:hidden p-1.5 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200"
+                className="lg:hidden p-1.5 bg-ch-surface-2 text-ch-text"
                 title="Projects"
              >
                 <ViewGridIcon />
              </button>
-             <div className="flex bg-gray-200 dark:bg-gray-700 p-0.5 rounded-lg">
-                <button onClick={() => handleLanguageChange('python')} className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${language === 'python' ? 'bg-white dark:bg-gray-600 shadow text-pink-600 dark:text-pink-400' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'} ${isProjectMode ? 'opacity-60 cursor-not-allowed' : ''}`}>PY</button>
-                <button onClick={() => handleLanguageChange('javascript')} className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${language === 'javascript' ? 'bg-white dark:bg-gray-600 shadow text-yellow-600 dark:text-yellow-400' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'} ${isProjectMode ? 'opacity-60 cursor-not-allowed' : ''}`}>JS</button>
-                <button onClick={() => handleLanguageChange('html')} className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${language === 'html' ? 'bg-white dark:bg-gray-600 shadow text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'} ${isProjectMode ? 'opacity-60 cursor-not-allowed' : ''}`}>HTML</button>
+             <div className="flex bg-ch-surface-2 p-0.5">
+                <button onClick={() => handleLanguageChange('python')} className={`px-3 py-1 text-xs font-bold transition-all ${language === 'python' ? 'bg-ch-accent text-ch-on-accent' : 'text-ch-muted hover:text-ch-text'} ${isProjectMode ? 'opacity-60 cursor-not-allowed' : ''}`}>PY</button>
+                <button onClick={() => handleLanguageChange('javascript')} className={`px-3 py-1 text-xs font-bold transition-all ${language === 'javascript' ? 'bg-ch-accent text-ch-on-accent' : 'text-ch-muted hover:text-ch-text'} ${isProjectMode ? 'opacity-60 cursor-not-allowed' : ''}`}>JS</button>
+                <button onClick={() => handleLanguageChange('html')} className={`px-3 py-1 text-xs font-bold transition-all ${language === 'html' ? 'bg-ch-accent text-ch-on-accent' : 'text-ch-muted hover:text-ch-text'} ${isProjectMode ? 'opacity-60 cursor-not-allowed' : ''}`}>HTML</button>
              </div>
-             <div className="h-4 w-px bg-gray-300 dark:bg-gray-600 mx-1 hidden sm:block"></div>
+             <div className="h-4 w-px bg-ch-surface-2 mx-1 hidden sm:block"></div>
              {/* Tabs */}
-             <div className="flex bg-gray-200 dark:bg-gray-700 p-0.5 rounded-lg">
-                <button onClick={() => setActiveTabState('editor')} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${activeTab === 'editor' ? 'bg-white dark:bg-gray-600 shadow text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>Code</button>
-                <button onClick={() => setActiveTabState('output')} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${activeTab === 'output' ? 'bg-white dark:bg-gray-600 shadow text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>Output</button>
+             <div className="flex bg-ch-surface-2 p-0.5">
+                <button onClick={() => setActiveTabState('editor')} className={`px-3 py-1 text-xs font-medium transition-all ${activeTab === 'editor' ? 'bg-ch-bg text-ch-text' : 'text-ch-muted'}`}>Code</button>
+                <button onClick={() => setActiveTabState('output')} className={`px-3 py-1 text-xs font-medium transition-all ${activeTab === 'output' ? 'bg-ch-bg text-ch-text' : 'text-ch-muted'}`}>Output</button>
                 {canPreview && (
-                    <button onClick={() => setActiveTabState('preview')} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${activeTab === 'preview' ? 'bg-white dark:bg-gray-600 shadow text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>Preview</button>
+                    <button onClick={() => setActiveTabState('preview')} className={`px-3 py-1 text-xs font-medium transition-all ${activeTab === 'preview' ? 'bg-ch-bg text-ch-text' : 'text-ch-muted'}`}>Preview</button>
                 )}
              </div>
              {activeProject && (
-                <div className="hidden md:flex flex-col text-[11px] text-gray-500 dark:text-gray-300 ml-2">
+                <div className="hidden md:flex flex-col text-[11px] text-ch-muted ml-2">
                     <span className="font-semibold">{activeProject.name}</span>
                     <span className="truncate max-w-[140px]">{activeFile?.path || 'No file selected'}</span>
                 </div>
@@ -2237,7 +2237,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
              {activeProject && (
                 <button
                     onClick={() => setActiveProject(null)}
-                    className="px-2 py-1 text-xs font-semibold rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
+                    className="px-2 py-1 text-xs font-semibold bg-ch-surface-2 text-ch-text hover:bg-ch-surface-2"
                     title="Exit project mode"
                 >
                     Exit Project
@@ -2247,7 +2247,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                 <Tooltip text="Save the current file to your project.">
                     <button
                         onClick={handleSaveFile}
-                        className="px-2 py-1 text-xs font-semibold rounded-md bg-indigo-600 text-white hover:bg-indigo-700"
+                        className="px-2 py-1 text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700"
                     >
                         Save
                     </button>
@@ -2257,7 +2257,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                  <button 
                     onClick={handleGetHint} 
                     disabled={isExecuting || (language === 'python' && !isPyodideReady) || isWaitingForInput || isGettingHint}
-                    className="p-1.5 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 rounded-md transition-colors disabled:opacity-50" 
+                    className="p-1.5 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors disabled:opacity-50" 
                  >
                     <LightBulbIcon className="w-5 h-5"/>
                  </button>
@@ -2267,10 +2267,10 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                  <button 
                     onClick={handleRunCode} 
                     disabled={isExecuting || (language === 'python' && !isPyodideReady) || isWaitingForInput}
-                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 text-xs font-bold flex items-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                  >
                     {language === 'python' && !isPyodideReady ? (
-                        <span className="animate-spin h-3 w-3 border-2 border-white/30 border-t-white rounded-full"></span>
+                        <span className="animate-spin h-3 w-3 border-2 border-white/30 border-t-white"></span>
                     ) : (
                         <PlayIcon className="w-3.5 h-3.5"/>
                     )}
@@ -2283,10 +2283,10 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                      <button
                         onClick={handleRunTests}
                         disabled={isExecuting || isEvaluating || isRunningTests || (language === 'python' && !isPyodideReady) || isWaitingForInput}
-                        className="bg-white dark:bg-gray-800 border border-pink-300 dark:border-pink-700 text-pink-700 dark:text-pink-300 hover:bg-pink-50 dark:hover:bg-pink-900/20 px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="bg-ch-bg border border-ch-divider text-ch-accent hover:bg-ch-accent-soft px-3 py-1.5 text-xs font-bold flex items-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                      >
                         {isRunningTests ? (
-                            <span className="animate-spin h-3 w-3 border-2 border-pink-200 border-t-pink-600 rounded-full"></span>
+                            <span className="animate-spin h-3 w-3 border-2 border-ch-divider border-t-pink-600"></span>
                         ) : (
                             <BadgeCheckIcon className="w-3.5 h-3.5"/>
                         )}
@@ -2300,10 +2300,10 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                      <button 
                         onClick={handleAutoEvaluate}
                         disabled={isExecuting || isEvaluating || isRunningTests || (language === 'python' && !isPyodideReady) || isWaitingForInput}
-                        className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white px-4 py-1.5 rounded-md text-xs font-bold flex items-center gap-2 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="text-ch-on-accent px-4 py-1.5 text-xs font-bold flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-ch-accent hover:bg-ch-accent-deep"
                      >
                         {isEvaluating ? (
-                            <span className="animate-spin h-3 w-3 border-2 border-white/30 border-t-white rounded-full"></span>
+                            <span className="animate-spin h-3 w-3 border-2 border-white/30 border-t-white"></span>
                         ) : (
                             <SparklesIcon className="w-4 h-4 text-yellow-300"/>
                         )}
@@ -2316,16 +2316,16 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
              <div className="relative" ref={menuRef}>
                 <button 
                     onClick={() => setIsMenuOpen(!isMenuOpen)} 
-                    className={`p-1.5 rounded-md transition-colors ${isMenuOpen ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 dark:text-gray-400'}`}
+                    className={`p-1.5 transition-colors ${isMenuOpen ? 'bg-ch-surface-2 text-ch-text' : 'text-ch-muted hover:bg-ch-surface-2'}`}
                 >
                     <DotsVerticalIcon />
                 </button>
                 {isMenuOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 py-1 animate-fade-in-up">
+                    <div className="absolute right-0 top-full mt-2 w-48 bg-ch-bg border border-ch-divider z-50 py-1 animate-fade-in-up">
                         <MenuItem onClick={triggerFileUpload} icon={<UploadIcon className="w-4 h-4"/>} label="Upload" />
                         <MenuItem onClick={handleDownloadCode} icon={<DownloadIcon className="w-4 h-4"/>} label="Download" />
                         <MenuItem onClick={handleOpenCloudModal} icon={<CloudIcon className="w-4 h-4"/>} label="Cloud Scripts" />
-                        <div className="h-px bg-gray-100 dark:bg-gray-700 my-1"></div>
+                        <div className="h-px bg-ch-surface my-1"></div>
                         <MenuItem onClick={() => { setIsShareModalOpen(true); setIsMenuOpen(false); }} icon={<ShareIcon className="w-4 h-4"/>} label="Share" />
                         <MenuItem onClick={() => { setIsPublishModalOpen(true); setIsMenuOpen(false); }} icon={<GlobeIcon className="w-4 h-4"/>} label="Publish" />
                         <MenuItem onClick={() => { setIsSubmitChallengeModalOpen(true); setIsMenuOpen(false); }} icon={<TrophyIcon className="w-4 h-4"/>} label="Submit Challenge" />
@@ -2336,7 +2336,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
       </div>
 
       {showFirstLoginTips && (
-        <div className="mx-3 mt-3 mb-1 bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-700/40 text-pink-700 dark:text-pink-200 rounded-xl p-3 text-xs flex items-start justify-between gap-3">
+        <div className="mx-3 mt-3 mb-1 bg-ch-accent-soft border border-ch-divider text-ch-accent p-3 text-xs flex items-start justify-between gap-3">
           <div>
             <div className="font-semibold">Playground Tips</div>
             <ul className="mt-1 space-y-1 text-[11px]">
@@ -2347,7 +2347,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
           </div>
           <button
             onClick={dismissPlaygroundTips}
-            className="px-3 py-1 rounded-lg bg-white/70 dark:bg-gray-800 text-pink-700 dark:text-pink-200 border border-pink-200/70 dark:border-pink-700/40"
+            className="px-3 py-1 bg-ch-accent text-ch-on-accent border border-ch-accent"
           >
             Got it
           </button>
@@ -2379,9 +2379,9 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
             <div className={`absolute inset-0 w-full h-full ${activeTab === 'editor' ? 'z-10 opacity-100' : 'z-0 opacity-0 pointer-events-none'}`}>
                  <div className="flex h-full min-h-0 w-full flex-col">
                     {activeProject && (
-                        <div className="flex items-center gap-1 overflow-x-auto border-b border-gray-200 bg-gray-100 px-2 py-1.5 dark:border-gray-700 dark:bg-gray-900/70 custom-scrollbar">
+                        <div className="flex items-center gap-1 overflow-x-auto border-b border-ch-divider bg-ch-surface px-2 py-1.5 custom-scrollbar">
                             {openFilePaths.length === 0 ? (
-                                <div className="px-2 text-[11px] text-gray-500 dark:text-gray-400">
+                                <div className="px-2 text-[11px] text-ch-muted">
                                     Open a file from the project panel to create a tab.
                                 </div>
                             ) : (
@@ -2398,10 +2398,10 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                                                     void openFile(file);
                                                 }
                                             }}
-                                            className={`group flex min-w-0 max-w-[220px] items-center gap-2 rounded-lg border px-3 py-1.5 text-left text-xs transition-colors ${
+                                            className={`group flex min-w-0 max-w-[220px] items-center gap-2 border px-3 py-1.5 text-left text-xs transition-colors ${
                                                 isActive
-                                                    ? 'border-indigo-500 bg-white text-indigo-700 shadow-sm dark:border-indigo-400 dark:bg-gray-800 dark:text-indigo-200'
-                                                    : 'border-transparent bg-transparent text-gray-500 hover:bg-white hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white'
+                                                    ? 'border-indigo-500 bg-ch-bg text-indigo-700 dark:border-indigo-400 dark:text-indigo-200'
+                                                    : 'border-transparent bg-transparent text-ch-muted hover:bg-ch-surface hover:text-ch-text'
                                             }`}
                                             title={path}
                                         >
@@ -2413,10 +2413,10 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                                                     event.stopPropagation();
                                                     void closeOpenFile(path);
                                                 }}
-                                                className={`rounded-full p-0.5 transition-colors ${
+                                                className={`p-0.5 transition-colors ${
                                                     isActive
                                                         ? 'text-indigo-500 hover:bg-indigo-100 hover:text-indigo-700 dark:hover:bg-indigo-900/40'
-                                                        : 'text-gray-400 opacity-0 group-hover:opacity-100 hover:bg-gray-200 hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-200'
+                                                        : 'text-ch-muted opacity-0 group-hover:opacity-100 hover:bg-ch-surface-2 hover:text-ch-text'
                                                 }`}
                                                 aria-label={`Close ${path}`}
                                                 title="Close tab"
@@ -2442,7 +2442,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                               setCode(nextValue);
                             }}
                             onMount={handleEditorDidMount}
-                            loading={<div className="flex items-center justify-center h-full text-gray-500">Loading editor...</div>}
+                            loading={<div className="flex items-center justify-center h-full text-ch-muted">Loading editor...</div>}
                             options={{
                                 padding: { top: 16, bottom: 16 },
                             }}
@@ -2452,14 +2452,14 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
             </div>
             
             {/* Output */}
-            <div className={`absolute inset-0 w-full h-full bg-gray-900 dark:bg-black text-gray-300 font-mono text-sm overflow-hidden flex flex-col ${activeTab === 'output' ? 'z-10 opacity-100' : 'z-0 opacity-0 pointer-events-none'}`}>
-                 <div className="flex justify-between items-center p-2 bg-gray-800 dark:bg-gray-900 border-b border-gray-700">
-                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider pl-2">Console</span>
+            <div className={`absolute inset-0 w-full h-full bg-gray-900 text-gray-300 font-mono text-sm overflow-hidden flex flex-col ${activeTab === 'output' ? 'z-10 opacity-100' : 'z-0 opacity-0 pointer-events-none'}`}>
+                 <div className="flex justify-between items-center p-2 bg-gray-800 border-b border-gray-700">
+                    <span className="text-xs font-semibold uppercase tracking-wider pl-2 text-gray-400">Console</span>
                     <div className="flex gap-1">
-                        <button onClick={handleCopyOutput} className="p-1.5 text-gray-400 hover:text-white rounded hover:bg-gray-700 transition-colors" title="Copy Output">
+                        <button onClick={handleCopyOutput} className="p-1.5 hover:text-white hover:bg-gray-700 transition-colors text-gray-400" title="Copy Output">
                             <CopyIcon className="w-4 h-4" />
                         </button>
-                        <button onClick={handleClearOutput} className="p-1.5 text-gray-400 hover:text-red-400 rounded hover:bg-gray-700 transition-colors" title="Clear Console">
+                        <button onClick={handleClearOutput} className="p-1.5 hover:text-red-400 hover:bg-gray-700 transition-colors text-gray-400" title="Clear Console">
                             <TrashIcon className="w-4 h-4" />
                         </button>
                     </div>
@@ -2474,14 +2474,14 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                     }}
                  >
                     {output.length === 0 && !isWaitingForInput ? (
-                        <span className="text-gray-600 italic select-none">Run code to see output...</span>
+                        <span className="text-ch-muted italic select-none">Run code to see output...</span>
                     ) : (
                         output.map((line, index) => (
                            <div key={index} className="leading-relaxed mb-0.5 whitespace-pre-wrap break-words">
                                 {line.type === 'log' ? (
                                     <span className="text-gray-300 whitespace-pre-wrap break-words">{line.content}</span>
                                 ) : line.type === 'hint' ? (
-                                    <div className="bg-yellow-900/20 p-3 rounded border-l-2 border-yellow-600 my-2 flex gap-3 font-sans text-gray-200">
+                                    <div className="bg-yellow-900/20 p-3 border-l-2 border-yellow-600 my-2 flex gap-3 font-sans text-gray-200">
                                         <div className="text-yellow-500 mt-0.5 flex-shrink-0">
                                             <LightBulbIcon className="w-4 h-4"/>
                                         </div>
@@ -2517,19 +2517,19 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
             </div>
 
             {/* Preview */}
-            <div className={`absolute inset-0 w-full h-full bg-white dark:bg-gray-900 overflow-hidden flex flex-col ${activeTab === 'preview' ? 'z-10 opacity-100' : 'z-0 opacity-0 pointer-events-none'}`}>
-                 <div className="flex justify-between items-center p-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider pl-2">Preview</span>
+            <div className={`absolute inset-0 w-full h-full bg-ch-bg overflow-hidden flex flex-col ${activeTab === 'preview' ? 'z-10 opacity-100' : 'z-0 opacity-0 pointer-events-none'}`}>
+                 <div className="flex justify-between items-center p-2 bg-ch-surface border-b border-ch-divider">
+                    <span className="text-xs font-semibold text-ch-muted uppercase tracking-wider pl-2">Preview</span>
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => setShowPreviewConsole(prev => !prev)}
-                            className="px-2 py-1 text-xs font-semibold rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200"
+                            className="px-2 py-1 text-xs font-semibold bg-ch-surface-2 text-ch-text"
                         >
                             {showPreviewConsole ? 'Hide Console' : 'Show Console'}
                         </button>
                         <button
                             onClick={() => setPreviewConsole([])}
-                            className="px-2 py-1 text-xs font-semibold rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200"
+                            className="px-2 py-1 text-xs font-semibold bg-ch-surface-2 text-ch-text"
                         >
                             Clear Console
                         </button>
@@ -2543,7 +2543,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                                     setHtmlPreview(buildWebPreviewHtml({ 'index.html': code }, session));
                                 }
                             }}
-                            className="px-2 py-1 text-xs font-semibold rounded-md bg-indigo-600 text-white hover:bg-indigo-700"
+                            className="px-2 py-1 text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700"
                         >
                             Refresh
                         </button>
@@ -2557,7 +2557,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                         srcDoc={htmlPreview}
                     />
                     {showPreviewConsole && (
-                        <div className="h-40 border-t border-gray-200 dark:border-gray-700 bg-gray-900 text-gray-200 text-xs font-mono overflow-y-auto p-3 space-y-1 custom-scrollbar">
+                        <div className="h-40 border-t border-ch-divider bg-gray-900 text-gray-200 text-xs font-mono overflow-y-auto p-3 space-y-1 custom-scrollbar">
                             {previewConsole.length === 0 ? (
                                 <span className="text-gray-500">Preview console ready�</span>
                             ) : (
@@ -2576,39 +2576,39 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
       </div>
 
       {isCloudModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full p-6 relative border border-gray-200 dark:border-gray-700">
+          <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+              <div className="bg-ch-bg max-w-lg w-full p-6 relative border-2 border-ch-rule">
                    <button 
                         onClick={() => setIsCloudModalOpen(false)} 
-                        className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400"
+                        className="absolute top-4 right-4 text-ch-muted hover:text-ch-text"
                     >
                        <XIcon />
                     </button>
                    
-                   <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                   <h3 className="text-[20px] font-extrabold tracking-[-0.02em] text-ch-text mb-4 flex items-center gap-2">
                        <CloudIcon /> Cloud Scripts
                    </h3>
 
                    {cloudMessage && (
-                       <div className={`mb-4 p-3 rounded text-sm ${cloudMessage.type === 'success' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'}`}>
+                       <div className={`mb-4 p-3 text-sm ${cloudMessage.type === 'success' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'}`}>
                            {cloudMessage.text}
                        </div>
                    )}
 
-                   <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                       <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Save Current Code</h4>
+                   <div className="mb-6 p-4 bg-ch-surface">
+                       <h4 className="text-sm font-semibold text-ch-text mb-2">Save Current Code</h4>
                        <div className="flex gap-2">
                            <input 
                                 type="text" 
                                 placeholder={`filename.${language === 'python' ? 'py' : language === 'javascript' ? 'js' : 'html'}`} 
                                 value={saveFileName}
                                 onChange={(e) => setSaveFileName(e.target.value)}
-                                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                                className="flex-1 px-3 py-2 border border-ch-divider text-sm focus:outline-none focus:ring-2 focus:ring-ch-accent"
                            />
                            <button 
                                 onClick={handleCloudSave}
                                 disabled={isSaving}
-                                className="px-4 py-2 bg-pink-600 text-white rounded-md text-sm font-medium hover:bg-pink-700 disabled:opacity-50"
+                                className="px-4 py-2 bg-ch-accent text-ch-on-accent text-sm font-medium hover:bg-ch-accent-deep disabled:opacity-50"
                            >
                                {isSaving ? 'Saving...' : 'Save'}
                            </button>
@@ -2616,29 +2616,29 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                    </div>
 
                    <div>
-                       <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Your Scripts</h4>
+                       <h4 className="text-sm font-semibold text-ch-text mb-2">Your Scripts</h4>
                        <div className="max-h-60 overflow-y-auto space-y-2 custom-scrollbar">
                            {isLoadingScripts ? (
-                               <p className="text-center text-gray-500 text-sm py-4">Loading scripts...</p>
+                               <p className="text-center text-ch-muted text-sm py-4">Loading scripts...</p>
                            ) : cloudScripts.length === 0 ? (
-                               <p className="text-center text-gray-500 text-sm py-4">No scripts saved yet.</p>
+                               <p className="text-center text-ch-muted text-sm py-4">No scripts saved yet.</p>
                            ) : (
                                cloudScripts.map(script => (
-                                   <div key={script.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/30 rounded border border-gray-100 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors">
+                                   <div key={script.id} className="flex items-center justify-between p-3 bg-ch-surface border border-ch-divider hover:border-ch-rule transition-colors">
                                        <div className="min-w-0 flex-1 mr-2">
-                                           <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{script.name}</p>
-                                           <p className="text-xs text-gray-500 dark:text-gray-400">{script.lastModified}</p>
+                                           <p className="text-sm font-medium text-ch-text truncate">{script.name}</p>
+                                           <p className="text-xs text-ch-muted">{script.lastModified}</p>
                                        </div>
                                        <div className="flex items-center gap-2">
                                            <button 
                                                 onClick={() => handleCloudLoad(script.name)}
-                                                className="text-xs px-2 py-1 bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 rounded hover:bg-purple-200 dark:hover:bg-purple-800 transition-colors"
+                                                className="text-xs px-2 py-1 bg-ch-accent-soft text-ch-violet hover:bg-ch-accent-soft transition-colors"
                                            >
                                                Load
                                            </button>
                                            <button 
                                                 onClick={() => setScriptToDelete(script.name)}
-                                                className="text-gray-400 hover:text-red-500 transition-colors"
+                                                className="text-ch-muted hover:text-red-500 transition-colors"
                                                 title="Delete"
                                            >
                                                <TrashIcon />
@@ -2705,16 +2705,16 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
       />
 
       {isEvaluating && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[110] flex items-center justify-center p-4">
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 flex flex-col items-center gap-4 border border-gray-200 dark:border-gray-700">
+          <div className="fixed inset-0 bg-black/60 z-[110] flex items-center justify-center p-4">
+              <div className="bg-ch-bg p-8 flex flex-col items-center gap-4 border border-ch-divider">
                   <div className="relative">
-                      <div className="w-16 h-16 border-4 border-pink-100 dark:border-pink-900/30 rounded-full"></div>
-                      <div className="absolute top-0 left-0 w-16 h-16 border-4 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
-                      <SparklesIcon className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-pink-500" />
+                      <div className="w-16 h-16 border-4 border-ch-divider"></div>
+                      <div className="absolute top-0 left-0 w-16 h-16 border-4 border-ch-accent border-t-transparent animate-spin"></div>
+                      <SparklesIcon className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-ch-accent" />
                   </div>
                   <div className="text-center">
-                      <h3 className="text-lg font-bold text-gray-900 dark:text-white">Analyzing Solution</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 animate-pulse">
+                      <h3 className="text-[17px] font-extrabold tracking-[-0.01em] text-ch-text">Analyzing Solution</h3>
+                      <p className="text-sm text-ch-muted animate-pulse">
                           {hasTestCases(pendingChallenge) ? 'Running your code against the test cases...' : 'Kevin is reviewing your code...'}
                       </p>
                   </div>
@@ -2723,19 +2723,19 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
       )}
 
       {evaluationResult && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fade-in">
-              <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col border border-gray-200 dark:border-gray-700">
-                  <div className={`p-6 text-white flex items-center justify-between ${evaluationResult.passed ? 'bg-gradient-to-r from-green-600 to-emerald-600' : 'bg-gradient-to-r from-orange-600 to-red-600'}`}>
+          <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 animate-fade-in">
+              <div className="bg-ch-bg max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col border-2 border-ch-rule">
+                  <div className={`p-6 flex items-center justify-between ${evaluationResult.passed ? 'bg-green-600 text-white' : 'bg-ch-accent text-ch-on-accent'}`}>
                       <div className="flex items-center gap-3">
-                          <div className="bg-white/20 p-2 rounded-2xl">
+                          <div className="bg-black/20 p-2">
                               {evaluationResult.passed ? <BadgeCheckIcon className="w-8 h-8" /> : <XCircleIcon className="w-8 h-8" />}
                           </div>
                           <div>
                               <h3 className="text-2xl font-bold">{evaluationResult.passed ? 'Challenge Passed!' : 'Needs Improvement'}</h3>
-                              <p className="text-white/80 text-sm font-medium">{pendingChallenge?.title}</p>
+                              <p className="opacity-80 text-sm font-medium">{pendingChallenge?.title}</p>
                           </div>
                       </div>
-                      <button onClick={() => setEvaluationResult(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                      <button onClick={() => setEvaluationResult(null)} className="p-2 hover:bg-white/10 transition-colors">
                           <XIcon className="w-6 h-6" />
                       </button>
                   </div>
@@ -2743,11 +2743,11 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                   <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
                       <div className="space-y-8">
                           <section>
-                              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                  <SparklesIcon className="w-4 h-4 text-purple-500" />
+                              <h4 className="text-xs font-bold text-ch-muted uppercase tracking-widest mb-3 flex items-center gap-2">
+                                  <SparklesIcon className="w-4 h-4 text-ch-violet" />
                                   {evaluationResult.tests ? 'Verdict' : 'AI Feedback'}
                               </h4>
-                              <div className="bg-gray-50 dark:bg-gray-900/50 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-300 leading-relaxed">
+                              <div className="bg-ch-surface p-5 border border-ch-divider text-ch-text leading-relaxed">
                                   <FormattedMessage text={evaluationResult.feedback} isUser={false} />
                               </div>
                           </section>
@@ -2760,7 +2760,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
 
                           {evaluationResult.weaknesses && !evaluationResult.tests && (
                               <section>
-                                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                  <h4 className="text-xs font-bold text-ch-muted uppercase tracking-widest mb-3 flex items-center gap-2">
                                       {evaluationResult.passed ? (
                                           <PlayIcon className="w-4 h-4 text-emerald-500 rotate-90" />
                                       ) : (
@@ -2768,36 +2768,36 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                                       )}
                                       {evaluationResult.passed ? 'Technical Highlights' : 'Missing Requirements'}
                                   </h4>
-                                  <div className={`p-5 rounded-2xl border leading-relaxed ${evaluationResult.passed ? 'bg-emerald-50/30 dark:bg-emerald-900/10 border-emerald-100/50 dark:border-emerald-900/20 text-emerald-900/80 dark:text-emerald-100/80' : 'bg-orange-50/50 dark:bg-orange-900/10 border-orange-100/50 dark:border-orange-900/20 text-gray-700 dark:text-gray-300'}`}>
+                                  <div className={`p-5 border leading-relaxed ${evaluationResult.passed ? 'bg-emerald-50/30 dark:bg-emerald-900/10 border-emerald-100/50 dark:border-emerald-900/20 text-emerald-900/80 dark:text-emerald-100/80' : 'bg-orange-50/50 dark:bg-orange-900/10 border-orange-100/50 dark:border-orange-900/20 text-ch-text'}`}>
                                       <FormattedMessage text={evaluationResult.weaknesses} isUser={false} />
                                   </div>
                               </section>
                           )}
 
                           <section>
-                              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                              <h4 className="text-xs font-bold text-ch-muted uppercase tracking-widest mb-3 flex items-center gap-2">
                                   <LightBulbIcon className="w-4 h-4 text-yellow-500" />
                                   Recommended Improvements
                               </h4>
-                              <div className="bg-blue-50/50 dark:bg-blue-900/10 p-5 rounded-2xl border border-blue-100/50 dark:border-blue-900/20 text-gray-700 dark:text-gray-300 leading-relaxed">
+                              <div className="bg-blue-50/50 dark:bg-blue-900/10 p-5 border border-blue-100/50 dark:border-blue-900/20 text-ch-text leading-relaxed">
                                   <FormattedMessage text={evaluationResult.improvements} isUser={false} />
                               </div>
                           </section>
 
-                          <section className="pt-4 border-t border-gray-100 dark:border-gray-800">
-                              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                  <TrophyIcon className={`w-4 h-4 ${evaluationResult.passed ? 'text-yellow-500' : 'text-gray-400'}`} />
+                          <section className="pt-4 border-t border-ch-divider">
+                              <h4 className="text-xs font-bold text-ch-muted uppercase tracking-widest mb-3 flex items-center gap-2">
+                                  <TrophyIcon className={`w-4 h-4 ${evaluationResult.passed ? 'text-yellow-500' : 'text-ch-muted'}`} />
                                   Badge Status
                               </h4>
-                              <div className={`p-5 rounded-2xl border flex items-center gap-4 ${evaluationResult.passed ? 'bg-yellow-50/50 dark:bg-yellow-900/10 border-yellow-100 dark:border-yellow-900/20' : 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700'}`}>
-                                  <div className={`p-3 rounded-xl ${evaluationResult.passed ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600' : 'bg-gray-200 dark:bg-gray-700 text-gray-400'}`}>
+                              <div className={`p-5 border flex items-center gap-4 ${evaluationResult.passed ? 'bg-yellow-50/50 dark:bg-yellow-900/10 border-yellow-100 dark:border-yellow-900/20' : 'bg-ch-surface border-ch-divider'}`}>
+                                  <div className={`p-3 ${evaluationResult.passed ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600' : 'bg-ch-surface-2 text-ch-muted'}`}>
                                       <TrophyIcon className="w-8 h-8" />
                                   </div>
                                   <div>
-                                      <p className="font-bold text-gray-900 dark:text-white">
+                                      <p className="font-bold text-ch-text">
                                           {evaluationResult.passed ? 'Badge Earned!' : 'Badge Locked'}
                                       </p>
-                                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                                      <p className="text-sm text-ch-muted">
                                           {evaluationResult.passed 
                                               ? `Congratulations! You've successfully unlocked the ${pendingChallenge?.title} badge.` 
                                               : 'Correct the issues mentioned below and try again to earn your badge!'}
@@ -2808,11 +2808,11 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                       </div>
                   </div>
 
-                  <div className="p-6 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3">
+                  <div className="p-6 bg-ch-surface border-t border-ch-divider flex justify-end gap-3">
                       {!evaluationResult.passed && (
                           <button 
                             onClick={() => setEvaluationResult(null)}
-                            className="px-6 py-2.5 rounded-xl text-sm font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800 transition-all"
+                            className="px-6 py-2.5 text-sm font-bold text-ch-muted hover:bg-ch-surface-2 transition-all"
                           >
                             Try Again
                           </button>
@@ -2822,7 +2822,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                             if (evaluationResult.passed) setPendingChallenge(null);
                             setEvaluationResult(null);
                         }}
-                        className={`px-8 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg hover:shadow-xl transition-all ${evaluationResult.passed ? 'bg-gradient-to-r from-green-600 to-emerald-600' : 'bg-gray-900 dark:bg-white dark:text-gray-900'}`}
+                        className={`px-8 py-2.5 text-sm font-bold transition-all ${evaluationResult.passed ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-ch-text text-ch-bg hover:opacity-90'}`}
                       >
                         {evaluationResult.passed ? 'Claim Badge & Finish' : 'Got it'}
                       </button>
