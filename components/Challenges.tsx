@@ -206,7 +206,7 @@ const ChallengeCard: React.FC<{
                                 onClick={() => onSolve(challenge)}
                                 className="w-full py-2.5 text-sm font-semibold border-2 border-ch-rule text-ch-text hover:bg-ch-surface transition-colors flex items-center justify-center gap-2"
                             >
-                                <CodeIcon className="w-4 h-4" /> Open workspace
+                                <CodeIcon className="w-4 h-4" /> {hasBadge ? 'Practise again' : isExpired || challenge.status !== 'ACTIVE' ? 'Practise' : 'Solve challenge'}
                             </button>
                             <Tooltip className="flex w-full" text="Auto-grade submissions by running them against test cases.">
                                 <button
