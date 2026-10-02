@@ -517,6 +517,24 @@ Return ONLY a JSON object with this exact structure:
     }
 };
 
+// Models often over-escape line breaks in JSON, so a multi-line test input arrives as one
+// line with a literal backslash-n in it. With no real line break present, that's never what
+// was meant.
+const realLineBreaks = (input: string): string =>
+    !input.includes('\n') && input.includes('\\n') ? input.replace(/(?:\\r)?\\n/g, '\n') : input;
+
+// Everyday settings for generated challenges. One is picked at random per challenge,
+// so the model doesn't settle on the same story every time.
+const CHALLENGE_SETTINGS = [
+    'the school canteen at break time', 'a boda boda stage', 'a fruit and vegetable stall at the market',
+    'the inter-house football league', 'a netball tournament', 'a taxi (matatu) route into town',
+    'mobile money sends and withdrawals', "a phone's battery and data bundle", 'end-of-term exam marks',
+    'a coffee or matooke harvest on a family farm', "a duka (small shop)'s stock", 'the class timetable',
+    "a music playlist for the school's music, dance and drama night", 'a class WhatsApp group', 'the school library',
+    'a chapati stand', 'the dormitory laundry line', 'a borehole water queue', 'sports day races',
+    'a school bus trip', 'a savings group (SACCO)', "a bakery's morning orders", 'a supermarket checkout',
+];
+
 export const generateAIChallenge = async (
     skillLevel: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED',
     concepts: string,
@@ -524,10 +542,19 @@ export const generateAIChallenge = async (
 ): Promise<{ title: string; description: string; starterCode?: string; referenceSolution?: string; inputs?: string[] }> => {
     const isJs = language.toLowerCase().includes('javascript');
     const signature = isJs ? 'function solve(inputText) { ... } returning a string' : 'def solve(input_text: str) -> str';
+    const setting = CHALLENGE_SETTINGS[Math.floor(Math.random() * CHALLENGE_SETTINGS.length)];
     const prompt = `Act as a creative coding tutor. Create a unique, scenario-based coding challenge for a student at the ${skillLevel} level.
 
     The challenge must focus on these concepts: ${concepts}
     Programming language: ${language}
+
+    SCENARIO AND NAMES:
+    - Set it in this real, everyday setting that secondary-school students in Uganda recognise: ${setting}.
+      If the concepts truly don't fit it, pick another ordinary real-life setting instead.
+    - NO made-up worlds: no fantasy kingdoms, dragons, wizards, magic, space empires, alien planets, robots on Mars or invented creatures.
+    - Make the names playful: a punny or catchy title that fits the setting, and characters with ordinary Ugandan or English names.
+      Invent your own; titles in the style of "Boda Boda Fare Frenzy" are the tone wanted, but don't reuse that one.
+    - Keep the story short (2-4 sentences) and make the numbers in it believable (prices in UGX, real distances, real times).
 
     The challenge is auto-graded by test cases. The student implements ${signature}.
     It receives the whole raw test input as ONE string (parse lines/numbers from it) and must RETURN the answer as a string (not print it).
@@ -549,7 +576,11 @@ export const generateAIChallenge = async (
     TEST RULES:
     - "starterCode": the solve signature plus a short hint comment, no solution.
     - "referenceSolution": a COMPLETE, correct ${language} solution defining solve. It is executed to compute expected outputs.
-    - "inputs": 5-8 raw input strings. The first 2 are simple samples; the rest cover edge cases (empty/minimal, duplicates, ties, large values). Do NOT include expected outputs.
+    - "inputs": 12-15 DIFFERENT raw input strings (never fewer than 11). The first 2 are simple samples that are easy to check by hand.
+      The rest are hidden tests that together cover: the smallest possible input, a single item, duplicates, ties, values at the
+      edges of the allowed range, an unusual ordering (already sorted, reversed), and 2-3 larger inputs. Keep each input under
+      300 characters. A multi-line input is ONE JSON string with real line breaks: write \\n inside the JSON string,
+      never the double-escaped \\\\n. Do NOT include expected outputs.
 
     Return ONLY a JSON object:
     {
@@ -574,7 +605,10 @@ export const generateAIChallenge = async (
         description: toSafeText(parsed?.description),
         starterCode: toSafeText(parsed?.starterCode) || undefined,
         referenceSolution: toSafeText(parsed?.referenceSolution) || undefined,
-        inputs: Array.isArray(parsed?.inputs) ? parsed.inputs.map((i: any) => toSafeText(i)).slice(0, 10) : undefined,
+        // Duplicates would just repeat a test; keep up to 16 distinct inputs.
+        inputs: Array.isArray(parsed?.inputs)
+            ? [...new Set<string>(parsed.inputs.map((i: any) => realLineBreaks(toSafeText(i))))].slice(0, 16)
+            : undefined,
     };
 };
 
