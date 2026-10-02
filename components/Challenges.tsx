@@ -349,9 +349,10 @@ const buildGeneratedTests = async (
         testCases.push({ id: `tc-${testCases.length + 1}`, input, expectedOutput: outputs[i] as string, hidden: testCases.length >= 2 });
     });
     if (testCases.length < 2) return null;
+    // Generated challenges are print-style: the program reads the input and prints the answer.
     return {
-        ...emptyTestsDraft(language, 'function'),
-        starterCode: generated.starterCode || emptyTestsDraft(language, 'function').starterCode,
+        ...emptyTestsDraft(language, 'stdio'),
+        starterCode: generated.starterCode || emptyTestsDraft(language, 'stdio').starterCode,
         referenceSolution: generated.referenceSolution,
         testCases,
     };

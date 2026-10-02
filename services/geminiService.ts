@@ -540,8 +540,16 @@ export const generateAIChallenge = async (
     concepts: string,
     language: string = 'python'
 ): Promise<{ title: string; description: string; starterCode?: string; referenceSolution?: string; inputs?: string[] }> => {
+    // Print-style: the student writes an ordinary program that reads the input line by
+    // line and prints the answer, like the seeded practice challenges.
     const isJs = language.toLowerCase().includes('javascript');
-    const signature = isJs ? 'function solve(inputText) { ... } returning a string' : 'def solve(input_text: str) -> str';
+    const reading = isJs
+        ? 'readline() (returns the next line as a string, or null when there are no more lines) and prints with console.log'
+        : 'input() (one line per call) and prints with print()';
+    const starterExample = isJs
+        // Shown inside a JSON example, so the line breaks are written as \n escapes.
+        ? 'const n = Number(readline());\\nconst prices = readline().split(\' \').map(Number);\\n\\n// Your code here: print the answer with console.log.\\n'
+        : 'n = int(input())\\nprices = [int(x) for x in input().split()]\\n\\n# Your code here: print the answer.\\n';
     const setting = CHALLENGE_SETTINGS[Math.floor(Math.random() * CHALLENGE_SETTINGS.length)];
     const prompt = `Act as a creative coding tutor. Create a unique, scenario-based coding challenge for a student at the ${skillLevel} level.
 
@@ -556,15 +564,18 @@ export const generateAIChallenge = async (
       Invent your own; titles in the style of "Boda Boda Fare Frenzy" are the tone wanted, but don't reuse that one.
     - Keep the story short (2-4 sentences) and make the numbers in it believable (prices in UGX, real distances, real times).
 
-    The challenge is auto-graded by test cases. The student implements ${signature}.
-    It receives the whole raw test input as ONE string (parse lines/numbers from it) and must RETURN the answer as a string (not print it).
+    The challenge is auto-graded by test cases. The student writes an ORDINARY PROGRAM, with no solve() function and
+    no function the judge calls: it reads the test input with ${reading}. Each test runs the whole program once with that
+    test's input, and everything it prints is compared with the expected output line by line (trailing spaces ignored).
+    So the program must print ONLY the answer: no prompts like "Enter a number:", no labels, no extra blank lines.
 
     FORMAT (Markdown inside "description"):
     - "Scenario" heading with a vivid story context.
-    - "Task" heading with a clear, specific objective, stating exactly what solve receives and must return.
-    - "Input Format" and "Output Format" headings describing the exact string layout.
+    - "Task" heading with a clear, specific objective, saying exactly what the program reads and what it must print.
+    - "Input Format" heading: what each line of the input holds (e.g. "Line 1: n, the number of riders. Line 2: n fares separated by spaces").
+    - "Output Format" heading: exactly what to print, line by line.
     - "Requirements" heading with 3-5 concrete constraints.
-    - "Example" heading with one sample input and its output.
+    - "Example" heading with one sample input and its output, each in its own code block.
 
     Difficulty Context (must noticeably differ by level):
     - BEGINNER: Simple logic, basic loops, variables, standard data types.
@@ -574,8 +585,11 @@ export const generateAIChallenge = async (
     Important: Do NOT reuse the same structure/constraints across levels; tailor complexity and constraints to the selected level.
 
     TEST RULES:
-    - "starterCode": the solve signature plus a short hint comment, no solution.
-    - "referenceSolution": a COMPLETE, correct ${language} solution defining solve. It is executed to compute expected outputs.
+    - "starterCode": the lines that read the input into well-named variables, then a comment saying where to write the
+      code and print the answer. No solution. For example: "${starterExample}"
+    - "referenceSolution": a COMPLETE, correct ${language} PROGRAM that reads the input the same way and prints the answer.
+      It is executed on every input to compute the expected outputs, so it must print nothing else and must not define or
+      need a solve() function the judge calls.
     - "inputs": 12-15 DIFFERENT raw input strings (never fewer than 11). The first 2 are simple samples that are easy to check by hand.
       The rest are hidden tests that together cover: the smallest possible input, a single item, duplicates, ties, values at the
       edges of the allowed range, an unusual ordering (already sorted, reversed), and 2-3 larger inputs. Keep each input under
