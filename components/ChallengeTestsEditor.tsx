@@ -1,20 +1,23 @@
 import React, { useState } from 'react';
-import { ChallengeLanguage, ChallengeTestCase } from '../types';
-import { STARTER_CODE, runChallengeReference } from '../services/challengeRunner';
+import { ChallengeIoStyle, ChallengeLanguage, ChallengeTestCase } from '../types';
+import { starterFor, runChallengeReference } from '../services/challengeRunner';
 import { PlusCircleIcon } from './icons/PlusCircleIcon';
 import { XIcon } from './icons/XIcon';
 import { PlayIcon } from './icons/PlayIcon';
 
 export interface ChallengeTestsDraft {
     language: ChallengeLanguage;
+    /** stdio: tests are what the program reads and prints. function: solve(input_text) returns the answer. */
+    ioStyle: ChallengeIoStyle;
     starterCode: string;
     referenceSolution: string;
     testCases: ChallengeTestCase[];
 }
 
-export const emptyTestsDraft = (language: ChallengeLanguage = 'python'): ChallengeTestsDraft => ({
+export const emptyTestsDraft = (language: ChallengeLanguage = 'python', ioStyle: ChallengeIoStyle = 'stdio'): ChallengeTestsDraft => ({
     language,
-    starterCode: STARTER_CODE[language],
+    ioStyle,
+    starterCode: starterFor(language, ioStyle),
     referenceSolution: '',
     testCases: [],
 });
@@ -51,11 +54,20 @@ const ChallengeTestsEditor: React.FC<{
 
     const removeCase = (index: number) => update({ testCases: value.testCases.filter((_, i) => i !== index) });
 
+    // The starter code follows the language and style unless the patron has edited it.
+    const untouchedStarter = value.starterCode.trim() === '' || value.starterCode === starterFor(value.language, value.ioStyle);
+
     const switchLanguage = (language: ChallengeLanguage) => {
         if (language === value.language) return;
-        const untouched = value.starterCode.trim() === '' || value.starterCode === STARTER_CODE[value.language];
-        update({ language, starterCode: untouched ? STARTER_CODE[language] : value.starterCode });
+        update({ language, starterCode: untouchedStarter ? starterFor(language, value.ioStyle) : value.starterCode });
     };
+
+    const switchStyle = (ioStyle: ChallengeIoStyle) => {
+        if (ioStyle === value.ioStyle) return;
+        update({ ioStyle, starterCode: untouchedStarter ? starterFor(value.language, ioStyle) : value.starterCode });
+    };
+
+    const stdio = value.ioStyle === 'stdio';
 
     const computeExpected = async () => {
         if (!value.referenceSolution.trim() || value.testCases.length === 0) return;
@@ -80,10 +92,26 @@ const ChallengeTestsEditor: React.FC<{
     return (
         <div className="space-y-4">
             <div className="bg-ch-surface border border-ch-divider p-3 text-xs text-ch-muted">
-                Members write <code className="font-mono text-ch-accent">solve(input_text)</code>, which receives each test's input as one string and must <strong>return</strong> the output as a string. A submission earns the badge only if every test passes.
+                {stdio ? (
+                    <>Members write an ordinary program. Each test's <strong>input</strong> is what it reads, one line per <code className="font-mono text-ch-accent">input()</code> / <code className="font-mono text-ch-accent">readline()</code>, and the <strong>expected output</strong> is exactly what it should print. Spaces at the end of lines are ignored.</>
+                ) : (
+                    <>Members write <code className="font-mono text-ch-accent">solve(input_text)</code>, which receives each test's input as one string and must <strong>return</strong> the output as a string.</>
+                )}{' '}
+                A submission earns the badge only if every test passes.
             </div>
 
             <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-sm font-medium text-ch-text mb-1">Answer style</label>
+                    <select
+                        value={value.ioStyle}
+                        onChange={e => switchStyle(e.target.value as ChallengeIoStyle)}
+                        className="w-full px-3 py-2 border border-ch-divider focus:ring-ch-accent"
+                    >
+                        <option value="stdio">Read input, print the answer</option>
+                        <option value="function">solve(input_text) returns it</option>
+                    </select>
+                </div>
                 <div>
                     <label className="block text-sm font-medium text-ch-text mb-1">Language</label>
                     <select
@@ -112,7 +140,9 @@ const ChallengeTestsEditor: React.FC<{
                     rows={4}
                     spellCheck={false}
                     className={inputClass}
-                    placeholder="A correct solve() — use it to fill in expected outputs automatically."
+                    placeholder={stdio
+                        ? 'A correct program that reads the input and prints the answer. Used to fill in expected outputs.'
+                        : 'A correct solve(). Used to fill in expected outputs.'}
                 />
                 <button
                     type="button"
@@ -159,8 +189,8 @@ const ChallengeTestsEditor: React.FC<{
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    <textarea value={tc.input} onChange={e => updateCase(i, { input: e.target.value })} rows={3} spellCheck={false} className={inputClass} placeholder="Input" />
-                                    <textarea value={tc.expectedOutput} onChange={e => updateCase(i, { expectedOutput: e.target.value })} rows={3} spellCheck={false} className={inputClass} placeholder="Expected output" />
+                                    <textarea value={tc.input} onChange={e => updateCase(i, { input: e.target.value })} rows={3} spellCheck={false} className={inputClass} placeholder={stdio ? "Input: what the program reads, line by line" : "Input"} />
+                                    <textarea value={tc.expectedOutput} onChange={e => updateCase(i, { expectedOutput: e.target.value })} rows={3} spellCheck={false} className={inputClass} placeholder={stdio ? "Expected output: exactly what it prints" : "Expected output"} />
                                 </div>
                             </div>
                         ))}

@@ -1,7 +1,7 @@
 
 import { supabase } from './supabaseClient';
 import { saveChallenges, readSavedChallenges } from '../lib/offlineChallenges';
-import { User, Activity, AttendanceRecord, AttendanceStatus, FeedItem, ProjectData, ProjectTask, Resource, AppNotification, Room, ShowcaseItem, Suggestion, Challenge, ChallengeSubmission, ChallengeLanguage, ChallengeTestCase, FeedComment, SuggestionType, SuggestionStatus, SubmissionStatus, ActivityCategory, FeedItemType, TaskPriority, ResourceCategory, ResourceType, Tab, Roadmap, RoadmapProgress, ShowcaseComment, Message, Team, TeamChallenge, TeamChallengeSubmission, PlaygroundProject, PlaygroundProjectFile, PlaygroundProjectActivity, PlaygroundProjectMember, FeatureFlags, GameLeaderboardEntry } from '../types';
+import { User, Activity, AttendanceRecord, AttendanceStatus, FeedItem, ProjectData, ProjectTask, Resource, AppNotification, Room, ShowcaseItem, Suggestion, Challenge, ChallengeSubmission, ChallengeLanguage, ChallengeIoStyle, ChallengeTestCase, FeedComment, SuggestionType, SuggestionStatus, SubmissionStatus, ActivityCategory, FeedItemType, TaskPriority, ResourceCategory, ResourceType, Tab, Roadmap, RoadmapProgress, ShowcaseComment, Message, Team, TeamChallenge, TeamChallengeSubmission, PlaygroundProject, PlaygroundProjectFile, PlaygroundProjectActivity, PlaygroundProjectMember, FeatureFlags, GameLeaderboardEntry } from '../types';
 
 // --- Helper for Notifications ---
 const insertNotifications = async (notifications: Array<{ user_uid: string; message: string; is_read: boolean; link_to: Tab }>) => {
@@ -1668,7 +1668,8 @@ export const getChallenges = async (): Promise<Challenge[]> => {
             difficulty: c.difficulty,
             language: c.language === 'javascript' ? 'javascript' : 'python',
             starterCode: c.starter_code || undefined,
-            testCases: Array.isArray(c.test_cases) ? c.test_cases : []
+            testCases: Array.isArray(c.test_cases) ? c.test_cases : [],
+            ioStyle: c.io_style === 'stdio' ? 'stdio' : 'function'
         }));
         saveChallenges(challenges);
         return challenges;
@@ -1685,7 +1686,8 @@ export const addChallenge = async (challenge: {
     difficulty?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED',
     language?: ChallengeLanguage,
     starterCode?: string,
-    testCases?: ChallengeTestCase[]
+    testCases?: ChallengeTestCase[],
+    ioStyle?: ChallengeIoStyle
 }) => {
     const { error } = await supabase.from('challenges').insert({
         title: challenge.title,
@@ -1698,7 +1700,9 @@ export const addChallenge = async (challenge: {
         ...(challenge.testCases?.length ? {
             language: challenge.language || 'python',
             starter_code: challenge.starterCode || null,
-            test_cases: challenge.testCases
+            test_cases: challenge.testCases,
+            // Sent only when needed, so 'function' challenges work before the io_style migration.
+            ...(challenge.ioStyle === 'stdio' ? { io_style: 'stdio' } : {})
         } : {})
     });
     if (error) throw error;
@@ -1708,12 +1712,17 @@ export const addChallenge = async (challenge: {
 export const updateChallengeTests = async (challengeId: string, tests: {
     language: ChallengeLanguage,
     starterCode?: string,
-    testCases: ChallengeTestCase[]
+    testCases: ChallengeTestCase[],
+    ioStyle?: ChallengeIoStyle,
+    /** The style before this edit; io_style is written only when either is 'stdio'. */
+    previousIoStyle?: ChallengeIoStyle
 }) => {
+    const touchesStyle = tests.ioStyle === 'stdio' || tests.previousIoStyle === 'stdio';
     const { error } = await supabase.from('challenges').update({
         language: tests.language,
         starter_code: tests.starterCode || null,
-        test_cases: tests.testCases
+        test_cases: tests.testCases,
+        ...(touchesStyle ? { io_style: tests.ioStyle || 'function' } : {})
     }).eq('id', challengeId);
     if (error) throw error;
 };

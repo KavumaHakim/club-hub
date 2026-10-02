@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Editor from '@monaco-editor/react';
 import { Challenge, ChallengeLanguage, ChallengeSubmission, User } from '../types';
 import * as api from '../services/apiService';
-import { runChallengeTests, hasTestCases, STARTER_CODE } from '../services/challengeRunner';
+import { runChallengeTests, hasTestCases, starterFor, detectRunMode } from '../services/challengeRunner';
 import {
     runChallengeTestReport,
     submitChallengeSolution,
@@ -57,7 +57,8 @@ const AI_TEMPLATE: Record<ChallengeLanguage, string> = {
 
 const langName = (lang: ChallengeLanguage) => (lang === 'python' ? 'Python' : 'JavaScript');
 
-const codeKey = (challengeId: string, lang: ChallengeLanguage) => `challenge_code_${challengeId}_${lang}`;
+const codeKey = (challengeId: string, lang: ChallengeLanguage, ioStyle?: Challenge['ioStyle']) =>
+    `challenge_code_${challengeId}_${lang}${ioStyle === 'stdio' ? '_stdio' : ''}`;
 
 const readSaved = (key: string) => {
     try { return localStorage.getItem(key); } catch { return null; }
@@ -81,11 +82,14 @@ const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({ challenge, curr
     const hiddenCount = (challenge.testCases?.length || 0) - visibleCases.length;
     // Starter code that ships its own solve() glue (seeded practice sets): members write a named function instead.
     const suppliedSolve = /Judge glue/.test(challenge.starterCode || '');
+    // Print-style tests: the program reads the input and prints the answer.
+    const stdio = challenge.ioStyle === 'stdio';
 
     // Tested challenges are judged in their own language; AI-reviewed ones let the member pick.
     const [language, setLanguage] = useState<ChallengeLanguage>(challenge.language || 'python');
-    const starter = tested ? (challenge.starterCode || STARTER_CODE[language]) : AI_TEMPLATE[language];
-    const [code, setCode] = useState<string>(() => readSaved(codeKey(challenge.id, language)) ?? starter);
+    const starter = tested ? (challenge.starterCode || starterFor(language, challenge.ioStyle)) : AI_TEMPLATE[language];
+    const [code, setCode] = useState<string>(() => readSaved(codeKey(challenge.id, language, challenge.ioStyle)) ?? starter);
+    const runMode = detectRunMode(language, code);
 
     const [leftTab, setLeftTab] = useState<'description' | 'submissions'>('description');
     const [bottomTab, setBottomTab] = useState<'testcase' | 'result'>('testcase');
@@ -136,7 +140,7 @@ const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({ challenge, curr
     // Autosave the draft per challenge and language.
     useEffect(() => {
         const id = window.setTimeout(() => {
-            try { localStorage.setItem(codeKey(challenge.id, language), code); } catch { /* storage full or blocked */ }
+            try { localStorage.setItem(codeKey(challenge.id, language, challenge.ioStyle), code); } catch { /* storage full or blocked */ }
         }, 400);
         return () => window.clearTimeout(id);
     }, [code, challenge.id, language]);
@@ -334,7 +338,18 @@ const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({ challenge, curr
 
             <div className="mt-8 border-2 border-ch-rule px-4 py-3.5">
                 <p className="mb-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] text-ch-accent">How it's judged</p>
-                {tested && suppliedSolve ? (
+                {tested && stdio ? (
+                    <p className="text-[13px] leading-relaxed text-ch-muted">
+                        Write an ordinary program: read the input with{' '}
+                        <code className="font-mono text-ch-text">{language === 'python' ? 'input()' : 'readline()'}</code>, one line per call, and{' '}
+                        <strong className="text-ch-text">print</strong> the answer
+                        {language === 'javascript' && <> with <code className="font-mono text-ch-text">console.log</code></>}.
+                        Each test runs your whole program once with that test's input and compares everything it prints with the expected output
+                        (spaces at the end of a line don't matter). Text you pass to {language === 'python' ? <code className="font-mono text-ch-text">input("...")</code> : 'a prompt'} isn't counted.
+                        Run checks the {visibleCases.length} example{visibleCases.length === 1 ? '' : 's'}; Submit runs all {challenge.testCases?.length}
+                        {hiddenCount > 0 ? `, including ${hiddenCount} hidden` : ''}. Every test must pass to earn the badge.
+                    </p>
+                ) : tested && suppliedSolve ? (
                     <p className="text-[13px] leading-relaxed text-ch-muted">
                         Write the function named in the starter code and keep its name. Each test calls it with that test's input as its
                         arguments and compares what it <strong className="text-ch-text">returns</strong>, value and type, with the expected answer.
@@ -346,6 +361,8 @@ const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({ challenge, curr
                     <p className="text-[13px] leading-relaxed text-ch-muted">
                         Define <code className="font-mono text-ch-text">solve(input_text)</code>. It receives each test's input as one string and must
                         <strong className="text-ch-text"> return</strong> the answer as a string (trailing whitespace is ignored).
+                        Prefer plain code? Leave out <code className="font-mono text-ch-text">solve</code>: your program then reads the input with{' '}
+                        <code className="font-mono text-ch-text">{language === 'python' ? 'input()' : 'readline()'}</code> and prints the answer.
                         Run checks the {visibleCases.length} example{visibleCases.length === 1 ? '' : 's'}; Submit runs all {challenge.testCases?.length}
                         {hiddenCount > 0 ? `, including ${hiddenCount} hidden` : ''}. Every test must pass to earn the badge.
                     </p>
@@ -447,7 +464,9 @@ const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({ challenge, curr
                         spellCheck={false}
                         className="w-full border border-ch-divider px-3 py-2 font-mono text-[12.5px]"
                     />
-                    <p className="mt-1.5 text-[11px] text-ch-muted">Run shows what solve() returns for this input — there's no expected answer to compare against.</p>
+                    <p className="mt-1.5 text-[11px] text-ch-muted">
+                        Run shows what {runMode === 'program' ? 'your program prints' : 'solve() returns'} for this input. There's no expected answer to compare against.
+                    </p>
                 </div>
             ) : visibleCases[selectedCase] ? (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -512,7 +531,7 @@ const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({ challenge, curr
                     <div className="space-y-3 px-5 py-4">
                         {verdictHeader(result.timedOut ? 'Time Limit Exceeded' : result.error ? 'Runtime Error' : 'Finished', !result.error && !result.timedOut, `${result.runtimeMs} ms · custom input`)}
                         <Pre label="Input" text={customInput} />
-                        {result.error ? <Pre label="Error" text={result.error} tone="error" /> : <Pre label="solve() returned" text={result.output} />}
+                        {result.error ? <Pre label="Error" text={result.error} tone="error" /> : <Pre label={runMode === 'program' ? 'Printed' : 'solve() returned'} text={result.output} />}
                     </div>
                 );
             case 'free':

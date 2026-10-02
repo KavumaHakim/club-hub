@@ -31,6 +31,63 @@ export interface DuelRunResult {
 
 const SENTINEL = '__DUEL_RESULT__';
 
+/**
+ * How the code under test is driven. `function`: call solve(input) per case and
+ * compare what it returns. `program`: run the whole file once per case with the
+ * input on stdin (input(), sys.stdin) and compare what it prints, line by line
+ * with trailing spaces ignored. Duels always use `function`.
+ */
+export type RunMode = 'function' | 'program';
+
+// Program mode. Prompts passed to input() aren't printed, so input("Enter n: ") is
+// fine, and reading past the end of the input raises EOFError like a terminal would.
+// The worker's own stdout is swapped out only while the program runs.
+const PROGRAM_RUNNER = [
+  'def __norm(text):',
+  "    lines = str(text).replace('\\r\\n', '\\n').split('\\n')",
+  "    return '\\n'.join(line.rstrip() for line in lines).rstrip('\\n')",
+  '',
+  'def __run_program(src, cases):',
+  '    import io, sys, traceback',
+  '    try:',
+  "        code = compile(src, '<main>', 'exec')",
+  '    except SyntaxError as e:',
+  "        msg = 'SyntaxError: ' + str(e.msg) + (' (line ' + str(e.lineno) + ')' if e.lineno else '')",
+  "        return [{'id': c['id'], 'passed': False, 'error': msg, 'ms': 0.0} for c in cases]",
+  '    results = []',
+  '    real_out, real_in = sys.stdout, sys.stdin',
+  '    for c in cases:',
+  "        text = str(c['input']).replace('\\r\\n', '\\n')",
+  // Every newline in a test's input separates two lines, so a last line can be empty.
+  "        stdin = io.StringIO(text + '\\n')",
+  '        out = io.StringIO()',
+  "        def read_line(prompt='', _stdin=stdin):",
+  '            line = _stdin.readline()',
+  "            if line == '':",
+  "                raise EOFError('the program asked for more input than this test has')",
+  "            return line[:-1] if line.endswith('\\n') else line",
+  "        ns = {'__name__': '__main__', 'input': read_line}",
+  '        error = None',
+  '        t0 = __time.perf_counter()',
+  '        sys.stdout, sys.stdin = out, stdin',
+  '        try:',
+  '            exec(code, ns)',
+  '        except SystemExit:',
+  '            pass',
+  '        except Exception as e:',
+  "            frames = [f for f in traceback.extract_tb(e.__traceback__) if f.filename == '<main>']",
+  "            error = type(e).__name__ + ': ' + str(e) + (' (line ' + str(frames[-1].lineno) + ')' if frames else '')",
+  '        finally:',
+  '            sys.stdout, sys.stdin = real_out, real_in',
+  '        ms = (__time.perf_counter() - t0) * 1000.0',
+  '        actual = out.getvalue()',
+  '        if error is not None:',
+  "            results.append({'id': c['id'], 'passed': False, 'error': error, 'actual': actual, 'ms': ms})",
+  '        else:',
+  "            results.append({'id': c['id'], 'passed': __norm(actual) == __norm(c['expected']), 'actual': actual, 'ms': ms})",
+  '    return results',
+];
+
 /** UTF-8-safe base64 so arbitrary source / inputs / outputs inject cleanly into the Python harness. */
 const encodeUtf8B64 = (value: string): string => btoa(unescape(encodeURIComponent(value)));
 
@@ -39,7 +96,7 @@ const encodeUtf8B64 = (value: string): string => btoa(unescape(encodeURIComponen
 // later run — each judging is isolated. Encoding also means the player's source is
 // never visible to the worker's async-call rewriter, and syntax/definition errors
 // are caught here as a clean verdict instead of crashing the whole execution.
-const buildHarness = (playerCode: string, cases: DuelGeneratedTestCase[]): string =>
+const buildHarness = (playerCode: string, cases: DuelGeneratedTestCase[], mode: RunMode = 'function'): string =>
   [
     'import json as __json, base64 as __b64, time as __time',
     `__src = __b64.b64decode("${encodeUtf8B64(playerCode)}").decode("utf-8")`,
@@ -67,7 +124,9 @@ const buildHarness = (playerCode: string, cases: DuelGeneratedTestCase[]): strin
     "            results.append({'id': c['id'], 'passed': False, 'error': repr(e), 'ms': ms})",
     '    return results',
     '',
-    `print("${SENTINEL}" + __json.dumps(__run_duel(__src, __cases)))`,
+    ...PROGRAM_RUNNER,
+    '',
+    `print("${SENTINEL}" + __json.dumps(${mode === 'program' ? '__run_program' : '__run_duel'}(__src, __cases)))`,
   ].join('\n');
 
 /**
@@ -80,6 +139,7 @@ export const runReference = (
   code: string,
   inputs: string[],
   timeoutMs = 15000,
+  mode: RunMode = 'function',
 ): Promise<(string | null)[]> =>
   new Promise((resolve, reject) => {
     const cases: DuelGeneratedTestCase[] = inputs.map((input, i) => ({
@@ -91,7 +151,7 @@ export const runReference = (
     const lines: string[] = [];
     let timedOut = false;
     const controller = runSandboxedPython({
-      code: buildHarness(code, cases),
+      code: buildHarness(code, cases, mode),
       timeoutMs,
       onOutput: (line) => {
         lines.push(line.content);
@@ -129,12 +189,13 @@ export const runDuelTests = (
   code: string,
   cases: DuelGeneratedTestCase[],
   timeoutMs = 15000,
+  mode: RunMode = 'function',
 ): Promise<DuelRunResult> =>
   new Promise((resolve, reject) => {
     const lines: string[] = [];
     let timedOut = false;
     const controller = runSandboxedPython({
-      code: buildHarness(code, cases),
+      code: buildHarness(code, cases, mode),
       timeoutMs,
       onOutput: (line) => {
         lines.push(line.content);
