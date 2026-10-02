@@ -5,6 +5,7 @@ import * as api from '../services/apiService';
 import { analyzeChallengeSubmission, generateAIChallenge } from '../services/geminiService';
 import type { ChallengeTestReport } from '../services/challengeJudge';
 import { OPEN_CHALLENGE_EVENT, OPEN_CHALLENGE_KEY } from '../lib/challengeNav';
+import { readSavedChallenges, warmOfflineRuntime } from '../lib/offlineChallenges';
 import { hasTestCases, runChallengeReference } from '../services/challengeRunner';
 import ChallengeTestsEditor, { ChallengeTestsDraft, emptyTestsDraft, finalizeTestCases } from './ChallengeTestsEditor';
 import ChallengeTestResults from './ChallengeTestResults';
@@ -849,6 +850,22 @@ const Challenges: React.FC<ChallengesProps> = ({ currentUser, theme }) => {
 
     const workspaceChallenge = workspaceId ? challenges.find(c => c.id === workspaceId) || null : null;
 
+    // Save the Python runtime for offline practice whenever this page is opened online,
+    // and track the connection for the offline banner.
+    const [online, setOnline] = useState(() => navigator.onLine);
+    useEffect(() => {
+        void warmOfflineRuntime();
+        const goOnline = () => { setOnline(true); void warmOfflineRuntime(); void fetchChallenges(); };
+        const goOffline = () => setOnline(false);
+        window.addEventListener('online', goOnline);
+        window.addEventListener('offline', goOffline);
+        return () => {
+            window.removeEventListener('online', goOnline);
+            window.removeEventListener('offline', goOffline);
+        };
+    }, []);
+    const savedAt = !online ? readSavedChallenges()?.savedAt : undefined;
+
     // Refresh badges and verdict-bearing lists after a submission is recorded.
     const handleSubmitted = async () => {
         await Promise.all([fetchUsers(), fetchChallenges()]);
@@ -900,6 +917,15 @@ const Challenges: React.FC<ChallengesProps> = ({ currentUser, theme }) => {
     return (
         <div className="ch-scroll h-full overflow-y-auto p-4 sm:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">
+            {!online && (
+                <div className="mb-6 border-2 border-ch-rule bg-ch-accent-soft px-4 py-3 text-[13px]">
+                    <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-ch-accent">Offline</p>
+                    <p className="mt-1 text-ch-text">
+                        Showing the challenges saved on this device{savedAt ? ` (${new Date(savedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })})` : ''}.
+                        You can open them, run tests and submit; submissions send when you're back online.
+                    </p>
+                </div>
+            )}
             <PageIntro
                 eyebrow="Earn your badges"
                 title="Challenges & Badges"

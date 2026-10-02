@@ -179,7 +179,8 @@ const ShellHeader: React.FC<ShellHeaderProps> = ({
         </span>
       </div>
 
-      {isPatron && (
+      {/* The Playground's own cells need the room; these shortcuts are in the sidebar too. */}
+      {isPatron && !showPlayground && (
         <div className="hidden items-stretch xl:flex">
           <HeaderCell label="Activity" onClick={() => setActiveTab('activities')}>
             <CalendarIcon />
