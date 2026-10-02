@@ -13,7 +13,7 @@ interface DuelLobbyProps {
   currentUser: User;
 }
 
-type LobbyFilter = 'ALL' | 'LIVE' | 'FOR_YOU' | 'WAITING' | 'LADDER';
+type LobbyFilter = 'ALL' | 'PLAYERS' | 'LIVE' | 'FOR_YOU' | 'WAITING' | 'LADDER';
 
 type DuelRow =
   | { kind: 'live'; id: string; match: LiveMatchSummary }
@@ -108,16 +108,34 @@ export const DuelLobby: React.FC<DuelLobbyProps> = ({ currentUser }) => {
     });
   }, [incoming, liveMatches, outgoing, filter, term]);
 
-  const challengeable = useMemo(() => {
-    const pendingWith = new Set(outgoing.map((invite) => invite.recipientUid));
-    return members
-      .filter((m) => matches(m.name, m.username))
-      .map((member) => ({ member, pending: pendingWith.has(member.uid) }))
-      .slice(0, term ? 30 : 12);
-  }, [members, outgoing, term]);
+  // Everyone you can duel, filtered by the search box. Each carries what you can do
+  // with them right now: accept their challenge, watch their duel, or challenge them.
+  const players = useMemo(() => {
+    const sentTo = new Set(outgoing.map((invite) => invite.recipientUid));
+    const challengeFrom = new Map(incoming.map((invite) => [invite.senderUid, invite]));
+    const liveWith = new Map<string, LiveMatchSummary>();
+    liveMatches.forEach((match) => match.players.forEach((p) => liveWith.set(p.uid, match)));
+    const ratingOf = new Map(ladder.map((entry) => [entry.id, entry]));
+    const list = members
+      .filter((m) => matches(m.name, m.username, m.studentClass))
+      .map((member) => ({
+        member,
+        sent: sentTo.has(member.uid),
+        invite: challengeFrom.get(member.uid),
+        live: liveWith.get(member.uid),
+        standing: ratingOf.get(member.uid),
+      }));
+    // With a search, names that start with it come first.
+    if (term) {
+      const starts = (m: User) => [m.name, m.username].some((n) => n?.toLowerCase().startsWith(term) || n?.toLowerCase().split(' ').some((w) => w.startsWith(term)));
+      list.sort((a, b) => Number(starts(b.member)) - Number(starts(a.member)));
+    }
+    return list;
+  }, [members, outgoing, incoming, liveMatches, ladder, term]);
 
   const filters: Array<{ id: LobbyFilter; label: string; count?: number; narrowOnly?: boolean }> = [
     { id: 'ALL', label: 'All', count: incoming.length + liveMatches.length + outgoing.length },
+    { id: 'PLAYERS', label: 'Players', count: members.length },
     { id: 'LIVE', label: 'Live', count: liveMatches.length },
     { id: 'FOR_YOU', label: 'For you', count: incoming.length },
     { id: 'WAITING', label: 'Waiting', count: outgoing.length },
@@ -203,6 +221,82 @@ export const DuelLobby: React.FC<DuelLobbyProps> = ({ currentUser }) => {
     );
   };
 
+  const playerRow = ({ member, sent, invite, live, standing }: (typeof players)[number]) => {
+    const busy = challengeBusyUid !== null || busyInviteId !== null;
+    const details = [
+      `@${member.username}`,
+      member.studentClass,
+      standing ? `${standing.rating} · ${standing.rank}` : 'Unranked',
+    ].filter(Boolean).join(' · ');
+    return (
+      <div key={member.uid} className="flex items-center gap-3 border-t border-ch-divider py-2.5">
+        <InitialsTile name={member.name} size={30} color={colorFor(member.uid)} />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[13.5px] font-bold leading-tight">
+            {member.name}
+            {member.role === 'PATRON' && <span className="ml-1.5 text-[9.5px] font-extrabold uppercase tracking-[0.12em] text-ch-violet">Patron</span>}
+          </p>
+          <p className="truncate text-[11px] text-ch-muted">{details}</p>
+        </div>
+        {invite ? (
+          <button
+            onClick={() => void acceptInvite(invite)}
+            disabled={busy}
+            className={`${actionBtn} bg-ch-accent text-ch-on-accent hover:bg-ch-accent-deep`}
+            title={`${member.name} already challenged you`}
+          >
+            {busyInviteId === invite.id ? '…' : 'Accept'}
+          </button>
+        ) : live ? (
+          <button
+            onClick={() => void spectateMatch(live.id)}
+            className={`${actionBtn} border border-ch-divider text-ch-muted hover:bg-ch-surface-2 hover:text-ch-text`}
+            title={`${member.name} is in a duel right now`}
+          >
+            In a duel · Watch
+          </button>
+        ) : (
+          <button
+            onClick={() => void challengeMember(member.uid)}
+            disabled={sent || busy}
+            className={`${actionBtn} border border-ch-rule text-ch-text hover:bg-ch-accent hover:text-ch-on-accent`}
+          >
+            {challengeBusyUid === member.uid ? '…' : sent ? 'Sent' : 'Challenge'}
+          </button>
+        )}
+      </div>
+    );
+  };
+
+  const playersSection = (limit: number, heading: string) => {
+    const shown = players.slice(0, limit);
+    return (
+      <div className="px-4 pb-8 pt-6 sm:px-6">
+        <div className="mb-2.5 flex items-baseline justify-between gap-4">
+          <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-ch-accent">{heading}</p>
+          <span className="text-[11px] text-ch-muted">
+            {membersLoading ? 'Loading…' : term ? `${players.length} of ${members.length} match` : `${members.length} players`}
+          </span>
+        </div>
+        {shown.length === 0 ? (
+          <p className="py-2 text-[13px] text-ch-muted">
+            {membersLoading ? 'Loading players…' : term ? `Nobody matches "${search.trim()}". Try a first name, username or class.` : 'No other players yet.'}
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 gap-x-8 md:grid-cols-2">{shown.map(playerRow)}</div>
+        )}
+        {players.length > shown.length && (
+          <button
+            onClick={() => setFilter('PLAYERS')}
+            className="mt-3 border-t border-ch-divider pt-3 text-[11px] font-bold uppercase tracking-[0.08em] text-ch-muted hover:text-ch-text"
+          >
+            Show all {players.length} players
+          </button>
+        )}
+      </div>
+    );
+  };
+
   const standings = (
     <div className="px-5 pb-5 pt-[18px]">
       <div className="mb-2.5 flex items-baseline justify-between">
@@ -268,7 +362,7 @@ export const DuelLobby: React.FC<DuelLobbyProps> = ({ currentUser }) => {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search duels or members"
+              placeholder="Search players by name, username or class"
               className="min-w-0 flex-1 border-0 bg-transparent p-0 text-[13.5px] text-ch-text placeholder-ch-muted focus:outline-none"
             />
           </label>
@@ -309,8 +403,10 @@ export const DuelLobby: React.FC<DuelLobbyProps> = ({ currentUser }) => {
         )}
 
         <div className="ch-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
-          {filter === 'LADDER' ? standings : (
+          {filter === 'LADDER' ? standings : filter === 'PLAYERS' ? playersSection(Infinity, 'Challenge anyone') : (
             <>
+              {/* Searching usually means looking for someone: show matching players first. */}
+              {term && playersSection(30, 'Players')}
               {/* Column heads */}
               <div className="flex h-[34px] items-stretch border-b border-ch-divider bg-ch-surface text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-ch-muted">
                 <div className="hidden w-16 flex-none border-r border-ch-divider sm:block" />
@@ -322,44 +418,17 @@ export const DuelLobby: React.FC<DuelLobbyProps> = ({ currentUser }) => {
                 <div className="border-b-2 border-ch-rule px-6 py-12 sm:px-16">
                   <p className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.16em] text-ch-accent">Quiet arena</p>
                   <h3 className="mb-2 text-[24px] font-extrabold tracking-[-0.02em]">
-                    {filter === 'ALL' ? 'No duels right now' : 'Nothing in this view'}
+                    {term ? 'No duels match' : filter === 'ALL' ? 'No duels right now' : 'Nothing in this view'}
                   </h3>
-                  <p className="max-w-[52ch] text-[14px] leading-relaxed text-ch-muted">Challenge a member below to start one.</p>
+                  <p className="max-w-[52ch] text-[14px] leading-relaxed text-ch-muted">
+                    {term ? 'Challenge one of the players above to start one.' : 'Search for anyone above, or challenge a player below.'}
+                  </p>
                 </div>
               ) : (
                 rows.map(renderRow)
               )}
 
-              {(filter === 'ALL' || term) && (
-                <div className="px-4 pb-8 pt-6 sm:px-6">
-                  <div className="mb-2.5 flex items-baseline justify-between">
-                    <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-ch-accent">Challenge a member</p>
-                    <span className="text-[11px] text-ch-muted">{membersLoading ? 'Loading…' : `${members.length} members`}</span>
-                  </div>
-                  {challengeable.length === 0 ? (
-                    <p className="py-2 text-[13px] text-ch-muted">{membersLoading ? 'Loading members…' : 'No members match.'}</p>
-                  ) : (
-                    <div className="grid grid-cols-1 gap-x-8 md:grid-cols-2">
-                      {challengeable.map(({ member, pending }) => (
-                        <div key={member.uid} className="flex items-center gap-3 border-t border-ch-divider py-2.5">
-                          <InitialsTile name={member.name} size={28} color={colorFor(member.uid)} />
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-[13.5px] font-bold leading-tight">{member.name}</p>
-                            <p className="truncate text-[11px] text-ch-muted">@{member.username}</p>
-                          </div>
-                          <button
-                            onClick={() => void challengeMember(member.uid)}
-                            disabled={pending || challengeBusyUid !== null}
-                            className={`${actionBtn} border border-ch-rule text-ch-text hover:bg-ch-accent hover:text-ch-on-accent`}
-                          >
-                            {challengeBusyUid === member.uid ? '…' : pending ? 'Sent' : 'Challenge'}
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
+              {!term && filter === 'ALL' && playersSection(12, 'Challenge anyone')}
             </>
           )}
         </div>
