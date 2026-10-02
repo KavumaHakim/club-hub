@@ -8,7 +8,7 @@ const ScrollArea = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <ScrollAreaPrimitive.Root ref={ref} className={cn('relative overflow-hidden', className)} {...props}>
     {/* [&>div]:!block overrides Radix's display:table wrapper so text wraps to the container width instead of overflowing. */}
-    <ScrollAreaPrimitive.Viewport className="h-full w-full rounded-[inherit] [&>div]:!block [&>div]:!min-w-0">{children}</ScrollAreaPrimitive.Viewport>
+    <ScrollAreaPrimitive.Viewport className="h-full w-full [&>div]:!block [&>div]:!min-w-0">{children}</ScrollAreaPrimitive.Viewport>
     <ScrollBar />
     <ScrollAreaPrimitive.Corner />
   </ScrollAreaPrimitive.Root>
@@ -31,7 +31,7 @@ const ScrollBar = React.forwardRef<
     )}
     {...props}
   >
-    <ScrollAreaPrimitive.ScrollAreaThumb className="relative flex-1 rounded-full bg-white/10" />
+    <ScrollAreaPrimitive.ScrollAreaThumb className="relative flex-1 bg-ch-divider hover:bg-ch-rule" />
   </ScrollAreaPrimitive.ScrollAreaScrollbar>
 ));
 

@@ -1,16 +1,14 @@
 import React, { useState } from 'react';
 import Editor from '@monaco-editor/react';
-import { ArrowLeft, CheckCircle2, CircleDot, Code2, Eye, Trophy, Users } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { Badge } from '../ui/badge';
-import { Button } from '../ui/button';
-import { Card } from '../ui/card';
-import { Progress } from '../ui/progress';
+import { ArrowLeft, Users } from 'lucide-react';
 import { FormattedMessage } from '../FormattedMessage';
+import InitialsTile from '../InitialsTile';
 import { DuelQuizQuestion } from '../../services/geminiService';
 import { ArenaParticipant } from './types';
-import { formatTimer, getTimerTone } from './utils';
+import { colorFor, formatTimer, getTimerTone } from './utils';
 import { useDuelArenaStore } from './useDuelArenaStore';
+import { useArenaEditorTheme } from './arenaTheme';
+import { defineSplitThemes } from '../../lib/monacoThemes';
 import { cn } from '../../lib/utils';
 
 const QUIZ_TYPE_LABEL: Record<string, string> = {
@@ -19,86 +17,84 @@ const QUIZ_TYPE_LABEL: Record<string, string> = {
   SHORT_ANSWER: 'Short answer',
 };
 
+// Left player in the accent colour, right player in violet, as on the scoreboard.
+type Side = 'accent' | 'violet';
+
+const LiveCode: React.FC<{ code: string; waiting: string }> = ({ code, waiting }) => {
+  const editorTheme = useArenaEditorTheme();
+  if (!code.trim()) {
+    return <div className="flex h-full items-center px-5 text-[13px] text-ch-muted">{waiting}</div>;
+  }
+  return (
+    <Editor
+      height="100%"
+      theme={editorTheme}
+      beforeMount={defineSplitThemes}
+      language="python"
+      value={code}
+      options={{
+        readOnly: true,
+        domReadOnly: true,
+        fontSize: 13,
+        minimap: { enabled: false },
+        lineNumbers: 'on',
+        scrollBeyondLastLine: false,
+        renderLineHighlight: 'none',
+        wordWrap: 'on',
+        padding: { top: 12, bottom: 12 },
+        scrollbar: { verticalScrollbarSize: 8, horizontalScrollbarSize: 8 },
+      }}
+    />
+  );
+};
+
+const PlayerHeader: React.FC<{ player: ArenaParticipant; side: Side; isWinner: boolean; score: React.ReactNode }> = ({ player, side, isWinner, score }) => (
+  <div className="flex h-[52px] flex-none items-stretch border-b border-ch-divider">
+    <div className="flex min-w-0 flex-1 items-center gap-2.5 px-4 sm:px-5">
+      <InitialsTile name={player.name} size={30} color={colorFor(player.id)} />
+      <div className="min-w-0">
+        <p className="flex items-center gap-2 truncate text-[13.5px] font-extrabold">
+          <span className="truncate">{player.name}</span>
+          {isWinner && <span className="flex-none text-[9.5px] font-extrabold uppercase tracking-[0.12em] text-green-600 dark:text-green-400">Winner</span>}
+        </p>
+        <p className="truncate text-[11px] text-ch-muted">
+          {player.rank} {player.division} · {player.rating}
+          {player.liveTyping && <span className="text-green-600 dark:text-green-400"> · typing</span>}
+        </p>
+      </div>
+    </div>
+    <div className={cn('flex flex-none items-center border-l border-ch-divider px-4 text-[12px]', side === 'accent' ? 'text-ch-accent' : 'text-ch-violet')}>
+      {score}
+    </div>
+  </div>
+);
+
+const ProgressLine: React.FC<{ value: number; side: Side }> = ({ value, side }) => (
+  <div className="h-[3px] flex-none bg-ch-surface-2">
+    <div className={cn('h-full transition-[width] duration-300', side === 'accent' ? 'bg-ch-accent' : 'bg-ch-violet')} style={{ width: `${Math.max(0, Math.min(100, value))}%` }} />
+  </div>
+);
+
 interface ScreenProps {
   player: ArenaParticipant;
   code: string;
   isWinner: boolean;
-  accent: 'cyan' | 'fuchsia';
+  side: Side;
 }
 
-const PlayerScreen: React.FC<ScreenProps> = ({ player, code, isWinner, accent }) => {
-  const accentRing = accent === 'cyan' ? 'border-cyan-400/25' : 'border-fuchsia-400/25';
-  const accentText = accent === 'cyan' ? 'text-cyan-300/70' : 'text-fuchsia-300/70';
-
-  return (
-    <Card className={cn('arena-panel flex h-full min-h-0 flex-col overflow-hidden', isWinner && 'border-emerald-400/40 shadow-[0_0_40px_rgba(16,185,129,0.18)]')}>
-      {/* Player header */}
-      <div className={cn('flex items-center justify-between gap-3 border-b bg-slate-950/80 px-3 py-2.5 sm:px-4', accentRing)}>
-        <div className="flex min-w-0 items-center gap-2.5">
-          <Avatar className="h-9 w-9 shrink-0 rounded-xl">
-            <AvatarImage src={player.avatarUrl || `https://i.pravatar.cc/72?u=${player.handle}`} alt={player.name} />
-            <AvatarFallback>{player.name.slice(0, 2).toUpperCase()}</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <p className="truncate text-sm font-semibold text-white">{player.name}</p>
-              {isWinner ? <Trophy className="h-3.5 w-3.5 shrink-0 text-emerald-300" /> : null}
-            </div>
-            <p className={cn('truncate text-xs', accentText)}>
-              {player.rank} {player.division} · {player.rating}
-            </p>
-          </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          {player.liveTyping ? (
-            <span className="flex items-center gap-1 text-[11px] text-emerald-300">
-              <CircleDot className="h-3 w-3 animate-pulse" />
-              typing
-            </span>
-          ) : null}
-          <Badge variant="secondary" className="font-mono">{player.testCasesPassed} passed</Badge>
-        </div>
-      </div>
-
-      {/* Progress + status */}
-      <div className="border-b border-white/10 bg-slate-950/60 px-3 py-2 sm:px-4">
-        <div className="mb-1.5 flex items-center justify-between text-[11px] text-slate-400">
-          <span className="truncate">{player.estimatedStatus}</span>
-          <span className="shrink-0 font-mono">{Math.round(player.progress)}%</span>
-        </div>
-        <Progress value={player.progress} className="h-1.5" />
-      </div>
-
-      {/* Live code */}
-      <div className="relative min-h-0 flex-1">
-        {code.trim() ? (
-          <Editor
-            height="100%"
-            theme="vs-dark"
-            language="python"
-            value={code}
-            options={{
-              readOnly: true,
-              domReadOnly: true,
-              fontSize: 13,
-              minimap: { enabled: false },
-              lineNumbers: 'on',
-              scrollBeyondLastLine: false,
-              renderLineHighlight: 'none',
-              wordWrap: 'on',
-              padding: { top: 12, bottom: 12 },
-              scrollbar: { verticalScrollbarSize: 8, horizontalScrollbarSize: 8 },
-            }}
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center px-4 text-center text-sm text-slate-500">
-            Waiting for {player.name.split(' ')[0]} to start typing...
-          </div>
-        )}
-      </div>
-    </Card>
-  );
-};
+const PlayerScreen: React.FC<ScreenProps> = ({ player, code, isWinner, side }) => (
+  <div className="flex h-full min-h-0 flex-col overflow-hidden">
+    <PlayerHeader player={player} side={side} isWinner={isWinner} score={<><span className="mr-1 font-extrabold">{player.testCasesPassed}</span> passed</>} />
+    <div className="flex flex-none items-center justify-between border-b border-ch-divider px-4 py-1.5 text-[11px] text-ch-muted sm:px-5">
+      <span className="truncate">{player.estimatedStatus}</span>
+      <span className="flex-none tabular-nums">{Math.round(player.progress)}%</span>
+    </div>
+    <ProgressLine value={player.progress} side={side} />
+    <div className="relative min-h-0 flex-1">
+      <LiveCode code={code} waiting={`Waiting for ${player.name.split(' ')[0]} to start typing…`} />
+    </div>
+  </div>
+);
 
 interface QuizScreenProps {
   player: ArenaParticipant;
@@ -108,141 +104,68 @@ interface QuizScreenProps {
   code: string;
   tests: { passed: number; total: number } | undefined;
   isWinner: boolean;
-  accent: 'cyan' | 'fuchsia';
+  side: Side;
 }
 
-const QuizSpectatorScreen: React.FC<QuizScreenProps> = ({
-  player,
-  question,
-  questionNumber,
-  total,
-  code,
-  tests,
-  isWinner,
-  accent,
-}) => {
-  const accentRing = accent === 'cyan' ? 'border-cyan-400/25' : 'border-fuchsia-400/25';
-  const accentText = accent === 'cyan' ? 'text-cyan-300/70' : 'text-fuchsia-300/70';
+const QuizSpectatorScreen: React.FC<QuizScreenProps> = ({ player, question, questionNumber, total, code, tests, isWinner, side }) => {
   const isCoding = question?.kind === 'coding';
 
   return (
-    <Card className={cn('arena-panel flex h-full min-h-0 flex-col overflow-hidden', isWinner && 'border-emerald-400/40 shadow-[0_0_40px_rgba(16,185,129,0.18)]')}>
-      {/* Player header */}
-      <div className={cn('flex items-center justify-between gap-3 border-b bg-slate-950/80 px-3 py-2.5 sm:px-4', accentRing)}>
-        <div className="flex min-w-0 items-center gap-2.5">
-          <Avatar className="h-9 w-9 shrink-0 rounded-xl">
-            <AvatarImage src={player.avatarUrl || `https://i.pravatar.cc/72?u=${player.handle}`} alt={player.name} />
-            <AvatarFallback>{player.name.slice(0, 2).toUpperCase()}</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <p className="truncate text-sm font-semibold text-white">{player.name}</p>
-              {isWinner ? <Trophy className="h-3.5 w-3.5 shrink-0 text-emerald-300" /> : null}
-            </div>
-            <p className={cn('truncate text-xs', accentText)}>
-              {player.rank} {player.division} · {player.rating}
-            </p>
-          </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          {player.liveTyping ? (
-            <span className="flex items-center gap-1 text-[11px] text-emerald-300">
-              <CircleDot className="h-3 w-3 animate-pulse" />
-              typing
-            </span>
-          ) : null}
-          <span className="flex items-center gap-1 text-sm font-semibold text-emerald-300">
-            <CheckCircle2 className="h-4 w-4" />
-            {player.testCasesPassed}
-            <span className="text-xs font-normal text-slate-500">/ {total}</span>
-          </span>
-        </div>
-      </div>
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
+      <PlayerHeader
+        player={player}
+        side={side}
+        isWinner={isWinner}
+        score={<><span className="mr-1 text-[15px] font-extrabold tabular-nums">{player.testCasesPassed}</span><span className="text-ch-muted">/ {total}</span></>}
+      />
 
       {/* Current question */}
-      <div className="border-b border-white/10 bg-slate-950/60 px-3 py-2.5 sm:px-4">
-        <div className="mb-1.5 flex items-center justify-between gap-2">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-300">
+      <div className="flex-none border-b border-ch-divider px-4 py-3 sm:px-5">
+        <div className="mb-1.5 flex items-baseline justify-between gap-2">
+          <span className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-ch-muted">
             Question {Math.min(questionNumber, total)} / {total}
           </span>
           {question ? (
-            <Badge variant="secondary" className="shrink-0">
+            <span className="flex-none text-[11px] text-ch-muted">
               {isCoding ? 'Coding' : QUIZ_TYPE_LABEL[(question as Extract<DuelQuizQuestion, { kind: 'quiz' }>).type] || 'Quiz'}
-            </Badge>
+            </span>
           ) : null}
         </div>
-        <div className="max-h-24 overflow-y-auto custom-scrollbar text-sm leading-relaxed text-slate-100">
-          {question ? (
-            <FormattedMessage text={question.question} isUser={false} />
-          ) : (
-            <span className="text-slate-500">Waiting for the next question…</span>
-          )}
+        <div className="ch-scroll max-h-24 overflow-y-auto text-[13.5px] leading-relaxed">
+          {question ? <FormattedMessage text={question.question} isUser={false} /> : <span className="text-ch-muted">Waiting for the next question…</span>}
         </div>
       </div>
 
-      {/* Body: live code for coding questions, answer-state for quiz questions */}
+      {/* Live code for coding questions, the score for quiz questions */}
       <div className="relative min-h-0 flex-1">
         {isCoding ? (
-          code.trim() ? (
-            <Editor
-              height="100%"
-              theme="vs-dark"
-              language="python"
-              value={code}
-              options={{
-                readOnly: true,
-                domReadOnly: true,
-                fontSize: 13,
-                minimap: { enabled: false },
-                lineNumbers: 'on',
-                scrollBeyondLastLine: false,
-                renderLineHighlight: 'none',
-                wordWrap: 'on',
-                padding: { top: 12, bottom: 12 },
-                scrollbar: { verticalScrollbarSize: 8, horizontalScrollbarSize: 8 },
-              }}
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center px-4 text-center text-sm text-slate-500">
-              <span className="flex items-center gap-2">
-                <Code2 className="h-4 w-4" />
-                Waiting for {player.name.split(' ')[0]} to start coding…
-              </span>
-            </div>
-          )
+          <LiveCode code={code} waiting={`Waiting for ${player.name.split(' ')[0]} to start coding…`} />
         ) : (
-          <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-            <p className="text-sm text-slate-400">{player.estimatedStatus}</p>
-            <div className="flex items-baseline gap-1">
-              <span className="font-mono text-4xl font-bold text-white">{player.testCasesPassed}</span>
-              <span className="text-base text-slate-500">/ {total} correct</span>
-            </div>
+          <div className="flex h-full flex-col justify-center px-5 sm:px-8">
+            <p className="text-[12px] text-ch-muted">{player.estimatedStatus}</p>
+            <p className="mt-1 flex items-baseline gap-2">
+              <span className="text-[44px] font-extrabold leading-none tracking-[-0.03em] tabular-nums">{player.testCasesPassed}</span>
+              <span className="text-[13px] text-ch-muted">of {total} correct</span>
+            </p>
           </div>
         )}
       </div>
 
-      {/* Footer: per-question test results (coding) + overall progress */}
-      <div className="border-t border-white/10 bg-slate-950/70 px-3 py-2 sm:px-4">
-        {isCoding ? (
-          <div className="mb-1.5 flex items-center justify-between text-[11px]">
-            <span className="text-slate-400">Tests passed (this question)</span>
-            {tests ? (
-              <span
-                className={cn(
-                  'font-mono font-semibold',
-                  tests.passed === tests.total && tests.total > 0 ? 'text-emerald-300' : 'text-amber-300',
-                )}
-              >
-                {tests.passed} / {tests.total}
-              </span>
-            ) : (
-              <span className="font-mono text-slate-500">not run yet</span>
-            )}
-          </div>
-        ) : null}
-        <Progress value={player.progress} className="h-1.5" />
-      </div>
-    </Card>
+      {/* Footer: this question's tests (coding) and overall progress */}
+      {isCoding ? (
+        <div className="flex flex-none items-center justify-between border-t border-ch-divider px-4 py-2 text-[11px] sm:px-5">
+          <span className="text-ch-muted">Tests passed on this question</span>
+          {tests ? (
+            <span className={cn('font-extrabold tabular-nums', tests.passed === tests.total && tests.total > 0 ? 'text-green-600 dark:text-green-400' : 'text-ch-accent')}>
+              {tests.passed} / {tests.total}
+            </span>
+          ) : (
+            <span className="text-ch-muted">not run yet</span>
+          )}
+        </div>
+      ) : null}
+      <ProgressLine value={player.progress} side={side} />
+    </div>
   );
 };
 
@@ -263,89 +186,71 @@ export const SpectatorView: React.FC = () => {
   const right = session.opponent;
   const winnerId = session.result ? (session.result.outcome === 'victory' ? left.id : right.id) : null;
   const finished = session.status === 'finished';
-  const timerTone = getTimerTone(session.status, session.timeRemaining);
+
+  const screen = (p: ArenaParticipant, side: Side) =>
+    isQuiz ? (
+      <QuizSpectatorScreen
+        player={p}
+        question={questions[liveQuestionIndex[p.id] ?? 0]}
+        questionNumber={(liveQuestionIndex[p.id] ?? 0) + 1}
+        total={totalQuestions}
+        code={liveCode[p.id] || ''}
+        tests={liveTests[p.id]}
+        isWinner={winnerId === p.id}
+        side={side}
+      />
+    ) : (
+      <PlayerScreen player={p} code={liveCode[p.id] || ''} isWinner={winnerId === p.id} side={side} />
+    );
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-2.5 p-2.5 sm:gap-3 sm:p-4">
-      {/* Compact top bar */}
-      <Card className="arena-panel flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 sm:px-4">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <Button variant="ghost" size="sm" onClick={() => void leaveMatch()}>
-            <ArrowLeft className="h-4 w-4" />
-            <span className="hidden sm:inline">Lobby</span>
-          </Button>
-          <Badge variant="secondary">
-            <Eye className="mr-1 h-3 w-3" />
-            Spectating
-          </Badge>
-          <span className="hidden min-w-0 truncate text-sm font-semibold text-white sm:inline">{session.problem.title}</span>
+    <div className="flex h-full min-h-0 flex-col">
+      {/* Top bar */}
+      <div className="flex h-[46px] flex-none items-stretch border-b-2 border-ch-rule">
+        <button
+          onClick={() => void leaveMatch()}
+          className="flex flex-none items-center gap-1.5 border-r border-ch-divider px-3.5 text-[11px] font-bold uppercase tracking-[0.08em] text-ch-muted transition-colors hover:bg-ch-surface hover:text-ch-text sm:px-5"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Lobby</span>
+        </button>
+        <div className="flex min-w-0 flex-1 items-center gap-3 px-4 sm:px-6">
+          <span className="flex-none text-[10px] font-extrabold uppercase tracking-[0.14em] text-ch-accent">Watching</span>
+          <span className="hidden truncate text-[14px] font-extrabold tracking-[-0.01em] sm:inline">{session.problem.title}</span>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1 text-xs text-slate-400">
-            <Users className="h-3.5 w-3.5" />
-            {session.spectators}
-          </span>
-          <div className="text-right">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">{finished ? 'Final' : 'Time left'}</p>
-            <p className={cn('font-mono text-xl font-semibold leading-none', timerTone, session.timeRemaining <= 60 && !finished && 'animate-pulse')}>
-              {session.status === 'countdown' ? `${session.countdown}s` : formatTimer(session.timeRemaining)}
-            </p>
-          </div>
-        </div>
-      </Card>
-
-      {/* Mobile screen switcher */}
-      <div className="sm:hidden">
-        <div className="grid grid-cols-2 gap-1.5 rounded-2xl border border-white/10 bg-white/5 p-1">
-          {([['left', left], ['right', right]] as const).map(([side, p]) => (
-            <button
-              key={side}
-              onClick={() => setMobileSide(side)}
-              className={cn(
-                'truncate rounded-xl px-3 py-1.5 text-sm font-medium transition',
-                mobileSide === side ? 'bg-cyan-500/15 text-cyan-100' : 'text-slate-400',
-              )}
-            >
-              {p.name.split(' ')[0]}
-            </button>
-          ))}
+        <span className="hidden flex-none items-center gap-1.5 border-l border-ch-divider px-4 text-[11px] text-ch-muted sm:flex">
+          <Users className="h-3.5 w-3.5" />
+          {session.spectators} watching
+        </span>
+        <div className="flex w-[92px] flex-none flex-col items-center justify-center border-l-2 border-ch-rule sm:w-[112px]">
+          <p className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-ch-muted">{finished ? 'Final' : 'Time left'}</p>
+          <p className={cn('text-[17px] font-extrabold leading-tight tabular-nums', getTimerTone(session.status, session.timeRemaining))}>
+            {session.status === 'countdown' ? `${session.countdown}s` : formatTimer(session.timeRemaining)}
+          </p>
         </div>
       </div>
 
-      {/* Screens: side-by-side on desktop, one-at-a-time on mobile */}
-      <div className="grid min-h-0 flex-1 gap-2.5 sm:gap-3 lg:grid-cols-2">
-        <div className={cn('min-h-0', mobileSide === 'left' ? 'block' : 'hidden', 'lg:block')}>
-          {isQuiz ? (
-            <QuizSpectatorScreen
-              player={left}
-              question={questions[liveQuestionIndex[left.id] ?? 0]}
-              questionNumber={(liveQuestionIndex[left.id] ?? 0) + 1}
-              total={totalQuestions}
-              code={liveCode[left.id] || ''}
-              tests={liveTests[left.id]}
-              isWinner={winnerId === left.id}
-              accent="cyan"
-            />
-          ) : (
-            <PlayerScreen player={left} code={liveCode[left.id] || ''} isWinner={winnerId === left.id} accent="cyan" />
-          )}
-        </div>
-        <div className={cn('min-h-0', mobileSide === 'right' ? 'block' : 'hidden', 'lg:block')}>
-          {isQuiz ? (
-            <QuizSpectatorScreen
-              player={right}
-              question={questions[liveQuestionIndex[right.id] ?? 0]}
-              questionNumber={(liveQuestionIndex[right.id] ?? 0) + 1}
-              total={totalQuestions}
-              code={liveCode[right.id] || ''}
-              tests={liveTests[right.id]}
-              isWinner={winnerId === right.id}
-              accent="fuchsia"
-            />
-          ) : (
-            <PlayerScreen player={right} code={liveCode[right.id] || ''} isWinner={winnerId === right.id} accent="fuchsia" />
-          )}
-        </div>
+      {/* Mobile screen switcher */}
+      <div className="flex h-10 flex-none items-stretch border-b-2 border-ch-rule lg:hidden">
+        {([['left', left], ['right', right]] as const).map(([side, p], i) => (
+          <button
+            key={side}
+            onClick={() => setMobileSide(side)}
+            className={cn(
+              'flex flex-1 items-center justify-center truncate px-3 text-[11px] font-bold uppercase tracking-[0.08em] transition-colors',
+              i > 0 && 'border-l border-ch-divider',
+              mobileSide === side ? 'bg-ch-accent text-ch-on-accent' : 'text-ch-muted hover:bg-ch-surface hover:text-ch-text',
+            )}
+          >
+            {p.name.split(' ')[0]}
+          </button>
+        ))}
+      </div>
+
+      {/* Screens: side by side on desktop, one at a time on mobile */}
+      <div className="grid min-h-0 flex-1 lg:grid-cols-2">
+        <div className={cn('min-h-0', mobileSide === 'left' ? 'block' : 'hidden', 'lg:block')}>{screen(left, 'accent')}</div>
+        <div className={cn('min-h-0 lg:border-l-2 lg:border-ch-rule', mobileSide === 'right' ? 'block' : 'hidden', 'lg:block')}>{screen(right, 'violet')}</div>
       </div>
     </div>
   );
