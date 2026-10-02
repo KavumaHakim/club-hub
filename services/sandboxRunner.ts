@@ -23,7 +23,10 @@ export interface SandboxExecutionController {
 
 const DEFAULT_TIMEOUT_MS = 30000;
 const DEFAULT_PYTHON_TIMEOUT_MS = 120000;
-const PYODIDE_INDEX_URL = 'https://cdn.jsdelivr.net/pyodide/v0.29.0/full/';
+export const PYODIDE_INDEX_URL = 'https://cdn.jsdelivr.net/pyodide/v0.29.0/full/';
+/** What loadPyodide() fetches to start, so the service worker can save it for offline use. */
+export const PYODIDE_CORE_FILES = ['pyodide.js', 'pyodide.asm.js', 'pyodide.asm.wasm', 'python_stdlib.zip', 'pyodide-lock.json']
+  .map(file => PYODIDE_INDEX_URL + file);
 
 const workerSource = `
 const PYODIDE_INDEX_URL = ${JSON.stringify(PYODIDE_INDEX_URL)};

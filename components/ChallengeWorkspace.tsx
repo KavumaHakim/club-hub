@@ -17,6 +17,7 @@ import { useMediaQuery } from '../lib/useMediaQuery';
 import { FormattedMessage } from './FormattedMessage';
 import ChallengeTestResults from './ChallengeTestResults';
 import { SHELL_META_EVENT } from './ShellHeader';
+import { enqueuePending, listPending, isOfflineError, PENDING_CHANGED_EVENT, type PendingSubmission } from '../lib/offlineChallenges';
 
 // LeetCode-style solving view for one challenge: statement and history on the
 // left, editor and a Testcase / Result panel on the right. Judging is the same
@@ -40,7 +41,8 @@ type PanelResult =
     | { kind: 'custom'; output?: string; error?: string; runtimeMs: number; timedOut: boolean }
     | { kind: 'free'; lines: Array<{ type: 'log' | 'error'; content: string }>; timedOut: boolean }
     | { kind: 'submit'; evaluation: ChallengeEvaluation; recorded: boolean }
-    | { kind: 'error'; message: string };
+    | { kind: 'error'; message: string }
+    | { kind: 'queued'; evaluation: ChallengeEvaluation | null };
 
 const verdictOf = (report: ChallengeTestReport): Verdict =>
     report.passed === report.total ? 'Accepted'
@@ -93,6 +95,23 @@ const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({ challenge, curr
     const [result, setResult] = useState<PanelResult>({ kind: 'idle' });
     const [submissions, setSubmissions] = useState<ChallengeSubmission[]>([]);
     const [loadingSubs, setLoadingSubs] = useState(false);
+    const [pending, setPending] = useState<PendingSubmission[]>(() => listPending(currentUser.uid, challenge.id));
+    const [online, setOnline] = useState(() => navigator.onLine);
+
+    // Offline submissions for this challenge, and whether we're connected.
+    useEffect(() => {
+        const refresh = () => setPending(listPending(currentUser.uid, challenge.id));
+        const goOnline = () => { setOnline(true); refresh(); };
+        const goOffline = () => setOnline(false);
+        window.addEventListener(PENDING_CHANGED_EVENT, refresh);
+        window.addEventListener('online', goOnline);
+        window.addEventListener('offline', goOffline);
+        return () => {
+            window.removeEventListener(PENDING_CHANGED_EVENT, refresh);
+            window.removeEventListener('online', goOnline);
+            window.removeEventListener('offline', goOffline);
+        };
+    }, [currentUser.uid, challenge.id]);
 
     const now = new Date();
     const deadline = new Date(challenge.deadline);
@@ -143,6 +162,13 @@ const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({ challenge, curr
 
     useEffect(() => { void loadSubmissions(); }, [loadSubmissions]);
 
+    // A queued submission that just sent shows up in the server list instead.
+    useEffect(() => {
+        const reload = () => { if (navigator.onLine) void loadSubmissions(); };
+        window.addEventListener(PENDING_CHANGED_EVENT, reload);
+        return () => window.removeEventListener(PENDING_CHANGED_EVENT, reload);
+    }, [loadSubmissions]);
+
     const showResult = () => {
         setBottomTab('result');
         if (!isWide) setMobileTab('result');
@@ -183,8 +209,36 @@ const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({ challenge, curr
                 setResult({ kind: 'run', report });
             }
         } catch (error: any) {
-            setResult({ kind: 'error', message: error?.message || 'The sandbox could not run your code.' });
+            setResult({
+                kind: 'error',
+                message: !navigator.onLine && language === 'python'
+                    ? "The Python runtime isn't saved on this device yet. Open a Python challenge once while online, and it will work offline after that."
+                    : error?.message || 'The sandbox could not run your code.',
+            });
         }
+    };
+
+    // Offline: judge here when the tests can run, and keep the submission on this
+    // device until the connection returns (Dashboard sends it, awarding the badge then).
+    const submitOffline = async () => {
+        let evaluation: ChallengeEvaluation | null = null;
+        if (tested) {
+            try {
+                evaluation = await evaluateChallengeSubmission(challenge, code);
+            } catch {
+                evaluation = null; // the runtime isn't available offline; judged when sent
+            }
+        }
+        enqueuePending({
+            challengeId: challenge.id,
+            challengeTitle: challenge.title,
+            userId: currentUser.uid,
+            code,
+            verdict: evaluation?.tests
+                ? { passed: !!evaluation.passed, testsPassed: evaluation.tests.passed, testsTotal: evaluation.tests.total }
+                : undefined,
+        });
+        setResult({ kind: 'queued', evaluation });
     };
 
     // ---------- Submit ----------
@@ -200,11 +254,20 @@ const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({ challenge, curr
             }
             return;
         }
+        if (!navigator.onLine) {
+            await submitOffline();
+            return;
+        }
         try {
             const evaluation = await submitChallengeSolution(challenge, currentUser.uid, code);
             setResult({ kind: 'submit', evaluation, recorded: true });
             onSubmitted();
         } catch (error: any) {
+            // The connection dropped before anything was saved: keep it on the device.
+            if (!(error instanceof ChallengeEvaluationError) && isOfflineError(error)) {
+                await submitOffline();
+                return;
+            }
             setResult({
                 kind: 'error',
                 message: error instanceof ChallengeEvaluationError
@@ -299,12 +362,27 @@ const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({ challenge, curr
         <div className="px-5 pb-8 pt-5 sm:px-7">
             <div className="mb-2.5 flex items-baseline justify-between">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ch-muted">Your submissions</p>
-                <span className="text-[11px] text-ch-muted">{submissions.length}</span>
+                <span className="text-[11px] text-ch-muted">{submissions.length + pending.length}</span>
             </div>
+            {pending.map(item => (
+                <button
+                    key={item.id}
+                    onClick={() => { setCode(item.code); if (!isWide) setMobileTab('code'); }}
+                    className="flex w-full items-center gap-3 border-t border-ch-divider py-3 text-left transition-opacity duration-100 hover:opacity-65"
+                    title="Saved on this device; sends when you're back online. Click to load the code."
+                >
+                    <span className="w-28 flex-none text-[13px] font-extrabold text-ch-violet">Waiting to send</span>
+                    <span className="min-w-0 flex-1 text-[12px] text-ch-muted">
+                        {new Date(item.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                    </span>
+                    {item.verdict && <span className="text-[12px] font-bold">{item.verdict.testsPassed}/{item.verdict.testsTotal}</span>}
+                    <span className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-ch-muted">Load</span>
+                </button>
+            ))}
             {loadingSubs && submissions.length === 0 ? (
                 <p className="py-2 text-[13px] text-ch-muted">Loading…</p>
             ) : submissions.length === 0 ? (
-                <p className="py-2 text-[13px] text-ch-muted">Nothing submitted yet.</p>
+                pending.length === 0 && <p className="py-2 text-[13px] text-ch-muted">{online ? 'Nothing submitted yet.' : 'Earlier submissions show here once you are back online.'}</p>
             ) : (
                 submissions.map(sub => {
                     const accepted = sub.status === 'APPROVED';
@@ -401,6 +479,22 @@ const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({ challenge, curr
                         <span className="text-[13px] font-semibold uppercase tracking-[0.12em] text-ch-muted">{result.label}…</span>
                     </div>
                 );
+            case 'queued': {
+                const ev = result.evaluation;
+                const v = ev?.tests ? verdictOf(ev.tests) : null;
+                return (
+                    <div className="px-5 py-4">
+                        {v
+                            ? verdictHeader(v, v === 'Accepted', `${ev!.tests!.passed}/${ev!.tests!.total} tests passed · judged on this device`)
+                            : verdictHeader('Saved on this device', true, 'will be judged when you are back online')}
+                        <p className="mb-4 border-l-2 border-ch-accent bg-ch-accent-soft px-3 py-2 text-[13px] font-semibold">
+                            You're offline. This submission is saved on this device and sends automatically when the connection returns
+                            {v === 'Accepted' ? ' — the badge is awarded then.' : '.'}
+                        </p>
+                        {ev?.tests && <ChallengeTestResults report={ev.tests} />}
+                    </div>
+                );
+            }
             case 'error':
                 return <p className="px-5 py-4 text-[13px] text-ch-accent">{result.message}</p>;
             case 'run': {
@@ -533,6 +627,12 @@ const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({ challenge, curr
                             {mark(mobileTab === id)}{label}
                         </button>
                     ))}
+                </div>
+            )}
+
+            {!online && (
+                <div className="flex-none border-b-2 border-ch-rule bg-ch-accent-soft px-5 py-2 text-[12px] font-semibold text-ch-text">
+                    You're offline. Your code is saved here, Run works with the saved tests, and Submit keeps your answer on this device until you reconnect.
                 </div>
             )}
 

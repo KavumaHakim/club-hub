@@ -1,14 +1,28 @@
+// ClubHub service worker.
+//
+// Offline copies always match the latest deploy: the build stamps BUILD_ID and
+// PRECACHE_MANIFEST below (vite.config.ts, precacheServiceWorker), so every deploy
+// changes this file, the browser installs the new worker, and it saves every page
+// and file of that build before taking over. Old builds' files are deleted on
+// activate. In dev the placeholders stay as they are and the page doesn't
+// register a worker on localhost.
 
-const CACHE_NAME = 'ict-club-hub-v12';
-const DATA_CACHE_NAME = 'ict-club-data-v12';
+const BUILD_ID = 'dev';
+const PRECACHE_MANIFEST = self.__PRECACHE_MANIFEST__ || [];
 
-// App shell files to be pre-cached.
-const PRECACHE_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/favicon.svg'
-];
+// This build's app shell and code. Replaced wholesale by the next build.
+const CACHE_NAME = `ict-club-hub-${BUILD_ID}`;
+// Kept across builds: Supabase reads (offline fallback) and CDN files, which
+// include the ~10 MB Python runtime that shouldn't download again every deploy.
+const DATA_CACHE_NAME = 'ict-club-data-v13';
+const CDN_CACHE_NAME = 'ict-club-cdn-v1';
+const KEEP = [CACHE_NAME, DATA_CACHE_NAME, CDN_CACHE_NAME];
+
+const PRECACHE_ASSETS = ['/', '/index.html', '/manifest.json', '/favicon.svg'];
+
+// Hosts answer with "Vary: Origin", and module scripts are requested with an Origin
+// header the saved copies don't have, so a strict match would miss every one offline.
+const MATCH = { ignoreVary: true };
 
 // Domains for CDN assets to be cached with stale-while-revalidate
 const CDN_DOMAINS = [
@@ -17,38 +31,43 @@ const CDN_DOMAINS = [
   'cdn.tailwindcss.com',
   'fonts.googleapis.com',
   'fonts.gstatic.com',
-  'api.dicebear.com' // for avatars
+  'api.dicebear.com', // for avatars
+  'cdn.jsdelivr.net' // Pyodide, so Python challenges run offline
 ];
 
-// Install: Pre-cache the app shell
+// Install: save every file of this build. One missing file must not block the
+// update, so each is cached on its own; a gap is filled the next time it loads.
+// Files under /assets/ have a content hash in their name, so one the previous build
+// already saved is copied over instead of downloaded again.
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(PRECACHE_ASSETS);
+      const urls = Array.from(new Set([...PRECACHE_ASSETS, ...PRECACHE_MANIFEST]));
+      return Promise.all(urls.map(async url => {
+        try {
+          if (url.startsWith('/assets/')) {
+            const saved = await caches.match(url, MATCH);
+            if (saved) return cache.put(url, saved);
+          }
+          await cache.add(new Request(url, { cache: 'reload' }));
+        } catch {
+          // filled in the next time the file loads
+        }
+      }));
     })
   );
   self.skipWaiting();
 });
 
-// Activate: Clean up old caches and notify clients of the update
+// Activate: delete other builds' caches, then tell open pages a new version is ready.
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.map(key => {
-          if (key !== CACHE_NAME && key !== DATA_CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
-      )
-    ).then(() => {
-      // Notify clients that a new service worker is active
-      return self.clients.matchAll().then(clients => {
-        clients.forEach(client => client.postMessage({ type: 'SW_UPDATED' }));
-      });
-    })
+    caches.keys()
+      .then(keys => Promise.all(keys.map(key => (KEEP.includes(key) ? undefined : caches.delete(key)))))
+      .then(() => self.clients.claim())
+      .then(() => self.clients.matchAll())
+      .then(clients => clients.forEach(client => client.postMessage({ type: 'SW_UPDATED' })))
   );
-  self.clients.claim();
 });
 
 // Fetch: Handle all network requests with different caching strategies
@@ -62,17 +81,19 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // 1. Navigation: Network first, fallback to cached index.html
+  // 1. Pages: network first. A fresh page also replaces the saved /index.html, so
+  //    offline always opens the newest page rather than the one from first install.
   if (req.mode === 'navigate') {
     event.respondWith(
       fetch(req)
         .then(resp => {
-          // Cache the fresh page for offline access
-          const copy = resp.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(req, copy));
+          if (resp.ok) {
+            const copy = resp.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put('/index.html', copy));
+          }
           return resp;
         })
-        .catch(() => caches.match('/index.html'))
+        .catch(async () => (await caches.match('/index.html', MATCH)) || Response.error())
     );
     return;
   }
@@ -109,10 +130,12 @@ self.addEventListener('fetch', event => {
   // 3. CDN Assets: Stale-While-Revalidate
   if (CDN_DOMAINS.some(domain => url.hostname.includes(domain))) {
     event.respondWith(
-      caches.open(CACHE_NAME).then(cache => {
-        return cache.match(req).then(cachedResponse => {
+      caches.open(CDN_CACHE_NAME).then(cache => {
+        return cache.match(req, MATCH).then(cachedResponse => {
           const fetchPromise = fetch(req).then(networkResponse => {
-            if (networkResponse.ok) {
+            // Scripts a worker pulls in with importScripts (pyodide.js, pyodide.asm.js)
+            // come back opaque; keep those too or the Python runtime can't start offline.
+            if (networkResponse.ok || networkResponse.type === 'opaque') {
               cache.put(req, networkResponse.clone());
             }
             return networkResponse;
@@ -124,15 +147,15 @@ self.addEventListener('fetch', event => {
     );
     return;
   }
-  
-  // 4. Default for other requests: Cache-first fallback
+
+  // 4. Everything else (this build's files): cache first, saving anything new.
+  if (req.method !== 'GET') return;
   event.respondWith(
-    caches.match(req).then(cached => {
+    caches.match(req, MATCH).then(cached => {
       return cached || fetch(req).then(networkResponse => {
-        // Dynamically cache other successful GET requests
-        if (req.method === 'GET' && networkResponse.ok) {
-            const clone = networkResponse.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(req, clone));
+        if (networkResponse.ok && url.origin === self.location.origin) {
+          const clone = networkResponse.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(req, clone));
         }
         return networkResponse;
       });
@@ -140,10 +163,24 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// Listen for a command from the client to skip waiting
+// Listen for commands from the client
 self.addEventListener('message', event => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
+  }
+  // WARM_URLS: save these files now (e.g. the Python runtime) so they work offline
+  // later even if the page never requested them while online. Already-cached files
+  // are left alone; failures are ignored and retried on the next visit.
+  if (event.data && event.data.type === 'WARM_URLS' && Array.isArray(event.data.urls)) {
+    event.waitUntil(
+      caches.open(CDN_CACHE_NAME).then(cache =>
+        Promise.all(event.data.urls.map(url =>
+          cache.match(url, MATCH).then(hit => hit || fetch(url).then(resp => {
+            if (resp.ok) return cache.put(url, resp);
+          })).catch(() => undefined)
+        ))
+      )
+    );
   }
 });
 

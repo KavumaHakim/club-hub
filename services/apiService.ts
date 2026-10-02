@@ -1,5 +1,6 @@
 
 import { supabase } from './supabaseClient';
+import { saveChallenges, readSavedChallenges } from '../lib/offlineChallenges';
 import { User, Activity, AttendanceRecord, AttendanceStatus, FeedItem, ProjectData, ProjectTask, Resource, AppNotification, Room, ShowcaseItem, Suggestion, Challenge, ChallengeSubmission, ChallengeLanguage, ChallengeTestCase, FeedComment, SuggestionType, SuggestionStatus, SubmissionStatus, ActivityCategory, FeedItemType, TaskPriority, ResourceCategory, ResourceType, Tab, Roadmap, RoadmapProgress, ShowcaseComment, Message, Team, TeamChallenge, TeamChallengeSubmission, PlaygroundProject, PlaygroundProjectFile, PlaygroundProjectActivity, PlaygroundProjectMember, FeatureFlags, GameLeaderboardEntry } from '../types';
 
 // --- Helper for Notifications ---
@@ -1649,11 +1650,14 @@ export const updateSuggestionStatus = async (id: string, status: SuggestionStatu
 
 // --- Challenges ---
 
+// The list (test cases included) is saved on the device after each load, so the
+// Challenges page and workspace still open offline; see lib/offlineChallenges.ts.
 export const getChallenges = async (): Promise<Challenge[]> => {
+    const saved = () => readSavedChallenges()?.items || [];
     try {
         const { data, error } = await supabase.from('challenges').select('*').order('deadline', { ascending: true });
-        if (error) return [];
-        return (data || []).map((c: any) => ({
+        if (error) return saved();
+        const challenges: Challenge[] = (data || []).map((c: any) => ({
             id: String(c.id),
             title: c.title,
             description: c.description,
@@ -1666,8 +1670,10 @@ export const getChallenges = async (): Promise<Challenge[]> => {
             starterCode: c.starter_code || undefined,
             testCases: Array.isArray(c.test_cases) ? c.test_cases : []
         }));
+        saveChallenges(challenges);
+        return challenges;
     } catch (error) {
-        return [];
+        return saved();
     }
 };
 

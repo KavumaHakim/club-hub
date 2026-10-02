@@ -1,9 +1,10 @@
 
-import React, { Suspense, lazy, useState, useEffect, useMemo } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useMemo, useRef } from 'react';
 import { User, Tab } from '../types';
 import AiTutor from './AiTutor';
 import DailyTipModal from './PythonTipModal';
 import { useData } from '../DataContext';
+import { flushPendingSubmissions } from '../services/offlineSubmissions';
 import FeatureIntroModal from './FeatureIntroModal';
 import NotificationPromptModal from './NotificationPromptModal';
 
@@ -59,7 +60,33 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile,
     }, []);
     const [featureIntro, setFeatureIntro] = useState<{ tab: Tab; title: string; body: string } | null>(null);
     const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
-    const { featureFlags, notificationPrefs } = useData();
+    const { featureFlags, notificationPrefs, challenges, fetchChallenges, fetchUsers, showToast } = useData();
+
+    // Send challenge submissions made offline, now and whenever the connection returns.
+    const challengesRef = useRef(challenges);
+    challengesRef.current = challenges;
+    useEffect(() => {
+        let cancelled = false;
+        const send = async () => {
+            if (!navigator.onLine) return;
+            const result = await flushPendingSubmissions(currentUser, challengesRef.current);
+            if (cancelled || result.sent === 0) return;
+            const what = `${result.sent} offline submission${result.sent === 1 ? '' : 's'}`;
+            showToast(
+                result.passed.length
+                    ? `Sent ${what}. Badge earned: ${result.passed.join(', ')}.`
+                    : `Sent ${what}.`,
+                'success',
+            );
+            await Promise.all([fetchUsers(), fetchChallenges()]);
+        };
+        void send();
+        window.addEventListener('online', send);
+        return () => {
+            cancelled = true;
+            window.removeEventListener('online', send);
+        };
+    }, [currentUser.uid]);
     const [pendingChallenge, setPendingChallenge] = useState<any | null>(null);
 
     useEffect(() => {
