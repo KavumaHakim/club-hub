@@ -1,10 +1,8 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { BarChart3, Flame, Share2, Sparkles, Sword, Trophy } from 'lucide-react';
-import { Badge } from '../ui/badge';
+import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 import { ArenaSession } from './types';
+import { cn } from '../../lib/utils';
 
 interface ResultModalProps {
   session: ArenaSession;
@@ -13,7 +11,10 @@ interface ResultModalProps {
   onRematch: () => void;
 }
 
+const signed = (n: number) => `${n >= 0 ? '+' : ''}${n}`;
+
 export const ResultModal: React.FC<ResultModalProps> = ({ session, open, onClose, onRematch }) => {
+  const [copied, setCopied] = useState(false);
   const result = session.result;
   if (!result) return null;
 
@@ -21,125 +22,99 @@ export const ResultModal: React.FC<ResultModalProps> = ({ session, open, onClose
   const isDraw = result.outcome === 'draw';
   const isQuiz = result.totalQuestions != null;
 
-  const handleShare = async () => {
+  const handleCopy = async () => {
     const scoreLine = isQuiz ? ` Score ${result.selfCorrect}–${result.opponentCorrect} of ${result.totalQuestions}.` : '';
-    const summary = `${session.player.name} ${isVictory ? 'won' : isDraw ? 'drew' : 'lost'} a ${session.matchType.toLowerCase()} Code Duel.${scoreLine} Rating ${result.ratingDelta >= 0 ? '+' : ''}${result.ratingDelta}, XP +${result.xpEarned}.`;
+    const summary = `${session.player.name} ${isVictory ? 'won' : isDraw ? 'drew' : 'lost'} a ${session.matchType.toLowerCase()} Code Duel.${scoreLine} Rating ${signed(result.ratingDelta)}, XP +${result.xpEarned}.`;
     try {
       await navigator.clipboard.writeText(summary);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
     } catch {
-      // noop
+      // Clipboard blocked; nothing to show.
     }
   };
 
+  const stats = [
+    { label: 'Rating', value: signed(result.ratingDelta), tone: result.ratingDelta >= 0 ? 'text-green-600 dark:text-green-400' : 'text-ch-accent' },
+    { label: 'XP earned', value: `+${result.xpEarned}`, tone: '' },
+    { label: 'Streak', value: `${session.activeStreak + result.streakDelta}`, tone: '' },
+    isQuiz
+      ? { label: 'Accuracy', value: `${Math.round(((result.selfCorrect ?? 0) / Math.max(1, result.totalQuestions ?? 1)) * 100)}%`, tone: '' }
+      : { label: 'Accuracy', value: `${result.accuracy}%`, tone: '' },
+  ];
+
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className={`overflow-hidden border-white/10 bg-slate-950/95 p-0 ${isVictory ? '' : 'glitch-defeat'}`}>
-        <div className={`absolute inset-0 ${isVictory ? 'bg-[radial-gradient(circle_at_top,rgba(34,197,94,0.18),transparent_45%),radial-gradient(circle_at_bottom_right,rgba(34,211,238,0.18),transparent_38%)]' : 'bg-[radial-gradient(circle_at_top,rgba(244,63,94,0.18),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(168,85,247,0.18),transparent_38%)]'}`} />
-        <div className="relative p-6 sm:p-8">
+      <DialogContent className="max-w-xl p-0">
+        <div className="px-6 pb-6 pt-7 sm:px-8">
           <DialogHeader>
-            <div className="flex items-center gap-3">
-              <Badge variant={isVictory ? 'success' : isDraw ? 'secondary' : 'danger'}>
-                {isVictory ? 'Victory' : isDraw ? 'Draw' : 'Defeat'}
-              </Badge>
-              <Badge variant="secondary">{session.matchType}</Badge>
-            </div>
-            <DialogTitle className="mt-3 flex items-center gap-3 text-3xl">
-              {isVictory ? <Sparkles className="h-7 w-7 text-emerald-300" /> : <Sword className="h-7 w-7 text-rose-300" />}
-              {isVictory ? 'Arena cleared' : isDraw ? 'A dead heat' : 'The chamber fights back'}
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-ch-muted">{session.matchType} duel · {session.problem.title}</p>
+            <DialogTitle className={cn(
+              'text-[40px] leading-none tracking-[-0.03em]',
+              isVictory ? 'text-green-600 dark:text-green-400' : isDraw ? 'text-ch-text' : 'text-ch-accent',
+            )}>
+              {isVictory ? 'Victory' : isDraw ? 'Draw' : 'Defeat'}
             </DialogTitle>
-            <DialogDescription className="max-w-2xl text-slate-300">
+            <DialogDescription className="max-w-md text-[13.5px] leading-relaxed">
               {isQuiz
                 ? isVictory
                   ? 'You answered the most correctly. Sharp and fast.'
                   : isDraw
-                    ? 'Tied on correct answers — neither duelist blinked.'
-                    : 'Edged out on correct answers. Rematch and reclaim it.'
+                    ? 'Tied on correct answers. Neither of you blinked.'
+                    : 'Edged out on correct answers. Rematch and win it back.'
                 : isVictory
-                  ? 'Accepted under pressure. Your route planner held when hidden tests turned hostile.'
-                  : 'Pressure data captured. Review the replay, tighten the state pruning, and queue again.'}
+                  ? 'Accepted under pressure, hidden tests and all.'
+                  : 'Not this time. Look at what failed and go again.'}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="rounded-[1.75rem] border border-white/10 bg-white/5 p-5">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-3">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Rating</p>
-                  <p className={`mt-2 text-2xl font-semibold ${result.ratingDelta >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
-                    {result.ratingDelta >= 0 ? '+' : ''}
-                    {result.ratingDelta}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-3">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">XP Earned</p>
-                  <p className="mt-2 text-2xl font-semibold text-cyan-100">+{result.xpEarned}</p>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-3">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{isQuiz ? 'Your score' : 'Accuracy'}</p>
-                  <p className="mt-2 text-2xl font-semibold text-white">
-                    {isQuiz ? `${result.selfCorrect}/${result.totalQuestions}` : `${result.accuracy}%`}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-3">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{isQuiz ? 'Opponent' : 'Typing Speed'}</p>
-                  <p className="mt-2 text-2xl font-semibold text-white">
-                    {isQuiz ? `${result.opponentCorrect}/${result.totalQuestions}` : `${result.typingSpeed} wpm`}
-                  </p>
-                </div>
+          {isQuiz && (
+            <div className="mt-6 flex items-stretch border-2 border-ch-rule">
+              <div className="flex-1 px-4 py-3">
+                <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-ch-accent">You</p>
+                <p className="mt-0.5 text-[30px] font-extrabold leading-none tabular-nums">{result.selfCorrect}</p>
               </div>
-            </motion.div>
+              <div className="flex items-center px-3 text-[13px] font-extrabold text-ch-muted">vs</div>
+              <div className="flex-1 border-l-2 border-ch-rule px-4 py-3 text-right">
+                <p className="truncate text-[10px] font-extrabold uppercase tracking-[0.14em] text-ch-violet">{session.opponent.name.split(' ')[0]}</p>
+                <p className="mt-0.5 text-[30px] font-extrabold leading-none tabular-nums">{result.opponentCorrect}</p>
+              </div>
+            </div>
+          )}
+          {isQuiz && <p className="mt-1.5 text-[11px] text-ch-muted">Out of {result.totalQuestions} questions</p>}
 
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="rounded-[1.75rem] border border-white/10 bg-white/5 p-5">
-              <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-slate-500">
-                <BarChart3 className="h-3.5 w-3.5" />
-                Match Breakdown
+          <div className="mt-5 grid grid-cols-2 border border-ch-divider sm:grid-cols-4">
+            {stats.map((stat, i) => (
+              <div key={stat.label} className={cn('px-3 py-2.5', i % 2 === 1 && 'border-l border-ch-divider', i > 1 && 'border-t border-ch-divider sm:border-t-0', i === 2 && 'sm:border-l')}>
+                <p className="text-[9.5px] font-extrabold uppercase tracking-[0.12em] text-ch-muted">{stat.label}</p>
+                <p className={cn('mt-1 text-[18px] font-extrabold tabular-nums', stat.tone)}>{stat.value}</p>
               </div>
-              <div className="mt-4 space-y-3">
-                <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3">
-                  <span className="text-sm text-slate-400">{isQuiz ? 'Correct answers' : 'Runtime'}</span>
-                  <span className="text-sm font-semibold text-white">{isQuiz ? `${result.selfCorrect}/${result.totalQuestions}` : `${result.runtimeMs}ms`}</span>
-                </div>
-                <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3">
-                  <span className="text-sm text-slate-400">Streak shift</span>
-                  <span className={`text-sm font-semibold ${result.streakDelta >= 0 ? 'text-amber-200' : 'text-rose-300'}`}>
-                    {result.streakDelta >= 0 ? '+' : ''}
-                    {result.streakDelta}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3">
-                  <span className="text-sm text-slate-400">{isQuiz ? 'Opponent correct' : 'Opponent runtime'}</span>
-                  <span className="text-sm font-semibold text-white">{isQuiz ? `${result.opponentCorrect}/${result.totalQuestions}` : `${session.opponent.runtimeMs}ms`}</span>
-                </div>
-              </div>
-            </motion.div>
+            ))}
           </div>
 
-          <div className="mt-6 rounded-[1.75rem] border border-white/10 bg-white/5 p-5">
-            <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-slate-500">
-              <Trophy className="h-3.5 w-3.5" />
-              Achievements Unlocked
+          {result.achievements.length > 0 && (
+            <div className="mt-5">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-ch-muted">Achievements</p>
+              <div className="flex flex-wrap gap-1.5">
+                {result.achievements.map((achievement) => (
+                  <span key={achievement} className="border border-ch-divider px-2 py-1 text-[11.5px] font-semibold">{achievement}</span>
+                ))}
+              </div>
             </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {result.achievements.map((achievement) => (
-                <Badge key={achievement} variant={isVictory ? 'success' : 'secondary'}>
-                  {achievement}
-                </Badge>
-              ))}
-              <Badge variant="secondary">
-                <Flame className="mr-1 h-3 w-3" />
-                {session.activeStreak + result.streakDelta} current streak
-              </Badge>
-            </div>
-          </div>
-
-          <DialogFooter className="mt-8">
-            <Button variant="secondary" onClick={handleShare}>
-              <Share2 className="h-4 w-4" />
-              Share Result
-            </Button>
-            <Button onClick={onRematch}>Rematch</Button>
-          </DialogFooter>
+          )}
         </div>
+
+        <DialogFooter className="mt-0 border-t-2 border-ch-rule sm:justify-stretch">
+          <div className="flex w-full">
+            <Button variant="ghost" className="h-12 flex-1" onClick={handleCopy}>
+              {copied ? 'Copied' : 'Copy result'}
+            </Button>
+            <Button variant="ghost" className="h-12 flex-1 border-l border-ch-divider" onClick={onClose}>
+              Close
+            </Button>
+            <Button className="h-12 flex-1" onClick={onRematch}>Rematch</Button>
+          </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

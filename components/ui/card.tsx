@@ -5,7 +5,8 @@ const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
   <div
     ref={ref}
     className={cn(
-      'rounded-3xl border border-white/10 bg-slate-950/60 backdrop-blur-xl shadow-[0_20px_60px_rgba(2,8,23,0.45)]',
+      // Split design: square, flat, ruled. These primitives are used by the Duel Arena only.
+      'border border-ch-divider bg-ch-bg text-ch-text',
       className,
     )}
     {...props}
@@ -21,13 +22,13 @@ const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDiv
 CardHeader.displayName = 'CardHeader';
 
 const CardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(
-  ({ className, ...props }, ref) => <h3 ref={ref} className={cn('text-base font-semibold text-white', className)} {...props} />,
+  ({ className, ...props }, ref) => <h3 ref={ref} className={cn('text-[15px] font-extrabold tracking-[-0.01em] text-ch-text', className)} {...props} />,
 );
 
 CardTitle.displayName = 'CardTitle';
 
 const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
-  ({ className, ...props }, ref) => <p ref={ref} className={cn('text-sm text-slate-400', className)} {...props} />,
+  ({ className, ...props }, ref) => <p ref={ref} className={cn('text-[13px] text-ch-muted', className)} {...props} />,
 );
 
 CardDescription.displayName = 'CardDescription';

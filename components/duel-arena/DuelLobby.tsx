@@ -3,7 +3,8 @@ import { User } from '../../types';
 import { getUsers } from '../../services/apiService';
 import type { DuelInviteRecord, LiveMatchSummary } from '../../services/duelService';
 import { useDuelArenaStore } from './useDuelArenaStore';
-import InitialsTile, { TILE_COLORS } from '../InitialsTile';
+import InitialsTile from '../InitialsTile';
+import { colorFor } from './utils';
 import { SearchIcon } from '../icons/SearchIcon';
 import { SHELL_META_EVENT } from '../ShellHeader';
 import { useMediaQuery } from '../../lib/useMediaQuery';
@@ -26,13 +27,6 @@ const timeAgo = (iso?: string | null) => {
   if (m < 60) return `${m}m ago`;
   const h = Math.round(m / 60);
   return h < 24 ? `${h}h ago` : `${Math.round(h / 24)}d ago`;
-};
-
-/** Stable tile colour per person so the same player reads the same everywhere. */
-const colorFor = (key: string) => {
-  let hash = 0;
-  for (let i = 0; i < key.length; i += 1) hash = (hash * 31 + key.charCodeAt(i)) | 0;
-  return TILE_COLORS[Math.abs(hash) % TILE_COLORS.length];
 };
 
 const matchTypeLabel = (type: string) => (type === 'CASUAL' ? 'Casual' : type === 'TOURNAMENT' ? 'Tournament' : 'Ranked');

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertTriangle, ArrowLeft, LayoutPanelLeft, Loader2, MonitorPlay, Swords, Users } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Loader2, Users } from 'lucide-react';
 import { User } from '../types';
 import { DuelLobby } from './duel-arena/DuelLobby';
 import { CodeEditorPanel } from './duel-arena/CodeEditorPanel';
@@ -10,12 +10,9 @@ import { QuizPanel } from './duel-arena/QuizPanel';
 import { ResultModal } from './duel-arena/ResultModal';
 import { SpectatorView } from './duel-arena/SpectatorView';
 import { Button } from './ui/button';
-import { Card } from './ui/card';
-import { Badge } from './ui/badge';
-import { Progress } from './ui/progress';
-import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 import { formatTimer, getTimerTone } from './duel-arena/utils';
 import { useArenaRuntime, useDuelArenaStore } from './duel-arena/useDuelArenaStore';
+import { ArenaThemeContext } from './duel-arena/arenaTheme';
 import { cn } from '../lib/utils';
 
 interface CodeDuelArenaProps {
@@ -23,7 +20,7 @@ interface CodeDuelArenaProps {
   theme?: 'light' | 'dark';
 }
 
-const CodeDuelArena: React.FC<CodeDuelArenaProps> = ({ currentUser }) => {
+const CodeDuelArena: React.FC<CodeDuelArenaProps> = ({ currentUser, theme = 'dark' }) => {
   const hydrate = useDuelArenaStore((state) => state.hydrate);
   const phase = useDuelArenaStore((state) => state.phase);
   const preparingLabel = useDuelArenaStore((state) => state.preparingLabel);
@@ -56,144 +53,136 @@ const CodeDuelArena: React.FC<CodeDuelArenaProps> = ({ currentUser }) => {
 
   const isPlayerArena = phase === 'arena' && session && role === 'player';
   const isSpectatorArena = phase === 'arena' && session && role === 'spectator';
-  // Lobby scrolls internally; the live arena is a fixed, full-height layout.
-  const scrollable = phase === 'lobby' || phase === 'preparing' || phase === 'loading';
+  const scorePct = (p: { progress: number }) => Math.max(0, Math.min(100, p.progress));
 
   return (
-    <div className={cn(
-      'relative flex h-full flex-col',
-      // The lobby sits on the shell's Split ground; matches keep the neon arena.
-      phase === 'lobby' ? 'overflow-hidden bg-ch-bg text-ch-text' : 'bg-gradient-to-b from-slate-950 via-[#0a0f24] to-slate-950 text-white',
-      phase !== 'lobby' && (scrollable ? 'overflow-y-auto custom-scrollbar' : 'overflow-hidden'),
-    )}>
-      {phase !== 'lobby' && <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="arena-grid absolute inset-0 opacity-40" />
-        <div className="absolute left-[10%] top-[-7rem] h-72 w-72 rounded-full bg-cyan-500/15 blur-3xl" />
-        <div className="absolute right-[6%] top-[14%] h-72 w-72 rounded-full bg-fuchsia-500/15 blur-3xl" />
-        <div className="absolute bottom-[-6rem] left-[35%] h-72 w-72 rounded-full bg-violet-600/10 blur-3xl" />
-      </div>}
-
+    <ArenaThemeContext.Provider value={theme}>
+    <div className="relative flex h-full flex-col overflow-hidden bg-ch-bg text-ch-text">
       <div className="relative flex min-h-0 flex-1 flex-col">
         {phase === 'loading' ? (
-          <div className="flex flex-1 items-center justify-center">
-            <div className="text-center">
-              <Swords className="mx-auto h-8 w-8 text-cyan-300" />
-              <p className="mt-3 text-sm text-slate-300">Opening the Duel Arena...</p>
-            </div>
+          <div className="flex flex-1 items-center px-6 sm:px-12">
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-ch-muted">Opening the Duel Arena…</p>
           </div>
         ) : null}
 
         {phase === 'lobby' ? <DuelLobby currentUser={currentUser} /> : null}
 
         {phase === 'preparing' ? (
-          <div className="flex flex-1 items-center justify-center p-4">
-            <Card className="arena-panel w-full max-w-md p-8 text-center">
-              <Loader2 className="mx-auto h-10 w-10 animate-spin text-cyan-300" />
-              <h3 className="mt-5 text-xl font-semibold text-white">Preparing your duel</h3>
-              <p className="mt-2 text-sm text-slate-300">{preparingLabel || 'Setting things up...'}</p>
-              <p className="mt-4 text-xs text-slate-500">
-                Building a fresh Python DSA problem with 20+ test cases matched to both players' levels.
-              </p>
-            </Card>
+          <div className="ch-scroll flex flex-1 flex-col justify-center overflow-y-auto px-6 py-12 sm:px-16">
+            <p className="mb-2 flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-[0.16em] text-ch-accent">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Preparing your duel
+            </p>
+            <h3 className="mb-2 text-[28px] font-extrabold tracking-[-0.02em]">{preparingLabel || 'Setting things up…'}</h3>
+            <p className="max-w-md text-[13.5px] leading-relaxed text-ch-muted">
+              A fresh set of quick quiz and short coding questions, set in everyday life and matched to both players' levels.
+            </p>
           </div>
         ) : null}
 
         {isSpectatorArena ? <SpectatorView /> : null}
 
         {isPlayerArena ? (
-          <div className="flex min-h-0 flex-1 flex-col gap-2.5 p-2.5 sm:gap-3 sm:p-4">
-            {/* Compact match bar (replaces the tall banner so everything fits without scrolling) */}
-            <Card className="arena-panel shrink-0 px-3 py-2.5 sm:px-4">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex min-w-0 items-center gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => void leaveMatch()}>
-                    <ArrowLeft className="h-4 w-4" />
-                    <span className="hidden sm:inline">Lobby</span>
-                  </Button>
-                  <Swords className="h-4 w-4 shrink-0 text-cyan-300" />
-                  <span className="truncate text-sm font-semibold text-white">{session!.problem.title}</span>
-                  <Badge variant="secondary" className="hidden shrink-0 sm:inline-flex">{session!.matchType}</Badge>
-                </div>
-                <div className="flex shrink-0 items-center gap-3">
-                  <span className="hidden items-center gap-1 text-xs text-slate-400 sm:flex">
-                    <Users className="h-3.5 w-3.5" />
-                    {session!.spectators}
-                  </span>
-                  <div className="text-right">
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">
-                      {isQuiz
-                        ? session!.status === 'countdown' ? 'Starts in' : session!.status === 'finished' ? 'Final' : 'Question'
-                        : session!.status === 'countdown' ? 'Starts in' : session!.status === 'finished' ? 'Final' : 'Time left'}
-                    </p>
-                    {isQuiz && session!.status !== 'countdown' ? (
-                      <p className="font-mono text-xl font-semibold leading-none text-cyan-100">
-                        {Math.min(quizIndex + 1, totalQuestions)}/{totalQuestions}
-                      </p>
-                    ) : (
-                      <p className={cn('font-mono text-xl font-semibold leading-none', getTimerTone(session!.status, session!.timeRemaining), session!.timeRemaining <= 60 && session!.status !== 'finished' && 'animate-pulse')}>
-                        {session!.status === 'countdown' ? `${session!.countdown}s` : formatTimer(session!.timeRemaining)}
-                      </p>
-                    )}
-                  </div>
-                </div>
+          <div className="flex min-h-0 flex-1 flex-col">
+            {/* Match bar */}
+            <div className="flex h-[46px] flex-none items-stretch border-b-2 border-ch-rule">
+              <button
+                onClick={() => void leaveMatch()}
+                className="flex flex-none items-center gap-1.5 border-r border-ch-divider px-3.5 text-[11px] font-bold uppercase tracking-[0.08em] text-ch-muted transition-colors hover:bg-ch-surface hover:text-ch-text sm:px-5"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Lobby</span>
+              </button>
+              <div className="flex min-w-0 flex-1 items-center gap-3 px-4 sm:px-6">
+                <span className="truncate text-[14px] font-extrabold tracking-[-0.01em]">{session!.problem.title}</span>
+                <span className="hidden flex-none text-[10px] font-extrabold uppercase tracking-[0.14em] text-ch-accent sm:inline">{session!.matchType}</span>
               </div>
-
-              {/* Dual progress: you vs opponent */}
-              <div className="mt-2.5 grid grid-cols-2 gap-2.5 sm:gap-3">
-                {[
-                  { p: session!.player, label: 'You', accent: 'cyan' as const },
-                  { p: session!.opponent, label: session!.opponent.name, accent: 'rose' as const },
-                ].map(({ p, label, accent }) => (
-                  <div key={p.id}>
-                    <div className="mb-1 flex items-center justify-between gap-2 text-[11px]">
-                      <span className={cn('truncate font-medium', accent === 'cyan' ? 'text-cyan-200' : 'text-rose-200')}>{label}</span>
-                      <span className="shrink-0 text-slate-400">{isQuiz ? `${p.testCasesPassed} correct` : `${p.testCasesPassed} passed${p.liveTyping ? ' · typing' : ''}`}</span>
-                    </div>
-                    <Progress value={p.progress} className="h-1.5" />
-                  </div>
-                ))}
+              <span className="hidden flex-none items-center gap-1.5 border-l border-ch-divider px-4 text-[11px] text-ch-muted sm:flex">
+                <Users className="h-3.5 w-3.5" />
+                {session!.spectators} watching
+              </span>
+              <button
+                onClick={() => togglePanel('right')}
+                className="hidden flex-none items-center border-l border-ch-divider px-4 text-[11px] font-bold uppercase tracking-[0.08em] text-ch-muted transition-colors hover:bg-ch-surface hover:text-ch-text xl:flex"
+              >
+                {rightCollapsed ? 'Show opponent' : 'Hide opponent'}
+              </button>
+              {!isQuiz && (
+                <button
+                  onClick={() => togglePanel('left')}
+                  className="hidden flex-none items-center border-l border-ch-divider px-4 text-[11px] font-bold uppercase tracking-[0.08em] text-ch-muted transition-colors hover:bg-ch-surface hover:text-ch-text xl:flex"
+                >
+                  {leftCollapsed ? 'Show problem' : 'Hide problem'}
+                </button>
+              )}
+              <div className="flex w-[92px] flex-none flex-col items-center justify-center border-l-2 border-ch-rule sm:w-[112px]">
+                <p className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-ch-muted">
+                  {session!.status === 'countdown' ? 'Starts in' : session!.status === 'finished' ? 'Final' : isQuiz ? 'Question' : 'Time left'}
+                </p>
+                {isQuiz && session!.status !== 'countdown' ? (
+                  <p className="text-[17px] font-extrabold leading-tight tabular-nums">
+                    {Math.min(quizIndex + 1, totalQuestions)}/{totalQuestions}
+                  </p>
+                ) : (
+                  <p className={cn('text-[17px] font-extrabold leading-tight tabular-nums', getTimerTone(session!.status, session!.timeRemaining))}>
+                    {session!.status === 'countdown' ? `${session!.countdown}s` : formatTimer(session!.timeRemaining)}
+                  </p>
+                )}
               </div>
-
-              <p className="mt-2 truncate text-center text-xs text-slate-400">{liveBanner}</p>
-            </Card>
-
-            {/* Mobile panel switcher */}
-            <div className="shrink-0 xl:hidden">
-              <Tabs value={activeMobilePanel} onValueChange={(value) => setMobilePanel(value as any)} className="w-full">
-                <TabsList className={cn('grid w-full', isQuiz ? 'grid-cols-2' : 'grid-cols-3')}>
-                  {!isQuiz && <TabsTrigger value="problem">Problem</TabsTrigger>}
-                  <TabsTrigger value="editor">{isQuiz ? 'Quiz' : 'Editor'}</TabsTrigger>
-                  <TabsTrigger value="intel">Opponent</TabsTrigger>
-                </TabsList>
-              </Tabs>
             </div>
 
-            {/* Desktop panel toggles */}
-            <div className="hidden shrink-0 items-center justify-end gap-2 xl:flex">
-              {!isQuiz && (
-                <Button variant="secondary" size="sm" onClick={() => togglePanel('left')}>
-                  <LayoutPanelLeft className="mr-1 h-4 w-4" />
-                  {leftCollapsed ? 'Show Problem' : 'Hide Problem'}
-                </Button>
-              )}
-              <Button variant="secondary" size="sm" onClick={() => togglePanel('right')}>
-                <MonitorPlay className="mr-1 h-4 w-4" />
-                {rightCollapsed ? 'Show Intel' : 'Hide Intel'}
-              </Button>
+            {/* Scoreboard: you vs opponent */}
+            <div className="flex flex-none items-stretch border-b border-ch-divider">
+              {[
+                { p: session!.player, label: 'You', you: true },
+                { p: session!.opponent, label: session!.opponent.name, you: false },
+              ].map(({ p, label, you }, i) => (
+                <div key={p.id} className={cn('min-w-0 flex-1 px-4 py-2.5 sm:px-6', i === 1 && 'border-l border-ch-divider')}>
+                  <div className="mb-1.5 flex items-baseline justify-between gap-2">
+                    <span className={cn('truncate text-[12px] font-extrabold', you ? 'text-ch-accent' : '')}>{label}</span>
+                    <span className="flex-none text-[11px] text-ch-muted">
+                      <span className="font-extrabold text-ch-text">{p.testCasesPassed}</span>
+                      {isQuiz ? ' correct' : ` passed${p.liveTyping ? ' · typing' : ''}`}
+                    </span>
+                  </div>
+                  <div className="h-[3px] bg-ch-surface-2">
+                    <div className={cn('h-full transition-[width] duration-300', you ? 'bg-ch-accent' : 'bg-ch-violet')} style={{ width: `${scorePct(p)}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+            {liveBanner && (
+              <p className="flex-none truncate border-b border-ch-divider bg-ch-surface px-4 py-1.5 text-center text-[11.5px] text-ch-muted sm:px-6">{liveBanner}</p>
+            )}
+
+            {/* Mobile panel switcher */}
+            <div className="flex h-10 flex-none items-stretch border-b-2 border-ch-rule xl:hidden">
+              {(isQuiz ? (['editor', 'intel'] as const) : (['problem', 'editor', 'intel'] as const)).map((panel, i) => (
+                <button
+                  key={panel}
+                  onClick={() => setMobilePanel(panel)}
+                  className={cn(
+                    'flex flex-1 items-center justify-center text-[11px] font-bold uppercase tracking-[0.08em] transition-colors',
+                    i > 0 && 'border-l border-ch-divider',
+                    activeMobilePanel === panel ? 'bg-ch-accent text-ch-on-accent' : 'text-ch-muted hover:bg-ch-surface hover:text-ch-text',
+                  )}
+                >
+                  {panel === 'problem' ? 'Problem' : panel === 'editor' ? (isQuiz ? 'Quiz' : 'Editor') : 'Opponent'}
+                </button>
+              ))}
             </div>
 
             {isQuiz ? (
-              <div className="grid min-h-0 flex-1 gap-2.5 sm:gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(300px,360px)]">
+              <div className="grid min-h-0 flex-1 xl:grid-cols-[minmax(0,1fr)_minmax(300px,360px)]">
                 <div className={`${activeMobilePanel !== 'intel' ? 'flex flex-col' : 'hidden'} min-h-0 xl:flex xl:flex-col`}>
                   <QuizPanel />
                 </div>
-                <div className={`${activeMobilePanel === 'intel' ? 'flex flex-col' : 'hidden'} min-h-0 xl:flex xl:flex-col ${rightCollapsed ? 'xl:hidden' : ''}`}>
+                <div className={`${activeMobilePanel === 'intel' ? 'flex flex-col' : 'hidden'} min-h-0 xl:flex xl:flex-col xl:border-l-2 xl:border-ch-rule ${rightCollapsed ? 'xl:hidden' : ''}`}>
                   <OpponentPanel session={session!} onSendQuickTaunt={sendQuickTaunt} onSendChatMessage={sendChatMessage} />
                 </div>
               </div>
             ) : (
-              <div className="grid min-h-0 flex-1 gap-2.5 sm:gap-3 xl:grid-cols-[minmax(280px,330px)_minmax(0,1fr)_minmax(280px,330px)]">
-                <div className={`${activeMobilePanel === 'problem' ? 'flex flex-col' : 'hidden'} min-h-0 xl:flex xl:flex-col ${leftCollapsed ? 'xl:hidden' : ''}`}>
+              <div className="grid min-h-0 flex-1 xl:grid-cols-[minmax(280px,330px)_minmax(0,1fr)_minmax(280px,330px)]">
+                <div className={`${activeMobilePanel === 'problem' ? 'flex flex-col' : 'hidden'} min-h-0 xl:flex xl:flex-col xl:border-r-2 xl:border-ch-rule ${leftCollapsed ? 'xl:hidden' : ''}`}>
                   <ProblemPanel session={session!} activeLanguage={activeLanguage} onLanguageChange={setActiveLanguage} />
                 </div>
 
@@ -201,7 +190,7 @@ const CodeDuelArena: React.FC<CodeDuelArenaProps> = ({ currentUser }) => {
                   <CodeEditorPanel />
                 </div>
 
-                <div className={`${activeMobilePanel === 'intel' ? 'flex flex-col' : 'hidden'} min-h-0 xl:flex xl:flex-col ${rightCollapsed ? 'xl:hidden' : ''}`}>
+                <div className={`${activeMobilePanel === 'intel' ? 'flex flex-col' : 'hidden'} min-h-0 xl:flex xl:flex-col xl:border-l-2 xl:border-ch-rule ${rightCollapsed ? 'xl:hidden' : ''}`}>
                   <OpponentPanel session={session!} onSendQuickTaunt={sendQuickTaunt} onSendChatMessage={sendChatMessage} />
                 </div>
               </div>
@@ -216,22 +205,23 @@ const CodeDuelArena: React.FC<CodeDuelArenaProps> = ({ currentUser }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/85 px-4 backdrop-blur-sm"
+            className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 px-4"
           >
-            <Card className="max-w-lg border-amber-400/20 bg-slate-950/95 p-6 text-center">
-              <AlertTriangle className="mx-auto h-10 w-10 text-amber-300" />
-              <h3 className="mt-4 text-2xl font-semibold text-white">Fair play check</h3>
-              <p className="mt-3 text-sm text-slate-300">
+            <div className="w-full max-w-lg border-2 border-ch-rule bg-ch-bg p-6 text-ch-text">
+              <p className="mb-2 flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-[0.16em] text-ch-accent">
+                <AlertTriangle className="h-3.5 w-3.5" /> Fair play check
+              </p>
+              <p className="text-[15px] leading-relaxed">
                 {session!.antiCheat.overlayMessage || 'The arena noticed unusual activity. Keep the duel fair and continue.'}
               </p>
-              <div className="mt-5 flex flex-wrap items-center justify-center gap-3 text-sm text-slate-300">
-                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-2">Trust score: {session!.antiCheat.trustScore}%</span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-2">Focus warnings: {session!.antiCheat.focusWarnings}</span>
+              <div className="mt-4 flex border border-ch-divider text-[12px]">
+                <span className="flex-1 px-3 py-2 text-ch-muted">Trust score <span className="font-extrabold text-ch-text">{session!.antiCheat.trustScore}%</span></span>
+                <span className="flex-1 border-l border-ch-divider px-3 py-2 text-ch-muted">Focus warnings <span className="font-extrabold text-ch-text">{session!.antiCheat.focusWarnings}</span></span>
               </div>
-              <div className="mt-6 flex justify-center">
+              <div className="mt-5 flex justify-end">
                 <Button onClick={dismissIntegrityOverlay}>Back to the duel</Button>
               </div>
-            </Card>
+            </div>
           </motion.div>
         ) : null}
       </AnimatePresence>
@@ -245,6 +235,7 @@ const CodeDuelArena: React.FC<CodeDuelArenaProps> = ({ currentUser }) => {
         />
       ) : null}
     </div>
+    </ArenaThemeContext.Provider>
   );
 };
 

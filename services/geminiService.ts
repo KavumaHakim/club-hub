@@ -535,6 +535,17 @@ const CHALLENGE_SETTINGS = [
     'a school bus trip', 'a savings group (SACCO)', "a bakery's morning orders", 'a supermarket checkout',
 ];
 
+/** A random everyday setting plus the rules that keep stories real and names playful. */
+const realLifeThemeRules = (count: 'one' | 'each') => {
+    const pick = () => CHALLENGE_SETTINGS[Math.floor(Math.random() * CHALLENGE_SETTINGS.length)];
+    const settings = count === 'one' ? pick() : [...new Set([pick(), pick(), pick(), pick()])].join('; ');
+    return `- Wrap ${count === 'one' ? 'the problem' : 'each coding question'} in real, everyday life that secondary-school students in Uganda recognise.
+  Use ${count === 'one' ? 'this setting' : 'settings like these, a different one per question'}: ${settings}.
+- NO made-up worlds: no fantasy kingdoms, dragons, wizards, magic, space empires, alien planets or invented creatures.
+- Keep it playful: catchy, punny titles and ordinary Ugandan or English character names you invent yourself.
+- Make the numbers believable (prices in UGX, real distances, real times).`;
+};
+
 export const generateAIChallenge = async (
     skillLevel: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED',
     concepts: string,
@@ -921,7 +932,8 @@ LEVEL RULES (follow strictly):
 ${DUEL_LEVEL_GUIDANCE[targetLevel]}
 
 THEME RULES:
-- Data Structures & Algorithms in Python, wrapped in a short, fun scenario (2-3 sentences max).
+- Data Structures & Algorithms in Python, wrapped in a short scenario (2-3 sentences max).
+${realLifeThemeRules('one')}
 - The solution must exercise clear Python syntax and idiomatic use of common standard library modules.
 - Input/output contract: the player writes a function solve(input_text: str) -> str.
   input_text is the raw test input (may span multiple lines); the return value is compared to the expected output EXACTLY (trailing whitespace ignored).
@@ -1144,7 +1156,7 @@ const buildCodingCard = async (
     const question = toSafeText(q?.question).trim();
     const reference = toSafeText(q?.referenceSolution).trim();
     const starterCode = toSafeText(q?.starterCode, 'def solve(input_text: str) -> str:\n    return ""\n');
-    const inputs = Array.isArray(q?.inputs) ? q.inputs.map((i: any) => toSafeText(i)).slice(0, 6) : [];
+    const inputs = Array.isArray(q?.inputs) ? q.inputs.map((i: any) => realLineBreaks(toSafeText(i))).slice(0, 6) : [];
     if (!question || !reference || inputs.length < 2) return null;
 
     let outputs: (string | null)[];
@@ -1212,8 +1224,15 @@ QUIZ RULES:
 
 CODING RULES:
 - The player writes solve(input_text: str) -> str. Keep each problem tiny.
+- Frame each one as a one- or two-sentence real-life task, not an abstract "given a list" exercise.
+${realLifeThemeRules('each')}
 - Provide "starterCode" (the signature plus a short hint comment) and a COMPLETE, correct "referenceSolution".
 - Provide "inputs": 3-5 raw input strings (the FIRST is a simple sample). Do NOT provide expected outputs — they are computed by running your referenceSolution.
+  A multi-line input uses real line breaks: write \\n inside the JSON string, never the double-escaped \\\\n.
+
+QUIZ THEME:
+- Where a question can be phrased around everyday life (a shop's prices list, a class register, a football score), do so;
+  pure syntax questions can stay as they are.
 
 OUTPUT RULES:
 - Output the JSON object directly and nothing else. No markdown fences, no commentary.
@@ -1221,7 +1240,7 @@ OUTPUT RULES:
 
 Return ONLY a JSON object:
 {
-  "title": "short catchy title",
+  "title": "short, playful title tied to the real-life theme",
   "difficulty": "Easy" | "Medium" | "Hard",
   "tags": ["2-4 topic tags"],
   "quizQuestions": [{ "type": "MULTIPLE_CHOICE"|"TRUE_FALSE"|"SHORT_ANSWER", "question": "...", "options": ["..."], "correctAnswer": "...", "acceptedAnswers": ["..."] }],
