@@ -314,7 +314,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile,
             </Suspense>
 
             {/* Floating AI Tutor Widget */}
-            <AiTutor currentUser={currentUser} />
+            <AiTutor currentUser={currentUser} activeTab={activeTab} />
 
             {/* Daily Coding Tip Modal (Python on odd days, JS on even days) */}
             <DailyTipModal

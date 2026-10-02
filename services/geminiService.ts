@@ -35,13 +35,13 @@ const getGeminiKey = (): string => {
 const getGeminiModel = (): string => {
     try {
         // @ts-ignore
-        return import.meta.env.VITE_GEMINI_MODEL || process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+        return import.meta.env.VITE_GEMINI_MODEL || process.env.GEMINI_MODEL || '';
     } catch {
         try {
             // @ts-ignore
-            return process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+            return process.env.GEMINI_MODEL || '';
         } catch {
-            return 'gemini-1.5-flash';
+            return '';
         }
     }
 };
@@ -49,8 +49,8 @@ const getGeminiModel = (): string => {
 const getCachedGeminiModel = (): string | null => {
     if (typeof window === 'undefined') return null;
     try {
-        const model = localStorage.getItem('gemini_model_resolved');
-        const ts = Number(localStorage.getItem('gemini_model_resolved_at') || '0');
+        const model = localStorage.getItem('gemini_model_resolved_v2');
+        const ts = Number(localStorage.getItem('gemini_model_resolved_v2_at') || '0');
         if (model && Date.now() - ts < 1000 * 60 * 60 * 24) return model; // 24h cache
         return null;
     } catch {
@@ -61,8 +61,8 @@ const getCachedGeminiModel = (): string | null => {
 const setCachedGeminiModel = (model: string) => {
     if (typeof window === 'undefined') return;
     try {
-        localStorage.setItem('gemini_model_resolved', model);
-        localStorage.setItem('gemini_model_resolved_at', String(Date.now()));
+        localStorage.setItem('gemini_model_resolved_v2', model);
+        localStorage.setItem('gemini_model_resolved_v2_at', String(Date.now()));
     } catch { }
 };
 
@@ -205,17 +205,19 @@ const pickPreferredModel = (models: string[], preferred: string | null): string 
         if (direct) return direct;
     }
 
-    const preferenceOrder = [
-        'gemini-2.0-pro',
-        'gemini-2.0-flash',
-        'gemini-1.5-pro',
-        'gemini-1.5-flash'
-    ];
-    for (const pref of preferenceOrder) {
-        const match = normalized.find(m => m.toLowerCase() === pref);
-        if (match) return match;
-    }
-    return normalized[0] || preferred || null;
+    // Without a configured model, take the newest stable Flash the key can use. Names
+    // are read from the live model list, so retired versions (1.5, 2.0) drop out on
+    // their own and new ones are picked up without a code change.
+    const version = (name: string) => {
+        const m = name.toLowerCase().match(/^gemini-(\d+(?:\.\d+)?)-flash$/);
+        return m ? parseFloat(m[1]) : null;
+    };
+    const flashes = normalized
+        .filter(m => version(m) !== null)
+        .sort((a, b) => (version(b) as number) - (version(a) as number));
+    if (flashes.length) return flashes[0];
+    const anyFlash = normalized.find(m => /flash/i.test(m) && !/(lite|image|tts|live|audio|thinking|exp|preview)/i.test(m));
+    return anyFlash || normalized[0] || preferred || null;
 };
 
 const resolveGeminiModel = async (forceRefresh: boolean = false): Promise<string> => {
@@ -227,7 +229,7 @@ const resolveGeminiModel = async (forceRefresh: boolean = false): Promise<string
     const models = await fetchGeminiModels();
     const chosen = pickPreferredModel(models, preferred);
     if (chosen) setCachedGeminiModel(chosen);
-    return chosen || preferred || 'gemini-1.5-flash';
+    return chosen || preferred || 'gemini-2.5-flash';
 };
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -257,9 +259,12 @@ const enqueueGemini = async <T>(fn: () => Promise<T>): Promise<T> => {
     }
 };
 
-const callGemini = async (prompt: string): Promise<string> => {
+const callGemini = async (prompt: string, options?: { json?: boolean }): Promise<string> => {
     if (!geminiKey) throw new Error("Gemini API key missing");
-    const existing = geminiInFlight.get(prompt);
+    // Most callers parse JSON; chat replies (the tutor) want plain text.
+    const json = options?.json ?? true;
+    const inFlightKey = `${json ? 'json' : 'text'}:${prompt}`;
+    const existing = geminiInFlight.get(inFlightKey);
     if (existing) return existing;
 
     const request = enqueueGemini(async () => {
@@ -279,7 +284,7 @@ const callGemini = async (prompt: string): Promise<string> => {
                         generationConfig: {
                             temperature: 0.7,
                             maxOutputTokens: 4096,
-                            responseMimeType: "application/json"
+                            ...(json ? { responseMimeType: "application/json" } : {})
                         }
                     })
                 });
@@ -312,11 +317,11 @@ const callGemini = async (prompt: string): Promise<string> => {
         throw lastError || new Error("Gemini API Error");
     });
 
-    geminiInFlight.set(prompt, request);
+    geminiInFlight.set(inFlightKey, request);
     try {
         return await request;
     } finally {
-        geminiInFlight.delete(prompt);
+        geminiInFlight.delete(inFlightKey);
     }
 };
 
@@ -339,36 +344,47 @@ export const getAiTutorResponse = async (
     message: string,
     clubContext: string = ''
 ) => {
-    try {
-        const systemPrompt = `You are a friendly, patient, and wise AI Tutor for St. Joseph's SSS Naggalama Secondary school ICT Club. 
-        Your goal is to TEACH, not to do the work for the students. 
-        
+    // The model's own knowledge stops months before today. Tell it the date, and that
+    // the app guide and club data below are current, so it doesn't describe the hub
+    // (or "what's new") from memory.
+    const today = new Date().toLocaleDateString('en-GB', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Africa/Kampala',
+    });
+    const systemPrompt = `You are Kevin, a friendly, patient, and wise AI Tutor for the St. Joseph's SSS Naggalama ICT Club, inside the club's ICT Club Hub app.
+        Your goal is to TEACH, not to do the work for the students.
+
+        TODAY: ${today} (Uganda time).
+        Your training data is older than today. For anything about the club or the Club Hub app (screens, features, challenges, events, people, what's new),
+        use only the CURRENT INFORMATION below, which is live. Don't describe features or events from memory, and if something isn't in it, say you don't know
+        rather than guessing. For general programming knowledge, your training is fine.
+
         DETECT LANGUAGE: Automatically identify if the student is asking about Python or JavaScript.
-        
-        REAL-TIME CLUB INFORMATION:
+
+        CURRENT INFORMATION:
         ${clubContext}
-        
+
         CRITICAL RULES:
-        1. DO NOT write complete code solutions. Provide hints or pseudo-code.
+        1. DO NOT write complete code solutions, including for club challenges. Provide hints or pseudo-code.
         2. Explain concepts specific to the language being used.
         3. Be encouraging and use emojis.`;
 
-        const chatMessages = [
-            { role: "system", content: systemPrompt },
-            ...history.map(h => ({
-                role: h.role === 'model' ? 'assistant' : 'user',
-                content: h.parts[0].text
-            })),
-            { role: "user", content: message }
-        ];
+    const chatMessages = [
+        { role: "system", content: systemPrompt },
+        ...history.map(h => ({
+            role: h.role === 'model' ? 'assistant' : 'user',
+            content: h.parts[0].text
+        })),
+        { role: "user", content: message }
+    ];
 
+    try {
         const text = await callAI(chatMessages);
         return cleanResponse(text);
     } catch (error) {
         console.warn("Hugging Face tutor error, falling back to Gemini:", error);
         try {
-            const fallbackPrompt = chatMessages.map(m => `${m.role}: ${m.content}`).join('\n\n');
-            const text = await callGemini(fallbackPrompt);
+            const fallbackPrompt = chatMessages.map(m => `${m.role}: ${m.content}`).join('\n\n') + '\n\nassistant:';
+            const text = await callGemini(fallbackPrompt, { json: false });
             return cleanResponse(text);
         } catch (geminiError) {
             console.error("Tutor Error:", geminiError);

@@ -4,12 +4,15 @@ import { RobotIcon } from './icons/RobotIcon';
 import { XIcon } from './icons/XIcon';
 import { SendIcon } from './icons/SendIcon';
 import * as geminiService from '../services/geminiService';
-import { User } from '../types';
+import { Tab, User } from '../types';
 import { FormattedMessage } from './FormattedMessage';
 import { useData } from '../DataContext';
+import { describeHub, HUB_SCREENS } from '../lib/kevinGuide';
 
 interface AiTutorProps {
     currentUser: User;
+    /** The screen the student has open, so Kevin knows what "this page" means. */
+    activeTab?: Tab;
 }
 
 interface Message {
@@ -17,7 +20,18 @@ interface Message {
     text: string;
 }
 
-const AiTutor: React.FC<AiTutorProps> = ({ currentUser }) => {
+// Challenge descriptions are markdown and can be long; Kevin needs the gist.
+const gist = (markdown: string, max = 140) => {
+    const text = markdown
+        .replace(/```[\s\S]*?```/g, ' ')
+        .replace(/^\s*(?:[-*]|\d+\.)\s+/gm, ' ')
+        .replace(/[#*`>|]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    return text.length > max ? text.slice(0, max - 1) + '…' : text;
+};
+
+const AiTutor: React.FC<AiTutorProps> = ({ currentUser, activeTab }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<Message[]>([
         { role: 'model', text: `Hi ${currentUser.name.split(' ')[0]}! I'm Kevin, your AI Tutor. I can help you learn coding concepts or debug issues, but I won't write the code for you! I also know what's happening in the club. What are you working on?` }
@@ -93,9 +107,23 @@ const AiTutor: React.FC<AiTutorProps> = ({ currentUser }) => {
             .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
             .map(a => `- ${a.title} on ${a.date} at ${a.location} (${a.category})`);
 
-        const activeChallenges = challenges
-            .filter(c => c.status === 'ACTIVE')
-            .map(c => `- ${c.title} (Due: ${c.deadline}): ${c.description}`);
+        const openChallenges = challenges.filter(c => c.status === 'ACTIVE' && new Date(c.deadline) >= new Date());
+        const activeChallenges = openChallenges
+            .map(c => {
+                const kind = c.testCases?.length
+                    ? `${c.language === 'javascript' ? 'JavaScript' : 'Python'}, ${c.ioStyle === 'stdio' ? 'print-style' : 'solve() function'}, ${c.testCases.length} tests`
+                    : 'reviewed by a patron';
+                const done = currentUser.badges?.includes(c.title) ? ' [student has the badge]' : '';
+                return `- ${c.title} (${kind}; due ${new Date(c.deadline).toDateString()})${done}: ${gist(c.description)}`;
+            });
+
+        const student = [
+            `${currentUser.name} (@${currentUser.username || 'member'}), ${currentUser.role === 'PATRON' ? 'a patron' : 'a member'}`,
+            currentUser.skillLevel ? `Skill level: ${currentUser.skillLevel.toLowerCase()}` : '',
+            `Badges: ${currentUser.badges?.length || 0}${currentUser.badges?.length ? ` (latest: ${currentUser.badges.slice(-3).join(', ')})` : ''}`,
+            currentUser.streakCount ? `Coding streak: ${currentUser.streakCount} days` : '',
+            activeTab && HUB_SCREENS[activeTab] ? `Has the ${HUB_SCREENS[activeTab]!.label} screen open` : '',
+        ].filter(Boolean).join('\n');
 
         const activeTeamChallenges = teamChallenges
             .slice(0, 5)
@@ -153,6 +181,12 @@ const AiTutor: React.FC<AiTutorProps> = ({ currentUser }) => {
         CONTEXT UPDATED AT:
         ${contextUpdatedAt}
 
+        THE STUDENT YOU ARE TALKING TO:
+        ${student}
+
+        THE CLUB HUB APP (this is current; trust it over anything you remember):
+        ${describeHub(activeTab)}
+
         LEADERSHIP:
         ${leadership.length ? safeList(leadership, 5) : 'None listed.'}
 
@@ -165,8 +199,8 @@ const AiTutor: React.FC<AiTutorProps> = ({ currentUser }) => {
         UPCOMING EVENTS:
         ${upcomingActivities.length ? safeList(upcomingActivities, 5) : 'None scheduled.'}
 
-        ACTIVE CHALLENGES:
-        ${activeChallenges.length ? safeList(activeChallenges, 5) : 'None active.'}
+        OPEN CHALLENGES (${activeChallenges.length} in total${activeChallenges.length > 8 ? ', first 8 by deadline' : ''}):
+        ${activeChallenges.length ? safeList(activeChallenges, 8) : 'None open.'}
 
         TEAM CHALLENGES:
         ${activeTeamChallenges.length ? safeList(activeTeamChallenges, 5) : 'None active.'}
@@ -189,7 +223,7 @@ const AiTutor: React.FC<AiTutorProps> = ({ currentUser }) => {
         CURRENT PLAYGROUND CODE (${playgroundLang}) [${playgroundMeta}]:
         ${playgroundSnippet || 'No current code.'}
         `;
-    }, [activities, challenges, feedItems, resources, allUsers, showcaseItems, suggestions, teams, teamChallenges, projectData, livePlayground]);
+    }, [activities, challenges, feedItems, resources, allUsers, showcaseItems, suggestions, teams, teamChallenges, projectData, livePlayground, currentUser, activeTab]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

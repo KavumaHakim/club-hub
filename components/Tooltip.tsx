@@ -18,10 +18,13 @@ const positionClasses: Record<string, string> = {
 
 const Tooltip: React.FC<TooltipProps> = ({ text, children, position = 'top', maxWidthClassName, className = 'inline-flex' }) => {
   return (
-    <span className={`relative group ${className}`}>
+    // A named group, so a parent that is itself a `group` (cards) can't show every
+    // tooltip inside it. Keyboard focus shows it too, but a mouse click doesn't
+    // leave it stuck open.
+    <span className={`relative group/tip ${className}`}>
       {children}
       <span
-        className={`pointer-events-none absolute z-50 hidden group-hover:block group-focus-within:block ${
+        className={`pointer-events-none absolute z-50 hidden group-hover/tip:block group-has-[:focus-visible]/tip:block ${
           positionClasses[position]
         }`}
       >
