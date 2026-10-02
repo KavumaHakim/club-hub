@@ -98,12 +98,11 @@ const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({ challenge, curr
     const deadline = new Date(challenge.deadline);
     const hasBadge = !!currentUser.badges?.includes(challenge.title);
     const isOpen = challenge.status === 'ACTIVE' && deadline >= now;
-    const isPatron = currentUser.role === 'PATRON';
-    // Only an eligible member's submission is saved and can award the badge. Everyone
-    // else still gets the full judge (hidden tests included) as "Check all".
-    const canSubmit = isOpen && !hasBadge && !isPatron;
-    const submitBlockedReason = isPatron ? 'Patron preview — Check all judges every test without saving'
-        : hasBadge ? 'Badge already earned — Check all judges every test without saving'
+    // Members and patrons alike submit to an open challenge they haven't completed:
+    // saved, judged, and able to award the badge. Otherwise the full judge (hidden
+    // tests included) still runs as "Check all", without saving.
+    const canSubmit = isOpen && !hasBadge;
+    const submitBlockedReason = hasBadge ? 'Badge already earned — Check all judges every test without saving'
         : !isOpen ? 'Challenge closed — Check all judges every test without saving'
         : '';
     const busy = result.kind === 'busy';
