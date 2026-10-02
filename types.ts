@@ -320,11 +320,19 @@ export interface Challenge {
   difficulty?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
   language?: ChallengeLanguage;
   starterCode?: string;
-  /** When non-empty, submissions are judged by running these against solve(input_text). */
+  /** When non-empty, submissions are judged by running these (see services/challengeRunner.ts). */
   testCases?: ChallengeTestCase[];
+  /**
+   * How the tests are written. `function`: inputs are handed to solve(input_text) and
+   * the expected output is what it returns. `stdio`: inputs are what the program reads
+   * line by line and the expected output is what it prints. The judge accepts either
+   * style of code for both; this sets the starter code and the instructions.
+   */
+  ioStyle?: ChallengeIoStyle;
 }
 
 export type ChallengeLanguage = 'python' | 'javascript';
+export type ChallengeIoStyle = 'function' | 'stdio';
 
 export interface ChallengeTestCase {
   id: string;

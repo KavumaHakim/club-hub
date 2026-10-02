@@ -350,8 +350,8 @@ const buildGeneratedTests = async (
     });
     if (testCases.length < 2) return null;
     return {
-        ...emptyTestsDraft(language),
-        starterCode: generated.starterCode || emptyTestsDraft(language).starterCode,
+        ...emptyTestsDraft(language, 'function'),
+        starterCode: generated.starterCode || emptyTestsDraft(language, 'function').starterCode,
         referenceSolution: generated.referenceSolution,
         testCases,
     };
@@ -477,9 +477,10 @@ const EditTestsModal: React.FC<{
     useEffect(() => {
         if (!challenge) return;
         const language = challenge.language || 'python';
+        const ioStyle = challenge.testCases?.length ? (challenge.ioStyle || 'function') : 'stdio';
         setTests({
-            ...emptyTestsDraft(language),
-            starterCode: challenge.starterCode || emptyTestsDraft(language).starterCode,
+            ...emptyTestsDraft(language, ioStyle),
+            starterCode: challenge.starterCode || emptyTestsDraft(language, ioStyle).starterCode,
             testCases: challenge.testCases || [],
         });
     }, [challenge]);
@@ -807,7 +808,7 @@ const Challenges: React.FC<ChallengesProps> = ({ currentUser, theme }) => {
             deadline,
             difficulty,
             createdBy: currentUser.uid,
-            ...(tests ? { language: tests.language, starterCode: tests.starterCode, testCases: finalizeTestCases(tests.testCases) } : {})
+            ...(tests ? { language: tests.language, ioStyle: tests.ioStyle, starterCode: tests.starterCode, testCases: finalizeTestCases(tests.testCases) } : {})
         });
         setPrefillData(null);
         await fetchChallenges();
@@ -823,6 +824,8 @@ const Challenges: React.FC<ChallengesProps> = ({ currentUser, theme }) => {
         try {
             await api.updateChallengeTests(challenge.id, {
                 language: tests.language,
+                ioStyle: tests.ioStyle,
+                previousIoStyle: challenge.ioStyle,
                 starterCode: tests.starterCode,
                 testCases: finalizeTestCases(tests.testCases)
             });
