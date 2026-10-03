@@ -420,6 +420,12 @@ const App: React.FC = () => {
   }, []);
 
 
+  // Which screen is showing, for the update toast in index.html: it only appears
+  // inside the app, never on the landing or sign-in pages.
+  useEffect(() => {
+    document.documentElement.dataset.view = view === 'dashboard' && user ? 'app' : view;
+  }, [view, user]);
+
   const renderContent = () => {
     if (view === 'dashboard' && user) {
       return (

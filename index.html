@@ -190,6 +190,13 @@
           registrations.forEach((registration) => registration.unregister());
         });
       } else {
+        // A page with no service worker yet is a first visit: the worker installing
+        // is not an "update", so there's nothing to announce.
+        const wasControlled = !!navigator.serviceWorker.controller;
+        let updateReady = false;
+        let toastShown = false;
+        const inApp = () => document.documentElement.dataset.view === 'app';
+
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js')
             .then(registration => {
@@ -199,36 +206,48 @@
               console.log('Service Worker registration failed:', registrationError);
             });
 
+          const showUpdateToast = () => {
+            if (toastShown) return;
+            toastShown = true;
+            const toast = document.createElement('div');
+            // Tailwind classes for the toast
+            toast.className = "fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-indigo-600 text-white px-6 py-3 rounded-xl shadow-2xl cursor-pointer z-[9999] flex items-center gap-3 transition-all duration-300 hover:bg-indigo-700 animate-bounce ring-2 ring-white/20";
+            toast.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <div class="flex flex-col">
+                  <span class="font-bold text-sm">New Update Available!</span>
+                  <span class="text-xs text-indigo-100">Click to refresh and apply.</span>
+                </div>
+              `;
+
+            toast.onclick = () => {
+              // Tell SW to skip waiting and activate new version
+              navigator.serviceWorker.ready.then(registration => {
+                if (registration.waiting) {
+                  registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+                }
+              });
+              // Reload page (SW will claim clients on activation)
+              window.location.reload();
+            };
+
+            document.body.appendChild(toast);
+          };
+
           // Listen for messages from the service worker
           navigator.serviceWorker.addEventListener('message', (event) => {
-            if (event.data && event.data.type === 'SW_UPDATED') {
-              const toast = document.createElement('div');
-              // Tailwind classes for the toast
-              toast.className = "fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-indigo-600 text-white px-6 py-3 rounded-xl shadow-2xl cursor-pointer z-[9999] flex items-center gap-3 transition-all duration-300 hover:bg-indigo-700 animate-bounce ring-2 ring-white/20";
-              toast.innerHTML = `
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  <div class="flex flex-col">
-                    <span class="font-bold text-sm">New Update Available!</span>
-                    <span class="text-xs text-indigo-100">Click to refresh and apply.</span>
-                  </div>
-                `;
-
-              toast.onclick = () => {
-                // Tell SW to skip waiting and activate new version
-                navigator.serviceWorker.ready.then(registration => {
-                  if (registration.waiting) {
-                    registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-                  }
-                });
-                // Reload page (SW will claim clients on activation)
-                window.location.reload();
-              };
-
-              document.body.appendChild(toast);
-            }
+            if (!event.data || event.data.type !== 'SW_UPDATED' || !wasControlled) return;
+            updateReady = true;
+            if (inApp()) showUpdateToast();
           });
+
+          // An update that arrived on the landing or sign-in pages is offered once
+          // the person is inside the app (the next load of those pages is already new).
+          new MutationObserver(() => {
+            if (updateReady && inApp()) showUpdateToast();
+          }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-view'] });
         });
       }
     }
