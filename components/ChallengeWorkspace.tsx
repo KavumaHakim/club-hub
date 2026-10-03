@@ -11,7 +11,7 @@ import {
     type ChallengeEvaluation,
     type ChallengeTestReport,
 } from '../services/challengeJudge';
-import { runSandboxedJavaScript, runSandboxedPython } from '../services/sandboxRunner';
+import { runSandboxedJavaScript, runSandboxedPython, warmUpPython } from '../services/sandboxRunner';
 import { defineSplitThemes, splitEditorTheme } from '../lib/monacoThemes';
 import { useMediaQuery } from '../lib/useMediaQuery';
 import { FormattedMessage } from './FormattedMessage';
@@ -101,6 +101,12 @@ const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({ challenge, curr
     const [loadingSubs, setLoadingSubs] = useState(false);
     const [pending, setPending] = useState<PendingSubmission[]>(() => listPending(currentUser.uid, challenge.id));
     const [online, setOnline] = useState(() => navigator.onLine);
+
+    // Start loading Python as soon as a Python challenge opens, so the first Run
+    // doesn't wait for the download (slow on phones).
+    useEffect(() => {
+        if (language === 'python') warmUpPython();
+    }, [language]);
 
     // Offline submissions for this challenge, and whether we're connected.
     useEffect(() => {

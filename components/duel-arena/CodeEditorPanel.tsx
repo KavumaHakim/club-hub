@@ -264,6 +264,7 @@ export const CodeEditorPanel: React.FC = memo(() => {
             onChange={(value) => updateActiveFile(value || '')}
             options={{
               readOnly,
+              automaticLayout: true,
               fontSize: editorSettings.fontSize,
               minimap: { enabled: editorSettings.minimap },
               smoothScrolling: true,

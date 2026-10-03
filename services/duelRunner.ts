@@ -30,6 +30,9 @@ export interface DuelRunResult {
 }
 
 const SENTINEL = '__DUEL_RESULT__';
+// Time the tests may take once Python is ready (loading it doesn't count; see
+// sandboxRunner). Generous because phones run them far slower than laptops.
+export const DUEL_TIMEOUT_MS = 30000;
 
 /**
  * How the code under test is driven. `function`: call solve(input) per case and
@@ -138,7 +141,7 @@ const buildHarness = (playerCode: string, cases: DuelGeneratedTestCase[], mode: 
 export const runReference = (
   code: string,
   inputs: string[],
-  timeoutMs = 15000,
+  timeoutMs = DUEL_TIMEOUT_MS,
   mode: RunMode = 'function',
 ): Promise<(string | null)[]> =>
   new Promise((resolve, reject) => {
@@ -188,7 +191,7 @@ export const runReference = (
 export const runDuelTests = (
   code: string,
   cases: DuelGeneratedTestCase[],
-  timeoutMs = 15000,
+  timeoutMs = DUEL_TIMEOUT_MS,
   mode: RunMode = 'function',
 ): Promise<DuelRunResult> =>
   new Promise((resolve, reject) => {

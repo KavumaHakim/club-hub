@@ -36,6 +36,7 @@ const LiveCode: React.FC<{ code: string; waiting: string }> = ({ code, waiting }
         readOnly: true,
         domReadOnly: true,
         fontSize: 13,
+        automaticLayout: true,
         minimap: { enabled: false },
         lineNumbers: 'on',
         scrollBeyondLastLine: false,

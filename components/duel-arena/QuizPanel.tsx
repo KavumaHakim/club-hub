@@ -8,6 +8,7 @@ import { FormattedMessage } from '../FormattedMessage';
 import { useDuelArenaStore } from './useDuelArenaStore';
 import { useArenaEditorTheme } from './arenaTheme';
 import { defineSplitThemes } from '../../lib/monacoThemes';
+import { warmUpPython } from '../../services/sandboxRunner';
 import { cn } from '../../lib/utils';
 
 const TYPE_LABEL: Record<string, string> = {
@@ -37,6 +38,12 @@ export const QuizPanel: React.FC = () => {
 
   const question = questions[quizIndex];
   const total = questions.length;
+
+  // Load Python now, so the first coding question doesn't wait for the download.
+  const hasCoding = questions.some((q) => q.kind === 'coding');
+  useEffect(() => {
+    if (hasCoding) warmUpPython();
+  }, [hasCoding]);
 
   // Reset the local selection whenever we move to a new question.
   useEffect(() => {
@@ -117,6 +124,7 @@ export const QuizPanel: React.FC = () => {
             options={{
               readOnly: answerLocked,
               fontSize: 14,
+              automaticLayout: true,
               minimap: { enabled: false },
               scrollBeyondLastLine: false,
               lineNumbers: 'on',
