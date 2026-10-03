@@ -23,6 +23,9 @@ export interface SandboxExecutionController {
 
 const DEFAULT_TIMEOUT_MS = 30000;
 const DEFAULT_PYTHON_TIMEOUT_MS = 120000;
+// Downloading and starting Pyodide can take a minute on a slow phone or connection.
+// That wait gets its own allowance; a run's timeout only counts once Python is ready.
+const PYTHON_LOAD_TIMEOUT_MS = 180000;
 export const PYODIDE_INDEX_URL = 'https://cdn.jsdelivr.net/pyodide/v0.29.0/full/';
 /** What loadPyodide() fetches to start, so the service worker can save it for offline use. */
 export const PYODIDE_CORE_FILES = ['pyodide.js', 'pyodide.asm.js', 'pyodide.asm.wasm', 'python_stdlib.zip', 'pyodide-lock.json']
@@ -242,6 +245,11 @@ self.onmessage = async (event) => {
     return;
   }
 
+  if (payload.type === 'warmup') {
+    try { await ensurePyodide(); } catch (error) { /* a real run will report it */ }
+    return;
+  }
+
   if (payload.type !== 'run-js' && payload.type !== 'run-python') {
     return;
   }
@@ -269,12 +277,43 @@ const createWorker = () => {
 };
 
 let sharedPythonWorker: Worker | null = null;
+let pythonLoading = false;
+const pythonLoadingListeners = new Set<(loading: boolean) => void>();
 
 const getSharedPythonWorker = () => {
   if (!sharedPythonWorker) {
-    sharedPythonWorker = createWorker();
+    const worker = createWorker();
+    pythonLoading = false;
+    // A persistent listener (runs swap worker.onmessage), so a load started by a
+    // warm-up is still seen by the run that ends up waiting on it.
+    worker.addEventListener('message', (event: MessageEvent) => {
+      if (event.data?.type !== 'loading' || sharedPythonWorker !== worker) return;
+      pythonLoading = !!event.data.loading;
+      pythonLoadingListeners.forEach((listener) => listener(pythonLoading));
+    });
+    sharedPythonWorker = worker;
   }
   return sharedPythonWorker;
+};
+
+const dropSharedPythonWorker = (worker: Worker) => {
+  worker.terminate();
+  if (sharedPythonWorker === worker) {
+    sharedPythonWorker = null;
+    pythonLoading = false;
+  }
+};
+
+/**
+ * Start loading Python in the background (e.g. when a duel or Python challenge opens),
+ * so the first Run doesn't pay for the download. Safe to call repeatedly.
+ */
+export const warmUpPython = () => {
+  try {
+    getSharedPythonWorker().postMessage({ type: 'warmup' });
+  } catch {
+    // Workers unavailable; the first run will load Python itself.
+  }
 };
 
 const startExecution = (
@@ -286,6 +325,7 @@ const startExecution = (
   let finished = false;
   let timeoutId: number | null = null;
   let resolveFinished: (() => void) | null = null;
+  let onPythonLoading: ((loading: boolean) => void) | null = null;
 
   const finish = () => {
     if (finished) return;
@@ -293,6 +333,10 @@ const startExecution = (
     if (timeoutId !== null) {
       window.clearTimeout(timeoutId);
       timeoutId = null;
+    }
+    if (onPythonLoading) {
+      pythonLoadingListeners.delete(onPythonLoading);
+      onPythonLoading = null;
     }
     onLoadingChange?.(false);
     if (!isPython) {
@@ -337,21 +381,32 @@ const startExecution = (
     };
   });
 
-  timeoutId = window.setTimeout(() => {
-    onOutput({
-      type: 'error',
-      content: `Execution stopped after ${Math.round(timeoutMs / 1000)} seconds to protect the app.`,
-    });
-    // The shared Python worker is still busy with the runaway code; drop it so the
-    // next run gets a fresh worker instead of queueing behind an infinite loop.
-    if (isPython) {
-      worker.terminate();
-      if (sharedPythonWorker === worker) {
-        sharedPythonWorker = null;
-      }
-    }
-    finish();
-  }, timeoutMs);
+  // While Python is still loading, wait on the (long) load allowance; the run's own
+  // timeout starts, in full, once it's ready.
+  const armTimeout = (loading: boolean) => {
+    if (finished) return;
+    if (timeoutId !== null) window.clearTimeout(timeoutId);
+    timeoutId = window.setTimeout(() => {
+      onOutput({
+        type: 'error',
+        content: loading
+          ? `Python took more than ${Math.round(PYTHON_LOAD_TIMEOUT_MS / 1000)} seconds to start. Check your connection and try again.`
+          : `Execution stopped after ${Math.round(timeoutMs / 1000)} seconds to protect the app.`,
+      });
+      // The shared Python worker is still busy (loading, or running away); drop it so
+      // the next run gets a fresh worker instead of queueing behind it.
+      if (isPython) dropSharedPythonWorker(worker);
+      finish();
+    }, loading ? Math.max(PYTHON_LOAD_TIMEOUT_MS, timeoutMs) : timeoutMs);
+  };
+
+  if (isPython) {
+    onPythonLoading = armTimeout;
+    pythonLoadingListeners.add(onPythonLoading);
+    armTimeout(pythonLoading);
+  } else {
+    armTimeout(false);
+  }
 
   worker.postMessage({
     type: messageType,
@@ -371,12 +426,7 @@ const startExecution = (
       if (finished) {
         return;
       }
-      if (isPython) {
-        worker.terminate();
-        if (sharedPythonWorker === worker) {
-          sharedPythonWorker = null;
-        }
-      }
+      if (isPython) dropSharedPythonWorker(worker);
       finish();
     },
   };

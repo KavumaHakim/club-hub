@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertTriangle, ArrowLeft, Loader2, Users } from 'lucide-react';
 import { User } from '../types';
@@ -13,6 +13,7 @@ import { Button } from './ui/button';
 import { formatTimer, getTimerTone } from './duel-arena/utils';
 import { useArenaRuntime, useDuelArenaStore } from './duel-arena/useDuelArenaStore';
 import { ArenaThemeContext } from './duel-arena/arenaTheme';
+import { ResizeHandle, useResizableWidth } from './duel-arena/ResizeHandle';
 import { cn } from '../lib/utils';
 
 interface CodeDuelArenaProps {
@@ -46,6 +47,13 @@ const CodeDuelArena: React.FC<CodeDuelArenaProps> = ({ currentUser, theme = 'dar
   const rematch = useDuelArenaStore((state) => state.rematch);
 
   useArenaRuntime();
+
+  // Desktop (xl): the side panels can be dragged wider or narrower; the code
+  // editor takes the rest, never less than MIN_EDITOR.
+  const MIN_EDITOR = 420;
+  const panelsRef = useRef<HTMLDivElement>(null);
+  const rightPanel = useResizableWidth('duel_panel_right_px', { initial: 340, min: 260, max: 640, grow: -1 }, panelsRef);
+  const leftPanel = useResizableWidth('duel_panel_left_px', { initial: 320, min: 240, max: 560, grow: 1 }, panelsRef);
 
   useEffect(() => {
     hydrate(currentUser);
@@ -171,30 +179,63 @@ const CodeDuelArena: React.FC<CodeDuelArenaProps> = ({ currentUser, theme = 'dar
               ))}
             </div>
 
-            {isQuiz ? (
-              <div className="grid min-h-0 flex-1 xl:grid-cols-[minmax(0,1fr)_minmax(300px,360px)]">
-                <div className={`${activeMobilePanel !== 'intel' ? 'flex flex-col' : 'hidden'} min-h-0 xl:flex xl:flex-col`}>
-                  <QuizPanel />
-                </div>
-                <div className={`${activeMobilePanel === 'intel' ? 'flex flex-col' : 'hidden'} min-h-0 xl:flex xl:flex-col xl:border-l-2 xl:border-ch-rule ${rightCollapsed ? 'xl:hidden' : ''}`}>
-                  <OpponentPanel session={session!} onSendQuickTaunt={sendQuickTaunt} onSendChatMessage={sendChatMessage} />
-                </div>
-              </div>
-            ) : (
-              <div className="grid min-h-0 flex-1 xl:grid-cols-[minmax(280px,330px)_minmax(0,1fr)_minmax(280px,330px)]">
-                <div className={`${activeMobilePanel === 'problem' ? 'flex flex-col' : 'hidden'} min-h-0 xl:flex xl:flex-col xl:border-r-2 xl:border-ch-rule ${leftCollapsed ? 'xl:hidden' : ''}`}>
-                  <ProblemPanel session={session!} activeLanguage={activeLanguage} onLanguageChange={setActiveLanguage} />
-                </div>
+            {(() => {
+              const showLeft = !isQuiz && !leftCollapsed;
+              const showRight = !rightCollapsed;
+              // Room the rest of the row needs while one side panel is dragged.
+              const rightOthers = MIN_EDITOR + (showLeft ? leftPanel.width + 6 : 0) + 6;
+              const leftOthers = MIN_EDITOR + (showRight ? rightPanel.width + 6 : 0) + 6;
+              const side = (on: boolean) => (on ? 'flex flex-col' : 'hidden');
+              return (
+                <div
+                  ref={panelsRef}
+                  className="flex min-h-0 flex-1 flex-col xl:flex-row"
+                  style={{ '--duel-left': `${leftPanel.width}px`, '--duel-right': `${rightPanel.width}px` } as React.CSSProperties}
+                >
+                  {!isQuiz && (
+                    <>
+                      <div className={`${side(activeMobilePanel === 'problem')} min-h-0 flex-1 xl:w-[var(--duel-left)] xl:flex-none ${leftCollapsed ? 'xl:hidden' : 'xl:flex'}`}>
+                        <ProblemPanel session={session!} activeLanguage={activeLanguage} onLanguageChange={setActiveLanguage} />
+                      </div>
+                      {showLeft && (
+                        <ResizeHandle
+                          className="hidden xl:block"
+                          label="Problem panel width"
+                          value={leftPanel.width}
+                          min={240}
+                          max={560}
+                          widensWith="right"
+                          onPointerDown={(e) => leftPanel.startDrag(e, leftOthers)}
+                          onNudge={(d) => leftPanel.nudge(d, leftOthers)}
+                          onReset={leftPanel.reset}
+                        />
+                      )}
+                    </>
+                  )}
 
-                <div className={`${activeMobilePanel === 'editor' ? 'flex flex-col' : 'hidden'} min-h-0 xl:flex xl:flex-col`}>
-                  <CodeEditorPanel />
-                </div>
+                  <div className={`${side(isQuiz ? activeMobilePanel !== 'intel' : activeMobilePanel === 'editor')} min-h-0 min-w-0 flex-1 xl:flex`}>
+                    {isQuiz ? <QuizPanel /> : <CodeEditorPanel />}
+                  </div>
 
-                <div className={`${activeMobilePanel === 'intel' ? 'flex flex-col' : 'hidden'} min-h-0 xl:flex xl:flex-col xl:border-l-2 xl:border-ch-rule ${rightCollapsed ? 'xl:hidden' : ''}`}>
-                  <OpponentPanel session={session!} onSendQuickTaunt={sendQuickTaunt} onSendChatMessage={sendChatMessage} />
+                  {showRight && (
+                    <ResizeHandle
+                      className="hidden xl:block"
+                      label="Opponent panel width"
+                      value={rightPanel.width}
+                      min={260}
+                      max={640}
+                      widensWith="left"
+                      onPointerDown={(e) => rightPanel.startDrag(e, rightOthers)}
+                      onNudge={(d) => rightPanel.nudge(d, rightOthers)}
+                      onReset={rightPanel.reset}
+                    />
+                  )}
+                  <div className={`${side(activeMobilePanel === 'intel')} min-h-0 flex-1 xl:w-[var(--duel-right)] xl:flex-none ${rightCollapsed ? 'xl:hidden' : 'xl:flex'}`}>
+                    <OpponentPanel session={session!} onSendQuickTaunt={sendQuickTaunt} onSendChatMessage={sendChatMessage} />
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
         ) : null}
       </div>

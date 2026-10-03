@@ -42,7 +42,7 @@ export const normalizeProgramOutput = (text: string): string =>
 export type ChallengeRunResult = DuelRunResult;
 
 const SENTINEL = '__CHALLENGE_RESULT__';
-const DEFAULT_TIMEOUT_MS = 15000;
+const DEFAULT_TIMEOUT_MS = 30000; // once Python is ready; see sandboxRunner
 
 export const STARTER_CODE: Record<ChallengeLanguage, string> = {
   python: 'def solve(input_text: str) -> str:\n    # input_text is the raw test input; return your answer as a string\n    return ""\n',
