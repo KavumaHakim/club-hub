@@ -34,7 +34,7 @@ import { hasTestCases, STARTER_CODE } from '../services/challengeRunner';
 import { useData } from '../DataContext';
 import { PLAYGROUND_ACTION_EVENT, PLAYGROUND_STATE_EVENT, type PlaygroundAction, type PlaygroundHeaderState } from './ShellHeader';
 import InitialsTile, { TILE_COLORS } from './InitialsTile';
-import { defineSplitThemes, splitEditorTheme } from '../lib/monacoThemes';
+import { setupMonaco, splitEditorTheme } from '../lib/monacoThemes';
 import { openChallengeWorkspace } from '../lib/challengeNav';
 import { FormattedMessage } from './FormattedMessage';
 import { supabase } from '../services/supabaseClient';
@@ -2600,7 +2600,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
                 language={editorLanguage}
                 theme={editorTheme}
                 value={code}
-                beforeMount={defineSplitThemes}
+                beforeMount={setupMonaco}
                 onChange={(value) => {
                   const nextValue = value || '';
                   codeRef.current = nextValue;

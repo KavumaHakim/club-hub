@@ -7,7 +7,7 @@ import { Progress } from '../ui/progress';
 import { FormattedMessage } from '../FormattedMessage';
 import { useDuelArenaStore } from './useDuelArenaStore';
 import { useArenaEditorTheme } from './arenaTheme';
-import { defineSplitThemes } from '../../lib/monacoThemes';
+import { setupMonaco } from '../../lib/monacoThemes';
 import { warmUpPython } from '../../services/sandboxRunner';
 import { cn } from '../../lib/utils';
 
@@ -117,7 +117,7 @@ export const QuizPanel: React.FC = () => {
           <Editor
             height="100%"
             theme={editorTheme}
-            beforeMount={defineSplitThemes}
+            beforeMount={setupMonaco}
             language="python"
             value={codingDraft}
             onChange={(value) => setCodingDraft(value || '')}

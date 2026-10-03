@@ -12,7 +12,7 @@ import {
     type ChallengeTestReport,
 } from '../services/challengeJudge';
 import { runSandboxedJavaScript, runSandboxedPython, warmUpPython } from '../services/sandboxRunner';
-import { defineSplitThemes, splitEditorTheme } from '../lib/monacoThemes';
+import { setupMonaco, splitEditorTheme } from '../lib/monacoThemes';
 import { useMediaQuery } from '../lib/useMediaQuery';
 import { FormattedMessage } from './FormattedMessage';
 import ChallengeTestResults from './ChallengeTestResults';
@@ -694,7 +694,7 @@ const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({ challenge, curr
                                         language={language}
                                         theme={splitEditorTheme(theme)}
                                         value={code}
-                                        beforeMount={defineSplitThemes}
+                                        beforeMount={setupMonaco}
                                         onMount={handleEditorMount}
                                         onChange={(value) => setCode(value || '')}
                                         loading={<div className="flex h-full items-center justify-center text-[13px] text-ch-muted">Loading editor…</div>}

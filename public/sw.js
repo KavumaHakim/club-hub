@@ -32,7 +32,9 @@ const CDN_DOMAINS = [
   'fonts.googleapis.com',
   'fonts.gstatic.com',
   'api.dicebear.com', // for avatars
-  'cdn.jsdelivr.net' // Pyodide, so Python challenges run offline
+  'cdn.jsdelivr.net', // Pyodide (and Jedi), so Python challenges run offline
+  'pypi.org', // pyflakes for the editors' Python problem checks (lib/pythonLanguageClient.ts)
+  'files.pythonhosted.org'
 ];
 
 // Install: save every file of this build. One missing file must not block the
