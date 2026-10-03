@@ -18,7 +18,6 @@ export type IntegrityLevel = 'Stable' | 'Warning' | 'Critical';
 export type ConnectionStatus = 'Stable' | 'Degraded' | 'Reconnecting';
 export type JudgeVerdict = 'Accepted' | 'Wrong Answer' | 'Time Limit Exceeded' | 'Runtime Error';
 export type JudgeStage = 'Idle' | 'Compiling' | 'Running' | 'Evaluating' | 'Finished';
-export type ArenaThemePreset = 'arena-pulse' | 'midnight-circuit' | 'terminal-ice';
 export type MobileArenaPanel = 'problem' | 'editor' | 'intel';
 
 export interface ArenaProblemExample {
@@ -205,7 +204,6 @@ export interface ArenaQuizFeedback {
 }
 
 export interface ArenaEditorSettings {
-  themePreset: ArenaThemePreset;
   fontSize: number;
   vimMode: boolean;
   minimap: boolean;
