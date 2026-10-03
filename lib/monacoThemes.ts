@@ -1,3 +1,5 @@
+import { registerPythonLanguage } from './pythonLanguage';
+
 // Monaco themes on the ch-* ground so editors sit flush with the Split shell.
 // Pass defineSplitThemes to <Editor beforeMount>, and splitEditorTheme(theme) as its theme.
 export const defineSplitThemes = (monaco: any) => {
@@ -28,3 +30,9 @@ export const defineSplitThemes = (monaco: any) => {
 };
 
 export const splitEditorTheme = (theme: 'light' | 'dark') => (theme === 'dark' ? 'ch-dark' : 'ch-light');
+
+/** beforeMount for every editor: the Split themes plus Python language features. */
+export const setupMonaco = (monaco: any) => {
+    defineSplitThemes(monaco);
+    registerPythonLanguage(monaco);
+};

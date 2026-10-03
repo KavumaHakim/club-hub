@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { cn } from '../../lib/utils';
 import { useDuelArenaStore } from './useDuelArenaStore';
 import { useArenaEditorTheme } from './arenaTheme';
-import { defineSplitThemes } from '../../lib/monacoThemes';
+import { defineSplitThemes, setupMonaco } from '../../lib/monacoThemes';
 
 
 const statusTone = {
@@ -250,6 +250,7 @@ export const CodeEditorPanel: React.FC = memo(() => {
       <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_210px] overflow-hidden sm:grid-rows-[minmax(0,1fr)_230px] xl:grid-rows-[minmax(0,1fr)_220px]">
         <div className="relative overflow-hidden">
           <Editor
+            beforeMount={setupMonaco}
             height="100%"
             loading={
               <div className="flex h-full items-center justify-center bg-ch-bg text-ch-accent">

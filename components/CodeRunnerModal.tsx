@@ -4,6 +4,7 @@ import { PlayIcon } from './icons/PlayIcon';
 import Editor from '@monaco-editor/react';
 import { emmetHTML, emmetCSS } from 'emmet-monaco-es';
 import { runSandboxedJavaScript, runSandboxedPython, type SandboxExecutionController } from '../services/sandboxRunner';
+import { setupMonaco } from '../lib/monacoThemes';
 
 interface CodeRunnerModalProps {
   isOpen: boolean;
@@ -406,6 +407,7 @@ export const CodeRunnerModal: React.FC<CodeRunnerModalProps> = ({ isOpen, onClos
           <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
               <div className="flex-1 border-r border-ch-divider overflow-hidden relative">
                   <Editor
+                    beforeMount={setupMonaco}
                       height="100%"
                       language={language}
                       theme={editorTheme}

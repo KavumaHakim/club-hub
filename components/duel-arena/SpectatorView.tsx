@@ -8,7 +8,7 @@ import { ArenaParticipant } from './types';
 import { colorFor, formatTimer, getTimerTone } from './utils';
 import { useDuelArenaStore } from './useDuelArenaStore';
 import { useArenaEditorTheme } from './arenaTheme';
-import { defineSplitThemes } from '../../lib/monacoThemes';
+import { setupMonaco } from '../../lib/monacoThemes';
 import { cn } from '../../lib/utils';
 
 const QUIZ_TYPE_LABEL: Record<string, string> = {
@@ -29,7 +29,7 @@ const LiveCode: React.FC<{ code: string; waiting: string }> = ({ code, waiting }
     <Editor
       height="100%"
       theme={editorTheme}
-      beforeMount={defineSplitThemes}
+      beforeMount={setupMonaco}
       language="python"
       value={code}
       options={{
