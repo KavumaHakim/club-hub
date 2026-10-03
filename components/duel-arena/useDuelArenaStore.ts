@@ -148,7 +148,6 @@ interface DuelArenaStoreState {
   setActiveFile: (fileId: string) => void;
   updateActiveFile: (content: string) => void;
   setCustomInput: (value: string) => void;
-  setEditorTheme: (themePreset: ArenaEditorSettings['themePreset']) => void;
   adjustFontSize: (direction: 'up' | 'down') => void;
   toggleVimMode: () => void;
   toggleMinimap: () => void;
@@ -1314,7 +1313,6 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
     },
 
     setCustomInput: (value) => set({ customInput: value }),
-    setEditorTheme: (themePreset) => set({ editorSettings: { ...get().editorSettings, themePreset } }),
     adjustFontSize: (direction) =>
       set({
         editorSettings: {
