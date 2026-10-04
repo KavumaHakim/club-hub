@@ -20,7 +20,7 @@ const QUIZ_TYPE_LABEL: Record<string, string> = {
 // Left player in the accent colour, right player in violet, as on the scoreboard.
 type Side = 'accent' | 'violet';
 
-const LiveCode: React.FC<{ code: string; waiting: string }> = ({ code, waiting }) => {
+const LiveCode: React.FC<{ code: string; waiting: string; language?: string }> = ({ code, waiting, language = 'python' }) => {
   const editorTheme = useArenaEditorTheme();
   if (!code.trim()) {
     return <div className="flex h-full items-center px-5 text-[13px] text-ch-muted">{waiting}</div>;
@@ -30,7 +30,7 @@ const LiveCode: React.FC<{ code: string; waiting: string }> = ({ code, waiting }
       height="100%"
       theme={editorTheme}
       beforeMount={setupMonaco}
-      language="python"
+      language={language}
       value={code}
       options={{
         readOnly: true,
@@ -140,7 +140,11 @@ const QuizSpectatorScreen: React.FC<QuizScreenProps> = ({ player, question, ques
       {/* Live code for coding questions, the score for quiz questions */}
       <div className="relative min-h-0 flex-1">
         {isCoding ? (
-          <LiveCode code={code} waiting={`Waiting for ${player.name.split(' ')[0]} to start coding…`} />
+          <LiveCode
+            code={code}
+            language={(question as { language?: string } | undefined)?.language || 'python'}
+            waiting={`Waiting for ${player.name.split(' ')[0]} to start coding…`}
+          />
         ) : (
           <div className="flex h-full flex-col justify-center px-5 sm:px-8">
             <p className="text-[12px] text-ch-muted">{player.estimatedStatus}</p>

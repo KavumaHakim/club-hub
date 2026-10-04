@@ -1,3 +1,4 @@
+import { DEFAULT_RULES, questionSplit, type DuelRules } from './duelRules';
 
 /**
  * AI Service using Hugging Face Router (Gemma 4)
@@ -844,10 +845,12 @@ export interface DuelQuizCard {
     seconds: number;
 }
 
-/** A short coding question graded deterministically in Pyodide (solve(input_text)). */
+/** A short coding question graded deterministically in the browser (solve(input_text)). */
 export interface DuelCodingCard {
     id: string;
     kind: 'coding';
+    /** Missing on duels from before duel rules: Python. */
+    language?: 'python' | 'javascript';
     question: string;
     starterCode: string;
     testCases: DuelGeneratedTestCase[];
@@ -1111,8 +1114,6 @@ Return ONLY JSON:
 
 const QUIZ_QUESTION_SECONDS = 20;
 const CODING_QUESTION_SECONDS = 60;
-const QUIZ_TARGET_COUNT = 12;
-const QUIZ_CODING_COUNT = 8;
 
 const normalizeQuizCard = (q: any, index: number): DuelQuizCard | null => {
     const type = ['MULTIPLE_CHOICE', 'TRUE_FALSE', 'SHORT_ANSWER'].includes(q?.type) ? q.type : null;
@@ -1151,11 +1152,16 @@ const normalizeQuizCard = (q: any, index: number): DuelQuizCard | null => {
 const buildCodingCard = async (
     q: any,
     index: number,
-    runRef: (code: string, inputs: string[]) => Promise<(string | null)[]>
+    runRef: (code: string, inputs: string[]) => Promise<(string | null)[]>,
+    language: 'python' | 'javascript' = 'python',
+    seconds: number = CODING_QUESTION_SECONDS,
 ): Promise<DuelCodingCard | null> => {
     const question = toSafeText(q?.question).trim();
     const reference = toSafeText(q?.referenceSolution).trim();
-    const starterCode = toSafeText(q?.starterCode, 'def solve(input_text: str) -> str:\n    return ""\n');
+    const starterCode = toSafeText(
+        q?.starterCode,
+        language === 'javascript' ? 'function solve(inputText) {\n  return "";\n}\n' : 'def solve(input_text: str) -> str:\n    return ""\n',
+    );
     const inputs = Array.isArray(q?.inputs) ? q.inputs.map((i: any) => realLineBreaks(toSafeText(i))).slice(0, 6) : [];
     if (!question || !reference || inputs.length < 2) return null;
 
@@ -1179,7 +1185,7 @@ const buildCodingCard = async (
     });
     if (testCases.length < 2) return null;
 
-    return { id: `code-${index + 1}`, kind: 'coding', question, starterCode, testCases, seconds: CODING_QUESTION_SECONDS };
+    return { id: `code-${index + 1}`, kind: 'coding', language, question, starterCode, testCases, seconds };
 };
 
 // Coding-dominant set: mostly coding questions, with a quick quiz question woven in
@@ -1199,34 +1205,41 @@ const interleaveQuestions = (quiz: DuelQuizQuestion[], coding: DuelQuizQuestion[
 
 export const generateDuelQuizSet = async (
     levels: Array<DuelSkillLevel | undefined>,
-    total: number = QUIZ_TARGET_COUNT
+    rulesIn?: DuelRules
 ): Promise<DuelQuizSet> => {
-    const targetLevel = averageSkillLevel(levels);
-    const codingCount = QUIZ_CODING_COUNT;
-    const quizCount = total - codingCount;
+    const rules = rulesIn || DEFAULT_RULES;
+    const targetLevel: DuelSkillLevel = rules.difficulty === 'AUTO' ? averageSkillLevel(levels) : rules.difficulty;
+    const { quiz: quizCount, coding: codingCount } = questionSplit(rules);
+    const total = quizCount + codingCount;
+    const isJs = rules.language === 'javascript';
+    const langName = isJs ? 'JavaScript' : 'Python';
+    const signature = isJs
+        ? 'function solve(inputText) { ... } that returns the answer as a string'
+        : 'solve(input_text: str) -> str';
 
     const prompt = `You are the question setter for a fast 1v1 quiz duel between two high-school coding club members.
 
-Create a mixed question set at the ${targetLevel} level about Python programming and basic data structures & algorithms.
+Create a question set at the ${targetLevel} level about ${langName} programming and basic data structures & algorithms.
+Every question is about ${langName}: quiz questions use ${langName} syntax and built-ins, and coding answers are written in ${langName}.
 
 LEVEL RULES (follow strictly):
 ${DUEL_LEVEL_GUIDANCE[targetLevel]}
 
 Produce:
-- ${quizCount} quick quiz questions: a varied mix of MULTIPLE_CHOICE, TRUE_FALSE, and SHORT_ANSWER.
-- ${codingCount} short coding questions, each solvable in well under a minute.
+- ${quizCount} quick quiz questions: a varied mix of MULTIPLE_CHOICE, TRUE_FALSE, and SHORT_ANSWER.${quizCount === 0 ? ' (none: return an empty "quizQuestions" array)' : ''}
+- ${codingCount} short coding questions, each solvable in ${rules.codingSeconds >= 120 ? 'about ' + Math.round(rules.codingSeconds / 60) + ' minutes' : 'well under a minute'}.${codingCount === 0 ? ' (none: return an empty "codingQuestions" array)' : ''}
 
 QUIZ RULES:
-- Each question must be answerable in ~20 seconds.
+- Each question must be answerable in ~${rules.quizSeconds} seconds.
 - MULTIPLE_CHOICE: EXACTLY 4 options; correctAnswer MUST be exactly one of the options (copied verbatim).
 - TRUE_FALSE: correctAnswer is exactly "True" or "False".
 - SHORT_ANSWER: correctAnswer is ONE short token/term (a keyword, function name, or number). Add "acceptedAnswers" listing common equivalent spellings.
 
 CODING RULES:
-- The player writes solve(input_text: str) -> str. Keep each problem tiny.
+- The player writes ${signature}. It receives the whole test input as one string. Keep each problem tiny.
 - Frame each one as a one- or two-sentence real-life task, not an abstract "given a list" exercise.
 ${realLifeThemeRules('each')}
-- Provide "starterCode" (the signature plus a short hint comment) and a COMPLETE, correct "referenceSolution".
+- Provide "starterCode" (the ${langName} solve signature plus a short hint comment) and a COMPLETE, correct ${langName} "referenceSolution" that defines solve and does not call it.
 - Provide "inputs": 3-5 raw input strings (the FIRST is a simple sample). Do NOT provide expected outputs — they are computed by running your referenceSolution.
   A multi-line input uses real line breaks: write \\n inside the JSON string, never the double-escaped \\\\n.
 
@@ -1253,7 +1266,11 @@ Return ONLY a JSON object:
         () => callGemini(prompt),
     ];
 
-    const { runReference } = await import('./duelRunner');
+    // Expected outputs come from running the reference in the browser, in its language.
+    const { runChallengeReference } = await import('./challengeRunner');
+    const runRef = (code: string, inputs: string[]) => runChallengeReference(rules.language, code, inputs);
+    // A set is usable when it's at most a couple of questions short.
+    const enough = Math.max(1, total - 2);
 
     for (const attempt of attempts) {
         let parsed: any = null;
@@ -1272,17 +1289,18 @@ Return ONLY a JSON object:
         const codingRaw = Array.isArray(parsed?.codingQuestions) ? parsed.codingQuestions : [];
         const codingCards: DuelCodingCard[] = [];
         for (let i = 0; i < codingRaw.length && codingCards.length < codingCount; i += 1) {
-            const card = await buildCodingCard(codingRaw[i], i, runReference);
+            const card = await buildCodingCard(codingRaw[i], i, runRef, rules.language, rules.codingSeconds);
             if (card) codingCards.push(card);
         }
 
         // Require a healthy set; otherwise try the next provider, then the bank.
-        if (quizCards.length + codingCards.length >= 12) {
+        if (quizCards.length + codingCards.length >= enough) {
+            quizCards.forEach((card) => { card.seconds = rules.quizSeconds; });
             const questions = interleaveQuestions(quizCards, codingCards).slice(0, total);
             return {
                 title: toSafeText(parsed?.title, 'Code Duel: Rapid Round'),
                 difficulty: ['Easy', 'Medium', 'Hard'].includes(parsed?.difficulty) ? parsed.difficulty : 'Medium',
-                tags: Array.isArray(parsed?.tags) ? parsed.tags.map((t: any) => toSafeText(t)).slice(0, 4) : ['Python', 'Quiz'],
+                tags: Array.isArray(parsed?.tags) ? parsed.tags.map((t: any) => toSafeText(t)).slice(0, 4) : [langName, 'Quiz'],
                 targetLevel,
                 questions,
             };
@@ -1292,5 +1310,5 @@ Return ONLY a JSON object:
 
     console.warn('All AI duel quiz attempts failed. Using built-in quiz bank.');
     const { buildBankQuizSet } = await import('./duelQuizBank');
-    return buildBankQuizSet(targetLevel);
+    return buildBankQuizSet(targetLevel, rules);
 };

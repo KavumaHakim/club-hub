@@ -1,4 +1,5 @@
 import type { DuelQuizQuestion, DuelQuizSet, DuelSkillLevel } from './geminiService';
+import { DEFAULT_RULES, questionSplit, type DuelRules } from './duelRules';
 
 /**
  * Built-in 15-question mixed quiz used when AI generation fails (provider down, bad
@@ -189,11 +190,16 @@ const CODING_CARDS: Array<Omit<DuelQuizQuestion & { kind: 'coding' }, 'id' | 'se
   },
 ];
 
-export const buildBankQuizSet = (level: DuelSkillLevel): DuelQuizSet => {
-  // Coding-dominant set: every coding card, plus a handful of quiz questions woven in
-  // roughly every 3rd slot for pacing.
-  const coding: DuelQuizQuestion[] = CODING_CARDS.map((c, i) => ({ ...c, id: `qc-${i + 1}`, seconds: CODING_SECONDS }));
-  const quiz: DuelQuizQuestion[] = QUIZ_CARDS.slice(0, 4).map((c, i) => ({ ...c, id: `q-${i + 1}`, seconds: QUIZ_SECONDS }));
+export const buildBankQuizSet = (level: DuelSkillLevel, rules: DuelRules = DEFAULT_RULES): DuelQuizSet => {
+  // The bank is Python only. A JavaScript duel only lands here when every AI attempt
+  // failed; it then gets the bank's Python questions rather than no duel at all.
+  // Count, mix and timings follow the rules as far as the bank's size allows.
+  const split = questionSplit(rules);
+  const shuffled = <T,>(list: T[]) => list.map((v) => [Math.random(), v] as const).sort((a, b) => a[0] - b[0]).map(([, v]) => v);
+  const coding: DuelQuizQuestion[] = shuffled(CODING_CARDS).slice(0, split.coding)
+    .map((c, i) => ({ ...c, language: 'python' as const, id: `qc-${i + 1}`, seconds: rules.codingSeconds || CODING_SECONDS }));
+  const quiz: DuelQuizQuestion[] = shuffled(QUIZ_CARDS).slice(0, split.quiz)
+    .map((c, i) => ({ ...c, id: `q-${i + 1}`, seconds: rules.quizSeconds || QUIZ_SECONDS }));
 
   const questions: DuelQuizQuestion[] = [];
   let qi = 0;

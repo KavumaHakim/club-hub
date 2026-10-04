@@ -10,6 +10,17 @@ import {
 } from '../../services/geminiService';
 import { judgeDuelTestsLocally } from '../../services/duelRunner';
 import {
+  DEFAULT_LIMITS,
+  DEFAULT_RULES,
+  clampRules,
+  fetchRuleLimits,
+  loadMyRules,
+  saveMyRules,
+  saveRuleLimits as saveClubRuleLimits,
+  type DuelRuleLimits,
+  type DuelRules,
+} from '../../services/duelRules';
+import {
   DuelInviteRecord,
   DuelMatchBundle,
   DuelParticipantRecord,
@@ -79,6 +90,9 @@ interface DuelArenaStoreState {
   busyInviteId: string | null;
   challengeBusyUid: string | null;
   preparingLabel: string;
+  /** Club-wide limits (patrons) and this member's own rules for duels they send. */
+  ruleLimits: DuelRuleLimits;
+  myRules: DuelRules;
 
   // match
   matchId: string | null;
@@ -134,6 +148,8 @@ interface DuelArenaStoreState {
 
   // actions
   hydrate: (user: User) => void;
+  setMyRules: (rules: DuelRules) => void;
+  saveRuleLimits: (limits: DuelRuleLimits) => Promise<void>;
   refreshLobby: () => Promise<void>;
   challengeMember: (recipientUid: string) => Promise<void>;
   acceptInvite: (invite: DuelInviteRecord) => Promise<void>;
@@ -969,6 +985,8 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
     lobbyNotice: null,
     busyInviteId: null,
     challengeBusyUid: null,
+    ruleLimits: DEFAULT_LIMITS,
+    myRules: DEFAULT_RULES,
     preparingLabel: '',
 
     matchId: null,
@@ -1026,7 +1044,7 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
         inviteUnsubscribe = null;
       }
 
-      set({ hasHydrated: true, initializedUserId: user.uid, currentUser: user, phase: 'lobby' });
+      set({ hasHydrated: true, initializedUserId: user.uid, currentUser: user, phase: 'lobby', myRules: loadMyRules(user.uid) });
       void get().refreshLobby();
 
       inviteUnsubscribe = subscribeToInviteEvents(user.uid, {
@@ -1049,13 +1067,16 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
       if (!user) return;
       set({ lobbyLoading: true, lobbyError: null });
       try {
-        const [profile, invites, liveMatches, ladderRows] = await Promise.all([
+        const [profile, invites, liveMatches, ladderRows, ruleLimits] = await Promise.all([
           ensureDuelProfile(user.uid),
           fetchInvitesForUser(user.uid),
           fetchLiveMatches(),
           fetchDuelLadder(8),
+          fetchRuleLimits(),
         ]);
         set({
+          ruleLimits,
+          myRules: clampRules(get().myRules, ruleLimits),
           profile,
           invitesIncoming: invites.incoming,
           invitesOutgoing: invites.outgoing,
@@ -1082,7 +1103,7 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
       if (!user || get().challengeBusyUid) return;
       set({ challengeBusyUid: recipientUid });
       try {
-        await sendDuelChallenge(user, recipientUid, 'RANKED');
+        await sendDuelChallenge(user, recipientUid, clampRules(get().myRules, get().ruleLimits));
         await get().refreshLobby();
         set({ lobbyNotice: 'Challenge sent! They will be notified.' });
       } catch (error: any) {
@@ -1373,7 +1394,7 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
           let passed = 0;
           let totalTests = q.testCases.length;
           try {
-            const judge = await judgeDuelTestsLocally(code, q.testCases);
+            const judge = await judgeDuelTestsLocally(code, q.testCases, undefined, q.language || 'python');
             correct = judge.verdict === 'Accepted';
             passed = judge.passed;
             totalTests = judge.total;
@@ -1507,6 +1528,20 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
     },
 
     closeResultModal: () => set({ resultModalOpen: false }),
+
+    setMyRules: (rules) => {
+      const user = get().currentUser;
+      const clean = clampRules(rules, get().ruleLimits);
+      set({ myRules: clean });
+      if (user) saveMyRules(user.uid, clean);
+    },
+
+    saveRuleLimits: async (limits) => {
+      const user = get().currentUser;
+      if (!user) return;
+      const saved = await saveClubRuleLimits(limits, user.uid);
+      set({ ruleLimits: saved, myRules: clampRules(get().myRules, saved) });
+    },
 
     rematch: async () => {
       const current = get();
