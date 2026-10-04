@@ -812,6 +812,19 @@ const Challenges: React.FC<ChallengesProps> = ({ currentUser, theme }) => {
         setLanguageTabState(tab);
         try { localStorage.setItem('challenges_language_tab', tab); } catch { /* not remembered */ }
     };
+    type LevelTab = 'ANY' | 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+    const [levelTab, setLevelTabState] = useState<LevelTab>(() => {
+        try {
+            const saved = localStorage.getItem('challenges_level_tab');
+            return saved === 'BEGINNER' || saved === 'INTERMEDIATE' || saved === 'ADVANCED' ? saved : 'ANY';
+        } catch {
+            return 'ANY';
+        }
+    });
+    const setLevelTab = (tab: LevelTab) => {
+        setLevelTabState(tab);
+        try { localStorage.setItem('challenges_level_tab', tab); } catch { /* not remembered */ }
+    };
 
     const isPatron = currentUser.role === 'PATRON';
 
@@ -915,9 +928,14 @@ const Challenges: React.FC<ChallengesProps> = ({ currentUser, theme }) => {
     const inLanguage = (c: Challenge, lang: 'python' | 'javascript') =>
         !hasTestCases(c) || (c.language || 'python') === lang;
 
-    const filteredChallenges = useMemo(
+    const languageChallenges = useMemo(
         () => (languageTab === 'ANY' ? statusChallenges : statusChallenges.filter(c => inLanguage(c, languageTab))),
         [statusChallenges, languageTab],
+    );
+
+    const filteredChallenges = useMemo(
+        () => (levelTab === 'ANY' ? languageChallenges : languageChallenges.filter(c => c.difficulty === levelTab)),
+        [languageChallenges, levelTab],
     );
 
     if (isLoadingChallenges) return (
@@ -995,11 +1013,23 @@ const Challenges: React.FC<ChallengesProps> = ({ currentUser, theme }) => {
                     active={languageTab}
                     onChange={setLanguageTab}
                 />
+                <RuledTabs
+                    tabs={[
+                        { id: 'ANY' as const, label: 'All levels' },
+                        ...(['BEGINNER', 'INTERMEDIATE', 'ADVANCED'] as const).map(level => ({
+                            id: level,
+                            label: level.charAt(0) + level.slice(1).toLowerCase(),
+                            count: languageChallenges.filter(c => c.difficulty === level).length,
+                        })),
+                    ]}
+                    active={levelTab}
+                    onChange={setLevelTab}
+                />
             </div>
 
             {filteredChallenges.length === 0 ? (
                 <EmptyState
-                    title={activeTab === 'COMPLETED' ? "No badges earned yet" : languageTab !== 'ANY' ? `No ${languageTab === 'python' ? 'Python' : 'JavaScript'} challenges here` : "No challenges found"}
+                    title={activeTab === 'COMPLETED' ? "No badges earned yet" : languageTab !== 'ANY' || levelTab !== 'ANY' ? 'No challenges match these filters' : "No challenges found"}
                     description={activeTab === 'COMPLETED'
                         ? "Participate in active challenges to start earning badges!"
                         : "Check back later for new challenges."}
