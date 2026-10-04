@@ -23,7 +23,9 @@ export const HUB_SCREENS: Partial<Record<Tab, { label: string; what: string }>> 
     label: 'Duel Arena',
     what: 'Live 1v1 duels. In the lobby, the Players tab and the search box find any member by name, username or class; '
       + 'each has a Challenge button (or Accept if they already challenged you, or Watch if they are in a duel). '
-      + 'Duels mix quick quiz questions with short Python coding problems set in everyday life, answered with a solve(input_text) function. '
+      + 'The Rules tab sets how the duels you send are played: Python or JavaScript, number of questions, quiz/coding/mixed, difficulty (or auto, matched to both players), time per question, ranked or casual. '
+      + 'Patrons set club-wide limits there that every member\'s rules must fit in; the opponent sees the rules on the challenge before accepting. '
+      + 'Questions are set in everyday life; coding answers are a solve(input_text) function (solve(inputText) in JavaScript). '
       + 'On a computer, drag the divider beside the code to make the editor wider (double-click it to reset).',
   },
   suggestions: { label: 'Suggestions', what: 'Post ideas for the club and upvote other members\' ideas.' },
@@ -56,6 +58,7 @@ export const HUB_EDITORS = [
 
 /** What changed recently, newest first. Dates are when it went live. */
 export const HUB_UPDATES: { date: string; text: string }[] = [
+  { date: '2026-10-04', text: 'Duel Arena: a Rules tab to choose language (Python or JavaScript), number and type of questions, difficulty and timing for your duels, within limits set by the patrons.' },
   { date: '2026-10-03', text: 'Code editors check Python and JavaScript as you type: suggestions, hover docs, parameter hints, and mistakes underlined before you run.' },
   { date: '2026-10-03', text: 'Duel Arena: search for any member and challenge them from the new Players tab.' },
   { date: '2026-10-03', text: 'Duel Arena: new look matching the rest of the hub, everyday-life questions, and a code editor you can drag wider.' },

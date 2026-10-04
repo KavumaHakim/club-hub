@@ -8,12 +8,14 @@ import { colorFor } from './utils';
 import { SearchIcon } from '../icons/SearchIcon';
 import { SHELL_META_EVENT } from '../ShellHeader';
 import { useMediaQuery } from '../../lib/useMediaQuery';
+import { DuelRulesPage } from './DuelRulesPage';
+import { DEFAULT_RULES, summarizeRules } from '../../services/duelRules';
 
 interface DuelLobbyProps {
   currentUser: User;
 }
 
-type LobbyFilter = 'ALL' | 'PLAYERS' | 'LIVE' | 'FOR_YOU' | 'WAITING' | 'LADDER';
+type LobbyFilter = 'ALL' | 'PLAYERS' | 'LIVE' | 'FOR_YOU' | 'WAITING' | 'LADDER' | 'RULES';
 
 type DuelRow =
   | { kind: 'live'; id: string; match: LiveMatchSummary }
@@ -60,6 +62,7 @@ export const DuelLobby: React.FC<DuelLobbyProps> = ({ currentUser }) => {
   const cancelInvite = useDuelArenaStore((state) => state.cancelInvite);
   const spectateMatch = useDuelArenaStore((state) => state.spectateMatch);
   const dismissLobbyNotice = useDuelArenaStore((state) => state.dismissLobbyNotice);
+  const myRules = useDuelArenaStore((state) => state.myRules);
 
   const showBoard = useMediaQuery('(min-width: 1280px)');
   const [members, setMembers] = useState<User[]>([]);
@@ -140,6 +143,7 @@ export const DuelLobby: React.FC<DuelLobbyProps> = ({ currentUser }) => {
     { id: 'FOR_YOU', label: 'For you', count: incoming.length },
     { id: 'WAITING', label: 'Waiting', count: outgoing.length },
     { id: 'LADDER', label: 'Ladder', narrowOnly: true },
+    { id: 'RULES', label: 'Rules' },
   ];
 
   const wins = profile?.seasonWins ?? 0;
@@ -192,7 +196,7 @@ export const DuelLobby: React.FC<DuelLobbyProps> = ({ currentUser }) => {
           </div>
           <p className="mt-1.5 truncate text-[11px] sm:text-center">
             <span className="font-extrabold uppercase tracking-[0.12em] text-ch-accent">{matchTypeLabel(invite.matchType)} duel</span>
-            <span className="text-ch-muted"> · Python · sent {timeAgo(invite.createdAt)}</span>
+            <span className="text-ch-muted"> · {summarizeRules(invite.rules || DEFAULT_RULES)} · sent {timeAgo(invite.createdAt)}</span>
           </p>
         </div>
         <div className="flex w-[118px] flex-none flex-col items-start justify-center gap-1.5 border-l border-ch-divider px-2.5 sm:w-[132px] sm:px-4">
@@ -278,6 +282,10 @@ export const DuelLobby: React.FC<DuelLobbyProps> = ({ currentUser }) => {
             {membersLoading ? 'Loading…' : term ? `${players.length} of ${members.length} match` : `${members.length} players`}
           </span>
         </div>
+        <p className="mb-2 text-[11.5px] text-ch-muted">
+          Your challenges: <span className="font-semibold text-ch-text">{summarizeRules(myRules)}</span>{' '}
+          <button onClick={() => setFilter('RULES')} className="font-bold text-ch-accent hover:underline">Change</button>
+        </p>
         {shown.length === 0 ? (
           <p className="py-2 text-[13px] text-ch-muted">
             {membersLoading ? 'Loading players…' : term ? `Nobody matches "${search.trim()}". Try a first name, username or class.` : 'No other players yet.'}
@@ -403,7 +411,7 @@ export const DuelLobby: React.FC<DuelLobbyProps> = ({ currentUser }) => {
         )}
 
         <div className="ch-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
-          {filter === 'LADDER' ? standings : filter === 'PLAYERS' ? playersSection(Infinity, 'Challenge anyone') : (
+          {filter === 'RULES' ? <DuelRulesPage currentUser={currentUser} /> : filter === 'LADDER' ? standings : filter === 'PLAYERS' ? playersSection(Infinity, 'Challenge anyone') : (
             <>
               {/* Searching usually means looking for someone: show matching players first. */}
               {term && playersSection(30, 'Players')}

@@ -40,10 +40,10 @@ export const QuizPanel: React.FC = () => {
   const total = questions.length;
 
   // Load Python now, so the first coding question doesn't wait for the download.
-  const hasCoding = questions.some((q) => q.kind === 'coding');
+  const hasPythonCoding = questions.some((q) => q.kind === 'coding' && (q.language || 'python') === 'python');
   useEffect(() => {
-    if (hasCoding) warmUpPython();
-  }, [hasCoding]);
+    if (hasPythonCoding) warmUpPython();
+  }, [hasPythonCoding]);
 
   // Reset the local selection whenever we move to a new question.
   useEffect(() => {
@@ -118,7 +118,7 @@ export const QuizPanel: React.FC = () => {
             height="100%"
             theme={editorTheme}
             beforeMount={setupMonaco}
-            language="python"
+            language={(question as { language?: string }).language || 'python'}
             value={codingDraft}
             onChange={(value) => setCodingDraft(value || '')}
             options={{

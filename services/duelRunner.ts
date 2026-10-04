@@ -268,8 +268,13 @@ export const judgeDuelTestsLocally = async (
   code: string,
   cases: DuelGeneratedTestCase[],
   timeoutMs?: number,
+  language: 'python' | 'javascript' = 'python',
 ): Promise<DuelJudgeResult> => {
-  const run = await runDuelTests(code, cases, timeoutMs);
+  // JavaScript runs in the challenge runner's worker harness (imported here, not at
+  // the top, because challengeRunner itself imports this module).
+  const run = language === 'javascript'
+    ? await (await import('./challengeRunner')).runChallengeTests('javascript', code, cases, timeoutMs)
+    : await runDuelTests(code, cases, timeoutMs);
 
   const verdict: DuelJudgeResult['verdict'] = run.crashed
     ? 'Time Limit Exceeded'

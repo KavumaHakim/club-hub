@@ -9,6 +9,7 @@ import {
   generateDuelQuizSet,
 } from './geminiService';
 import { DuelRank } from '../components/duel-arena/types';
+import { DEFAULT_RULES, LANGUAGE_LABEL, clampRules, fetchRuleLimits, type DuelRules } from './duelRules';
 
 // --- Shared shapes ---
 
@@ -38,6 +39,8 @@ export interface DuelInviteRecord {
   matchId: string | null;
   message: string | null;
   createdAt: string;
+  /** The challenger's rules; null on invites sent before duel rules existed (defaults apply). */
+  rules: DuelRules | null;
 }
 
 export interface DuelParticipantRecord {
@@ -255,24 +258,28 @@ const mapInvite = (row: any): DuelInviteRecord => ({
   matchId: row.match_id,
   message: row.message,
   createdAt: row.created_at,
+  rules: row.rules ? clampRules(row.rules) : null,
 });
 
 export const sendDuelChallenge = async (
   sender: User,
   recipientUid: string,
-  matchType: 'RANKED' | 'CASUAL' = 'RANKED',
+  rules: DuelRules = DEFAULT_RULES,
   message?: string
 ): Promise<DuelInviteRecord> => {
-  const { data, error } = await supabase
-    .from('duel_friend_invites')
-    .insert({
-      sender_uid: sender.uid,
-      recipient_uid: recipientUid,
-      match_type: matchType,
-      message: message || null,
-    })
-    .select(inviteSelect)
-    .single();
+  const row = {
+    sender_uid: sender.uid,
+    recipient_uid: recipientUid,
+    match_type: rules.matchType,
+    message: message || null,
+    rules,
+  };
+  let { data, error } = await supabase.from('duel_friend_invites').insert(row).select(inviteSelect).single();
+  // Before the duel-rules migration runs, the column doesn't exist: send without it.
+  if (error && /rules/.test(error.message || '') && /column/i.test(error.message || '')) {
+    const { rules: _ignored, ...withoutRules } = row;
+    ({ data, error } = await supabase.from('duel_friend_invites').insert(withoutRules).select(inviteSelect).single());
+  }
   if (error) throw error;
 
   try {
@@ -382,11 +389,13 @@ export const acceptInviteAndCreateMatch = async (
     .single();
   if (senderError) throw senderError;
 
-  onStage?.('Building a fresh 15-question duel...');
+  // The challenger's rules, fitted to the club's limits as they are now.
+  const rules = clampRules(invite.rules || DEFAULT_RULES, await fetchRuleLimits());
+  onStage?.(`Writing ${rules.questionCount} ${LANGUAGE_LABEL[rules.language]} questions...`);
   const quizSet = await generateDuelQuizSet([
     (senderRow?.skill_level as DuelSkillLevel) || 'BEGINNER',
     accepter.skillLevel || 'BEGINNER',
-  ]);
+  ], rules);
 
   onStage?.('Setting up the duel chamber...');
   const totalQuestionSeconds = quizSet.questions.reduce((sum, q) => sum + (q.seconds || 30), 0);
@@ -398,7 +407,7 @@ export const acceptInviteAndCreateMatch = async (
       slug: `duel-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       title: quizSet.title,
       difficulty: DIFFICULTY_TO_DB[quizSet.difficulty],
-      statement_markdown: `A ${quizSet.questions.length}-question rapid duel — most correct answers wins.`,
+      statement_markdown: `A ${quizSet.questions.length}-question ${LANGUAGE_LABEL[rules.language]} duel: most correct answers wins.`,
       format: 'QUIZ',
       questions_json: quizSet.questions,
       constraints_json: [],
