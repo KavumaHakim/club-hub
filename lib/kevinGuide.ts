@@ -36,7 +36,14 @@ export const HUB_SCREENS: Partial<Record<Tab, { label: string; what: string }>> 
   roadmap: { label: 'Roadmap', what: 'Personal learning roadmaps: milestones with resources, generated for a topic and level.' },
   resources: { label: 'Resources', what: 'The club library of notes, links and videos.' },
   playground: { label: 'Playground', what: 'A code editor that runs Python, JavaScript and web (HTML/CSS/JS) projects in the browser; save scripts and work in multi-file projects.' },
-  games: { label: 'Games', what: 'Coding games and their leaderboards.' },
+  games: {
+    label: 'Games',
+    what: 'The Games lounge: short games that each teach one idea, each with a leaderboard of best scores. '
+      + 'Quick games (no coding): Number Hunt (binary search), Traffic Rules (if / else if / else, AND, OR, NOT), '
+      + 'Secret Messages (Caesar cipher: algorithms and keys), Pixel Painter (pictures as 1s and 0s, run-length compression). '
+      + 'Code puzzles in Python or JavaScript: Code Jigsaw (put shuffled lines in order), Trace the Variable (predict what a program prints), '
+      + 'Bug Squash (tap the wrong line), Sort Showdown (sort by swapping neighbours in the fewest swaps).',
+  },
   showcase: { label: 'Showcase', what: 'Members\' finished projects and the community leaderboard.' },
   members: { label: 'Members', what: 'Patrons only: approve and manage members.' },
   admin: { label: 'Admin Tools', what: 'Patrons only: feature switches and club settings.' },
@@ -58,6 +65,7 @@ export const HUB_EDITORS = [
 
 /** What changed recently, newest first. Dates are when it went live. */
 export const HUB_UPDATES: { date: string; text: string }[] = [
+  { date: '2026-10-04', text: 'New Games lounge: eight new games that each teach a computing idea, from binary search to debugging, with leaderboards.' },
   { date: '2026-10-04', text: 'Duel Arena: a Rules tab to choose language (Python or JavaScript), number and type of questions, difficulty and timing for your duels, within limits set by the patrons.' },
   { date: '2026-10-03', text: 'Code editors check Python and JavaScript as you type: suggestions, hover docs, parameter hints, and mistakes underlined before you run.' },
   { date: '2026-10-03', text: 'Duel Arena: search for any member and challenge them from the new Players tab.' },

@@ -177,7 +177,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile,
         },
         games: {
             title: 'Games Lounge',
-            body: `Quick breaks that sharpen focus.\n\n- Reaction tests, math sprints, and number guessers.\n- Scores are local, so you can compete with yourself.\n- Ideal for brain resets between deeper sessions.`
+            body: `Short games that each bring out one big idea in computing.\n\n- Quick games need no coding: binary search, if/else logic, secret codes, and how pictures are stored.\n- Code puzzles in Python or JavaScript: rebuild a program, trace variables, squash bugs, sort efficiently.\n- Beat your best score and climb each game's leaderboard.`
         },
         profile: {
             title: 'Profile & Portfolio',
