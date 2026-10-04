@@ -799,6 +799,19 @@ const Challenges: React.FC<ChallengesProps> = ({ currentUser, theme }) => {
     const [prefillData, setPrefillData] = useState<ChallengePrefill | null>(null);
     const [editingTestsFor, setEditingTestsFor] = useState<Challenge | null>(null);
     const [activeTab, setActiveTab] = useState<'ACTIVE' | 'COMPLETED' | 'ALL'>('ACTIVE');
+    // Language tabs, remembered on this device.
+    const [languageTab, setLanguageTabState] = useState<'ANY' | 'python' | 'javascript'>(() => {
+        try {
+            const saved = localStorage.getItem('challenges_language_tab');
+            return saved === 'python' || saved === 'javascript' ? saved : 'ANY';
+        } catch {
+            return 'ANY';
+        }
+    });
+    const setLanguageTab = (tab: 'ANY' | 'python' | 'javascript') => {
+        setLanguageTabState(tab);
+        try { localStorage.setItem('challenges_language_tab', tab); } catch { /* not remembered */ }
+    };
 
     const isPatron = currentUser.role === 'PATRON';
 
@@ -880,7 +893,8 @@ const Challenges: React.FC<ChallengesProps> = ({ currentUser, theme }) => {
         setIsReviewModalOpen(true);
     };
 
-    const filteredChallenges = useMemo(() => {
+    // Challenges matching the status tab (Active / Completed / All), before the language tab.
+    const statusChallenges = useMemo(() => {
         const today = new Date();
         return challenges.filter(c => {
             const isExpired = new Date(c.deadline) < today;
@@ -895,6 +909,16 @@ const Challenges: React.FC<ChallengesProps> = ({ currentUser, theme }) => {
             return true;
         });
     }, [challenges, activeTab, currentUser.badges]);
+
+    // Test-judged challenges are in one language; patron-reviewed ones accept either,
+    // so they appear under both language tabs.
+    const inLanguage = (c: Challenge, lang: 'python' | 'javascript') =>
+        !hasTestCases(c) || (c.language || 'python') === lang;
+
+    const filteredChallenges = useMemo(
+        () => (languageTab === 'ANY' ? statusChallenges : statusChallenges.filter(c => inLanguage(c, languageTab))),
+        [statusChallenges, languageTab],
+    );
 
     if (isLoadingChallenges) return (
         <div className="flex h-64 flex-col items-center justify-center gap-4">
@@ -952,19 +976,30 @@ const Challenges: React.FC<ChallengesProps> = ({ currentUser, theme }) => {
 
             <Leaderboard users={allUsers} />
 
-            <RuledTabs
-                tabs={[
-                    { id: 'ACTIVE' as const, label: 'Active' },
-                    { id: 'COMPLETED' as const, label: 'Completed', count: currentUser.badges?.length || 0 },
-                    { id: 'ALL' as const, label: 'All History' },
-                ]}
-                active={activeTab}
-                onChange={setActiveTab}
-            />
+            <div className="flex flex-wrap items-start gap-x-3">
+                <RuledTabs
+                    tabs={[
+                        { id: 'ACTIVE' as const, label: 'Active' },
+                        { id: 'COMPLETED' as const, label: 'Completed', count: currentUser.badges?.length || 0 },
+                        { id: 'ALL' as const, label: 'All History' },
+                    ]}
+                    active={activeTab}
+                    onChange={setActiveTab}
+                />
+                <RuledTabs
+                    tabs={[
+                        { id: 'ANY' as const, label: 'All languages', count: statusChallenges.length },
+                        { id: 'python' as const, label: 'Python', count: statusChallenges.filter(c => inLanguage(c, 'python')).length },
+                        { id: 'javascript' as const, label: 'JavaScript', count: statusChallenges.filter(c => inLanguage(c, 'javascript')).length },
+                    ]}
+                    active={languageTab}
+                    onChange={setLanguageTab}
+                />
+            </div>
 
             {filteredChallenges.length === 0 ? (
                 <EmptyState
-                    title={activeTab === 'COMPLETED' ? "No badges earned yet" : "No challenges found"}
+                    title={activeTab === 'COMPLETED' ? "No badges earned yet" : languageTab !== 'ANY' ? `No ${languageTab === 'python' ? 'Python' : 'JavaScript'} challenges here` : "No challenges found"}
                     description={activeTab === 'COMPLETED'
                         ? "Participate in active challenges to start earning badges!"
                         : "Check back later for new challenges."}
