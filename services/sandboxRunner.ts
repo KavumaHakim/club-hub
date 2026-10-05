@@ -9,6 +9,8 @@ export interface SandboxExecutionOptions {
   code: string;
   files?: Record<string, string>;
   projectId?: string | number | null;
+  /** Text returned by require('fs').readFileSync(0, 'utf8') in JavaScript. */
+  input?: string;
   timeoutMs?: number;
   onOutput: (line: SandboxOutputLine) => void;
   onInputRequest?: (prompt: string) => void;
@@ -142,9 +144,21 @@ const runJavaScript = async (payload) => {
     error: (...args) => postOutput('error', args.map(serializeValue).join(' ')),
   };
 
+  const stdin = String(payload.input ?? '');
+  const require = (name) => {
+    if (name === 'fs' || name === 'node:fs') {
+      return { readFileSync: () => stdin };
+    }
+    throw new Error("require('" + name + "') isn't available in the browser runner");
+  };
+  const process = {
+    stdout: { write: (value) => { postOutput('log', String(value)); return true; } },
+    argv: [],
+    env: {},
+  };
   const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
-  const runner = new AsyncFunction('console', '"use strict";\\n' + payload.code);
-  const result = await runner(scopedConsole);
+  const runner = new AsyncFunction('console', 'require', 'process', '"use strict";\\n' + payload.code);
+  const result = await runner(scopedConsole, require, process);
   if (result !== undefined) {
     postOutput('log', serializeValue(result));
   }
@@ -318,7 +332,7 @@ export const warmUpPython = () => {
 
 const startExecution = (
   messageType: 'run-js' | 'run-python',
-  { code, files, projectId, timeoutMs = DEFAULT_TIMEOUT_MS, onOutput, onInputRequest, onLoadingChange }: SandboxExecutionOptions
+  { code, files, projectId, input, timeoutMs = DEFAULT_TIMEOUT_MS, onOutput, onInputRequest, onLoadingChange }: SandboxExecutionOptions
 ): SandboxExecutionController => {
   const isPython = messageType === 'run-python';
   const worker = isPython ? getSharedPythonWorker() : createWorker();
@@ -413,6 +427,7 @@ const startExecution = (
     code,
     files,
     projectId,
+    input,
   });
 
   return {

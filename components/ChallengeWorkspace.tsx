@@ -346,8 +346,7 @@ const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({ challenge, curr
                 <p className="mb-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] text-ch-accent">How it's judged</p>
                 {tested && stdio ? (
                     <p className="text-[13px] leading-relaxed text-ch-muted">
-                        Write an ordinary program: read the input with{' '}
-                        <code className="font-mono text-ch-text">{language === 'python' ? 'input()' : 'readline()'}</code>, one line per call, and{' '}
+                        Write an ordinary program: {language === 'python' ? <>read the input with <code className="font-mono text-ch-text">input()</code>, one line per call</> : <>read all input with <code className="font-mono text-ch-text">require('fs').readFileSync(0, 'utf8')</code></>}, and{' '}
                         <strong className="text-ch-text">print</strong> the answer
                         {language === 'javascript' && <> with <code className="font-mono text-ch-text">console.log</code></>}.
                         Each test runs your whole program once with that test's input and compares everything it prints with the expected output
@@ -368,7 +367,7 @@ const ChallengeWorkspace: React.FC<ChallengeWorkspaceProps> = ({ challenge, curr
                         Define <code className="font-mono text-ch-text">solve(input_text)</code>. It receives each test's input as one string and must
                         <strong className="text-ch-text"> return</strong> the answer as a string (trailing whitespace is ignored).
                         Prefer plain code? Leave out <code className="font-mono text-ch-text">solve</code>: your program then reads the input with{' '}
-                        <code className="font-mono text-ch-text">{language === 'python' ? 'input()' : 'readline()'}</code> and prints the answer.
+                        <code className="font-mono text-ch-text">{language === 'python' ? 'input()' : "require('fs').readFileSync(0, 'utf8')"}</code> and prints the answer.
                         Run checks the {visibleCases.length} example{visibleCases.length === 1 ? '' : 's'}; Submit runs all {challenge.testCases?.length}
                         {hiddenCount > 0 ? `, including ${hiddenCount} hidden` : ''}. Every test must pass to earn the badge.
                     </p>

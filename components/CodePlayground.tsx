@@ -83,6 +83,10 @@ result = add_numbers(5, 10)
 print(f"5 + 10 = {result}")`;
 
 const DEFAULT_JS = `//  A JavaScript Example
+// For challenge-style input, read the complete stdin value with:
+// const fs = require('fs');
+// const input = fs.readFileSync(0, 'utf8').trim();
+
 const clubName = "ICT Club Naggalama";
 console.log("Welcome to " + clubName);
 
@@ -433,6 +437,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
   const [isWaitingForInput, setIsWaitingForInput] = useState(false);
   const [inputPrompt, setInputPrompt] = useState('');
   const [consoleInput, setConsoleInput] = useState('');
+  const [javascriptInput, setJavascriptInput] = useState('');
   const [draggedTabPath, setDraggedTabPath] = useState<string | null>(null);
   const inputResolverRef = useRef<((value: string) => void) | null>(null);
   
@@ -1642,6 +1647,7 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
 
       const execution = runSandboxedJavaScript({
           code,
+          input: javascriptInput,
           onOutput: (line) => {
               setOutput(prev => [...prev, line]);
               scrollToBottom();
@@ -2682,6 +2688,22 @@ const CodePlayground: React.FC<CodePlaygroundProps> = ({ theme, currentUser, set
               <button onClick={handleCopyOutput} className={`${stripCell} ${stripIdle}`}>{copyFeedback ? 'Copied' : 'Copy'}</button>
               <button onClick={handleClearOutput} className={`${stripCell} ${stripIdle}`}>Clear</button>
             </div>
+            {language === 'javascript' && (
+              <div className="flex flex-none items-center gap-3 border-b border-ch-divider bg-ch-surface px-6 py-2">
+                <label htmlFor="javascript-stdin" className="flex-none text-[10px] font-extrabold uppercase tracking-[0.12em] text-ch-muted">
+                  JS stdin
+                </label>
+                <textarea
+                  id="javascript-stdin"
+                  value={javascriptInput}
+                  onChange={e => setJavascriptInput(e.target.value)}
+                  placeholder="Input returned by fs.readFileSync(0, 'utf8')"
+                  rows={1}
+                  className="min-w-0 flex-1 resize-none border border-ch-divider bg-ch-bg px-2 py-1 font-mono text-[12px] text-ch-text outline-none focus:border-ch-accent"
+                  aria-label="JavaScript standard input"
+                />
+              </div>
+            )}
             <div
               ref={outputContainerRef}
               className="ch-scroll min-h-0 flex-1 overflow-y-auto py-3.5 font-mono text-[13px] leading-[21px]"

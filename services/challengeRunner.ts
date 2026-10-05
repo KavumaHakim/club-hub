@@ -52,7 +52,7 @@ export const STARTER_CODE: Record<ChallengeLanguage, string> = {
 /** Starter code for print-style ("program") challenges. */
 export const PROGRAM_STARTER_CODE: Record<ChallengeLanguage, string> = {
   python: '# Read the input with input(), one line per call, and print the answer.\nline = input()\n\nprint(line)\n',
-  javascript: '// Read the input with readline(), one line per call, and print the answer with console.log.\nconst line = readline();\n\nconsole.log(line);\n',
+  javascript: "// Read all test input with Node's fs module, then print the answer with console.log.\nconst fs = require('fs');\nconst input = fs.readFileSync(0, 'utf8').trim();\n\nconsole.log(input);\n",
 };
 
 export const starterFor = (language: ChallengeLanguage, ioStyle: ChallengeIoStyle = 'function'): string =>
