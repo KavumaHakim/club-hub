@@ -56,6 +56,55 @@ export const QuizPanel: React.FC = () => {
     return () => window.clearInterval(id);
   }, []);
 
+  // Keyboard play: A–D or 1–4 picks an option, T/F answers true/false, Enter
+  // locks it in. In a text box or the code editor only Ctrl/⌘+Enter submits,
+  // so typing is never hijacked.
+  const acceptsKeys =
+    !!session && session.status !== 'countdown' && session.status !== 'finished' && !!question && !answerLocked && !selfFinished;
+  useEffect(() => {
+    if (!acceptsKeys || !question) return undefined;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.altKey || e.repeat) return;
+      const target = e.target as HTMLElement | null;
+      const typing = !!target && (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT' || target.isContentEditable || !!target.closest('.monaco-editor'));
+      const submitCombo = e.key === 'Enter' && (e.ctrlKey || e.metaKey);
+
+      if (question.kind === 'coding' || question.type === 'SHORT_ANSWER' || typing) {
+        if (!submitCombo) return;
+        const ready = question.kind === 'coding' ? codingDraft.trim().length > 0 : selected.trim().length > 0;
+        if (!ready) return;
+        e.preventDefault();
+        submitAnswer(question.kind === 'coding' ? '' : selected);
+        return;
+      }
+      if (e.ctrlKey || e.metaKey) return;
+
+      if (e.key === 'Enter') {
+        if (!selected) return;
+        e.preventDefault();
+        submitAnswer(selected);
+        return;
+      }
+      const key = e.key.toLowerCase();
+      if (question.type === 'TRUE_FALSE') {
+        const pick = key === 't' || key === '1' ? 'True' : key === 'f' || key === '2' ? 'False' : null;
+        if (pick) {
+          e.preventDefault();
+          setSelected(pick);
+        }
+        return;
+      }
+      const options = question.options || [];
+      const index = /^[a-z]$/.test(key) ? key.charCodeAt(0) - 97 : /^[1-9]$/.test(key) ? Number(key) - 1 : -1;
+      if (index >= 0 && index < options.length) {
+        e.preventDefault();
+        setSelected(options[index]);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [acceptsKeys, question, selected, codingDraft, submitAnswer]);
+
   if (!session) return null;
 
   const countingDown = session.status === 'countdown';
@@ -104,6 +153,13 @@ export const QuizPanel: React.FC = () => {
 
   const isCoding = question.kind === 'coding';
   const canSubmit = !answerLocked && !gradingAnswer && (isCoding ? codingDraft.trim().length > 0 : selected.length > 0);
+
+  const optionCount = !isCoding && question.type === 'MULTIPLE_CHOICE' ? (question.options || []).length : 0;
+  const keyHint = isCoding || question.type === 'SHORT_ANSWER'
+    ? 'Ctrl + Enter to submit'
+    : question.type === 'TRUE_FALSE'
+      ? 'Press T or F, then Enter'
+      : `Press A–${String.fromCharCode(64 + Math.max(1, optionCount))}, then Enter`;
 
   const handleSubmit = () => {
     if (!canSubmit) return;
@@ -253,6 +309,7 @@ export const QuizPanel: React.FC = () => {
                 {isCoding ? <Code2 className="h-4 w-4" /> : <Send className="h-4 w-4" />}
                 {isCoding ? 'Run & Submit' : 'Lock in answer'}
               </Button>
+              <p className="mt-1.5 hidden text-center text-[11px] text-ch-muted md:block">{keyHint}</p>
             </motion.div>
           )}
         </AnimatePresence>

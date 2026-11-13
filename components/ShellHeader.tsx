@@ -24,6 +24,8 @@ export const COMPOSER_STATE_EVENT = 'clubhub:composer-state';
 
 /** A screen sets the line beside the page title (detail: { tab, meta }). */
 export const SHELL_META_EVENT = 'clubhub:shell-meta';
+/** Fired when a member is put back into a duel they were still playing, so the shell can open the Arena. */
+export const DUEL_RESUME_EVENT = 'clubhub:duel-resume';
 
 /** Header cells ask the Playground to act (detail: PlaygroundAction). */
 export const PLAYGROUND_ACTION_EVENT = 'clubhub:playground-action';

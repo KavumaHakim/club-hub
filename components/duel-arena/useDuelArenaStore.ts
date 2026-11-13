@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { create } from 'zustand';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { User } from '../../types';
+import { DUEL_RESUME_EVENT } from '../ShellHeader';
 import { QUICK_TAUNTS, createDuelFiles, DEFAULT_EDITOR_SETTINGS } from './mockData';
 import {
   DuelGeneratedTestCase,
@@ -36,8 +37,10 @@ import {
   fetchDuelProfiles,
   fetchInvitesForUser,
   fetchLatestSubmissionCode,
+  fetchActiveMatchForUser,
   fetchLiveMatches,
   fetchMatchBundle,
+  fetchMatchOutcome,
   finishMatchRecord,
   insertDuelChatMessage,
   insertDuelSubmission,
@@ -62,6 +65,7 @@ import {
   ArenaResultSummary,
   ArenaSession,
   ArenaSubmissionFeedback,
+  DuelFinishReason,
   DuelLanguage,
   DuelPhase,
   DuelStatus,
@@ -100,6 +104,8 @@ interface DuelArenaStoreState {
   selfParticipantId: string | null;
   opponentUid: string | null;
   opponentPresent: boolean;
+  /** When the opponent dropped out of the match channel (0 while they're here). */
+  opponentAwaySinceMs: number;
   matchStartAtMs: number;
   matchDurationSec: number;
   testCases: DuelGeneratedTestCase[];
@@ -155,9 +161,13 @@ interface DuelArenaStoreState {
   acceptInvite: (invite: DuelInviteRecord) => Promise<void>;
   declineInvite: (inviteId: string) => Promise<void>;
   cancelInvite: (inviteId: string) => Promise<void>;
-  enterMatch: (matchId: string, role: 'player' | 'spectator') => Promise<void>;
+  enterMatch: (matchId: string, role: 'player' | 'spectator', options?: { resuming?: boolean }) => Promise<void>;
+  /** Put the member straight back into a duel they were still playing (after a reload, crash or sign-in). */
+  resumeActiveDuel: () => Promise<void>;
   spectateMatch: (matchId: string) => Promise<void>;
   leaveMatch: () => Promise<void>;
+  /** Concede a running duel: the opponent is recorded as the winner. */
+  forfeitMatch: () => Promise<void>;
   dismissLobbyNotice: () => void;
 
   setActiveLanguage: (language: DuelLanguage) => void;
@@ -198,6 +208,43 @@ let matchChannel: RealtimeChannel | null = null;
 let inviteUnsubscribe: (() => void) | null = null;
 let finishFallbackTimer: number | null = null;
 let lastTypingBroadcastAt = 0;
+// Set once this client has tried to write the match finish, so the 1s tick
+// doesn't fire a database write every second after the clock hits zero.
+let finishAttempted = false;
+
+/**
+ * How long an opponent may be gone from the match before they forfeit. Long
+ * enough to survive a power cut: restart, sign in, and be put back in.
+ */
+const FORFEIT_GRACE_MS = 3 * 60_000;
+/** Absences shorter than this (a blip, a reload) aren't announced. */
+const AWAY_NOTICE_MS = 5_000;
+
+// What only this device knows about a running duel (code typed since the last
+// run, the current quiz question's deadline), kept in localStorage so a crash
+// or power cut doesn't lose it or hand the player a fresh question timer.
+interface DuelResumeSnapshot {
+  code?: string;
+  quizIndex?: number;
+  deadlineMs?: number;
+  codingDraft?: string;
+}
+const resumeKey = (matchId: string, uid: string) => `duel_resume_${matchId}_${uid}`;
+const loadResumeSnapshot = (matchId: string, uid: string): DuelResumeSnapshot | null => {
+  try {
+    const raw = localStorage.getItem(resumeKey(matchId, uid));
+    return raw ? (JSON.parse(raw) as DuelResumeSnapshot) : null;
+  } catch {
+    return null;
+  }
+};
+const clearResumeSnapshot = (matchId: string, uid: string) => {
+  try {
+    localStorage.removeItem(resumeKey(matchId, uid));
+  } catch {
+    // Storage blocked: nothing was saved either.
+  }
+};
 
 const DB_STATUS_TO_UI: Record<string, DuelStatus> = {
   QUEUED: 'countdown',
@@ -364,23 +411,62 @@ const buildSession = (
 };
 
 const buildResult = (
-  victory: boolean,
+  outcome: ArenaResultSummary['outcome'],
+  reason: DuelFinishReason,
   ratingDelta: number,
   xpEarned: number,
+  streakDelta: number,
   session: ArenaSession
 ): ArenaResultSummary => ({
-  outcome: victory ? 'victory' : 'defeat',
+  outcome,
+  reason,
   ratingDelta,
   xpEarned,
-  streakDelta: victory ? 1 : -1,
+  streakDelta,
   accuracy: session.player.accuracy,
   runtimeMs: session.player.runtimeMs || 0,
   typingSpeed: session.player.typingSpeed,
-  achievements: victory ? ['Duel Victor', 'Clean Verdict'] : ['Battle Tested', 'Review Unlocked'],
+  achievements:
+    outcome === 'victory'
+      ? reason === 'forfeit'
+        ? ['Last One Standing']
+        : ['Duel Victor', 'Clean Verdict']
+      : outcome === 'draw'
+        ? ['Dead Heat']
+        : reason === 'forfeit'
+          ? []
+          : ['Battle Tested', 'Review Unlocked'],
 });
+
+/** Rating the winner gains (0 for a draw or a casual duel), from the winner's side. */
+const winnerGain = (session: ArenaSession, winnerUid: string | null): number => {
+  if (!winnerUid || session.matchType === 'Casual') return 0;
+  const [winner, loser] = winnerUid === session.player.id ? [session.player, session.opponent] : [session.opponent, session.player];
+  return Math.abs(computeRatingDelta(winner.rating, loser.rating, true));
+};
+
+const leaderByProgress = (session: ArenaSession): string | null =>
+  session.player.progress === session.opponent.progress
+    ? null
+    : session.player.progress > session.opponent.progress
+      ? session.player.id
+      : session.opponent.id;
 
 export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
   // --- internal helpers ---
+
+  const saveResumeSnapshot = () => {
+    const s = get();
+    if (s.role !== 'player' || !s.matchId || !s.currentUser || !s.session || s.session.status === 'finished') return;
+    const snapshot: DuelResumeSnapshot = s.isQuiz
+      ? { quizIndex: s.quizIndex, deadlineMs: s.questionDeadlineMs, codingDraft: s.codingDraft }
+      : { code: s.files.find((file) => file.id === 'solver')?.content };
+    try {
+      localStorage.setItem(resumeKey(s.matchId, s.currentUser.uid), JSON.stringify(snapshot));
+    } catch {
+      // Storage full or blocked: resuming falls back to what the server has.
+    }
+  };
 
   const cleanupChannel = () => {
     leaveDuelChannel(matchChannel);
@@ -389,102 +475,158 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
       window.clearTimeout(finishFallbackTimer);
       finishFallbackTimer = null;
     }
+    finishAttempted = false;
   };
 
-  const applyFinish = async (winnerUid: string | null, reason: 'accepted' | 'timeout' | 'forfeit', broadcastDelta: number) => {
+  const finishBanner = (
+    current: DuelArenaStoreState,
+    session: ArenaSession,
+    winnerUid: string | null,
+    reason: DuelFinishReason,
+  ): string => {
+    const victory = current.role === 'player' && winnerUid === current.currentUser?.uid;
+    const isDraw = winnerUid === null;
+    if (current.role === 'spectator') {
+      if (!winnerUid) return 'Match over — draw.';
+      const name = winnerUid === session.player.id ? session.player.name : session.opponent.name;
+      return `Match over — ${name} wins${reason === 'forfeit' ? ' by forfeit' : ''}!`;
+    }
+    if (reason === 'forfeit') {
+      return victory ? `${session.opponent.name} left the duel — you win by forfeit.` : 'You forfeited the duel.';
+    }
+    if (current.isQuiz) {
+      return victory
+        ? 'You answered the most correctly — you win!'
+        : isDraw
+          ? 'Dead heat — the duel ends in a draw.'
+          : 'Your opponent answered more correctly.';
+    }
+    if (victory) return reason === 'accepted' ? 'Accepted! You won the duel.' : 'Time! You held the lead and won.';
+    if (isDraw) return 'Time! The duel ends in a draw.';
+    return reason === 'accepted' ? 'Your opponent got Accepted first.' : 'Time! Your opponent held the lead.';
+  };
+
+  /**
+   * Show the result locally and record it on this player's own profile. Marks
+   * the session finished before any await, so a late broadcast or fallback
+   * can't apply the same result twice.
+   */
+  const applyFinish = async (winnerUid: string | null, reason: DuelFinishReason, broadcastDelta: number) => {
     const state = get();
     if (!state.session || state.session.status === 'finished') return;
+    const session = state.session;
 
     const isPlayer = state.role === 'player';
-    const selfUid = state.currentUser?.uid;
-    const victory = isPlayer && winnerUid === selfUid;
+    const victory = isPlayer && winnerUid === state.currentUser?.uid;
     const isDraw = winnerUid === null;
+    const ranked = session.matchType !== 'Casual';
+    const forfeitedBySelf = isPlayer && reason === 'forfeit' && !victory;
 
     let ratingDelta = 0;
     let xpEarned = 0;
-    if (isPlayer && state.profile && state.session.matchType !== 'Casual' && !isDraw) {
-      ratingDelta = victory ? Math.abs(broadcastDelta) : computeRatingDelta(state.session.player.rating, state.session.opponent.rating, false);
-      xpEarned = victory ? state.session.problem.xpReward : 40;
-      await applyOwnRatingUpdate(state.profile, ratingDelta, victory, xpEarned);
-    } else if (isPlayer && state.profile && state.session.matchType === 'Casual') {
-      xpEarned = victory ? 80 : 30;
-      await applyOwnRatingUpdate(state.profile, 0, victory, xpEarned);
+    let updatesProfile = false;
+    if (isPlayer && state.profile) {
+      if (ranked && !isDraw) {
+        ratingDelta = victory ? Math.abs(broadcastDelta) : computeRatingDelta(session.player.rating, session.opponent.rating, false);
+        xpEarned = victory ? session.problem.xpReward : forfeitedBySelf ? 0 : 40;
+        updatesProfile = true;
+      } else if (!ranked) {
+        xpEarned = victory ? 80 : forfeitedBySelf ? 0 : 30;
+        updatesProfile = true;
+      }
     }
+    // applyOwnRatingUpdate adds 1 on a win and resets to 0 otherwise.
+    const streakBefore = state.profile?.currentStreak ?? session.activeStreak;
+    const streakAfter = updatesProfile ? (victory ? streakBefore + 1 : 0) : streakBefore;
 
     set((current) => {
       if (!current.session) return current;
-      const result = current.role === 'player' ? buildResult(victory, ratingDelta, xpEarned, current.session) : null;
+      const result = isPlayer
+        ? buildResult(
+            isDraw ? 'draw' : victory ? 'victory' : 'defeat',
+            reason,
+            ratingDelta,
+            xpEarned,
+            streakAfter - current.session.activeStreak,
+            current.session,
+          )
+        : null;
       if (result && current.isQuiz) {
-        result.outcome = isDraw ? 'draw' : victory ? 'victory' : 'defeat';
         result.selfCorrect = current.session.player.testCasesPassed;
         result.opponentCorrect = current.session.opponent.testCasesPassed;
         result.totalQuestions = current.questions.length;
       }
       return {
         ...current,
-        session: {
-          ...current.session,
-          status: 'finished',
-          result,
-        },
-        resultModalOpen: current.role === 'player',
-        liveBanner:
-          current.role === 'spectator'
-            ? winnerUid
-              ? `Match over — ${winnerUid === current.session.player.id ? current.session.player.name : current.session.opponent.name} wins!`
-              : 'Match over — draw.'
-            : current.isQuiz
-              ? victory
-                ? 'You answered the most correctly — you win!'
-                : isDraw
-                  ? 'Dead heat — the duel ends in a draw.'
-                  : 'Your opponent answered more correctly.'
-              : victory
-                ? reason === 'accepted'
-                  ? 'Accepted! You won the duel.'
-                  : 'Time! You held the lead and won.'
-                : isDraw
-                  ? 'Time! The duel ends in a draw.'
-                  : reason === 'accepted'
-                    ? 'Your opponent got Accepted first.'
-                    : 'Time! Your opponent held the lead.',
+        session: { ...current.session, status: 'finished', result },
+        resultModalOpen: isPlayer,
+        liveBanner: finishBanner(current, current.session, winnerUid, reason),
       };
     });
+
+    if (!isPlayer) return;
+    if (state.matchId && state.currentUser) clearResumeSnapshot(state.matchId, state.currentUser.uid);
+    if (updatesProfile && state.profile) await applyOwnRatingUpdate(state.profile, ratingDelta, victory, xpEarned);
+    // Each player records their own row, so the loser's result is stored too.
+    if (state.selfParticipantId) {
+      void markParticipantResult(state.selfParticipantId, victory, session.player.rating + ratingDelta, xpEarned);
+    }
   };
 
-  const handleTimeout = async () => {
+  /**
+   * Wait a moment for the other client's finish broadcast; if it never comes,
+   * read the result from the database. Spectators with nothing stored once the
+   * clock is out fall back to whoever leads.
+   */
+  const scheduleOutcomeFallback = (matchId: string, reason: DuelFinishReason, localWinner: string | null) => {
+    if (finishFallbackTimer) return;
+    finishFallbackTimer = window.setTimeout(async () => {
+      finishFallbackTimer = null;
+      const outcome = await fetchMatchOutcome(matchId);
+      const current = get();
+      if (current.matchId !== matchId || !current.session || current.session.status === 'finished') return;
+      if (outcome) {
+        void applyFinish(outcome.winnerUid, reason, outcome.rankedDelta);
+      } else if (current.role === 'spectator' && current.session.timeRemaining === 0) {
+        void applyFinish(localWinner, reason, 0);
+      } else {
+        // Nothing stored yet (the write may have failed): let the next tick try again.
+        finishAttempted = false;
+      }
+    }, 4000);
+  };
+
+  /**
+   * End the match with this winner. Both players may race here; the
+   * conditional update in finishMatchRecord (status <> FINISHED) lets only the
+   * first write land, and the other side learns the result from its broadcast.
+   */
+  const settleMatch = async (winnerUid: string | null, reason: DuelFinishReason) => {
     const state = get();
     if (!state.session || !state.matchId || state.session.status === 'finished') return;
-
-    const playerProgress = state.session.player.progress;
-    const opponentProgress = state.session.opponent.progress;
-
-    if (state.role === 'player') {
-      // Both players attempt the write; the conditional update in finishMatchRecord
-      // (status <> FINISHED) guarantees only the first one lands.
-      const winnerUid =
-        playerProgress === opponentProgress ? null : playerProgress > opponentProgress ? state.session.player.id : state.session.opponent.id;
-      const delta = winnerUid ? Math.abs(computeRatingDelta(state.session.player.rating, state.session.opponent.rating, true)) : 0;
-      const wrote = await finishMatchRecord(state.matchId, winnerUid, delta);
-      if (wrote) {
-        broadcastToDuel(matchChannel, 'finish', { winnerUid, reason: 'timeout', ratingDelta: delta });
-        await applyFinish(winnerUid, 'timeout', delta);
-        return;
-      }
+    const matchId = state.matchId;
+    if (state.role !== 'player') {
+      scheduleOutcomeFallback(matchId, reason, winnerUid);
+      return;
     }
+    if (finishAttempted) return;
+    finishAttempted = true;
 
-    // Everyone else: wait briefly for the authoritative finish broadcast, then resolve locally.
-    if (!finishFallbackTimer) {
-      finishFallbackTimer = window.setTimeout(() => {
-        finishFallbackTimer = null;
-        const current = get();
-        if (current.session && current.session.status !== 'finished') {
-          const winnerUid =
-            playerProgress === opponentProgress ? null : playerProgress > opponentProgress ? current.session.player.id : current.session.opponent.id;
-          void applyFinish(winnerUid, 'timeout', 0);
-        }
-      }, 4000);
+    const delta = winnerGain(state.session, winnerUid);
+    const wrote = await finishMatchRecord(matchId, winnerUid, delta);
+    if (get().matchId !== matchId) return;
+    if (wrote) {
+      broadcastToDuel(matchChannel, 'finish', { winnerUid, reason, ratingDelta: delta });
+      await applyFinish(winnerUid, reason, delta);
+    } else {
+      scheduleOutcomeFallback(matchId, reason, winnerUid);
     }
+  };
+
+  const handleTimeout = () => {
+    const state = get();
+    if (!state.session) return;
+    void settleMatch(leaderByProgress(state.session), 'timeout');
   };
 
   const connectToMatch = (matchId: string, selfUid: string, role: 'player' | 'spectator') => {
@@ -569,9 +711,17 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
           const spectatorCount = presentUids.filter((uid) => !playerIds.includes(uid)).length;
           const opponentUid = current.opponentUid;
           const opponentPresent = opponentUid ? presentUids.includes(opponentUid) : false;
+          const now = Date.now();
+          const wasAwayLong = current.opponentAwaySinceMs > 0 && now - current.opponentAwaySinceMs >= AWAY_NOTICE_MS;
+          const live = current.session.status !== 'finished';
           return {
             ...current,
             opponentPresent,
+            opponentAwaySinceMs: current.role !== 'player' || opponentPresent ? 0 : current.opponentAwaySinceMs || now,
+            liveBanner:
+              current.role === 'player' && opponentPresent && wasAwayLong && live
+                ? `${current.session.opponent.name} is back.`
+                : current.liveBanner,
             session: {
               ...current.session,
               spectators: spectatorCount,
@@ -819,19 +969,8 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
       { runtimeMs: judge.estimatedRuntimeMs, verdict: judge.verdict }
     );
 
-    if (accepted && after.matchId && after.currentUser) {
-      const delta =
-        after.session && after.session.matchType !== 'Casual'
-          ? Math.abs(computeRatingDelta(after.session.player.rating, after.session.opponent.rating, true))
-          : 0;
-      const wrote = await finishMatchRecord(after.matchId, after.currentUser.uid, delta);
-      if (wrote) {
-        if (after.selfParticipantId) {
-          void markParticipantResult(after.selfParticipantId, true, after.session!.player.rating + delta, after.session!.problem.xpReward);
-        }
-        broadcastToDuel(matchChannel, 'finish', { winnerUid: after.currentUser.uid, reason: 'accepted', ratingDelta: delta });
-        await applyFinish(after.currentUser.uid, 'accepted', delta);
-      }
+    if (accepted && after.currentUser) {
+      await settleMatch(after.currentUser.uid, 'accepted');
     }
   };
 
@@ -910,6 +1049,14 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
       };
     });
     broadcastQuizProgress();
+    // Saved so a player who reloads can rejoin at the question they were on.
+    const after = get();
+    if (after.selfParticipantId && after.session) {
+      void updateParticipantTelemetry(after.selfParticipantId, {
+        progress_percent: after.session.player.progress,
+        test_cases_passed: after.selfCorrect,
+      });
+    }
   };
 
   const handleQuestionTimeout = () => {
@@ -921,32 +1068,21 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
 
   const resolveQuiz = async () => {
     const state = get();
-    if (!state.session || !state.matchId || state.session.status === 'finished' || state.role !== 'player') return;
+    if (!state.session || state.session.status === 'finished') return;
     const selfScore = state.session.player.testCasesPassed;
     const oppScore = state.session.opponent.testCasesPassed;
     let winnerUid: string | null;
     if (selfScore !== oppScore) {
       winnerUid = selfScore > oppScore ? state.session.player.id : state.session.opponent.id;
+    } else if (state.role === 'spectator') {
+      winnerUid = null;
     } else {
       // Tie on correct answers → whoever finished sooner; identical → draw.
       const selfAt = state.selfFinishedAtMs || Number.POSITIVE_INFINITY;
       const oppAt = state.opponentFinishedAtMs || Number.POSITIVE_INFINITY;
       winnerUid = selfAt === oppAt ? null : selfAt < oppAt ? state.session.player.id : state.session.opponent.id;
     }
-    const delta = winnerUid && state.session.matchType !== 'Casual'
-      ? Math.abs(computeRatingDelta(state.session.player.rating, state.session.opponent.rating, true))
-      : 0;
-    // Conditional DB update guarantees only the first finisher's write lands.
-    const wrote = await finishMatchRecord(state.matchId, winnerUid, delta);
-    if (wrote) {
-      if (state.selfParticipantId) {
-        const isWinner = winnerUid === state.session.player.id;
-        void markParticipantResult(state.selfParticipantId, isWinner, state.session.player.rating + (isWinner ? delta : 0), isWinner ? state.session.problem.xpReward : 0);
-      }
-      broadcastToDuel(matchChannel, 'finish', { winnerUid, reason: 'timeout', ratingDelta: delta });
-      await applyFinish(winnerUid, 'timeout', delta);
-    }
-    // If we lost the race (wrote === false), the other client's finish broadcast resolves us.
+    await settleMatch(winnerUid, 'timeout');
   };
 
   const finishSelf = () => {
@@ -961,6 +1097,7 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
     const state = get();
     if (state.quizIndex < state.questions.length - 1) {
       set(questionStartState(state.quizIndex + 1));
+      saveResumeSnapshot();
       // Let spectators follow onto the next question with a fresh editor / reset tests.
       const next = get();
       broadcastQuizProgress(false, { code: next.codingDraft, currentTestsPassed: 0, currentTestsTotal: 0 });
@@ -994,6 +1131,7 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
     selfParticipantId: null,
     opponentUid: null,
     opponentPresent: false,
+    opponentAwaySinceMs: 0,
     matchStartAtMs: 0,
     matchDurationSec: 0,
     testCases: [],
@@ -1157,10 +1295,18 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
       }
     },
 
-    enterMatch: async (matchId, role) => {
+    enterMatch: async (matchId, role, options) => {
       const user = get().currentUser;
       if (!user) return;
-      set({ phase: 'preparing', preparingLabel: role === 'spectator' ? 'Joining as spectator...' : 'Entering the duel chamber...' });
+      cleanupChannel();
+      set({
+        phase: 'preparing',
+        preparingLabel: options?.resuming
+          ? 'Reconnecting you to your duel...'
+          : role === 'spectator'
+            ? 'Joining as spectator...'
+            : 'Entering the duel chamber...',
+      });
 
       try {
         const bundle = await fetchMatchBundle(matchId);
@@ -1181,11 +1327,41 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
 
         const startedAtMs = bundle.match.startedAt ? new Date(bundle.match.startedAt).getTime() : Date.now();
 
+        const isQuiz = bundle.problem.format === 'QUIZ';
+        const questions = bundle.problem.questions || [];
+
         let seededCode: Record<string, string> = {};
         if (actualRole === 'spectator') {
           void registerSpectator(matchId, user.uid);
           seededCode = await fetchLatestSubmissionCode(matchId).catch(() => ({}));
+        } else if (!isQuiz) {
+          // Rejoining a coding duel: pick up from the last code this player ran.
+          seededCode = await fetchLatestSubmissionCode(matchId).catch(() => ({}));
         }
+        // What this device saved before it went down: newer than anything the
+        // server has (code typed since the last run, the question timer).
+        const saved = actualRole === 'player' ? loadResumeSnapshot(matchId, user.uid) : null;
+        const resumedCode = actualRole === 'player' ? saved?.code || seededCode[user.uid] : undefined;
+
+        // Rejoining a quiz duel: progress is saved as a percentage of questions
+        // answered, which maps back exactly while there are fewer than 100.
+        const resumeAnswered =
+          actualRole === 'player' && isQuiz && questions.length
+            ? clamp(Math.round((session.player.progress * questions.length) / 100), 0, questions.length)
+            : 0;
+        const resumeIndex = Math.min(resumeAnswered, Math.max(0, questions.length - 1));
+        const resumeFinished = questions.length > 0 && resumeAnswered >= questions.length;
+        const opponentDone = actualRole === 'player' && isQuiz && session.opponent.progress >= 100;
+        const resumeQuestion = questions[resumeIndex];
+        // Same question as before the drop: keep its original deadline (time
+        // spent offline still counts) and whatever code was being written.
+        const sameQuestion = isQuiz && !resumeFinished && saved?.quizIndex === resumeIndex;
+        const resumeDeadlineMs = sameQuestion && saved?.deadlineMs ? saved.deadlineMs : 0;
+        const resumeCodingDraft =
+          resumeQuestion?.kind === 'coding'
+            ? (sameQuestion && saved?.codingDraft) || resumeQuestion.starterCode
+            : '';
+        const resuming = actualRole === 'player' && (!!options?.resuming || resumeAnswered > 0 || !!resumedCode || resumeDeadlineMs > 0);
 
         set({
           phase: 'arena',
@@ -1194,14 +1370,15 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
           selfParticipantId: selfParticipant?.id || null,
           opponentUid: actualRole === 'player' ? opponentParticipant?.userUid || null : null,
           opponentPresent: false,
+          opponentAwaySinceMs: 0,
           matchStartAtMs: startedAtMs,
           matchDurationSec: bundle.match.totalDurationSeconds,
           testCases: bundle.problem.testCases,
-          liveCode: seededCode,
+          liveCode: actualRole === 'spectator' ? seededCode : {},
           liveQuestionIndex: {},
           liveTests: {},
           session,
-          files: createDuelFiles(bundle.problem.starterCode),
+          files: createDuelFiles(resumedCode || bundle.problem.starterCode),
           activeFileId: 'solver',
           activeLanguage: 'python',
           customInput: '',
@@ -1216,28 +1393,37 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
               ? 'Duel starting soon...'
               : actualRole === 'spectator'
                 ? 'Spectating live — the score updates in real time.'
-                : 'Duel live. Answer fast — most correct wins.',
+                : resuming && isQuiz && !resumeFinished
+                  ? `Welcome back — you're on question ${resumeIndex + 1} of ${questions.length}.`
+                  : resuming && isQuiz
+                    ? 'Welcome back — your answers are all in.'
+                    : resuming
+                      ? saved?.code
+                        ? 'Welcome back — your code is just as you left it.'
+                        : resumedCode
+                          ? 'Welcome back — your last run is loaded in the editor.'
+                          : "Welcome back — you're in your duel again."
+                      : isQuiz
+                      ? 'Duel live. Answer fast — most correct wins.'
+                      : 'Duel live. Run the samples early, submit when confident.',
           lastUserEditAt: Date.now(),
 
           // quiz duel state
-          isQuiz: bundle.problem.format === 'QUIZ',
-          questions: bundle.problem.questions || [],
-          quizIndex: 0,
-          selfCorrect: 0,
-          answeredCount: 0,
-          questionDeadlineMs: 0,
+          isQuiz,
+          questions,
+          quizIndex: resumeIndex,
+          selfCorrect: resumeAnswered > 0 ? session.player.testCasesPassed : 0,
+          answeredCount: resumeAnswered,
+          questionDeadlineMs: resumeDeadlineMs,
           advanceAtMs: 0,
-          answerLocked: false,
+          answerLocked: resumeFinished,
           gradingAnswer: false,
           answerFeedback: null,
-          codingDraft:
-            bundle.problem.questions?.[0]?.kind === 'coding'
-              ? (bundle.problem.questions[0] as Extract<DuelQuizQuestion, { kind: 'coding' }>).starterCode
-              : '',
-          selfFinished: false,
-          selfFinishedAtMs: 0,
-          opponentFinished: false,
-          opponentFinishedAtMs: 0,
+          codingDraft: resumeCodingDraft,
+          selfFinished: resumeFinished,
+          selfFinishedAtMs: resumeFinished ? Date.now() : 0,
+          opponentFinished: opponentDone,
+          opponentFinishedAtMs: opponentDone ? Date.now() : 0,
         });
 
         connectToMatch(matchId, user.uid, actualRole);
@@ -1250,6 +1436,19 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
 
     spectateMatch: async (matchId) => {
       await get().enterMatch(matchId, 'spectator');
+    },
+
+    resumeActiveDuel: async () => {
+      const user = get().currentUser;
+      if (!user) return;
+      const matchId = await fetchActiveMatchForUser(user.uid);
+      const state = get();
+      if (!matchId || state.currentUser?.uid !== user.uid) return;
+      // Already entering something, or already in this duel with a live connection.
+      if (state.phase === 'preparing') return;
+      if (state.phase === 'arena' && state.matchId === matchId && state.role === 'player' && state.session?.connection === 'Stable') return;
+      window.dispatchEvent(new CustomEvent(DUEL_RESUME_EVENT, { detail: { matchId } }));
+      await get().enterMatch(matchId, 'player', { resuming: true });
     },
 
     leaveMatch: async () => {
@@ -1265,6 +1464,7 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
         selfParticipantId: null,
         opponentUid: null,
         opponentPresent: false,
+        opponentAwaySinceMs: 0,
         testCases: [],
         liveCode: {},
         liveQuestionIndex: {},
@@ -1291,6 +1491,12 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
       void get().refreshLobby();
     },
 
+    forfeitMatch: async () => {
+      const state = get();
+      if (state.role !== 'player' || !state.session || state.session.status === 'finished') return;
+      await settleMatch(state.session.opponent.id, 'forfeit');
+    },
+
     dismissLobbyNotice: () => set({ lobbyNotice: null }),
 
     setActiveLanguage: () => {
@@ -1315,6 +1521,7 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
             }
           : current.session,
       });
+      saveResumeSnapshot();
 
       // Typing signal + live code for the opponent/spectators (throttled).
       const now = Date.now();
@@ -1363,6 +1570,7 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
     setCodingDraft: (content) => {
       const current = get();
       set({ codingDraft: content });
+      saveResumeSnapshot();
       // Stream the live coding draft to spectators (throttled) so they can watch both screens.
       if (!current.isQuiz || current.role !== 'player' || current.answerLocked) return;
       const now = Date.now();
@@ -1572,23 +1780,42 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
       const timeRemaining = Math.max(0, Math.round(current.matchDurationSec - elapsedSec));
       const wasCountdown = current.session.status === 'countdown';
 
+      // Opponent gone from the match (closed the tab, lost connection): give
+      // them a grace period to come back, then award the duel by forfeit. Not
+      // when they've already finished a quiz and are only waiting on us.
+      let awayBanner: string | null = null;
+      if (current.role === 'player' && current.opponentAwaySinceMs && !current.opponentFinished) {
+        const awayMs = now - current.opponentAwaySinceMs;
+        if (awayMs >= FORFEIT_GRACE_MS) {
+          void settleMatch(current.session.player.id, 'forfeit');
+          return;
+        }
+        if (awayMs >= AWAY_NOTICE_MS) {
+          const secondsLeft = Math.ceil((FORFEIT_GRACE_MS - awayMs) / 1000);
+          awayBanner = `${current.session.opponent.name} left the arena. You win by forfeit in ${secondsLeft}s unless they come back.`;
+        }
+      }
+
       // --- Quiz duel flow (per-question timer, score-based finish) ---
       if (current.isQuiz) {
         set({
           session: { ...current.session, status: wasCountdown ? 'live' : current.session.status, countdown: 0, timeRemaining },
-          liveBanner: wasCountdown
-            ? current.role === 'spectator'
-              ? 'Duel is live — watch the score climb.'
-              : 'GO! Answer fast — most correct wins.'
-            : current.liveBanner,
+          liveBanner:
+            awayBanner ??
+            (wasCountdown
+              ? current.role === 'spectator'
+                ? 'Duel is live — watch the score climb.'
+                : 'GO! Answer fast — most correct wins.'
+              : current.liveBanner),
         });
 
         if (current.role === 'player' && !current.selfFinished) {
           const live = ['live', 'overtime', 'sudden-death'].includes(get().session!.status);
           if (live) {
             if (current.questionDeadlineMs === 0) {
-              // Round just went live — arm the timer for the first question.
+              // Round just went live (or we rejoined) — arm this question's timer.
               set(questionStartState(current.quizIndex));
+              saveResumeSnapshot();
             } else if (current.answerLocked) {
               if (!current.gradingAnswer && current.advanceAtMs && now >= current.advanceAtMs) {
                 advanceQuestion();
@@ -1599,9 +1826,15 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
           }
         }
 
+        // Both done (also covers a rejoin where both had already finished).
+        if (current.role === 'player' && get().selfFinished && get().opponentFinished) {
+          void resolveQuiz();
+        }
+
         // Whole-duel backstop: force a finish so nobody hangs on a stalled opponent.
-        if (timeRemaining === 0 && current.role === 'player') {
-          if (!get().selfFinished) finishSelf();
+        // settleMatch only writes once, so calling this every tick is cheap.
+        if (timeRemaining === 0) {
+          if (current.role === 'player' && !get().selfFinished) finishSelf();
           void resolveQuiz();
         }
         return;
@@ -1621,17 +1854,19 @@ export const useDuelArenaStore = create<DuelArenaStoreState>((set, get) => {
         },
         autoSaveState: shouldAutosave ? 'saved' : current.autoSaveState,
         lastSavedLabel: shouldAutosave ? 'autosaved just now' : current.lastSavedLabel,
-        liveBanner: wasCountdown
-          ? current.role === 'spectator'
-            ? 'Duel is live. Watching the pressure build.'
-            : 'GO! Run the samples early, submit when confident.'
-          : timeRemaining <= 60 && timeRemaining > 0 && current.session.timeRemaining > 60
-            ? 'Final minute!'
-            : current.liveBanner,
+        liveBanner:
+          awayBanner ??
+          (wasCountdown
+            ? current.role === 'spectator'
+              ? 'Duel is live. Watching the pressure build.'
+              : 'GO! Run the samples early, submit when confident.'
+            : timeRemaining <= 60 && timeRemaining > 0 && current.session.timeRemaining > 60
+              ? 'Final minute!'
+              : current.liveBanner),
       });
 
       if (timeRemaining === 0) {
-        void handleTimeout();
+        handleTimeout();
       }
     },
   };
