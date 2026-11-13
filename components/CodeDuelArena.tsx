@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertTriangle, ArrowLeft, Loader2, Users } from 'lucide-react';
 import { User } from '../types';
@@ -10,6 +10,7 @@ import { QuizPanel } from './duel-arena/QuizPanel';
 import { ResultModal } from './duel-arena/ResultModal';
 import { SpectatorView } from './duel-arena/SpectatorView';
 import { Button } from './ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
 import { formatTimer, getTimerTone } from './duel-arena/utils';
 import { useArenaRuntime, useDuelArenaStore } from './duel-arena/useDuelArenaStore';
 import { ArenaThemeContext } from './duel-arena/arenaTheme';
@@ -44,9 +45,33 @@ const CodeDuelArena: React.FC<CodeDuelArenaProps> = ({ currentUser, theme = 'dar
   const dismissIntegrityOverlay = useDuelArenaStore((state) => state.dismissIntegrityOverlay);
   const closeResultModal = useDuelArenaStore((state) => state.closeResultModal);
   const leaveMatch = useDuelArenaStore((state) => state.leaveMatch);
+  const forfeitMatch = useDuelArenaStore((state) => state.forfeitMatch);
+  const selfFinished = useDuelArenaStore((state) => state.selfFinished);
   const rematch = useDuelArenaStore((state) => state.rematch);
 
   useArenaRuntime();
+
+  // Leaving a running duel concedes it, so ask first. A quiz player who has
+  // answered everything isn't conceding (the result is decided when the
+  // opponent finishes), but leaving means they miss it.
+  const [leaveOpen, setLeaveOpen] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const duelRunning = role === 'player' && !!session && session.status !== 'finished';
+  const leaveForfeits = duelRunning && !(isQuiz && selfFinished);
+  const handleLeaveClick = () => {
+    if (duelRunning) setLeaveOpen(true);
+    else void leaveMatch();
+  };
+  const confirmLeave = async () => {
+    setLeaving(true);
+    try {
+      if (leaveForfeits) await forfeitMatch();
+      await leaveMatch();
+    } finally {
+      setLeaving(false);
+      setLeaveOpen(false);
+    }
+  };
 
   // Desktop (xl): the side panels can be dragged wider or narrower; the code
   // editor takes the rest, never less than MIN_EDITOR.
@@ -58,6 +83,13 @@ const CodeDuelArena: React.FC<CodeDuelArenaProps> = ({ currentUser, theme = 'dar
   useEffect(() => {
     hydrate(currentUser);
   }, [currentUser, hydrate]);
+
+  // Signed in (or reloaded) with a duel still running: go straight back into
+  // it. Runs once per sign-in; this component stays mounted while hidden.
+  const resumeActiveDuel = useDuelArenaStore((state) => state.resumeActiveDuel);
+  useEffect(() => {
+    void resumeActiveDuel();
+  }, [currentUser.uid, resumeActiveDuel]);
 
   const isPlayerArena = phase === 'arena' && session && role === 'player';
   const isSpectatorArena = phase === 'arena' && session && role === 'spectator';
@@ -94,7 +126,7 @@ const CodeDuelArena: React.FC<CodeDuelArenaProps> = ({ currentUser, theme = 'dar
             {/* Match bar */}
             <div className="flex h-[46px] flex-none items-stretch border-b-2 border-ch-rule">
               <button
-                onClick={() => void leaveMatch()}
+                onClick={handleLeaveClick}
                 className="flex flex-none items-center gap-1.5 border-r border-ch-divider px-3.5 text-[11px] font-bold uppercase tracking-[0.08em] text-ch-muted transition-colors hover:bg-ch-surface hover:text-ch-text sm:px-5"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
@@ -266,6 +298,28 @@ const CodeDuelArena: React.FC<CodeDuelArenaProps> = ({ currentUser, theme = 'dar
           </motion.div>
         ) : null}
       </AnimatePresence>
+
+      <Dialog open={leaveOpen} onOpenChange={(next) => !leaving && setLeaveOpen(next)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{leaveForfeits ? 'Forfeit this duel?' : 'Leave before the result?'}</DialogTitle>
+            <DialogDescription className="text-[13.5px] leading-relaxed">
+              {leaveForfeits
+                ? `If you leave now, ${session?.opponent.name ?? 'your opponent'} wins${session?.matchType === 'Casual' ? ' and it counts as a loss.' : ' and the loss counts against your rating.'}`
+                : `Your answers are in. The winner is decided when ${session?.opponent.name ?? 'your opponent'} finishes. Stay to see the result and collect your rating and XP.`}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setLeaveOpen(false)} disabled={leaving}>
+              Stay
+            </Button>
+            <Button onClick={() => void confirmLeave()} disabled={leaving}>
+              {leaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {leaveForfeits ? 'Forfeit and leave' : 'Leave anyway'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {session ? (
         <ResultModal

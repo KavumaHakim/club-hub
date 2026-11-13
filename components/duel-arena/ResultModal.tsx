@@ -21,10 +21,11 @@ export const ResultModal: React.FC<ResultModalProps> = ({ session, open, onClose
   const isVictory = result.outcome === 'victory';
   const isDraw = result.outcome === 'draw';
   const isQuiz = result.totalQuestions != null;
+  const byForfeit = result.reason === 'forfeit';
 
   const handleCopy = async () => {
     const scoreLine = isQuiz ? ` Score ${result.selfCorrect}–${result.opponentCorrect} of ${result.totalQuestions}.` : '';
-    const summary = `${session.player.name} ${isVictory ? 'won' : isDraw ? 'drew' : 'lost'} a ${session.matchType.toLowerCase()} Code Duel.${scoreLine} Rating ${signed(result.ratingDelta)}, XP +${result.xpEarned}.`;
+    const summary = `${session.player.name} ${isVictory ? (byForfeit ? 'won by forfeit' : 'won') : isDraw ? 'drew' : byForfeit ? 'forfeited' : 'lost'} a ${session.matchType.toLowerCase()} Code Duel.${scoreLine} Rating ${signed(result.ratingDelta)}, XP +${result.xpEarned}.`;
     try {
       await navigator.clipboard.writeText(summary);
       setCopied(true);
@@ -53,10 +54,14 @@ export const ResultModal: React.FC<ResultModalProps> = ({ session, open, onClose
               'text-[40px] leading-none tracking-[-0.03em]',
               isVictory ? 'text-green-600 dark:text-green-400' : isDraw ? 'text-ch-text' : 'text-ch-accent',
             )}>
-              {isVictory ? 'Victory' : isDraw ? 'Draw' : 'Defeat'}
+              {isVictory ? 'Victory' : isDraw ? 'Draw' : byForfeit ? 'Forfeit' : 'Defeat'}
             </DialogTitle>
             <DialogDescription className="max-w-md text-[13.5px] leading-relaxed">
-              {isQuiz
+              {byForfeit
+                ? isVictory
+                  ? `${session.opponent.name} left the duel, so the win is yours.`
+                  : 'You left the duel before it finished.'
+                : isQuiz
                 ? isVictory
                   ? 'You answered the most correctly. Sharp and fast.'
                   : isDraw

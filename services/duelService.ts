@@ -655,6 +655,70 @@ export const finishMatchRecord = async (
   return (data || []).length > 0;
 };
 
+/**
+ * The stored outcome of a match, or null while it is still running. Used when
+ * this client lost the race to write the finish and the other side's
+ * broadcast never arrived.
+ */
+export const fetchMatchOutcome = async (
+  matchId: string
+): Promise<{ winnerUid: string | null; rankedDelta: number } | null> => {
+  const { data, error } = await supabase
+    .from('duel_matches')
+    .select('status, winner_uid, ranked_delta')
+    .eq('id', matchId)
+    .single();
+  if (error || !data) {
+    if (error) console.warn('Failed to read duel outcome', error);
+    return null;
+  }
+  if (data.status !== 'FINISHED' && data.status !== 'CANCELLED') return null;
+  return { winnerUid: data.winner_uid ?? null, rankedDelta: data.ranked_delta ?? 0 };
+};
+
+const RUNNING_MATCH_STATUSES = ['QUEUED', 'COUNTDOWN', 'LIVE', 'OVERTIME', 'SUDDEN_DEATH'];
+/** A match whose clock ran out this recently is still worth reopening, to settle it and show the result. */
+const RESUME_AFTER_END_MS = 10 * 60 * 1000;
+
+/**
+ * The duel this member is still playing, if any: used to put them straight
+ * back into it after a reload, a crash or signing in again. Matches long past
+ * their clock (abandoned by both players) are ignored.
+ */
+export const fetchActiveMatchForUser = async (userUid: string): Promise<string | null> => {
+  const { data: rows, error } = await supabase
+    .from('duel_match_participants')
+    .select('match_id')
+    .eq('user_uid', userUid)
+    .order('joined_at', { ascending: false })
+    .limit(10);
+  if (error) {
+    console.warn('Failed to look up active duels', error);
+    return null;
+  }
+  const ids = (rows || []).map((row: any) => row.match_id as string);
+  if (!ids.length) return null;
+
+  const { data: matches, error: matchError } = await supabase
+    .from('duel_matches')
+    .select('id, status, started_at, created_at, total_duration_seconds')
+    .in('id', ids)
+    .in('status', RUNNING_MATCH_STATUSES)
+    .order('created_at', { ascending: false });
+  if (matchError) {
+    console.warn('Failed to look up active duels', matchError);
+    return null;
+  }
+
+  const now = Date.now();
+  const resumable = (matches || []).find((m: any) => {
+    const durationMs = (m.total_duration_seconds ?? 1020) * 1000;
+    const startMs = new Date(m.started_at || m.created_at).getTime();
+    return now < startMs + durationMs + RESUME_AFTER_END_MS;
+  });
+  return resumable ? (resumable.id as string) : null;
+};
+
 /** Latest submitted source per participant, used to seed a spectator's screens on join. */
 export const fetchLatestSubmissionCode = async (matchId: string): Promise<Record<string, string>> => {
   const { data, error } = await supabase

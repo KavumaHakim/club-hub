@@ -181,8 +181,12 @@ export interface ArenaSubmissionHistoryItem {
   createdAtLabel: string;
 }
 
+export type DuelFinishReason = 'accepted' | 'timeout' | 'forfeit';
+
 export interface ArenaResultSummary {
   outcome: 'victory' | 'defeat' | 'draw';
+  /** How the duel ended: solved, ran out of time, or someone left. */
+  reason: DuelFinishReason;
   ratingDelta: number;
   xpEarned: number;
   streakDelta: number;

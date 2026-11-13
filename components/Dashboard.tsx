@@ -7,6 +7,7 @@ import { useData } from '../DataContext';
 import { flushPendingSubmissions } from '../services/offlineSubmissions';
 import FeatureIntroModal from './FeatureIntroModal';
 import NotificationPromptModal from './NotificationPromptModal';
+import { DUEL_RESUME_EVENT } from './ShellHeader';
 
 const Feed = lazy(() => import('./Feed'));
 const Activities = lazy(() => import('./Activities'));
@@ -88,6 +89,19 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser, onUpdateUserProfile,
         };
     }, [currentUser.uid]);
     const [pendingChallenge, setPendingChallenge] = useState<any | null>(null);
+
+    // The Arena found a duel this member was still playing (they reloaded, lost
+    // power or signed in again) and is putting them back in: show it.
+    const arenaEnabled = featureFlags.showChallenges || currentUser.role === 'PATRON';
+    useEffect(() => {
+        if (!arenaEnabled) return undefined;
+        const onResume = () => {
+            setActiveTab('arena');
+            showToast('Welcome back! Reconnecting you to your duel.', 'success');
+        };
+        window.addEventListener(DUEL_RESUME_EVENT, onResume);
+        return () => window.removeEventListener(DUEL_RESUME_EVENT, onResume);
+    }, [arenaEnabled, setActiveTab, showToast]);
 
     useEffect(() => {
         // Check if we have shown the tip today

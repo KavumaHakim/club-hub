@@ -61,6 +61,7 @@ export const DuelLobby: React.FC<DuelLobbyProps> = ({ currentUser }) => {
   const declineInvite = useDuelArenaStore((state) => state.declineInvite);
   const cancelInvite = useDuelArenaStore((state) => state.cancelInvite);
   const spectateMatch = useDuelArenaStore((state) => state.spectateMatch);
+  const enterMatch = useDuelArenaStore((state) => state.enterMatch);
   const dismissLobbyNotice = useDuelArenaStore((state) => state.dismissLobbyNotice);
   const myRules = useDuelArenaStore((state) => state.myRules);
 
@@ -172,7 +173,9 @@ export const DuelLobby: React.FC<DuelLobbyProps> = ({ currentUser }) => {
           </div>
           <div className="flex w-[118px] flex-none flex-col items-start justify-center gap-1.5 border-l border-ch-divider px-2.5 sm:w-[132px] sm:px-4">
             <span className={`${stateCell} border border-ch-accent text-ch-accent`}>Live</span>
-            {!youPlay && (
+            {youPlay ? (
+              <button onClick={() => void enterMatch(row.match.id, 'player')} className={`${actionBtn} bg-ch-accent text-ch-on-accent hover:opacity-90`}>Rejoin</button>
+            ) : (
               <button onClick={() => void spectateMatch(row.match.id)} className={`${actionBtn} text-ch-text hover:bg-ch-surface-2`}>Watch</button>
             )}
           </div>
